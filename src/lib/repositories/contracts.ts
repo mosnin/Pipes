@@ -1,0 +1,172 @@
+import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+
+export type AppContext = {
+  userId: string;
+  workspaceId: string;
+  role: Role;
+  plan: Plan;
+  actorType: "user" | "agent";
+  actorId: string;
+  capabilities?: string[];
+  systemScope?: string;
+};
+export type BillingStatus = "active" | "canceled" | "past_due" | "trialing";
+
+export type ProvisionIdentity = { externalId: string; email: string; name: string };
+
+export type SystemRecord = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+};
+
+export type NodeRecord = { id: string; systemId: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[] };
+export type PipeRecord = { id: string; systemId: string; fromPortId: string; toPortId: string; fromNodeId?: string; toNodeId?: string };
+export type CommentRecord = { id: string; systemId: string; authorId: string; body: string; nodeId?: string; createdAt: string };
+export type VersionRecord = { id: string; systemId: string; name: string; authorId: string; createdAt: string; snapshot: string };
+export type PresenceRecord = { id: string; systemId: string; userId: string; name: string; selectedNodeId?: string; editingTarget?: string; cursor?: { x: number; y: number }; updatedAt: string };
+
+export type SystemBundle = {
+  system: SystemRecord;
+  nodes: NodeRecord[];
+  pipes: PipeRecord[];
+  comments: CommentRecord[];
+  versions: VersionRecord[];
+  presence: PresenceRecord[];
+};
+
+export interface UsersRepository {
+  provision(identity: ProvisionIdentity): Promise<AppContext>;
+  findByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
+}
+
+export interface WorkspacesRepository {
+  getPlan(workspaceId: string): Promise<Plan>;
+}
+
+export interface MembershipsRepository {
+  add(workspaceId: string, userId: string, role: Role): Promise<void>;
+  list(workspaceId: string): Promise<Array<{ userId: string; role: Role }>>;
+  updateRole(workspaceId: string, userId: string, role: Role): Promise<void>;
+}
+
+export interface SystemsRepository {
+  list(workspaceId: string): Promise<SystemRecord[]>;
+  create(input: { workspaceId: string; userId: string; name: string; description: string }): Promise<string>;
+  getBundle(systemId: string): Promise<SystemBundle>;
+  archive(systemId: string): Promise<void>;
+  restore(systemId: string): Promise<void>;
+}
+
+export interface GraphRepository {
+  addNode(input: { systemId: string; type: string; title: string; description?: string; x: number; y: number }): Promise<string>;
+  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }): Promise<void>;
+  deleteNode(nodeId: string): Promise<void>;
+  addPipe(input: { systemId: string; fromNodeId: string; toNodeId: string }): Promise<string>;
+  deletePipe(pipeId: string): Promise<void>;
+}
+
+export interface CommentsRepository {
+  add(input: { systemId: string; authorId: string; body: string; nodeId?: string }): Promise<void>;
+}
+
+export interface VersionsRepository {
+  list(systemId: string): Promise<VersionRecord[]>;
+  add(input: { systemId: string; authorId: string; name: string; snapshot: string }): Promise<void>;
+  get(systemId: string, versionId: string): Promise<VersionRecord | null>;
+  restoreSnapshot(systemId: string, snapshot: string): Promise<void>;
+}
+
+export interface InvitesRepository {
+  add(input: { workspaceId: string; email: string; role: Role; token: string; invitedBy: string; expiresAt: string }): Promise<void>;
+  list(workspaceId: string): Promise<Array<{ token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string }>>;
+  getByToken(token: string): Promise<{ workspaceId: string; token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string } | null>;
+  accept(token: string, userId: string): Promise<void>;
+  cancel(token: string): Promise<void>;
+}
+
+export interface PresenceRepository {
+  upsert(input: { systemId: string; userId: string; sessionId: string; selectedNodeId?: string; editingTarget?: string; cursor?: { x: number; y: number } }): Promise<void>;
+  list(systemId: string): Promise<PresenceRecord[]>;
+}
+
+export interface EntitlementsRepository {
+  getPlan(workspaceId: string): Promise<Plan>;
+  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus }>;
+  upsertPlanState(input: { workspaceId: string; plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }): Promise<void>;
+}
+
+export type FeedbackStatus = "new" | "reviewing" | "closed";
+export type FeedbackCategory = "bug" | "ux" | "feature_request" | "reliability" | "billing" | "other";
+export type FeedbackSeverity = "low" | "medium" | "high";
+
+export interface FeedbackRepository {
+  create(input: {
+    workspaceId: string;
+    createdBy: string;
+    actorType: "user" | "agent";
+    actorId: string;
+    category: FeedbackCategory;
+    severity: FeedbackSeverity;
+    summary: string;
+    details: string;
+    page: string;
+    systemId?: string;
+    userEmail?: string;
+  }): Promise<{ id: string }>;
+  list(workspaceId: string, filter?: { status?: FeedbackStatus; category?: FeedbackCategory; limit?: number }): Promise<Array<{
+    id: string;
+    workspaceId: string;
+    createdBy: string;
+    actorType: "user" | "agent";
+    actorId: string;
+    category: FeedbackCategory;
+    severity: FeedbackSeverity;
+    summary: string;
+    details: string;
+    page: string;
+    systemId?: string;
+    userEmail?: string;
+    status: FeedbackStatus;
+    createdAt: string;
+    updatedAt: string;
+  }>>;
+  updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
+}
+
+export type RepositorySet = {
+  users: UsersRepository;
+  workspaces: WorkspacesRepository;
+  memberships: MembershipsRepository;
+  systems: SystemsRepository;
+  graph: GraphRepository;
+  comments: CommentsRepository;
+  versions: VersionsRepository;
+  invites: InvitesRepository;
+  presence: PresenceRepository;
+  entitlements: EntitlementsRepository;
+  feedback: FeedbackRepository;
+  agentTokens: {
+    create(input: { workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string }): Promise<{ id: string }>;
+    list(workspaceId: string): Promise<Array<{ id: string; name: string; capabilities: string[]; systemId?: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string }>>;
+    revoke(id: string): Promise<void>;
+    findByHash(tokenHash: string): Promise<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; createdByUserId: string; revokedAt?: string } | null>;
+    touchLastUsed(id: string): Promise<void>;
+  };
+  audits: {
+    add(input: { actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string }): Promise<void>;
+    list(workspaceId: string, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }): Promise<Array<{ id: string; actorType: string; actorId: string; action: string; targetType: string; targetId?: string; outcome: string; createdAt: string; systemId?: string; metadata?: string }>>;
+  };
+  idempotency: {
+    get(input: { workspaceId: string; actorId: string; route: string; key: string }): Promise<{ requestHash: string; responseJson: string; statusCode: number } | null>;
+    put(input: { workspaceId: string; actorId: string; route: string; key: string; requestHash: string; responseJson: string; statusCode: number }): Promise<void>;
+  };
+  rateLimits: {
+    consume(input: { bucket: string; windowSeconds: number; limit: number; now: string }): Promise<{ allowed: boolean; remaining: number; retryAfterSeconds: number }>;
+  };
+};

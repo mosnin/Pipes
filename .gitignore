@@ -1,0 +1,11 @@
+.next
+node_modules
+coverage
+playwright-report
+test-results
+.env.local
+.env
+.DS_Store
+
+.pipes-db.json
+tsconfig.tsbuildinfo
