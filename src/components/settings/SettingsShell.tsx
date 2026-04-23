@@ -12,7 +12,7 @@ const links = [
 
 export function SettingsShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="section-stack">
       <PageHeader title={title} subtitle={subtitle} />
       <Card>
         <nav aria-label="Settings sections" className="nav-inline settings-nav">

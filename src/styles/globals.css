@@ -119,6 +119,33 @@ a:hover { color: #c7dbff; }
 .editor-canvas { border: 1px solid var(--border); background: var(--surface-1); }
 .validation-list { display: grid; gap: var(--space-2); max-height: 280px; overflow: auto; }
 .form-stack { display: grid; gap: 12px; max-width: 480px; }
+
+.app-nav-list { display: grid; gap: 8px; }
+.app-nav-link {
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text-muted);
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+.app-nav-link:hover { border-color: var(--border); color: var(--text); background: rgba(93, 141, 255, 0.08); }
+
+.dashboard-toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
+.dashboard-list { display: grid; gap: 10px; }
+.dashboard-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.dashboard-filters {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) repeat(2, minmax(160px, 1fr)) minmax(180px, 1fr);
+  gap: 10px;
+}
+
 .muted { color: var(--text-muted); margin: 0; }
 .status-error { color: #ffb3b7; margin: 0; }
 
@@ -134,4 +161,5 @@ a:hover { color: #c7dbff; }
   .grid-2 { grid-template-columns: 1fr; }
   .page-header, .section-header { flex-direction: column; align-items: flex-start; }
   .marketing-wrap { padding: var(--space-4); }
+  .dashboard-filters { grid-template-columns: 1fr; }
 }

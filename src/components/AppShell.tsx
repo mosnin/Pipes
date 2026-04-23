@@ -29,25 +29,23 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <Sidebar>
-        <h2>Pipes</h2>
-        <p>{user.name}</p>
-        <nav aria-label="Primary">
+        <h2 style={{ marginBottom: 2 }}>Pipes</h2>
+        <p className="muted" style={{ marginTop: 0 }}>{user.name}</p>
+        <nav aria-label="Primary" className="app-nav-list">
           {nav.map(([href, label]) => (
-            <div key={href} style={{ marginBottom: 8 }}>
-              <Link href={href}>{label}</Link>
-            </div>
+            <Link key={href} href={href} className="app-nav-link">{label}</Link>
           ))}
         </nav>
       </Sidebar>
       <div className="app-content">
         <Topbar
           left={<strong>Workspace: {ctx.workspaceId}</strong>}
-          right={
+          right={(
             <div className="nav-inline">
               <Badge tone="good">Plan: {ctx.plan}</Badge>
-              <Link href="/api/auth/logout"><Button>Logout</Button></Link>
+              <Link href="/api/auth/logout"><Button variant="subtle">Logout</Button></Link>
             </div>
-          }
+          )}
         />
         <main className="app-main">{children}</main>
       </div>
