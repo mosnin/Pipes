@@ -468,31 +468,38 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   return (
     <div>
-      <SectionHeader title={data.system.name} description={data.system.description} />
-      <Tabs items={["Design", "Validation", "Simulation", "Versions"]} />
-      <div className="nav-inline" style={{ marginBottom: 8, justifyContent: "space-between" }}>
-        <div>{data.presence.map((p) => <span key={p.id} className="badge">{p.name}{p.selectedNodeId ? ` · ${p.selectedNodeId}` : ""}</span>)}</div>
-        <div className="nav-inline">
-          <span className="badge">{saveLabel}</span>
-          <Button onClick={undo} disabled={history.undo.length === 0}>Undo ⌘Z</Button>
-          <Button onClick={redo} disabled={history.redo.length === 0}>Redo ⇧⌘Z</Button>
-          <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Insert ⌘K</Button>
+      <section className="editor-header-shell">
+        <SectionHeader title={data.system.name} description={data.system.description} />
+        <div className="editor-meta-row">
+          <Tabs items={["Design", "Validation", "Simulation", "Versions"]} />
+          <div className="nav-inline">{data.presence.map((p) => <span key={p.id} className="badge">{p.name}</span>)}</div>
+        </div>
+        <div className="editor-toolbar-primary">
+          <Badge tone={saveState === "error" ? "warn" : "good"}>{saveLabel}</Badge>
+          <Button onClick={undo} disabled={history.undo.length === 0}>Undo</Button>
+          <Button onClick={redo} disabled={history.redo.length === 0}>Redo</Button>
+          <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Insert Node</Button>
           <Button onClick={createSubsystem} disabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
-          <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)}>
-            <option value="left_to_right">Layout: Left → Right</option>
-            <option value="top_to_bottom">Layout: Top ↓ Bottom</option>
-          </Select>
-          <Button onClick={() => arrangeNodes("selected")} disabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
-          <Button onClick={() => arrangeNodes("all")}>Arrange Whole Graph</Button>
-          <Button onClick={() => setRouteFocusMode((value) => !value)}>{routeFocusMode ? "Route Focus: On" : "Route Focus: Off"}</Button>
-          <Button onClick={() => setFitRequest((n) => n + 1)}>Fit Content ⌘0</Button>
-          <Button onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}>Frame Selected ⇧F</Button>
-          <Button onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}>Duplicate ⌘D</Button>
-          <Button onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete Selection ⌫</Button>
+          <Button variant="subtle" onClick={() => setFitRequest((n) => n + 1)}>Fit Canvas</Button>
+          <Button variant="subtle" onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete</Button>
           {saveState === "error" ? <Button onClick={() => setFailed(0)}>Retry save</Button> : null}
         </div>
-      </div>
-      <div className="editor-shell" style={{ marginTop: 12 }}>
+        <details className="editor-toolbar-secondary">
+          <summary>Advanced layout controls</summary>
+          <div className="nav-inline">
+            <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)}>
+              <option value="left_to_right">Left → Right</option>
+              <option value="top_to_bottom">Top ↓ Bottom</option>
+            </Select>
+            <Button variant="subtle" onClick={() => arrangeNodes("selected")} disabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
+            <Button variant="subtle" onClick={() => arrangeNodes("all")}>Arrange Graph</Button>
+            <Button variant="subtle" onClick={() => setRouteFocusMode((value) => !value)}>{routeFocusMode ? "Route focus on" : "Route focus off"}</Button>
+            <Button variant="subtle" onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}>Frame Selection</Button>
+            <Button variant="subtle" onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}>Duplicate</Button>
+          </div>
+        </details>
+      </section>
+      <div className="editor-shell editor-shell-premium">
         <Panel title="Node Library">
           <Input value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} placeholder="Search nodes, tags, category..." />
           <div className="nav-inline" style={{ marginTop: 8 }}>
