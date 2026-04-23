@@ -6,6 +6,7 @@ import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/r
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
 import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";
+import type { OrchestrationStep, ReconciliationRecord, SkillInvocation, SubAgentResult, SubAgentTask } from "@/domain/agent_builder/sub_agents";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -86,6 +87,11 @@ type DbShape = {
   planRevisions: PlanRevision[];
   roleActivities: RoleActivity[];
   proposalBatches: ProposalBatch[];
+  subAgentTasks: SubAgentTask[];
+  subAgentResults: SubAgentResult[];
+  skillInvocations: SkillInvocation[];
+  orchestrationSteps: OrchestrationStep[];
+  reconciliationRecords: ReconciliationRecord[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -129,7 +135,12 @@ function seed(): DbShape {
     stageRecords: [],
     planRevisions: [],
     roleActivities: [],
-    proposalBatches: []
+    proposalBatches: [],
+    subAgentTasks: [],
+    subAgentResults: [],
+    skillInvocations: [],
+    orchestrationSteps: [],
+    reconciliationRecords: []
   };
 }
 
@@ -155,7 +166,12 @@ function readDb(): DbShape {
     stageRecords: parsed.stageRecords ?? [],
     planRevisions: parsed.planRevisions ?? [],
     roleActivities: parsed.roleActivities ?? [],
-    proposalBatches: parsed.proposalBatches ?? []
+    proposalBatches: parsed.proposalBatches ?? [],
+    subAgentTasks: parsed.subAgentTasks ?? [],
+    subAgentResults: parsed.subAgentResults ?? [],
+    skillInvocations: parsed.skillInvocations ?? [],
+    orchestrationSteps: parsed.orchestrationSteps ?? [],
+    reconciliationRecords: parsed.reconciliationRecords ?? []
   };
 }
 

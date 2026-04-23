@@ -608,6 +608,66 @@ export function createMockRepositories(): RepositorySet {
       },
       async listProposalBatches(input) {
         return store.readDb().proposalBatches.filter((row) => row.runId === input.runId);
+      },
+      async addSubAgentTask(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("sat") };
+        db.subAgentTasks.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async updateSubAgentTask(input) {
+        const db = store.readDb();
+        const row = db.subAgentTasks.find((item) => item.id === input.taskId);
+        if (!row) return;
+        row.status = input.status;
+        row.startedAt = input.startedAt ?? row.startedAt;
+        row.completedAt = input.completedAt ?? row.completedAt;
+        row.error = input.error ?? row.error;
+        store.writeDb(db);
+      },
+      async listSubAgentTasks(input) {
+        return store.readDb().subAgentTasks.filter((row) => row.runId === input.runId);
+      },
+      async addSubAgentResult(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("sar") };
+        db.subAgentResults.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listSubAgentResults(input) {
+        return store.readDb().subAgentResults.filter((row) => row.runId === input.runId);
+      },
+      async addSkillInvocation(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("ski") };
+        db.skillInvocations.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listSkillInvocations(input) {
+        return store.readDb().skillInvocations.filter((row) => row.runId === input.runId);
+      },
+      async addOrchestrationStep(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("orc") };
+        db.orchestrationSteps.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listOrchestrationSteps(input) {
+        return store.readDb().orchestrationSteps.filter((row) => row.runId === input.runId);
+      },
+      async addReconciliationRecord(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("rec") };
+        db.reconciliationRecords.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listReconciliationRecords(input) {
+        return store.readDb().reconciliationRecords.filter((row) => row.runId === input.runId);
       }
     }
   };

@@ -526,6 +526,60 @@ export function createConvexRepositories(): RepositorySet {
         const rows = await client.query((api as any).app.listProposalBatches, { runId: input.runId as never });
         return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, summary: row.summary, rationale: row.rationale, proposalIds: JSON.parse(row.proposalIdsJson), status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt }));
       },
+      async addSubAgentTask(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addSubAgentTask, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, contextPackJson: JSON.stringify(input.contextPack) });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, role: row.role, skillId: row.skillId, title: row.title, contextPack: JSON.parse(row.contextPackJson), status: row.status, createdAt: row.createdAt, startedAt: row.startedAt, completedAt: row.completedAt, error: row.error };
+      },
+      async updateSubAgentTask(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.patchSubAgentTask, { taskId: input.taskId as never, status: input.status, startedAt: input.startedAt, completedAt: input.completedAt, error: input.error });
+      },
+      async listSubAgentTasks(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listSubAgentTasks, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, role: row.role, skillId: row.skillId, title: row.title, contextPack: JSON.parse(row.contextPackJson), status: row.status, createdAt: row.createdAt, startedAt: row.startedAt, completedAt: row.completedAt, error: row.error }));
+      },
+      async addSubAgentResult(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addSubAgentResult, { ...input, taskId: input.taskId as never, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, proposedActionTypesJson: JSON.stringify(input.proposedActionTypes), openQuestionsJson: JSON.stringify(input.openQuestions), conflictSignalsJson: JSON.stringify(input.conflictSignals) });
+        return { id: String(row._id), taskId: String(row.taskId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), planSummary: row.planSummary, critique: row.critique, proposedActionTypes: JSON.parse(row.proposedActionTypesJson), openQuestions: JSON.parse(row.openQuestionsJson), conflictSignals: JSON.parse(row.conflictSignalsJson), createdAt: row.createdAt };
+      },
+      async listSubAgentResults(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listSubAgentResults, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), taskId: String(row.taskId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), planSummary: row.planSummary, critique: row.critique, proposedActionTypes: JSON.parse(row.proposedActionTypesJson), openQuestions: JSON.parse(row.openQuestionsJson), conflictSignals: JSON.parse(row.conflictSignalsJson), createdAt: row.createdAt }));
+      },
+      async addSkillInvocation(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addSkillInvocation, { ...input, taskId: input.taskId as never, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return { id: String(row._id), taskId: String(row.taskId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), skillId: row.skillId, inputSummary: row.inputSummary, status: row.status, outputSummary: row.outputSummary, createdAt: row.createdAt, completedAt: row.completedAt };
+      },
+      async listSkillInvocations(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listSkillInvocations, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), taskId: String(row.taskId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), skillId: row.skillId, inputSummary: row.inputSummary, status: row.status, outputSummary: row.outputSummary, createdAt: row.createdAt, completedAt: row.completedAt }));
+      },
+      async addOrchestrationStep(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addOrchestrationStep, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, decision: row.decision, summary: row.summary, at: row.at };
+      },
+      async listOrchestrationSteps(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listOrchestrationSteps, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, decision: row.decision, summary: row.summary, at: row.at }));
+      },
+      async addReconciliationRecord(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addReconciliationRecord, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, inputTaskIdsJson: JSON.stringify(input.inputTaskIds) });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), inputTaskIds: JSON.parse(row.inputTaskIdsJson), decision: row.decision, summary: row.summary, createdAt: row.createdAt };
+      },
+      async listReconciliationRecords(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listReconciliationRecords, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), inputTaskIds: JSON.parse(row.inputTaskIdsJson), decision: row.decision, summary: row.summary, createdAt: row.createdAt }));
+      },
     }
   };
 }

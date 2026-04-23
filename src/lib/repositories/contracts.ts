@@ -2,6 +2,7 @@ import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, RunStatus, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
 import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";
+import type { OrchestrationStep, ReconciliationRecord, SkillInvocation, SubAgentResult, SubAgentTask } from "@/domain/agent_builder/sub_agents";
 
 export type AppContext = {
   userId: string;
@@ -204,5 +205,16 @@ export type RepositorySet = {
     listRoleActivities(input: { runId: string }): Promise<RoleActivity[]>;
     addProposalBatch(input: Omit<ProposalBatch, "id">): Promise<ProposalBatch>;
     listProposalBatches(input: { runId: string }): Promise<ProposalBatch[]>;
+    addSubAgentTask(input: Omit<SubAgentTask, "id">): Promise<SubAgentTask>;
+    updateSubAgentTask(input: { taskId: string; status: SubAgentTask["status"]; startedAt?: string; completedAt?: string; error?: string }): Promise<void>;
+    listSubAgentTasks(input: { runId: string }): Promise<SubAgentTask[]>;
+    addSubAgentResult(input: Omit<SubAgentResult, "id">): Promise<SubAgentResult>;
+    listSubAgentResults(input: { runId: string }): Promise<SubAgentResult[]>;
+    addSkillInvocation(input: Omit<SkillInvocation, "id">): Promise<SkillInvocation>;
+    listSkillInvocations(input: { runId: string }): Promise<SkillInvocation[]>;
+    addOrchestrationStep(input: Omit<OrchestrationStep, "id">): Promise<OrchestrationStep>;
+    listOrchestrationSteps(input: { runId: string }): Promise<OrchestrationStep[]>;
+    addReconciliationRecord(input: Omit<ReconciliationRecord, "id">): Promise<ReconciliationRecord>;
+    listReconciliationRecords(input: { runId: string }): Promise<ReconciliationRecord[]>;
   };
 };
