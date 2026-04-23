@@ -1,5 +1,5 @@
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
-import type { AgentRun, AgentSession, RunEvent, RunMessage, RunStatus } from "@/domain/agent_builder/model";
+import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, RunStatus, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
 
 export type AppContext = {
@@ -187,5 +187,13 @@ export type RepositorySet = {
     getProposal(proposalId: string): Promise<GraphActionProposal | null>;
     addAppliedAction(input: Omit<AppliedGraphActionRecord, "id">): Promise<AppliedGraphActionRecord>;
     listAppliedActions(input: { runId?: string; systemId?: string }): Promise<AppliedGraphActionRecord[]>;
+    upsertPlan(input: Omit<RunPlan, "id" | "createdAt" | "updatedAt"> & { planId?: string }): Promise<RunPlan>;
+    getPlan(runId: string): Promise<RunPlan | null>;
+    addToolCall(input: Omit<ToolCallRecord, "id">): Promise<ToolCallRecord>;
+    listToolCalls(input: { runId: string }): Promise<ToolCallRecord[]>;
+    addApprovalRequest(input: Omit<ApprovalRequest, "id">): Promise<ApprovalRequest>;
+    listApprovalRequests(input: { runId?: string; systemId?: string; status?: ApprovalRequest["status"] }): Promise<ApprovalRequest[]>;
+    getApprovalRequest(id: string): Promise<ApprovalRequest | null>;
+    updateApprovalRequest(input: { requestId: string; status: ApprovalRequest["status"]; decidedAt?: string; decidedBy?: string; decisionNote?: string }): Promise<void>;
   };
 };

@@ -514,6 +514,60 @@ export function createMockRepositories(): RepositorySet {
       },
       async listAppliedActions(input) {
         return store.readDb().appliedGraphActions.filter((item) => (!input.runId || item.runId === input.runId) && (!input.systemId || item.targetSystemId === input.systemId));
+      },
+      async upsertPlan(input) {
+        const db = store.readDb();
+        const existing = input.planId ? db.runPlans.find((row) => row.id === input.planId) : db.runPlans.find((row) => row.runId === input.runId);
+        if (existing) {
+          existing.summary = input.summary;
+          existing.status = input.status;
+          existing.confidence = input.confidence;
+          existing.requiresApproval = input.requiresApproval;
+          existing.steps = input.steps;
+          existing.updatedAt = now();
+          store.writeDb(db);
+          return existing;
+        }
+        const row = { id: store.createId("plan"), runId: input.runId, workspaceId: input.workspaceId, systemId: input.systemId, summary: input.summary, status: input.status, confidence: input.confidence, requiresApproval: input.requiresApproval, steps: input.steps, createdAt: now(), updatedAt: now() };
+        db.runPlans.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async getPlan(runId) {
+        return store.readDb().runPlans.find((row) => row.runId === runId) ?? null;
+      },
+      async addToolCall(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("tool") };
+        db.toolCalls.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listToolCalls(input) {
+        return store.readDb().toolCalls.filter((row) => row.runId === input.runId);
+      },
+      async addApprovalRequest(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("apr") };
+        db.approvalRequests.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listApprovalRequests(input) {
+        return store.readDb().approvalRequests.filter((row) => (!input.runId || row.runId === input.runId) && (!input.systemId || row.systemId === input.systemId) && (!input.status || row.status === input.status));
+      },
+      async getApprovalRequest(id) {
+        return store.readDb().approvalRequests.find((row) => row.id === id) ?? null;
+      },
+      async updateApprovalRequest(input) {
+        const db = store.readDb();
+        const row = db.approvalRequests.find((item) => item.id === input.requestId);
+        if (!row) return;
+        row.status = input.status;
+        row.decidedAt = input.decidedAt ?? row.decidedAt;
+        row.decidedBy = input.decidedBy ?? row.decidedBy;
+        row.decisionNote = input.decisionNote ?? row.decisionNote;
+        store.writeDb(db);
       }
     }
   };

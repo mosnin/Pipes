@@ -71,3 +71,8 @@ This keeps Pipes a structured design platform, not a chat or orchestration engin
 ### Builder agent live mutation
 
 Builder chat can now propose typed graph actions and apply safe actions live so the canvas updates from persisted state. Risky changes are explicitly held for user review before apply.
+
+
+### Approval-aware systems copilot
+
+The builder agent now behaves as a planning copilot with visible tool use and explicit approvals for risky system edits. Risky actions pause runs for human decision and checkpoint policy is enforced before risky apply.

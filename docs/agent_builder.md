@@ -86,3 +86,23 @@ Action contract fields include actionId, actionType, targetSystemId, actor conte
 - grouped selective approval workflows
 - rich visual diffs
 - specialist toolchains and deep modal worker execution
+
+
+## Planner, tools, approvals, and checkpoints
+
+- Planner model: short structured plan with summary, confidence, steps, expected tools/actions.
+- Tool model: bounded tools for system summary, schema/context inspection, validation/simulation summaries, template/node-library lookup, and approval/apply orchestration helpers.
+- Approval model: typed `ApprovalRequest` records with `pending/approved/rejected` lifecycle; decisions are explicit and auditable.
+- Checkpoint policy: risky actions require version checkpoint before apply; checkpoint failure blocks apply.
+- Run state machine: `created -> planning -> tooling -> waiting_for_approval|applying -> completed|blocked|failed|canceled`.
+
+### Orchestration posture (current)
+
+- Real mode: OpenAI response stream + structured action proposal normalization, with bounded in-app tool execution and approval orchestration.
+- Modal posture: runtime abstraction is explicit (`AgentRuntime` + `ModalReadyAgentRuntime`) and currently delegates inline.
+
+### Deferrals
+
+- Full long-running worker offload orchestration
+- multi-party/stepwise approval routing
+- specialist sub-agents and richer planning critiques

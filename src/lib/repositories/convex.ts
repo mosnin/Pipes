@@ -445,6 +445,47 @@ export function createConvexRepositories(): RepositorySet {
         const rows = await client.query((api as any).app.listAppliedGraphActions, { runId: input.runId as never, systemId: input.systemId as never });
         return rows.map((row: any) => ({ id: String(row._id), proposalId: String(row.proposalId), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionType: row.actionType, appliedAt: row.appliedAt, validationIssueCount: row.validationIssueCount, versionCheckpointId: row.versionCheckpointId ? String(row.versionCheckpointId) : undefined }));
       },
+      async upsertPlan(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.upsertRunPlan, { planId: input.planId as never, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, summary: input.summary, status: input.status, confidence: input.confidence, requiresApproval: input.requiresApproval, stepsJson: JSON.stringify(input.steps) });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), summary: row.summary, status: row.status, confidence: row.confidence, requiresApproval: row.requiresApproval, steps: JSON.parse(row.stepsJson), createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async getPlan(runId) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getRunPlan, { runId: runId as never });
+        if (!row) return null;
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), summary: row.summary, status: row.status, confidence: row.confidence, requiresApproval: row.requiresApproval, steps: JSON.parse(row.stepsJson), createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async addToolCall(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addToolCall, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), toolName: row.toolName, inputJson: row.inputJson, outputJson: row.outputJson, status: row.status, error: row.error, startedAt: row.startedAt, completedAt: row.completedAt };
+      },
+      async listToolCalls(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listToolCalls, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), toolName: row.toolName, inputJson: row.inputJson, outputJson: row.outputJson, status: row.status, error: row.error, startedAt: row.startedAt, completedAt: row.completedAt }));
+      },
+      async addApprovalRequest(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addApprovalRequest, { ...input, runId: input.runId as never, proposalId: input.proposalId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, decidedBy: input.decidedBy as never });
+        return { id: String(row._id), runId: String(row.runId), proposalId: String(row.proposalId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), targetType: row.targetType, targetRef: row.targetRef, reason: row.reason, status: row.status, decisionNote: row.decisionNote, requestedAt: row.requestedAt, decidedAt: row.decidedAt, decidedBy: row.decidedBy ? String(row.decidedBy) : undefined };
+      },
+      async listApprovalRequests(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listApprovalRequests, { runId: input.runId as never, systemId: input.systemId as never, status: input.status });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), proposalId: String(row.proposalId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), targetType: row.targetType, targetRef: row.targetRef, reason: row.reason, status: row.status, decisionNote: row.decisionNote, requestedAt: row.requestedAt, decidedAt: row.decidedAt, decidedBy: row.decidedBy ? String(row.decidedBy) : undefined }));
+      },
+      async getApprovalRequest(id) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getApprovalRequest, { requestId: id as never });
+        if (!row) return null;
+        return { id: String(row._id), runId: String(row.runId), proposalId: String(row.proposalId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), targetType: row.targetType, targetRef: row.targetRef, reason: row.reason, status: row.status, decisionNote: row.decisionNote, requestedAt: row.requestedAt, decidedAt: row.decidedAt, decidedBy: row.decidedBy ? String(row.decidedBy) : undefined };
+      },
+      async updateApprovalRequest(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.patchApprovalRequest, { requestId: input.requestId as never, status: input.status, decidedAt: input.decidedAt, decidedBy: input.decidedBy as never, decisionNote: input.decisionNote });
+      },
     }
   };
 }

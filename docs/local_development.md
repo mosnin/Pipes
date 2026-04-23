@@ -99,3 +99,12 @@ npm run test -- tests/unit/agent-builder.test.ts tests/unit/agent-graph-actions.
 ```
 
 Mock mode emits deterministic action proposals with one auto-applied and one review-required example.
+
+
+### Agent planner/tool/approval checks
+
+```bash
+npm run test -- tests/unit/agent-builder.test.ts tests/unit/agent-graph-actions.test.ts
+```
+
+The mock provider simulates plan creation, tool calls, safe proposals, and approval-required proposals.

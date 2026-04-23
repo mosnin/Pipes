@@ -85,3 +85,11 @@
 - Proposal policy/risk classification lives in `AgentRunService` authority.
 - Persisted graph truth only changes via `GraphService` and repositories (same path used by human edits).
 - Streamed run events are timeline/UX signals, never graph truth.
+
+
+### Agent planner/tool/approval authority
+
+- `AgentRunService` is the state-machine authority (`planning -> tooling -> waiting_for_approval/applying -> completed|blocked|failed`).
+- `AgentToolService` exposes bounded read/summary tools; no direct graph mutation bypass is allowed.
+- Risky applies require explicit checkpoint creation through `VersionService` policy before mutation.
+- Approval requests are persisted typed records and decisions are auditable.

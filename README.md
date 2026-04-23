@@ -128,3 +128,8 @@ npm run test
 ## Agent graph action loop (milestone)
 
 The builder agent now emits typed graph action proposals (`add_node`, `move_node`, `delete_node`, `add_pipe`, `delete_pipe`, `add_annotation`, etc.) and only applies graph changes through the trusted graph service path. Safe actions are auto-applied, review-required actions are held for explicit approve/reject in UI.
+
+
+## Agent builder tools + approvals milestone
+
+Builder runs now include structured planning, bounded tool calls, approval requests for risky actions, and checkpoint-aware apply guarantees. Runs can pause in `waiting_for_approval` and resume after explicit decisions through typed approval routes.

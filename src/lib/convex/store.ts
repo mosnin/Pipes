@@ -3,7 +3,7 @@ import path from "node:path";
 import { sampleData } from "@/lib/convex/mockData";
 import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
-import type { AgentRun, AgentSession, RunEvent, RunMessage } from "@/domain/agent_builder/model";
+import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
@@ -78,6 +78,9 @@ type DbShape = {
   runEvents: RunEvent[];
   graphActionProposals: GraphActionProposal[];
   appliedGraphActions: AppliedGraphActionRecord[];
+  runPlans: RunPlan[];
+  toolCalls: ToolCallRecord[];
+  approvalRequests: ApprovalRequest[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -114,7 +117,10 @@ function seed(): DbShape {
     runMessages: [],
     runEvents: [],
     graphActionProposals: [],
-    appliedGraphActions: []
+    appliedGraphActions: [],
+    runPlans: [],
+    toolCalls: [],
+    approvalRequests: []
   };
 }
 
@@ -133,7 +139,10 @@ function readDb(): DbShape {
     runMessages: parsed.runMessages ?? [],
     runEvents: parsed.runEvents ?? [],
     graphActionProposals: parsed.graphActionProposals ?? [],
-    appliedGraphActions: parsed.appliedGraphActions ?? []
+    appliedGraphActions: parsed.appliedGraphActions ?? [],
+    runPlans: parsed.runPlans ?? [],
+    toolCalls: parsed.toolCalls ?? [],
+    approvalRequests: parsed.approvalRequests ?? []
   };
 }
 

@@ -474,6 +474,70 @@ export const listAppliedGraphActions = query({
   }
 });
 
+export const upsertRunPlan = mutation({
+  args: { planId: v.optional(v.id("run_plans")), runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), summary: v.string(), status: v.string(), confidence: v.number(), requiresApproval: v.boolean(), stepsJson: v.string() },
+  handler: async (ctx, args) => {
+    if (args.planId) {
+      await ctx.db.patch(args.planId, { summary: args.summary, status: args.status, confidence: args.confidence, requiresApproval: args.requiresApproval, stepsJson: args.stepsJson, updatedAt: now() });
+      return ctx.db.get(args.planId);
+    }
+    const id = await ctx.db.insert("run_plans", { ...args, createdAt: now(), updatedAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const getRunPlan = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("run_plans").withIndex("by_run", (q) => q.eq("runId", args.runId)).first()
+});
+
+export const addToolCall = mutation({
+  args: { runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), toolName: v.string(), inputJson: v.string(), outputJson: v.optional(v.string()), status: v.string(), error: v.optional(v.string()), startedAt: v.string(), completedAt: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("tool_calls", args);
+    return ctx.db.get(id);
+  }
+});
+
+export const listToolCalls = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("tool_calls").withIndex("by_run", (q) => q.eq("runId", args.runId)).collect()
+});
+
+export const addApprovalRequest = mutation({
+  args: { runId: v.id("agent_runs"), proposalId: v.id("graph_action_proposals"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), targetType: v.string(), targetRef: v.string(), reason: v.string(), status: v.string(), decisionNote: v.optional(v.string()), requestedAt: v.string(), decidedAt: v.optional(v.string()), decidedBy: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("approval_requests", args);
+    return ctx.db.get(id);
+  }
+});
+
+export const listApprovalRequests = query({
+  args: { runId: v.optional(v.id("agent_runs")), systemId: v.optional(v.id("systems")), status: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const rows = args.runId
+      ? await ctx.db.query("approval_requests").withIndex("by_run", (q) => q.eq("runId", args.runId!)).collect()
+      : args.systemId
+        ? await ctx.db.query("approval_requests").withIndex("by_system", (q) => q.eq("systemId", args.systemId!)).collect()
+        : [];
+    return rows.filter((row) => !args.status || row.status === args.status);
+  }
+});
+
+export const getApprovalRequest = query({
+  args: { requestId: v.id("approval_requests") },
+  handler: async (ctx, args) => ctx.db.get(args.requestId)
+});
+
+export const patchApprovalRequest = mutation({
+  args: { requestId: v.id("approval_requests"), status: v.string(), decidedAt: v.optional(v.string()), decidedBy: v.optional(v.id("users")), decisionNote: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.requestId);
+    if (!row) return;
+    await ctx.db.patch(args.requestId, { status: args.status, decidedAt: args.decidedAt ?? row.decidedAt, decidedBy: args.decidedBy ?? row.decidedBy, decisionNote: args.decisionNote ?? row.decisionNote });
+  }
+});
+
 export const updateFeedbackStatus = mutation({
   args: { workspaceId: v.id("workspaces"), id: v.id("feedback_items"), status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("closed")), updatedBy: v.id("users") },
   handler: async (ctx, args) => {

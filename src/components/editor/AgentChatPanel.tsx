@@ -3,17 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Input, Panel } from "@/components/ui";
 
-type Session = { id: string; title: string; systemId?: string; createdAt: string };
+type Session = { id: string; title: string };
 type Run = { id: string; status: string };
-type Event = { id: string; type: string; text?: string; status?: string; sequence: number; at: string; graphActionProposal?: { id?: string; actionType?: string; rationale?: string; status?: string } };
-type Proposal = { id: string; actionType: string; rationale: string; status: string; riskClass: string; applyMode: string; validationStatus: string; payload: Record<string, unknown> };
+type Event = { id: string; type: string; text?: string; status?: string; sequence: number; at: string };
+type Proposal = { id: string; actionType: string; rationale: string; status: string; riskClass: string };
+type Plan = { summary: string; status: string; confidence: number; steps: Array<{ id: string; title: string; toolNames: string[]; expectedActionTypes: string[] }> };
+type ToolCall = { id: string; toolName: string; status: string; startedAt: string; completedAt?: string };
+type Approval = { id: string; reason: string; status: string };
 
 export function AgentChatPanel({ systemId, systemName, systemDescription }: { systemId: string; systemName: string; systemDescription?: string }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [events, setEvents] = useState<Event[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [prompt, setPrompt] = useState("Suggest one safe reliability improvement and call out risky changes for review.");
+  const [approvals, setApprovals] = useState<Approval[]>([]);
+  const [tools, setTools] = useState<ToolCall[]>([]);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [prompt, setPrompt] = useState("Plan and apply a safe reliability improvement, request approval for risky edits.");
   const [runStatus, setRunStatus] = useState("idle");
   const [activeRunId, setActiveRunId] = useState<string | undefined>();
 
@@ -27,11 +33,19 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
     if (!sessionId && body.data[0]) setSessionId(body.data[0].id);
   }, [sessionId, systemId]);
 
-  const refreshProposals = async (runId?: string) => {
+  const refreshRunArtifacts = async (runId?: string) => {
     if (!runId) return;
-    const res = await fetch(`/api/agent/proposals?runId=${runId}`, { cache: "no-store" });
-    const body = await res.json();
-    if (body.ok) setProposals(body.data);
+    const [pRes, aRes, tRes, planRes] = await Promise.all([
+      fetch(`/api/agent/proposals?runId=${runId}`, { cache: "no-store" }),
+      fetch(`/api/agent/approvals?runId=${runId}`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/tools`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/plan`, { cache: "no-store" })
+    ]);
+    const [pBody, aBody, tBody, planBody] = await Promise.all([pRes.json(), aRes.json(), tRes.json(), planRes.json()]);
+    if (pBody.ok) setProposals(pBody.data);
+    if (aBody.ok) setApprovals(aBody.data);
+    if (tBody.ok) setTools(tBody.data);
+    if (planBody.ok) setPlan(planBody.data);
   };
 
   useEffect(() => { void refreshSessions(); }, [refreshSessions]);
@@ -42,15 +56,13 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
     const body = await create.json();
     if (!body.ok) throw new Error(body.error ?? "session_create_failed");
     setSessionId(body.data.id);
-    await refreshSessions();
     return body.data.id as string;
   };
 
   const runPrompt = async () => {
     const sid = await ensureSession();
-    setRunStatus("running");
-    setEvents([]);
-    setProposals([]);
+    setRunStatus("planning");
+    setEvents([]); setApprovals([]); setTools([]); setPlan(null); setProposals([]);
     const createRun = await fetch("/api/agent/runs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: sid, systemId, message: prompt }) });
     const runBody = await createRun.json();
     if (!runBody.ok) return setRunStatus("failed");
@@ -75,52 +87,39 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
         setEvents((prev) => [...prev, payload]);
         if (payload.status) setRunStatus(payload.status);
       }
-      await refreshProposals(run.run.id);
+      await refreshRunArtifacts(run.run.id);
     }
-    await refreshProposals(run.run.id);
-    setRunStatus((prev) => (prev === "running" ? "completed" : prev));
+    await refreshRunArtifacts(run.run.id);
   };
 
-  const review = async (proposalId: string, decision: "approve" | "reject") => {
-    await fetch(`/api/agent/proposals/${proposalId}/${decision}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
-    await refreshProposals(activeRunId);
+  const decideApproval = async (requestId: string, decision: "approved" | "rejected") => {
+    await fetch(`/api/agent/approvals/${requestId}/decision`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision }) });
+    await refreshRunArtifacts(activeRunId);
   };
 
   return (
     <Panel title="Builder Agent">
       <p className="badge">System attached: {systemName}</p>
       <p className="badge">Run status: {runStatus}</p>
-      <div className="nav-inline" style={{ flexWrap: "wrap" }}>
-        {sessions.map((session) => <Button key={session.id} onClick={() => setSessionId(session.id)}>{session.id === sessionId ? `• ${session.title}` : session.title}</Button>)}
-        <Button onClick={async () => { setSessionId(undefined); await ensureSession(); }}>New Session</Button>
-      </div>
+      <div className="nav-inline" style={{ flexWrap: "wrap" }}>{sessions.map((s) => <Button key={s.id} onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
       <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the builder agent" />
-      <Button onClick={runPrompt} disabled={runStatus === "running"}>Run</Button>
+      <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
+
+      <Card><h4>Current plan</h4>{plan ? <><p>{plan.summary} ({Math.round(plan.confidence * 100)}% confidence)</p><ul>{plan.steps.map((step) => <li key={step.id}>{step.title} · tools: {step.toolNames.join(", ")}</li>)}</ul></> : <p>No plan yet.</p>}</Card>
+      <Card><h4>Tool activity</h4>{tools.length ? tools.map((tool) => <p key={tool.id}>{tool.toolName} · {tool.status}</p>) : <p>No tool calls yet.</p>}</Card>
+      <Card>
+        <h4>Pending approvals</h4>
+        {approvals.filter((a) => a.status === "pending").map((approval) => (
+          <div key={approval.id} style={{ marginBottom: 8 }}>
+            <p>{approval.reason}</p>
+            <div className="nav-inline"><Button onClick={() => decideApproval(approval.id, "approved")}>Approve</Button><Button onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button></div>
+          </div>
+        ))}
+        {approvals.filter((a) => a.status === "pending").length === 0 && <p>No pending approvals.</p>}
+      </Card>
+      <Card><h4>Action timeline</h4>{proposals.length ? proposals.map((p) => <p key={p.id}>{p.actionType} · {p.status} · {p.riskClass}</p>) : <p>No actions yet.</p>}</Card>
       <Card><h4>Assistant stream</h4><p>{assistantText || "No output yet."}</p></Card>
-      <Card>
-        <h4>Action timeline</h4>
-        <div className="validation-list">
-          {proposals.map((proposal) => (
-            <div key={proposal.id} style={{ marginBottom: 10 }}>
-              <p><strong>{proposal.actionType}</strong> · {proposal.status} · {proposal.riskClass}</p>
-              <p>{proposal.rationale}</p>
-              {proposal.status === "pending_review" && (
-                <div className="nav-inline">
-                  <Button onClick={() => review(proposal.id, "approve")}>Approve</Button>
-                  <Button onClick={() => review(proposal.id, "reject")}>Reject</Button>
-                </div>
-              )}
-            </div>
-          ))}
-          {proposals.length === 0 && <p>No actions yet.</p>}
-        </div>
-      </Card>
-      <Card>
-        <h4>Run events</h4>
-        <div className="validation-list">
-          {events.slice(-12).map((event) => <p key={event.id}>{event.sequence}. {event.type}{event.text ? ` · ${event.text.slice(0, 80)}` : ""}</p>)}
-        </div>
-      </Card>
+      <Card><h4>Run events</h4><div className="validation-list">{events.slice(-16).map((e) => <p key={e.id}>{e.sequence}. {e.type}{e.text ? ` · ${e.text.slice(0, 96)}` : ""}</p>)}</div></Card>
     </Panel>
   );
 }

@@ -207,5 +207,43 @@ export default defineSchema({
     appliedAt: v.string(),
     validationIssueCount: v.number(),
     versionCheckpointId: v.optional(v.id("versions"))
-  }).index("by_run", ["runId"]).index("by_system", ["targetSystemId"])
+  }).index("by_run", ["runId"]).index("by_system", ["targetSystemId"]),
+  run_plans: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    summary: v.string(),
+    status: v.string(),
+    confidence: v.number(),
+    requiresApproval: v.boolean(),
+    stepsJson: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_run", ["runId"]),
+  tool_calls: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    toolName: v.string(),
+    inputJson: v.string(),
+    outputJson: v.optional(v.string()),
+    status: v.string(),
+    error: v.optional(v.string()),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string())
+  }).index("by_run", ["runId"]),
+  approval_requests: defineTable({
+    runId: v.id("agent_runs"),
+    proposalId: v.id("graph_action_proposals"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    targetType: v.string(),
+    targetRef: v.string(),
+    reason: v.string(),
+    status: v.string(),
+    decisionNote: v.optional(v.string()),
+    requestedAt: v.string(),
+    decidedAt: v.optional(v.string()),
+    decidedBy: v.optional(v.id("users"))
+  }).index("by_run", ["runId"]).index("by_system", ["systemId"])
 });
