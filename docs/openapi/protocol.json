@@ -1,0 +1,78 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Pipes Protocol API",
+    "version": "0.2.0",
+    "description": "Token-authenticated REST protocol for external integrations."
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": { "type": "http", "scheme": "bearer" }
+    },
+    "schemas": {
+      "ProtocolError": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "details": { "type": "object", "additionalProperties": true }
+            },
+            "required": ["code", "message", "requestId"]
+          }
+        },
+        "required": ["ok", "error"]
+      }
+    }
+  },
+  "security": [{ "BearerAuth": [] }],
+  "paths": {
+    "/api/protocol/systems": {
+      "get": { "summary": "List systems", "responses": { "200": { "description": "OK" }, "401": { "description": "Unauthorized" } } },
+      "post": {
+        "summary": "Create system",
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "example": { "name": "Agent Orchestrator", "description": "Protocol-created system" } } } },
+        "responses": { "200": { "description": "Created" }, "409": { "description": "Idempotency conflict" }, "429": { "description": "Rate limited" } }
+      }
+    },
+    "/api/protocol/systems/{systemId}/schema": {
+      "get": {
+        "summary": "Export system schema",
+        "parameters": [{ "name": "systemId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/protocol/templates/{templateId}/instantiate": {
+      "post": {
+        "summary": "Instantiate template",
+        "parameters": [
+          { "name": "templateId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/protocol/systems/{systemId}/versions": {
+      "post": {
+        "summary": "Create version",
+        "parameters": [
+          { "name": "systemId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "in": "header", "name": "Idempotency-Key", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/protocol/comments": {
+      "post": {
+        "summary": "Add comment",
+        "parameters": [{ "in": "header", "name": "Idempotency-Key", "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}
