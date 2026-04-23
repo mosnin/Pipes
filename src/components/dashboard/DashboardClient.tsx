@@ -5,20 +5,63 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Card, EmptyState, Input, PageHeader, Select } from "@/components/ui";
 
-type LibraryRow = { id: string; name: string; description: string; createdAt: string; updatedAt: string; archivedAt?: string; createdBy: string; favorite: boolean; tags: string[]; lastOpenedAt?: string };
+type LibraryRow = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+  createdBy: string;
+  favorite: boolean;
+  tags: string[];
+  lastOpenedAt?: string;
+};
 
-type LibraryPayload = { rows: LibraryRow[]; recent: LibraryRow[]; favorites: LibraryRow[]; availableTags: string[] };
+type LibraryPayload = {
+  rows: LibraryRow[];
+  recent: LibraryRow[];
+  favorites: LibraryRow[];
+  availableTags: string[];
+};
 
 function TemplatePanel({ onLaunch }: { onLaunch: (templateId: string) => Promise<void> }) {
   const [templates, setTemplates] = useState<Array<{ id: string; title: string; category: string; useCase: string; complexity: string }>>([]);
   useEffect(() => { fetch("/api/templates").then((r) => r.json()).then((d) => setTemplates(d.data ?? [])); }, []);
+
   return (
     <Card>
       <h3>Recommended templates</h3>
-      <div style={{ display: "grid", gap: 8 }}>
-        {templates.slice(0, 4).map((t) => <div key={t.id} className="nav-inline" style={{ justifyContent: "space-between" }}><span>{t.title} · {t.category} · {t.complexity}</span><Button onClick={() => onLaunch(t.id)}>Use</Button></div>)}
+      <div className="dashboard-list">
+        {templates.slice(0, 4).map((t) => (
+          <div key={t.id} className="dashboard-row">
+            <span>{t.title} · {t.category} · {t.complexity}</span>
+            <Button onClick={() => onLaunch(t.id)}>Use</Button>
+          </div>
+        ))}
       </div>
     </Card>
+  );
+}
+
+function QuickAccessCards({ recent, favorites }: { recent: LibraryRow[]; favorites: LibraryRow[] }) {
+  const router = useRouter();
+
+  return (
+    <div className="grid-2">
+      <Card>
+        <h3>Recent systems</h3>
+        {recent.length === 0
+          ? <p className="muted">No recent activity yet.</p>
+          : recent.map((row) => <div key={row.id} className="nav-inline"><Button variant="subtle" onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
+      </Card>
+      <Card>
+        <h3>Favorite systems</h3>
+        {favorites.length === 0
+          ? <p className="muted">No favorites yet.</p>
+          : favorites.map((row) => <div key={row.id} className="nav-inline"><Button variant="subtle" onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
+      </Card>
+    </div>
   );
 }
 
@@ -56,55 +99,91 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const createSystem = async () => {
     setSubmitting(true);
     setActionState({ kind: "idle" });
-    const res = await fetch("/api/systems", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
+    const res = await fetch("/api/systems", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name })
+    });
     const data = await res.json();
     setSubmitting(false);
     if (data.ok) return router.push(`/systems/${data.data.systemId}`);
     setActionState({ kind: "error", message: data.error?.message ?? "Failed to create system." });
   };
 
-  const visibleRows = useMemo(() => library.rows.filter((row) => status === "archived" ? !!row.archivedAt : !row.archivedAt), [library.rows, status]);
+  const visibleRows = useMemo(
+    () => library.rows.filter((row) => (status === "archived" ? !!row.archivedAt : !row.archivedAt)),
+    [library.rows, status]
+  );
 
   return (
-    <div>
+    <div className="section-stack">
       <PageHeader title="System Library" subtitle="Search, organize, and return to critical systems quickly." />
-      <div className="nav-inline" style={{ marginBottom: 8 }} role="navigation" aria-label="Workspace navigation">
-        <Link href="/settings/billing"><Button>Billing</Button></Link>
-        <Link href="/settings/collaboration"><Button>Collaboration</Button></Link>
-        <Link href="/onboarding"><Button>Onboarding</Button></Link>
-      </div>
+
+      <Card>
+        <div className="dashboard-toolbar" role="navigation" aria-label="Workspace navigation">
+          <Link href="/settings/billing"><Button variant="subtle">Billing</Button></Link>
+          <Link href="/settings/collaboration"><Button variant="subtle">Collaboration</Button></Link>
+          <Link href="/onboarding"><Button variant="subtle">Onboarding</Button></Link>
+        </div>
+      </Card>
 
       <Card>
         <h3>Quick create</h3>
-        <div className="nav-inline"><Input aria-label="New system name" value={name} onChange={(e) => setName(e.target.value)} placeholder="System name" /><Button onClick={createSystem} disabled={submitting}>{submitting ? "Creating…" : "Create blank"}</Button><Button onClick={() => router.push("/onboarding")}>Guided start</Button></div>
-        <div className="nav-inline" style={{ marginTop: 8 }}>
-          <Input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="AI prompt" />
-          <Button onClick={async () => {
-            setActionState({ kind: "idle" });
-            const draftRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: aiPrompt }) });
-            const draftData = await draftRes.json();
-            if (!draftData.ok) return setActionState({ kind: "error", message: draftData.error?.message ?? "AI draft failed." });
-            const commitRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ commit: true, draft: draftData.data }) });
-            const commitData = await commitRes.json();
-            if (commitData.ok) return router.push(`/systems/${commitData.data.systemId}`);
-            setActionState({ kind: "error", message: commitData.error?.message ?? "Unable to commit generated system." });
-          }}>Generate + commit</Button>
+        <div className="form-stack">
+          <div className="dashboard-row">
+            <Input aria-label="New system name" value={name} onChange={(e) => setName(e.target.value)} placeholder="System name" />
+            <div className="nav-inline">
+              <Button onClick={createSystem} disabled={submitting}>{submitting ? "Creating…" : "Create blank"}</Button>
+              <Button variant="subtle" onClick={() => router.push("/onboarding")}>Guided start</Button>
+            </div>
+          </div>
+
+          <div className="dashboard-row">
+            <Input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="AI prompt" />
+            <Button onClick={async () => {
+              setActionState({ kind: "idle" });
+              const draftRes = await fetch("/api/ai/generate-system", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ prompt: aiPrompt })
+              });
+              const draftData = await draftRes.json();
+              if (!draftData.ok) return setActionState({ kind: "error", message: draftData.error?.message ?? "AI draft failed." });
+              const commitRes = await fetch("/api/ai/generate-system", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ commit: true, draft: draftData.data })
+              });
+              const commitData = await commitRes.json();
+              if (commitData.ok) return router.push(`/systems/${commitData.data.systemId}`);
+              setActionState({ kind: "error", message: commitData.error?.message ?? "Unable to commit generated system." });
+            }}>
+              Generate + commit
+            </Button>
+          </div>
+
+          <div className="dashboard-row">
+            <Input value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
+            <Button variant="subtle" onClick={async () => {
+              const res = await fetch("/api/import/system", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ schema: importText, mode: "new" })
+              });
+              const data = await res.json();
+              if (data.ok && data.data.ok) return router.push(`/systems/${data.data.systemId}`);
+              setActionState({ kind: "error", message: data.error?.message ?? data.data?.errors?.[0]?.message ?? "Import failed." });
+            }}>
+              Import
+            </Button>
+          </div>
         </div>
-        <div className="nav-inline" style={{ marginTop: 8 }}>
-          <Input value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
-          <Button onClick={async () => {
-            const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importText, mode: "new" }) });
-            const data = await res.json();
-            if (data.ok && data.data.ok) return router.push(`/systems/${data.data.systemId}`);
-            setActionState({ kind: "error", message: data.error?.message ?? data.data?.errors?.[0]?.message ?? "Import failed." });
-          }}>Import</Button>
-        </div>
-        {actionState.kind === "error" ? <p role="alert">{actionState.message}</p> : null}
+        {actionState.kind === "error" ? <p role="alert" className="status-error">{actionState.message}</p> : null}
       </Card>
 
       <Card>
         <h3>Library controls</h3>
-        <div className="nav-inline">
+        <div className="dashboard-filters">
           <Input aria-label="Search systems" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title, description, tags" />
           <Select aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
             <option value="active">active</option>
@@ -121,22 +200,17 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           </Select>
           <Input aria-label="Filter by tag" value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)} placeholder="Filter by tag" />
         </div>
-        {library.availableTags.length ? <p>Known tags: {library.availableTags.join(" · ")}</p> : null}
+        {library.availableTags.length ? <p className="muted">Known tags: {library.availableTags.join(" · ")}</p> : null}
       </Card>
 
-      <div className="grid-2">
-        <Card>
-          <h3>Recent systems</h3>
-          {library.recent.length === 0 ? <p>No recent activity yet.</p> : library.recent.map((row) => <div key={row.id} className="nav-inline"><Button onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
-        </Card>
-        <Card>
-          <h3>Favorite systems</h3>
-          {library.favorites.length === 0 ? <p>No favorites yet.</p> : library.favorites.map((row) => <div key={row.id} className="nav-inline"><Button onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
-        </Card>
-      </div>
+      <QuickAccessCards recent={library.recent} favorites={library.favorites} />
 
       <TemplatePanel onLaunch={async (templateId) => {
-        const res = await fetch(`/api/templates/${templateId}/instantiate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+        const res = await fetch(`/api/templates/${templateId}/instantiate`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({})
+        });
         const data = await res.json();
         if (data.ok) router.push(`/systems/${data.data.systemId}`);
       }} />
@@ -144,25 +218,38 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       {loadingLibrary ? <EmptyState title="Loading system library" description="Retrieving systems, favorites, and tags." /> : visibleRows.length === 0 ? <EmptyState title="No systems found" description="Adjust search or filters to recover results." /> : (
         <Card>
           <h3>{status === "archived" ? "Archived systems" : "Active systems"}</h3>
-          <div style={{ display: "grid", gap: 8 }}>
+          <div className="dashboard-list">
             {visibleRows.map((row) => (
               <Card key={row.id}>
-                <div className="nav-inline" style={{ justifyContent: "space-between" }}>
+                <div className="dashboard-row">
                   <div>
                     <strong>{row.name}</strong>
-                    <p>{row.description || "No description"}</p>
-                    <p>Tags: {row.tags.join(", ") || "none"}</p>
+                    <p className="muted">{row.description || "No description"}</p>
+                    <p className="muted">Tags: {row.tags.join(", ") || "none"}</p>
                   </div>
                   <div className="nav-inline">
                     <Button onClick={() => router.push(`/systems/${row.id}`)}>Open</Button>
-                    <Button onClick={async () => { await fetch("/api/library", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: !row.favorite }) }); refreshLibrary(); }}>{row.favorite ? "★" : "☆"}</Button>
-                    <Button onClick={async () => {
+                    <Button variant="subtle" onClick={async () => {
+                      await fetch("/api/library", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: !row.favorite })
+                      });
+                      refreshLibrary();
+                    }}>{row.favorite ? "★" : "☆"}</Button>
+                    <Button variant="subtle" onClick={async () => {
                       const raw = prompt("Comma-separated tags", row.tags.join(","));
                       if (raw == null) return;
-                      await fetch("/api/library", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "tags", systemId: row.id, tags: raw.split(",") }) });
+                      await fetch("/api/library", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ action: "tags", systemId: row.id, tags: raw.split(",") })
+                      });
                       refreshLibrary();
                     }}>Tags</Button>
-                    {!row.archivedAt ? <Button onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "archive" }) }); refreshLibrary(); }}>Archive</Button> : <Button onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "restore" }) }); refreshLibrary(); }}>Restore</Button>}
+                    {!row.archivedAt
+                      ? <Button variant="subtle" onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "archive" }) }); refreshLibrary(); }}>Archive</Button>
+                      : <Button variant="subtle" onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "restore" }) }); refreshLibrary(); }}>Restore</Button>}
                   </div>
                 </div>
               </Card>

@@ -1,9 +1,11 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export function Button({ children, className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+type ButtonVariant = "primary" | "subtle";
+
+export function Button({ children, className, variant = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
   return (
-    <button className={cn("btn", className)} {...props}>
+    <button className={cn("btn", variant === "subtle" ? "btn-subtle" : "", className)} {...props}>
       {children}
     </button>
   );

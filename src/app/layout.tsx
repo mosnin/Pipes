@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import "@heroui/react/styles";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
