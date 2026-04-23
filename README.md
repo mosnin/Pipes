@@ -66,6 +66,12 @@ npm run typecheck
 npm run test
 ```
 
+## Vercel deployment configuration
+- This repository is a **Next.js** app and includes `vercel.json` with `"framework": "nextjs"` to force correct framework detection.
+- In Vercel project settings, ensure **Root Directory** points to this repo root (the folder containing `package.json` with `next` dependency and `next.config.ts`).
+- Build command should be `npm run build` and install command should be `npm install` (defaults are fine with `vercel.json`).
+
+
 ## Post-launch instrumentation and support pass
 - bounded product signal contract is documented in `docs/product_signals.md`
 - internal operator support surface: `/admin`
