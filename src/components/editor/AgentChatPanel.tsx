@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Panel } from "@/components/ui";
+import { Badge, Button, Card, Input, Panel } from "@/components/ui";
 
 type Session = { id: string; title: string };
 type Run = { id: string; status: string };
@@ -278,14 +278,21 @@ export function AgentChatPanel({
 
   return (
     <Panel title="Builder Agent">
-      <p className="badge">System attached: {systemName}</p>
-      <p className="badge">Run status: {runStatus}</p>
-      <p className="badge">Current stage: {stages.at(-1)?.stage ?? "n/a"}</p>
-      <div className="nav-inline" style={{ flexWrap: "wrap" }}>{sessions.map((s) => <Button key={s.id} onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
-      <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the builder agent" />
-      <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
+      <div className="agent-panel-shell">
+        <div className="agent-status-row">
+          <Badge tone="neutral">Attached · {systemName}</Badge>
+          <Badge tone={runStatus === "failed" ? "warn" : "good"}>Run · {runStatus}</Badge>
+          <Badge tone="neutral">Stage · {stages.at(-1)?.stage ?? "idle"}</Badge>
+        </div>
+        <div className="nav-inline">{sessions.map((s) => <Button key={s.id} variant="subtle" onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
+        <div className="agent-prompt-row">
+          <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the agent to plan or refine this system" />
+          <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
+        </div>
+      </div>
 
       <Card><h4>Current plan</h4>{plan ? <><p>{plan.summary} ({Math.round(plan.confidence * 100)}% confidence)</p><ul>{plan.steps.map((step) => <li key={step.id}>{step.title} · tools: {step.toolNames.join(", ")}</li>)}</ul></> : <p>No plan yet.</p>}</Card>
+      <details className="agent-advanced-block"><summary>Advanced run telemetry</summary>
       <Card><h4>Plan revisions</h4>{revisions.length ? revisions.map((rev) => <p key={rev.id}>v{rev.version}: {rev.summary}{rev.critique ? ` · critique: ${rev.critique}` : ""}</p>) : <p>No revisions yet.</p>}</Card>
       <Card><h4>Specialist roles</h4>{roles.length ? roles.map((role) => <p key={role.id}>{role.role} @ {role.stage} · {role.summary}</p>) : <p>No role activity yet.</p>}</Card>
       <Card><h4>Subsystem sub-tasks</h4>{subTasks.length ? subTasks.map((task) => <p key={task.id}>{task.contextPack.subsystemId} · {task.title} · {task.role} · {task.status}</p>) : <p>No delegated sub-tasks yet.</p>}</Card>
@@ -364,6 +371,7 @@ export function AgentChatPanel({
         {collaboration.handoffs.slice(0, 6).map((row) => <p key={row.id}>{row.fromUserId} → {row.toUserId} · {row.status} · {row.stage}</p>)}
       </Card>
       <Card><h4>Tool activity</h4>{tools.length ? tools.map((tool) => <p key={tool.id}>{tool.toolName} · {tool.status}</p>) : <p>No tool calls yet.</p>}</Card>
+      </details>
       <Card>
         <h4>Proposal batches</h4>
         {batches.length ? batches.map((batch) => {
