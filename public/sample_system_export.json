@@ -1,0 +1,9 @@
+{
+  "version": "pipes_schema_v1",
+  "systems": [
+    {
+      "id": "sys_support_router",
+      "name": "Support Triage Router"
+    }
+  ]
+}
