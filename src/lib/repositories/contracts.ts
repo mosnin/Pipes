@@ -1,4 +1,5 @@
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { AgentRun, AgentSession, RunEvent, RunMessage, RunStatus } from "@/domain/agent_builder/model";
 
 export type AppContext = {
   userId: string;
@@ -168,5 +169,16 @@ export type RepositorySet = {
   };
   rateLimits: {
     consume(input: { bucket: string; windowSeconds: number; limit: number; now: string }): Promise<{ allowed: boolean; remaining: number; retryAfterSeconds: number }>;
+  };
+  agentBuilder: {
+    createSession(input: { workspaceId: string; systemId?: string; title: string; createdBy: string }): Promise<AgentSession>;
+    listSessions(input: { workspaceId: string; systemId?: string }): Promise<AgentSession[]>;
+    createRun(input: { sessionId: string; workspaceId: string; systemId?: string; userMessageId: string }): Promise<AgentRun>;
+    updateRun(input: { runId: string; status: RunStatus; startedAt?: string; endedAt?: string; error?: string }): Promise<void>;
+    getRun(runId: string): Promise<AgentRun | null>;
+    addMessage(input: { sessionId: string; runId?: string; workspaceId: string; systemId?: string; role: "user" | "assistant" | "system"; body: string }): Promise<RunMessage>;
+    listMessages(input: { sessionId: string }): Promise<RunMessage[]>;
+    addEvent(input: Omit<RunEvent, "id">): Promise<RunEvent>;
+    listRunEvents(input: { sessionId?: string; runId?: string }): Promise<RunEvent[]>;
   };
 };

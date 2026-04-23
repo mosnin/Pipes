@@ -116,3 +116,10 @@ npm run test
 - Internal issue triage surface: `/admin/issues` (feedback queue + status workflow + grouped failures).
 - Structured feedback intake for early users: `/settings/feedback` and `POST /api/feedback`.
 - Detailed launch workflow and staged rollout notes: `docs/beta_operations.md`.
+
+## Agent builder realtime foundation
+- System editor now includes a first-class builder chat panel attached to a system.
+- Sessions, runs, messages, and run events are persisted and replayable.
+- Streamed output is normalized into typed run events (not graph truth).
+- Current boundary is planning/explanation only; agent graph mutation is intentionally deferred.
+- See `docs/agent_builder.md` for full model and runtime boundaries.

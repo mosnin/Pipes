@@ -320,6 +320,74 @@ export const listFeedbackItems = query({
   handler: async (ctx, args) => ctx.db.query("feedback_items").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect()
 });
 
+export const createAgentSession = mutation({
+  args: { workspaceId: v.id("workspaces"), systemId: v.optional(v.id("systems")), title: v.string(), createdBy: v.id("users") },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_sessions", { ...args, createdAt: now(), updatedAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const listAgentSessions = query({
+  args: { workspaceId: v.id("workspaces"), systemId: v.optional(v.id("systems")) },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("agent_sessions").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
+    return rows.filter((row) => !args.systemId || row.systemId === args.systemId);
+  }
+});
+
+export const addAgentMessage = mutation({
+  args: { sessionId: v.id("agent_sessions"), runId: v.optional(v.id("agent_runs")), workspaceId: v.id("workspaces"), systemId: v.optional(v.id("systems")), role: v.string(), body: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_messages", { ...args, createdAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const listAgentMessages = query({
+  args: { sessionId: v.id("agent_sessions") },
+  handler: async (ctx, args) => ctx.db.query("agent_messages").withIndex("by_session", (q) => q.eq("sessionId", args.sessionId)).collect()
+});
+
+export const createAgentRun = mutation({
+  args: { sessionId: v.id("agent_sessions"), workspaceId: v.id("workspaces"), systemId: v.optional(v.id("systems")), userMessageId: v.id("agent_messages") },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_runs", { ...args, status: "created", createdAt: now(), updatedAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const patchAgentRun = mutation({
+  args: { runId: v.id("agent_runs"), status: v.string(), startedAt: v.optional(v.string()), endedAt: v.optional(v.string()), error: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) return;
+    await ctx.db.patch(args.runId, { status: args.status, startedAt: args.startedAt ?? run.startedAt, endedAt: args.endedAt ?? run.endedAt, error: args.error ?? run.error, updatedAt: now() });
+  }
+});
+
+export const getAgentRun = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.get(args.runId)
+});
+
+export const addAgentRunEvent = mutation({
+  args: { sessionId: v.id("agent_sessions"), runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.optional(v.id("systems")), type: v.string(), at: v.string(), sequence: v.number(), text: v.optional(v.string()), status: v.optional(v.string()), metadata: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_run_events", args);
+    return ctx.db.get(id);
+  }
+});
+
+export const listAgentRunEvents = query({
+  args: { runId: v.optional(v.id("agent_runs")), sessionId: v.optional(v.id("agent_sessions")) },
+  handler: async (ctx, args) => {
+    if (args.runId) return ctx.db.query("agent_run_events").withIndex("by_run", (q) => q.eq("runId", args.runId!)).collect();
+    if (args.sessionId) return ctx.db.query("agent_run_events").withIndex("by_session", (q) => q.eq("sessionId", args.sessionId!)).collect();
+    return [];
+  }
+});
+
 export const updateFeedbackStatus = mutation({
   args: { workspaceId: v.id("workspaces"), id: v.id("feedback_items"), status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("closed")), updatedBy: v.id("users") },
   handler: async (ctx, args) => {

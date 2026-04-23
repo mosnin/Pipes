@@ -61,3 +61,8 @@ This keeps Pipes a structured design platform, not a chat or orchestration engin
 ### Viewport expectations
 - Fully supported: desktop and tablet-width workflows.
 - Partial support: narrow desktop fallback for editor inspection and review, not full mobile authoring.
+
+## Agent builder foundation
+- System editor now includes an attached builder chat panel with session + run history and realtime streamed run events.
+- Current capability is planning/explanation only; graph mutation remains explicitly out-of-scope in this slice.
+- Run events are persisted and replayable for deterministic UI hydration and later approval/action extension.

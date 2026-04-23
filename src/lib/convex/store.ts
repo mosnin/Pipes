@@ -3,6 +3,7 @@ import path from "node:path";
 import { sampleData } from "@/lib/convex/mockData";
 import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
+import type { AgentRun, AgentSession, RunEvent, RunMessage } from "@/domain/agent_builder/model";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -70,6 +71,10 @@ type DbShape = {
   idempotency: Array<{ id: string; workspaceId: string; actorId: string; route: string; key: string; requestHash: string; responseJson: string; statusCode: number; createdAt: string }>;
   rateLimits: Array<{ id: string; bucket: string; windowStart: string; count: number; updatedAt: string }>;
   feedback: Array<{ id: string; workspaceId: string; createdBy: string; actorType: "user" | "agent"; actorId: string; category: FeedbackCategory; severity: FeedbackSeverity; summary: string; details: string; page: string; systemId?: string; userEmail?: string; status: FeedbackStatus; createdAt: string; updatedAt: string }>;
+  agentSessions: AgentSession[];
+  agentRuns: AgentRun[];
+  runMessages: RunMessage[];
+  runEvents: RunEvent[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -100,7 +105,11 @@ function seed(): DbShape {
     audits: [],
     idempotency: [],
     rateLimits: [],
-    feedback: []
+    feedback: [],
+    agentSessions: [],
+    agentRuns: [],
+    runMessages: [],
+    runEvents: []
   };
 }
 
@@ -110,7 +119,15 @@ function readDb(): DbShape {
     fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
     return initial;
   }
-  return JSON.parse(fs.readFileSync(DB_FILE, "utf8")) as DbShape;
+  const parsed = JSON.parse(fs.readFileSync(DB_FILE, "utf8")) as Partial<DbShape>;
+  return {
+    ...(seed() as DbShape),
+    ...parsed,
+    agentSessions: parsed.agentSessions ?? [],
+    agentRuns: parsed.agentRuns ?? [],
+    runMessages: parsed.runMessages ?? [],
+    runEvents: parsed.runEvents ?? []
+  };
 }
 
 function writeDb(data: DbShape) {

@@ -14,6 +14,7 @@ import { type InsertContext, groupByCategory, nodeLibraryCatalog, rankLibraryEnt
 import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContract, type ContractType, type FieldContract, type NodeDefinition, validateNodeDefinition } from "@/components/editor/node_definition";
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
+import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -796,6 +797,9 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
             <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
           </Panel>
+        </EditorErrorBoundary>
+        <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+          <AgentChatPanel systemId={systemId} systemName={data.system.name} systemDescription={data.system.description} />
         </EditorErrorBoundary>
       </div>
       {paletteOpen ? (

@@ -134,5 +134,46 @@ export default defineSchema({
     status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("closed")),
     createdAt: v.string(),
     updatedAt: v.string()
-  }).index("by_workspace", ["workspaceId"])
+  }).index("by_workspace", ["workspaceId"]),
+  agent_sessions: defineTable({
+    workspaceId: v.id("workspaces"),
+    systemId: v.optional(v.id("systems")),
+    title: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_workspace", ["workspaceId"]),
+  agent_runs: defineTable({
+    sessionId: v.id("agent_sessions"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.optional(v.id("systems")),
+    status: v.string(),
+    userMessageId: v.id("agent_messages"),
+    startedAt: v.optional(v.string()),
+    endedAt: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_session", ["sessionId"]),
+  agent_messages: defineTable({
+    sessionId: v.id("agent_sessions"),
+    runId: v.optional(v.id("agent_runs")),
+    workspaceId: v.id("workspaces"),
+    systemId: v.optional(v.id("systems")),
+    role: v.string(),
+    body: v.string(),
+    createdAt: v.string()
+  }).index("by_session", ["sessionId"]).index("by_run", ["runId"]),
+  agent_run_events: defineTable({
+    sessionId: v.id("agent_sessions"),
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.optional(v.id("systems")),
+    type: v.string(),
+    at: v.string(),
+    sequence: v.number(),
+    text: v.optional(v.string()),
+    status: v.optional(v.string()),
+    metadata: v.optional(v.string())
+  }).index("by_run", ["runId"]).index("by_session", ["sessionId"])
 });

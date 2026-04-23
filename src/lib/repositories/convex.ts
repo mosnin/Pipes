@@ -367,6 +367,53 @@ export function createConvexRepositories(): RepositorySet {
         const allowed = count <= input.limit;
         return { allowed, remaining: Math.max(0, input.limit - count), retryAfterSeconds: allowed ? 0 : input.windowSeconds };
       }
+    },
+    agentBuilder: {
+      async createSession(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentSession, { workspaceId: input.workspaceId as never, systemId: input.systemId as never, title: input.title, createdBy: input.createdBy as never });
+        return { id: String(row._id), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, title: row.title, createdBy: String(row.createdBy), createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async listSessions(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentSessions, { workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return rows.map((row: any) => ({ id: String(row._id), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, title: row.title, createdBy: String(row.createdBy), createdAt: row.createdAt, updatedAt: row.updatedAt }));
+      },
+      async createRun(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentRun, { sessionId: input.sessionId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, userMessageId: input.userMessageId as never });
+        return { id: String(row._id), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, status: row.status, userMessageId: String(row.userMessageId), startedAt: row.startedAt, endedAt: row.endedAt, error: row.error, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async updateRun(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.patchAgentRun, { runId: input.runId as never, status: input.status, startedAt: input.startedAt, endedAt: input.endedAt, error: input.error });
+      },
+      async getRun(runId) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getAgentRun, { runId: runId as never });
+        if (!row) return null;
+        return { id: String(row._id), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, status: row.status, userMessageId: String(row.userMessageId), startedAt: row.startedAt, endedAt: row.endedAt, error: row.error, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async addMessage(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addAgentMessage, { sessionId: input.sessionId as never, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, role: input.role, body: input.body });
+        return { id: String(row._id), sessionId: String(row.sessionId), runId: row.runId ? String(row.runId) : undefined, workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, role: row.role, body: row.body, createdAt: row.createdAt };
+      },
+      async listMessages(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentMessages, { sessionId: input.sessionId as never });
+        return rows.map((row: any) => ({ id: String(row._id), sessionId: String(row.sessionId), runId: row.runId ? String(row.runId) : undefined, workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, role: row.role, body: row.body, createdAt: row.createdAt }));
+      },
+      async addEvent(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addAgentRunEvent, { ...input, sessionId: input.sessionId as never, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, metadata: input.metadata ? JSON.stringify(input.metadata) : undefined });
+        return { id: String(row._id), sessionId: String(row.sessionId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, type: row.type, at: row.at, sequence: row.sequence, text: row.text, status: row.status, metadata: row.metadata ? JSON.parse(row.metadata) : undefined };
+      },
+      async listRunEvents(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentRunEvents, { runId: input.runId as never, sessionId: input.sessionId as never });
+        return rows.map((row: any) => ({ id: String(row._id), sessionId: String(row.sessionId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, type: row.type, at: row.at, sequence: row.sequence, text: row.text, status: row.status, metadata: row.metadata ? JSON.parse(row.metadata) : undefined }));
+      }
     }
   };
 }

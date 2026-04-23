@@ -17,6 +17,7 @@ export async function getServerApp() {
     identity,
     ctx: { ...ctx, plan },
     services,
+    repositories,
     runtimeMode: runtime.mode,
     runtimeWarning: runtime.warning
   };

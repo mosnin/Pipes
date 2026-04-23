@@ -64,6 +64,8 @@ npm run dev
 - Validate edge semantics: labels, condition labels, route kind badges (`success`, `failure`, `conditional`, `loop`), and route notes in edge inspector.
 - Verify route focus mode de-emphasizes non-focused edges while selected/trace edges remain high contrast.
 - Verify simulation section reports traversed pipes, branch decisions, loop summaries, and blocked traces.
+- Validate builder agent chat panel in system editor: create session, send prompt, observe streamed assistant deltas and run status transitions.
+- Verify run events replay from persisted history by reloading and re-opening the same system.
 - Observe save state badge transitions by disconnecting/reconnecting network while mutating graph.
 - Recovery buffer key: `pipes_recovery_<systemId>` in localStorage (queued graph actions only).
 - Editor reliability signals are visible in audit stream with `signal.editor_` and autosave/undo/redo events.

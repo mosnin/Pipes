@@ -427,6 +427,59 @@ export function createMockRepositories(): RepositorySet {
         const allowed = row.count <= input.limit;
         return { allowed, remaining: Math.max(0, input.limit - row.count), retryAfterSeconds: allowed ? 0 : input.windowSeconds };
       }
+    },
+    agentBuilder: {
+      async createSession(input) {
+        const db = store.readDb();
+        const session = { id: store.createId("as"), workspaceId: input.workspaceId, systemId: input.systemId, title: input.title, createdBy: input.createdBy, createdAt: now(), updatedAt: now() };
+        db.agentSessions.push(session);
+        store.writeDb(db);
+        return session;
+      },
+      async listSessions(input) {
+        return store.readDb().agentSessions.filter((item) => item.workspaceId === input.workspaceId && (!input.systemId || item.systemId === input.systemId));
+      },
+      async createRun(input) {
+        const db = store.readDb();
+        const run = { id: store.createId("run"), sessionId: input.sessionId, workspaceId: input.workspaceId, systemId: input.systemId, status: "created" as const, userMessageId: input.userMessageId, createdAt: now(), updatedAt: now() };
+        db.agentRuns.push(run);
+        store.writeDb(db);
+        return run;
+      },
+      async updateRun(input) {
+        const db = store.readDb();
+        const run = db.agentRuns.find((item) => item.id === input.runId);
+        if (!run) return;
+        run.status = input.status;
+        run.startedAt = input.startedAt ?? run.startedAt;
+        run.endedAt = input.endedAt ?? run.endedAt;
+        run.error = input.error ?? run.error;
+        run.updatedAt = now();
+        store.writeDb(db);
+      },
+      async getRun(runId) {
+        return store.readDb().agentRuns.find((item) => item.id === runId) ?? null;
+      },
+      async addMessage(input) {
+        const db = store.readDb();
+        const message = { id: store.createId("msg"), sessionId: input.sessionId, runId: input.runId, workspaceId: input.workspaceId, systemId: input.systemId, role: input.role, body: input.body, createdAt: now() };
+        db.runMessages.push(message);
+        store.writeDb(db);
+        return message;
+      },
+      async listMessages(input) {
+        return store.readDb().runMessages.filter((item) => item.sessionId === input.sessionId);
+      },
+      async addEvent(input) {
+        const db = store.readDb();
+        const event = { ...input, id: store.createId("evt") };
+        db.runEvents.push(event);
+        store.writeDb(db);
+        return event;
+      },
+      async listRunEvents(input) {
+        return store.readDb().runEvents.filter((item) => (!input.runId || item.runId === input.runId) && (!input.sessionId || item.sessionId === input.sessionId)).sort((a, b) => a.sequence - b.sequence);
+      }
     }
   };
 }

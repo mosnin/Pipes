@@ -38,6 +38,9 @@
 - `node_definition.ts` owns inspector contract schemas, compatibility hints, and definition validation rules; inspector UI binds to this explicit model instead of embedding contract logic inline.
 - `structure_model.ts` owns subsystem semantics (selection → subsystem creation, collapse-aware render mapping, boundary derivation) and optional layout presets.
 - `pipe_semantics.ts` owns route labels, typed path states, edge emphasis/focus projection, and simulation trace summaries without introducing runtime execution semantics.
+- `agent_builder/model.ts` owns typed session/run/message/event contracts for replayable agent chat state.
+- `domain/services/agent_builder.ts` owns session/run lifecycle authority and normalized event persistence; streaming UI is not a source of graph truth.
+- `lib/ai/agent_stream.ts` owns provider-specific streaming details (mock/OpenAI) behind a bounded runtime contract.
 - `EditorErrorBoundary` contains panel crashes and routes crash signals to `ProductSignalService`.
 - Recovery buffer is local-only and subordinate to persisted graph truth; it replays queued graph actions through normal service routes on reload.
 
