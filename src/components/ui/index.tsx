@@ -1,22 +1,33 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import {
+  Button as HeroButton,
+  Card as HeroCard,
+  Chip,
+  Input as HeroInput,
+  TextArea as HeroTextArea
+} from "@heroui/react";
 import { cn } from "@/lib/utils";
 
 type ButtonVariant = "primary" | "subtle";
 
 export function Button({ children, className, variant = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
   return (
-    <button className={cn("btn", variant === "subtle" ? "btn-subtle" : "", className)} {...props}>
+    <HeroButton
+      className={cn("ui-btn", className)}
+      variant={variant === "subtle" ? "outline" : "primary"}
+      {...(props as Record<string, unknown>)}
+    >
       {children}
-    </button>
+    </HeroButton>
   );
 }
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className="input" {...props} />;
+  return <HeroInput className="ui-input" variant="secondary" {...(props as Record<string, unknown>)} />;
 }
 
 export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className="textarea" {...props} />;
+  return <HeroTextArea className="ui-textarea" variant="secondary" {...(props as Record<string, unknown>)} />;
 }
 
 export function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
@@ -28,11 +39,16 @@ export function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSe
 }
 
 export function Badge({ children, tone = "neutral" }: PropsWithChildren<{ tone?: "neutral" | "good" | "warn" }>) {
-  return <span className={cn("badge", `badge-${tone}`)}>{children}</span>;
+  const color = tone === "good" ? "success" : tone === "warn" ? "warning" : "default";
+  return <Chip size="sm" color={color as "default" | "success" | "warning"} variant="soft">{children}</Chip>;
 }
 
 export function Card({ children, className }: PropsWithChildren<{ className?: string }>) {
-  return <div className={cn("card", className)}>{children}</div>;
+  return (
+    <HeroCard className={cn("card", className)} variant="secondary">
+      <HeroCard.Content>{children}</HeroCard.Content>
+    </HeroCard>
+  );
 }
 
 export function Panel({ title, children }: PropsWithChildren<{ title: string }>) {

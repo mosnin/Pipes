@@ -50,36 +50,23 @@ a:hover { color: #c7dbff; }
 .brand-mark { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.02em; }
 .marketing-footer { padding-top: 8px; padding-bottom: 24px; color: var(--text-muted); }
 
-.btn, .input, .textarea, .select {
+.ui-btn { font-weight: 600; }
+.ui-input, .ui-textarea, .select { width: 100%; }
+.select {
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: #0f1624;
   color: var(--text);
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  border-radius: 10px;
 }
-.input, .select, .textarea { width: 100%; }
-.textarea { min-height: 120px; resize: vertical; }
-.btn {
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 120ms ease;
-  background: linear-gradient(180deg, #678fff 0%, #4a75ee 100%);
-  border-color: #5f81e0;
-}
-.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
-.btn-subtle { background: var(--surface-2); border-color: var(--border); }
-.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
-.btn:focus-visible, .input:focus-visible, .textarea:focus-visible, .select:focus-visible, a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+a:focus-visible, .select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .card, .panel {
   background: linear-gradient(180deg, rgba(20, 31, 49, 0.94), rgba(14, 20, 34, 0.98));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-5);
-  box-shadow: 0 8px 26px rgba(1, 6, 16, 0.38);
+  box-shadow: 0 14px 35px rgba(1, 6, 16, 0.35);
 }
 .panel h3 { margin-top: 0; }
 
