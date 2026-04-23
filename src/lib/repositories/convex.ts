@@ -486,6 +486,46 @@ export function createConvexRepositories(): RepositorySet {
         const client = getConvexHttpClient();
         await client.mutation((api as any).app.patchApprovalRequest, { requestId: input.requestId as never, status: input.status, decidedAt: input.decidedAt, decidedBy: input.decidedBy as never, decisionNote: input.decisionNote });
       },
+      async addStageRecord(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addRunStageRecord, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, status: row.status, summary: row.summary, at: row.at };
+      },
+      async listStageRecords(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listRunStageRecords, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, status: row.status, summary: row.summary, at: row.at }));
+      },
+      async addPlanRevision(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addPlanRevision, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, assumptionsJson: JSON.stringify(input.assumptions), openQuestionsJson: JSON.stringify(input.openQuestions), unresolvedRisksJson: JSON.stringify(input.unresolvedRisks), recommendedNextStepsJson: JSON.stringify(input.recommendedNextSteps) });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), version: row.version, summary: row.summary, critique: row.critique, assumptions: JSON.parse(row.assumptionsJson), openQuestions: JSON.parse(row.openQuestionsJson), unresolvedRisks: JSON.parse(row.unresolvedRisksJson), recommendedNextSteps: JSON.parse(row.recommendedNextStepsJson), createdAt: row.createdAt };
+      },
+      async listPlanRevisions(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listPlanRevisions, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), version: row.version, summary: row.summary, critique: row.critique, assumptions: JSON.parse(row.assumptionsJson), openQuestions: JSON.parse(row.openQuestionsJson), unresolvedRisks: JSON.parse(row.unresolvedRisksJson), recommendedNextSteps: JSON.parse(row.recommendedNextStepsJson), createdAt: row.createdAt }));
+      },
+      async addRoleActivity(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addRoleActivity, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, role: row.role, summary: row.summary, startedAt: row.startedAt, completedAt: row.completedAt };
+      },
+      async listRoleActivities(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listRoleActivities, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, role: row.role, summary: row.summary, startedAt: row.startedAt, completedAt: row.completedAt }));
+      },
+      async addProposalBatch(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addProposalBatch, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never, proposalIdsJson: JSON.stringify(input.proposalIds) });
+        return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, summary: row.summary, rationale: row.rationale, proposalIds: JSON.parse(row.proposalIdsJson), status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async listProposalBatches(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listProposalBatches, { runId: input.runId as never });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: String(row.systemId), stage: row.stage, summary: row.summary, rationale: row.rationale, proposalIds: JSON.parse(row.proposalIdsJson), status: row.status, createdAt: row.createdAt, updatedAt: row.updatedAt }));
+      },
     }
   };
 }

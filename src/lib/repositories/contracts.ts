@@ -1,6 +1,7 @@
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, RunStatus, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
+import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";
 
 export type AppContext = {
   userId: string;
@@ -195,5 +196,13 @@ export type RepositorySet = {
     listApprovalRequests(input: { runId?: string; systemId?: string; status?: ApprovalRequest["status"] }): Promise<ApprovalRequest[]>;
     getApprovalRequest(id: string): Promise<ApprovalRequest | null>;
     updateApprovalRequest(input: { requestId: string; status: ApprovalRequest["status"]; decidedAt?: string; decidedBy?: string; decisionNote?: string }): Promise<void>;
+    addStageRecord(input: Omit<StageRecord, "id">): Promise<StageRecord>;
+    listStageRecords(input: { runId: string }): Promise<StageRecord[]>;
+    addPlanRevision(input: Omit<PlanRevision, "id">): Promise<PlanRevision>;
+    listPlanRevisions(input: { runId: string }): Promise<PlanRevision[]>;
+    addRoleActivity(input: Omit<RoleActivity, "id">): Promise<RoleActivity>;
+    listRoleActivities(input: { runId: string }): Promise<RoleActivity[]>;
+    addProposalBatch(input: Omit<ProposalBatch, "id">): Promise<ProposalBatch>;
+    listProposalBatches(input: { runId: string }): Promise<ProposalBatch[]>;
   };
 };

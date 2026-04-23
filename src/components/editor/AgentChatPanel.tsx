@@ -10,6 +10,10 @@ type Proposal = { id: string; actionType: string; rationale: string; status: str
 type Plan = { summary: string; status: string; confidence: number; steps: Array<{ id: string; title: string; toolNames: string[]; expectedActionTypes: string[] }> };
 type ToolCall = { id: string; toolName: string; status: string; startedAt: string; completedAt?: string };
 type Approval = { id: string; reason: string; status: string };
+type StageRecord = { id: string; stage: string; status: string; summary?: string; at: string };
+type RoleActivity = { id: string; role: string; stage: string; summary: string };
+type PlanRevision = { id: string; version: number; summary: string; critique?: string; openQuestions: string[]; unresolvedRisks: string[] };
+type ProposalBatch = { id: string; stage: string; summary: string; status: string; proposalIds: string[] };
 
 export function AgentChatPanel({ systemId, systemName, systemDescription }: { systemId: string; systemName: string; systemDescription?: string }) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -19,6 +23,10 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [tools, setTools] = useState<ToolCall[]>([]);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [stages, setStages] = useState<StageRecord[]>([]);
+  const [roles, setRoles] = useState<RoleActivity[]>([]);
+  const [revisions, setRevisions] = useState<PlanRevision[]>([]);
+  const [batches, setBatches] = useState<ProposalBatch[]>([]);
   const [prompt, setPrompt] = useState("Plan and apply a safe reliability improvement, request approval for risky edits.");
   const [runStatus, setRunStatus] = useState("idle");
   const [activeRunId, setActiveRunId] = useState<string | undefined>();
@@ -35,17 +43,25 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
 
   const refreshRunArtifacts = async (runId?: string) => {
     if (!runId) return;
-    const [pRes, aRes, tRes, planRes] = await Promise.all([
+    const [pRes, aRes, tRes, planRes, stageRes, roleRes, revRes, batchRes] = await Promise.all([
       fetch(`/api/agent/proposals?runId=${runId}`, { cache: "no-store" }),
       fetch(`/api/agent/approvals?runId=${runId}`, { cache: "no-store" }),
       fetch(`/api/agent/runs/${runId}/tools`, { cache: "no-store" }),
-      fetch(`/api/agent/runs/${runId}/plan`, { cache: "no-store" })
+      fetch(`/api/agent/runs/${runId}/plan`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/stages`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/roles`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/plan-revisions`, { cache: "no-store" }),
+      fetch(`/api/agent/runs/${runId}/batches`, { cache: "no-store" })
     ]);
-    const [pBody, aBody, tBody, planBody] = await Promise.all([pRes.json(), aRes.json(), tRes.json(), planRes.json()]);
+    const [pBody, aBody, tBody, planBody, stageBody, roleBody, revBody, batchBody] = await Promise.all([pRes.json(), aRes.json(), tRes.json(), planRes.json(), stageRes.json(), roleRes.json(), revRes.json(), batchRes.json()]);
     if (pBody.ok) setProposals(pBody.data);
     if (aBody.ok) setApprovals(aBody.data);
     if (tBody.ok) setTools(tBody.data);
     if (planBody.ok) setPlan(planBody.data);
+    if (stageBody.ok) setStages(stageBody.data);
+    if (roleBody.ok) setRoles(roleBody.data);
+    if (revBody.ok) setRevisions(revBody.data);
+    if (batchBody.ok) setBatches(batchBody.data);
   };
 
   useEffect(() => { void refreshSessions(); }, [refreshSessions]);
@@ -62,7 +78,7 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
   const runPrompt = async () => {
     const sid = await ensureSession();
     setRunStatus("planning");
-    setEvents([]); setApprovals([]); setTools([]); setPlan(null); setProposals([]);
+    setEvents([]); setApprovals([]); setTools([]); setPlan(null); setProposals([]); setStages([]); setRoles([]); setRevisions([]); setBatches([]);
     const createRun = await fetch("/api/agent/runs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: sid, systemId, message: prompt }) });
     const runBody = await createRun.json();
     if (!runBody.ok) return setRunStatus("failed");
@@ -101,12 +117,16 @@ export function AgentChatPanel({ systemId, systemName, systemDescription }: { sy
     <Panel title="Builder Agent">
       <p className="badge">System attached: {systemName}</p>
       <p className="badge">Run status: {runStatus}</p>
+      <p className="badge">Current stage: {stages.at(-1)?.stage ?? "n/a"}</p>
       <div className="nav-inline" style={{ flexWrap: "wrap" }}>{sessions.map((s) => <Button key={s.id} onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
       <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the builder agent" />
       <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
 
       <Card><h4>Current plan</h4>{plan ? <><p>{plan.summary} ({Math.round(plan.confidence * 100)}% confidence)</p><ul>{plan.steps.map((step) => <li key={step.id}>{step.title} · tools: {step.toolNames.join(", ")}</li>)}</ul></> : <p>No plan yet.</p>}</Card>
+      <Card><h4>Plan revisions</h4>{revisions.length ? revisions.map((rev) => <p key={rev.id}>v{rev.version}: {rev.summary}{rev.critique ? ` · critique: ${rev.critique}` : ""}</p>) : <p>No revisions yet.</p>}</Card>
+      <Card><h4>Specialist roles</h4>{roles.length ? roles.map((role) => <p key={role.id}>{role.role} @ {role.stage} · {role.summary}</p>) : <p>No role activity yet.</p>}</Card>
       <Card><h4>Tool activity</h4>{tools.length ? tools.map((tool) => <p key={tool.id}>{tool.toolName} · {tool.status}</p>) : <p>No tool calls yet.</p>}</Card>
+      <Card><h4>Proposal batches</h4>{batches.length ? batches.map((batch) => <p key={batch.id}>{batch.stage} · {batch.summary} · {batch.status} ({batch.proposalIds.length} proposals)</p>) : <p>No batches yet.</p>}</Card>
       <Card>
         <h4>Pending approvals</h4>
         {approvals.filter((a) => a.status === "pending").map((approval) => (

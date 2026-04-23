@@ -5,6 +5,7 @@ import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
+import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -81,6 +82,10 @@ type DbShape = {
   runPlans: RunPlan[];
   toolCalls: ToolCallRecord[];
   approvalRequests: ApprovalRequest[];
+  stageRecords: StageRecord[];
+  planRevisions: PlanRevision[];
+  roleActivities: RoleActivity[];
+  proposalBatches: ProposalBatch[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -120,7 +125,11 @@ function seed(): DbShape {
     appliedGraphActions: [],
     runPlans: [],
     toolCalls: [],
-    approvalRequests: []
+    approvalRequests: [],
+    stageRecords: [],
+    planRevisions: [],
+    roleActivities: [],
+    proposalBatches: []
   };
 }
 
@@ -142,7 +151,11 @@ function readDb(): DbShape {
     appliedGraphActions: parsed.appliedGraphActions ?? [],
     runPlans: parsed.runPlans ?? [],
     toolCalls: parsed.toolCalls ?? [],
-    approvalRequests: parsed.approvalRequests ?? []
+    approvalRequests: parsed.approvalRequests ?? [],
+    stageRecords: parsed.stageRecords ?? [],
+    planRevisions: parsed.planRevisions ?? [],
+    roleActivities: parsed.roleActivities ?? [],
+    proposalBatches: parsed.proposalBatches ?? []
   };
 }
 

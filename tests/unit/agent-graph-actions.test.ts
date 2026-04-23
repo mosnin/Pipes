@@ -45,4 +45,13 @@ describe("agent graph action protocol", () => {
     const result = await tools.runTool(ctx as never, systemId, "get_system_summary", {});
     expect((result as any).nodeCount).toBeTypeOf("number");
   });
+
+  it("context packing favors lightweight summary over full dump", async () => {
+    const repos = createMockRepositories();
+    const tools = new AgentToolService(repos);
+    const systemId = (await repos.systems.list(ctx.workspaceId))[0]?.id;
+    if (!systemId) throw new Error("missing seeded system");
+    const summary = await tools.runTool(ctx as never, systemId, "get_system_summary", {});
+    expect(Object.keys(summary as any)).toContain("nodeCount");
+  });
 });

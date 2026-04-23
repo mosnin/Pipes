@@ -133,3 +133,8 @@ The builder agent now emits typed graph action proposals (`add_node`, `move_node
 ## Agent builder tools + approvals milestone
 
 Builder runs now include structured planning, bounded tool calls, approval requests for risky actions, and checkpoint-aware apply guarantees. Runs can pause in `waiting_for_approval` and resume after explicit decisions through typed approval routes.
+
+
+## Multi-stage specialist builder milestone
+
+Agent runs now progress through explicit stages (`intake`, `inspect_context`, `plan`, `design_structure`, `validate_design`, `propose_actions`, `wait_for_approval`, `apply`, `summarize`, `completed|blocked|failed`) with specialist role activity, plan revisions, and proposal batch lineage persisted for replay and trust.

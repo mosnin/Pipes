@@ -245,5 +245,49 @@ export default defineSchema({
     requestedAt: v.string(),
     decidedAt: v.optional(v.string()),
     decidedBy: v.optional(v.id("users"))
-  }).index("by_run", ["runId"]).index("by_system", ["systemId"])
+  }).index("by_run", ["runId"]).index("by_system", ["systemId"]),
+  run_stage_records: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    stage: v.string(),
+    status: v.string(),
+    summary: v.optional(v.string()),
+    at: v.string()
+  }).index("by_run", ["runId"]),
+  plan_revisions: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    version: v.number(),
+    summary: v.string(),
+    critique: v.optional(v.string()),
+    assumptionsJson: v.string(),
+    openQuestionsJson: v.string(),
+    unresolvedRisksJson: v.string(),
+    recommendedNextStepsJson: v.string(),
+    createdAt: v.string()
+  }).index("by_run", ["runId"]),
+  role_activities: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    stage: v.string(),
+    role: v.string(),
+    summary: v.string(),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string())
+  }).index("by_run", ["runId"]),
+  proposal_batches: defineTable({
+    runId: v.id("agent_runs"),
+    workspaceId: v.id("workspaces"),
+    systemId: v.id("systems"),
+    stage: v.string(),
+    summary: v.string(),
+    rationale: v.string(),
+    proposalIdsJson: v.string(),
+    status: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_run", ["runId"])
 });

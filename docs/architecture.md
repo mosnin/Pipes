@@ -93,3 +93,10 @@
 - `AgentToolService` exposes bounded read/summary tools; no direct graph mutation bypass is allowed.
 - Risky applies require explicit checkpoint creation through `VersionService` policy before mutation.
 - Approval requests are persisted typed records and decisions are auditable.
+
+
+### Multi-stage specialist orchestration boundary
+
+- `AgentRunService` orchestrates stage transitions and records stage lineage; it remains the only business authority for run progression.
+- Specialist roles (`architect`, `validator`, `builder`, `explainer`) are strategy markers and timeline artifacts, not independent mutation authorities.
+- Proposal batches are explicit persisted records tied to stage lineage and still flow through typed proposal/apply paths.

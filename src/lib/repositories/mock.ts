@@ -568,6 +568,46 @@ export function createMockRepositories(): RepositorySet {
         row.decidedBy = input.decidedBy ?? row.decidedBy;
         row.decisionNote = input.decisionNote ?? row.decisionNote;
         store.writeDb(db);
+      },
+      async addStageRecord(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("stage") };
+        db.stageRecords.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listStageRecords(input) {
+        return store.readDb().stageRecords.filter((row) => row.runId === input.runId);
+      },
+      async addPlanRevision(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("prv") };
+        db.planRevisions.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listPlanRevisions(input) {
+        return store.readDb().planRevisions.filter((row) => row.runId === input.runId);
+      },
+      async addRoleActivity(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("role") };
+        db.roleActivities.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listRoleActivities(input) {
+        return store.readDb().roleActivities.filter((row) => row.runId === input.runId);
+      },
+      async addProposalBatch(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("batch") };
+        db.proposalBatches.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listProposalBatches(input) {
+        return store.readDb().proposalBatches.filter((row) => row.runId === input.runId);
       }
     }
   };

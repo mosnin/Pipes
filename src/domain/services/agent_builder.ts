@@ -5,6 +5,7 @@ import { getAgentStreamingProvider } from "@/lib/ai/agent_stream";
 import { AccessService, EntitlementService, GraphService, SchemaExportService, VersionService } from "@/domain/services/bounded";
 import { validateSystem } from "@/domain/validation";
 import { AgentToolService } from "@/domain/services/agent_tools";
+import { PlanRevisionSchema, ProposalBatchSchema, RoleActivitySchema, RunStageSchema, type RunStage } from "@/domain/agent_builder/staged";
 
 const now = () => new Date().toISOString();
 
@@ -74,9 +75,24 @@ export class AgentRunService {
       return stored;
     };
 
+    const enterStage = async (stage: RunStage, summary?: string, status: RunStatus = "running") => {
+      await this.repos.agentBuilder.addStageRecord({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId!, stage: RunStageSchema.parse(stage), status: "entered", summary, at: now() });
+      await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "plan_updated", at: now(), text: `stage:${stage}${summary ? ` · ${summary}` : ""}`, status });
+      await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_stage_entered", targetType: "agent_run_stage", targetId: stage, outcome: "success" });
+    };
+    const invokeRole = async (stage: RunStage, role: "architect" | "validator" | "builder" | "explainer", summary: string) => {
+      const startedAt = now();
+      await this.repos.agentBuilder.addRoleActivity(RoleActivitySchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, stage, role, summary, startedAt, completedAt: now() }));
+      await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_role_invoked", targetType: "agent_role", targetId: role, outcome: "success", metadata: JSON.stringify({ stage }) });
+    };
+
     await this.repos.agentBuilder.updateRun({ runId: run.id, status: "planning", startedAt: now() });
+    await enterStage("intake", "User request accepted.", "planning");
+    await enterStage("inspect_context", "Collecting concise context pack.", "planning");
     await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "run_started", at: now(), status: "planning" });
 
+    await invokeRole("design_structure", "architect", "Shaping high-level subsystem layout.");
+    await enterStage("plan", "Creating staged plan with assumptions and risks.", "planning");
     const plan = await this.repos.agentBuilder.upsertPlan(RunPlanSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse({
       runId: run.id,
       workspaceId: run.workspaceId,
@@ -92,8 +108,16 @@ export class AgentRunService {
     }));
     await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "plan_created", at: now(), text: plan.summary, status: "planning" });
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_plan_created", targetType: "agent_plan", targetId: plan.id, outcome: "success" });
+    await this.repos.agentBuilder.addPlanRevision(PlanRevisionSchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, version: 1, summary: plan.summary, assumptions: ["System intent follows user prompt.", "Prefer incremental safe edits first."], openQuestions: ["Should risky deletes be approved now?"], unresolvedRisks: ["Potential destructive edit candidate detected."], recommendedNextSteps: ["Gather validation context", "Propose small safe batch first"], createdAt: now() }));
+
+    await enterStage("validate_design", "Validator role critiques plan assumptions.", "planning");
+    await invokeRole("validate_design", "validator", "Raised open questions and unresolved risks.");
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_open_question_raised", targetType: "agent_plan", targetId: plan.id, outcome: "success" });
+    await this.repos.agentBuilder.addPlanRevision(PlanRevisionSchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, version: 2, summary: "Revised plan: safe batch first, risky batch requires approval.", critique: "Validator recommends explicit approval boundary before destructive operations.", assumptions: ["Validation report should guide edits."], openQuestions: ["Confirm destructive changes?"], unresolvedRisks: ["Delete operations remain review-required."], recommendedNextSteps: ["Run context tools", "Create proposal batches by stage"], createdAt: now() }));
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_plan_revised", targetType: "agent_plan", targetId: plan.id, outcome: "success" });
 
     await this.repos.agentBuilder.updateRun({ runId: run.id, status: "tooling" });
+    await enterStage("design_structure", "Architect role generated structure strategy.", "tooling");
     await this.callTool(ctx, run, publish, "get_system_summary", {});
     await this.callTool(ctx, run, publish, "get_validation_report", {});
 
@@ -108,10 +132,15 @@ export class AgentRunService {
       }
       const proposal = await this.createProposal(ctx, run, ++seq, chunk.action, chunk.rationale);
       await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "graph_action_proposed", at: now(), graphActionProposal: proposal });
+      await invokeRole("propose_actions", "builder", `Generated ${proposal.actionType} proposal.`);
+      const batchStatus = proposal.status === "pending_review" ? "review_required" : proposal.status === "proposed" ? "created" : "rejected";
+      await this.repos.agentBuilder.addProposalBatch(ProposalBatchSchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, stage: "propose_actions", summary: `Batch for ${proposal.actionType}`, rationale: proposal.rationale, proposalIds: [proposal.id], status: batchStatus, createdAt: now(), updatedAt: now() }));
+      await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_proposal_batch_created", targetType: "proposal_batch", targetId: proposal.id, outcome: "success" });
 
       if (proposal.status === "pending_review") {
         const approval = await this.repos.agentBuilder.addApprovalRequest(ApprovalRequestSchema.omit({ id: true }).parse({ runId: run.id, proposalId: proposal.id, workspaceId: run.workspaceId, systemId: run.systemId, targetType: "graph_action", targetRef: proposal.id, reason: proposal.rationale, status: "pending", requestedAt: now() }));
         await this.repos.agentBuilder.updateRun({ runId: run.id, status: "waiting_for_approval" });
+        await enterStage("wait_for_approval", "Risky proposal awaiting explicit human decision.", "waiting_for_approval");
         await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "approval_requested", at: now(), status: "waiting_for_approval", text: approval.reason });
         await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_approval_requested", targetType: "approval_request", targetId: approval.id, outcome: "success" });
         continue;
@@ -124,22 +153,29 @@ export class AgentRunService {
       }
 
       await this.repos.agentBuilder.updateRun({ runId: run.id, status: "applying" });
+      await enterStage("apply", "Applying safe batch.", "applying");
       const applied = await this.applyProposal(ctx, proposal.id, publish);
+      await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_batch_auto_applied", targetType: "proposal_batch", targetId: proposal.id, outcome: applied.status === "applied" ? "success" : "failure" });
       await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: applied.status === "applied" ? "graph_action_auto_applied" : "graph_action_apply_failed", at: now(), text: applied.error, graphActionProposal: applied, status: applied.status === "applied" ? "applying" : "blocked" });
     }
 
     await this.repos.agentBuilder.addMessage({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, role: "assistant", body: fullText });
+    await invokeRole("summarize", "explainer", "Summarized staged work and remaining risks.");
+    await enterStage("summarize", "Explainer role produced summary.", "running");
     await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "assistant_text_completed", at: now(), text: fullText });
 
     const pending = await this.repos.agentBuilder.listApprovalRequests({ runId: run.id, status: "pending" });
     if (pending.length > 0) {
       await this.repos.agentBuilder.updateRun({ runId: run.id, status: "waiting_for_approval" });
       await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "run_waiting", at: now(), status: "waiting_for_approval", text: "Waiting for approval." });
+      await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_batch_review_required", targetType: "agent_run", targetId: run.id, outcome: "success" });
       return;
     }
 
+    await enterStage("completed", "Run completed.", "completed");
     await this.repos.agentBuilder.updateRun({ runId: run.id, status: "completed", endedAt: now() });
     await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "run_completed", at: now(), status: "completed" });
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_run_stage_completed", targetType: "agent_run_stage", targetId: "completed", outcome: "success" });
   }
 
   private async callTool(ctx: AppContext, run: { id: string; workspaceId: string; systemId?: string; sessionId: string }, publish: (event: Omit<RunEvent, "id" | "sequence">) => Promise<RunEvent>, toolName: any, toolInput: Record<string, unknown>) {
@@ -234,6 +270,10 @@ export class AgentRunService {
   async listApprovals(ctx: AppContext, input: { runId?: string; systemId?: string; status?: "pending" | "approved" | "rejected" }) { return this.repos.agentBuilder.listApprovalRequests(input); }
   async getPlan(ctx: AppContext, runId: string) { return this.repos.agentBuilder.getPlan(runId); }
   async listToolCalls(ctx: AppContext, runId: string) { return this.repos.agentBuilder.listToolCalls({ runId }); }
+  async listStageRecords(ctx: AppContext, runId: string) { return this.repos.agentBuilder.listStageRecords({ runId }); }
+  async listPlanRevisions(ctx: AppContext, runId: string) { return this.repos.agentBuilder.listPlanRevisions({ runId }); }
+  async listRoleActivities(ctx: AppContext, runId: string) { return this.repos.agentBuilder.listRoleActivities({ runId }); }
+  async listProposalBatches(ctx: AppContext, runId: string) { return this.repos.agentBuilder.listProposalBatches({ runId }); }
 
   private async appendEvent(event: Omit<RunEvent, "id">) { return this.repos.agentBuilder.addEvent(RunEventSchema.omit({ id: true }).parse(event)); }
 }

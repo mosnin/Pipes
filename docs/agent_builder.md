@@ -106,3 +106,17 @@ Action contract fields include actionId, actionType, targetSystemId, actor conte
 - Full long-running worker offload orchestration
 - multi-party/stepwise approval routing
 - specialist sub-agents and richer planning critiques
+
+
+## Multi-stage specialist orchestration
+
+- Stages: intake → inspect_context → plan → design_structure → validate_design → propose_actions → wait_for_approval → apply → summarize → completed|blocked|failed.
+- Specialist roles: architect (shape), validator (critique/risk), builder (typed proposals), explainer (result summary).
+- Plan refinement: persisted plan revisions with assumptions, open questions, unresolved risks, and next steps.
+- Proposal batching: stage-linked proposal batches with explicit status and rationale.
+
+### Safety + trust posture
+
+- Roles do not create mutation bypasses; all graph mutation still flows through typed proposal + trusted apply services.
+- Review-required batches pause in `wait_for_approval`; approved runs resume, rejected runs block.
+- Risky applies keep checkpoint policy enforced before mutation.

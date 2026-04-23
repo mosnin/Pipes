@@ -538,6 +538,45 @@ export const patchApprovalRequest = mutation({
   }
 });
 
+export const addRunStageRecord = mutation({
+  args: { runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), stage: v.string(), status: v.string(), summary: v.optional(v.string()), at: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("run_stage_records", args);
+    return ctx.db.get(id);
+  }
+});
+export const listRunStageRecords = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("run_stage_records").withIndex("by_run", (q) => q.eq("runId", args.runId)).collect()
+});
+
+export const addPlanRevision = mutation({
+  args: { runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), version: v.number(), summary: v.string(), critique: v.optional(v.string()), assumptionsJson: v.string(), openQuestionsJson: v.string(), unresolvedRisksJson: v.string(), recommendedNextStepsJson: v.string(), createdAt: v.string() },
+  handler: async (ctx, args) => { const id = await ctx.db.insert("plan_revisions", args); return ctx.db.get(id); }
+});
+export const listPlanRevisions = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("plan_revisions").withIndex("by_run", (q) => q.eq("runId", args.runId)).collect()
+});
+
+export const addRoleActivity = mutation({
+  args: { runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), stage: v.string(), role: v.string(), summary: v.string(), startedAt: v.string(), completedAt: v.optional(v.string()) },
+  handler: async (ctx, args) => { const id = await ctx.db.insert("role_activities", args); return ctx.db.get(id); }
+});
+export const listRoleActivities = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("role_activities").withIndex("by_run", (q) => q.eq("runId", args.runId)).collect()
+});
+
+export const addProposalBatch = mutation({
+  args: { runId: v.id("agent_runs"), workspaceId: v.id("workspaces"), systemId: v.id("systems"), stage: v.string(), summary: v.string(), rationale: v.string(), proposalIdsJson: v.string(), status: v.string(), createdAt: v.string(), updatedAt: v.string() },
+  handler: async (ctx, args) => { const id = await ctx.db.insert("proposal_batches", args); return ctx.db.get(id); }
+});
+export const listProposalBatches = query({
+  args: { runId: v.id("agent_runs") },
+  handler: async (ctx, args) => ctx.db.query("proposal_batches").withIndex("by_run", (q) => q.eq("runId", args.runId)).collect()
+});
+
 export const updateFeedbackStatus = mutation({
   args: { workspaceId: v.id("workspaces"), id: v.id("feedback_items"), status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("closed")), updatedBy: v.id("users") },
   handler: async (ctx, args) => {

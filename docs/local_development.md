@@ -108,3 +108,12 @@ npm run test -- tests/unit/agent-builder.test.ts tests/unit/agent-graph-actions.
 ```
 
 The mock provider simulates plan creation, tool calls, safe proposals, and approval-required proposals.
+
+
+### Multi-stage builder checks
+
+```bash
+npm run test -- tests/unit/agent-builder.test.ts tests/unit/agent-graph-actions.test.ts
+```
+
+These tests cover staged progression, specialist activity persistence, plan revisions, batching lineage, and approval interrupt/resume behavior.
