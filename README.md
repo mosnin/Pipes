@@ -123,3 +123,8 @@ npm run test
 - Streamed output is normalized into typed run events (not graph truth).
 - Current boundary is planning/explanation only; agent graph mutation is intentionally deferred.
 - See `docs/agent_builder.md` for full model and runtime boundaries.
+
+
+## Agent graph action loop (milestone)
+
+The builder agent now emits typed graph action proposals (`add_node`, `move_node`, `delete_node`, `add_pipe`, `delete_pipe`, `add_annotation`, etc.) and only applies graph changes through the trusted graph service path. Safe actions are auto-applied, review-required actions are held for explicit approve/reject in UI.

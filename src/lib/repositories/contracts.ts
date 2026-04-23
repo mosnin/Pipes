@@ -1,5 +1,6 @@
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { AgentRun, AgentSession, RunEvent, RunMessage, RunStatus } from "@/domain/agent_builder/model";
+import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
 
 export type AppContext = {
   userId: string;
@@ -180,5 +181,11 @@ export type RepositorySet = {
     listMessages(input: { sessionId: string }): Promise<RunMessage[]>;
     addEvent(input: Omit<RunEvent, "id">): Promise<RunEvent>;
     listRunEvents(input: { sessionId?: string; runId?: string }): Promise<RunEvent[]>;
+    addProposal(input: Omit<GraphActionProposal, "id">): Promise<GraphActionProposal>;
+    listProposals(input: { runId?: string; systemId?: string; status?: GraphActionProposalStatus }): Promise<GraphActionProposal[]>;
+    updateProposal(input: { proposalId: string; status: GraphActionProposalStatus; appliedAt?: string; reviewDecision?: GraphActionProposal["reviewDecision"]; error?: string }): Promise<void>;
+    getProposal(proposalId: string): Promise<GraphActionProposal | null>;
+    addAppliedAction(input: Omit<AppliedGraphActionRecord, "id">): Promise<AppliedGraphActionRecord>;
+    listAppliedActions(input: { runId?: string; systemId?: string }): Promise<AppliedGraphActionRecord[]>;
   };
 };

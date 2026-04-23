@@ -388,6 +388,92 @@ export const listAgentRunEvents = query({
   }
 });
 
+export const addGraphActionProposal = mutation({
+  args: {
+    runId: v.id("agent_runs"),
+    sessionId: v.id("agent_sessions"),
+    workspaceId: v.id("workspaces"),
+    targetSystemId: v.id("systems"),
+    actionId: v.string(),
+    actionType: v.string(),
+    actorType: v.string(),
+    actorId: v.string(),
+    payload: v.string(),
+    rationale: v.string(),
+    riskClass: v.string(),
+    applyMode: v.string(),
+    sequence: v.number(),
+    validationStatus: v.string(),
+    status: v.string(),
+    proposedAt: v.string(),
+    appliedAt: v.optional(v.string()),
+    reviewDecision: v.optional(v.string()),
+    error: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("graph_action_proposals", args);
+    return ctx.db.get(id);
+  }
+});
+
+export const patchGraphActionProposal = mutation({
+  args: { proposalId: v.id("graph_action_proposals"), status: v.string(), appliedAt: v.optional(v.string()), reviewDecision: v.optional(v.string()), error: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.proposalId);
+    if (!row) return;
+    await ctx.db.patch(args.proposalId, {
+      status: args.status,
+      appliedAt: args.appliedAt ?? row.appliedAt,
+      reviewDecision: args.reviewDecision ?? row.reviewDecision,
+      error: args.error ?? row.error
+    });
+  }
+});
+
+export const getGraphActionProposal = query({
+  args: { proposalId: v.id("graph_action_proposals") },
+  handler: async (ctx, args) => ctx.db.get(args.proposalId)
+});
+
+export const listGraphActionProposals = query({
+  args: { runId: v.optional(v.id("agent_runs")), systemId: v.optional(v.id("systems")), status: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const rows = args.runId
+      ? await ctx.db.query("graph_action_proposals").withIndex("by_run", (q) => q.eq("runId", args.runId!)).collect()
+      : args.systemId
+        ? await ctx.db.query("graph_action_proposals").withIndex("by_system", (q) => q.eq("targetSystemId", args.systemId!)).collect()
+        : [];
+    return rows.filter((row) => !args.status || row.status === args.status);
+  }
+});
+
+export const addAppliedGraphAction = mutation({
+  args: {
+    proposalId: v.id("graph_action_proposals"),
+    runId: v.id("agent_runs"),
+    sessionId: v.id("agent_sessions"),
+    workspaceId: v.id("workspaces"),
+    targetSystemId: v.id("systems"),
+    actionType: v.string(),
+    appliedAt: v.string(),
+    validationIssueCount: v.number(),
+    versionCheckpointId: v.optional(v.id("versions"))
+  },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("applied_graph_actions", args);
+    return ctx.db.get(id);
+  }
+});
+
+export const listAppliedGraphActions = query({
+  args: { runId: v.optional(v.id("agent_runs")), systemId: v.optional(v.id("systems")) },
+  handler: async (ctx, args) => {
+    if (args.runId) return ctx.db.query("applied_graph_actions").withIndex("by_run", (q) => q.eq("runId", args.runId!)).collect();
+    if (args.systemId) return ctx.db.query("applied_graph_actions").withIndex("by_system", (q) => q.eq("targetSystemId", args.systemId!)).collect();
+    return [];
+  }
+});
+
 export const updateFeedbackStatus = mutation({
   args: { workspaceId: v.id("workspaces"), id: v.id("feedback_items"), status: v.union(v.literal("new"), v.literal("reviewing"), v.literal("closed")), updatedBy: v.id("users") },
   handler: async (ctx, args) => {

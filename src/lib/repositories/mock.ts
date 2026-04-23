@@ -479,6 +479,41 @@ export function createMockRepositories(): RepositorySet {
       },
       async listRunEvents(input) {
         return store.readDb().runEvents.filter((item) => (!input.runId || item.runId === input.runId) && (!input.sessionId || item.sessionId === input.sessionId)).sort((a, b) => a.sequence - b.sequence);
+      },
+      async addProposal(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("prop") };
+        db.graphActionProposals.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listProposals(input) {
+        return store.readDb().graphActionProposals
+          .filter((item) => (!input.runId || item.runId === input.runId) && (!input.systemId || item.targetSystemId === input.systemId) && (!input.status || item.status === input.status))
+          .sort((a, b) => a.sequence - b.sequence);
+      },
+      async updateProposal(input) {
+        const db = store.readDb();
+        const row = db.graphActionProposals.find((item) => item.id === input.proposalId);
+        if (!row) return;
+        row.status = input.status;
+        row.appliedAt = input.appliedAt ?? row.appliedAt;
+        row.reviewDecision = input.reviewDecision ?? row.reviewDecision;
+        row.error = input.error ?? row.error;
+        store.writeDb(db);
+      },
+      async getProposal(proposalId) {
+        return store.readDb().graphActionProposals.find((item) => item.id === proposalId) ?? null;
+      },
+      async addAppliedAction(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("applied") };
+        db.appliedGraphActions.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listAppliedActions(input) {
+        return store.readDb().appliedGraphActions.filter((item) => (!input.runId || item.runId === input.runId) && (!input.systemId || item.targetSystemId === input.systemId));
       }
     }
   };

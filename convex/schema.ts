@@ -175,5 +175,37 @@ export default defineSchema({
     text: v.optional(v.string()),
     status: v.optional(v.string()),
     metadata: v.optional(v.string())
-  }).index("by_run", ["runId"]).index("by_session", ["sessionId"])
+  }).index("by_run", ["runId"]).index("by_session", ["sessionId"]),
+  graph_action_proposals: defineTable({
+    runId: v.id("agent_runs"),
+    sessionId: v.id("agent_sessions"),
+    workspaceId: v.id("workspaces"),
+    targetSystemId: v.id("systems"),
+    actionId: v.string(),
+    actionType: v.string(),
+    actorType: v.string(),
+    actorId: v.string(),
+    payload: v.string(),
+    rationale: v.string(),
+    riskClass: v.string(),
+    applyMode: v.string(),
+    sequence: v.number(),
+    validationStatus: v.string(),
+    status: v.string(),
+    proposedAt: v.string(),
+    appliedAt: v.optional(v.string()),
+    reviewDecision: v.optional(v.string()),
+    error: v.optional(v.string())
+  }).index("by_run", ["runId"]).index("by_system", ["targetSystemId"]),
+  applied_graph_actions: defineTable({
+    proposalId: v.id("graph_action_proposals"),
+    runId: v.id("agent_runs"),
+    sessionId: v.id("agent_sessions"),
+    workspaceId: v.id("workspaces"),
+    targetSystemId: v.id("systems"),
+    actionType: v.string(),
+    appliedAt: v.string(),
+    validationIssueCount: v.number(),
+    versionCheckpointId: v.optional(v.id("versions"))
+  }).index("by_run", ["runId"]).index("by_system", ["targetSystemId"])
 });

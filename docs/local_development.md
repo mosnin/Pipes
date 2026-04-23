@@ -88,3 +88,14 @@ npm run dev
 - Review release summary in `/admin/release`.
 - Triage submitted items in `/admin/issues`.
 - Follow staged launch workflow in `docs/beta_operations.md`.
+
+
+### Agent action development
+
+Run focused checks:
+
+```bash
+npm run test -- tests/unit/agent-builder.test.ts tests/unit/agent-graph-actions.test.ts
+```
+
+Mock mode emits deterministic action proposals with one auto-applied and one review-required example.

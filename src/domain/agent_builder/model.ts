@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { GraphActionProposalSchema } from "@/domain/agent_builder/actions";
 
 export const RunStatusSchema = z.enum(["created", "running", "waiting", "completed", "failed", "canceled"]);
 export type RunStatus = z.infer<typeof RunStatusSchema>;
@@ -16,23 +17,14 @@ export const RunEventTypeSchema = z.enum([
   "run_failed",
   "run_canceled",
   "approval_required",
-  "graph_action_proposed"
+  "graph_action_proposed",
+  "graph_action_auto_applied",
+  "graph_action_review_required",
+  "graph_action_approved",
+  "graph_action_rejected",
+  "graph_action_apply_failed",
+  "graph_version_checkpoint_created"
 ]);
-
-export const ToolCallRecordSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  status: z.enum(["started", "completed", "failed"]),
-  summary: z.string().optional(),
-  error: z.string().optional(),
-  startedAt: z.string(),
-  completedAt: z.string().optional()
-});
-
-export const ApprovalRequestSchema = z.object({ id: z.string(), reason: z.string(), requiredBy: z.string().optional() });
-export const GraphActionProposalSchema = z.object({ id: z.string(), summary: z.string(), actionType: z.string() });
-export const RunTraceRefSchema = z.object({ traceId: z.string(), provider: z.string() });
-export const RunCostSchema = z.object({ inputTokens: z.number().default(0), outputTokens: z.number().default(0), estimatedUsd: z.number().default(0) });
 
 export const RunEventSchema = z.object({
   id: z.string(),
@@ -45,10 +37,7 @@ export const RunEventSchema = z.object({
   sequence: z.number(),
   text: z.string().optional(),
   status: RunStatusSchema.optional(),
-  toolCall: ToolCallRecordSchema.optional(),
-  approvalRequest: ApprovalRequestSchema.optional(),
-  graphActionProposal: GraphActionProposalSchema.optional(),
-  traceRef: RunTraceRefSchema.optional(),
+  graphActionProposal: GraphActionProposalSchema.partial().optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
@@ -83,8 +72,6 @@ export const AgentRunSchema = z.object({
   startedAt: z.string().optional(),
   endedAt: z.string().optional(),
   error: z.string().optional(),
-  traceRef: RunTraceRefSchema.optional(),
-  cost: RunCostSchema.optional(),
   createdAt: z.string(),
   updatedAt: z.string()
 });
@@ -93,4 +80,3 @@ export type AgentSession = z.infer<typeof AgentSessionSchema>;
 export type AgentRun = z.infer<typeof AgentRunSchema>;
 export type RunEvent = z.infer<typeof RunEventSchema>;
 export type RunMessage = z.infer<typeof RunMessageSchema>;
-export type ToolCallRecord = z.infer<typeof ToolCallRecordSchema>;

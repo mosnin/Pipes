@@ -4,6 +4,7 @@ import { sampleData } from "@/lib/convex/mockData";
 import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
 import type { AgentRun, AgentSession, RunEvent, RunMessage } from "@/domain/agent_builder/model";
+import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -75,6 +76,8 @@ type DbShape = {
   agentRuns: AgentRun[];
   runMessages: RunMessage[];
   runEvents: RunEvent[];
+  graphActionProposals: GraphActionProposal[];
+  appliedGraphActions: AppliedGraphActionRecord[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -109,7 +112,9 @@ function seed(): DbShape {
     agentSessions: [],
     agentRuns: [],
     runMessages: [],
-    runEvents: []
+    runEvents: [],
+    graphActionProposals: [],
+    appliedGraphActions: []
   };
 }
 
@@ -126,7 +131,9 @@ function readDb(): DbShape {
     agentSessions: parsed.agentSessions ?? [],
     agentRuns: parsed.agentRuns ?? [],
     runMessages: parsed.runMessages ?? [],
-    runEvents: parsed.runEvents ?? []
+    runEvents: parsed.runEvents ?? [],
+    graphActionProposals: parsed.graphActionProposals ?? [],
+    appliedGraphActions: parsed.appliedGraphActions ?? []
   };
 }
 

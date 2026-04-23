@@ -77,3 +77,11 @@
 - `FeedbackService` validates and persists bounded feedback records (category/severity/context/status lifecycle).
 - `IssueTriageService` joins feedback items with grouped failure signals for compact operator triage.
 - Admin/feedback routes remain thin; service layer remains business authority.
+
+
+### Agent graph mutation boundary
+
+- Provider output is normalized into typed `GraphActionProposal` records.
+- Proposal policy/risk classification lives in `AgentRunService` authority.
+- Persisted graph truth only changes via `GraphService` and repositories (same path used by human edits).
+- Streamed run events are timeline/UX signals, never graph truth.

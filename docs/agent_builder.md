@@ -60,3 +60,29 @@ Both mock and Convex repositories implement the same `agentBuilder` contract.
 - Full tool execution.
 - Production Modal dispatch.
 - Fine-grained cost accounting.
+
+
+## Typed graph action protocol
+
+Action contract fields include actionId, actionType, targetSystemId, actor context, typed payload, rationale, riskClass, applyMode, sequence, validationStatus, proposedAt, and optional appliedAt.
+
+### Lifecycle
+
+1. model/provider emits proposed action
+2. service validates + classifies risk
+3. proposal persisted (`proposed`, `pending_review`, `forbidden`)
+4. safe actions auto-apply through trusted graph service path
+5. review-required actions wait for approve/reject
+6. approvals apply through same path and emit audit signals
+
+### Policy (current pass)
+
+- `safe_auto_apply`: add_annotation, move_node, metadata-only update_node
+- `review_required`: delete_node, delete_pipe, structural actions, non-metadata update_node
+- `forbidden`: unsupported/destructive out-of-scope actions
+
+### Deferrals
+
+- grouped selective approval workflows
+- rich visual diffs
+- specialist toolchains and deep modal worker execution

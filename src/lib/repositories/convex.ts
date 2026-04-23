@@ -413,7 +413,38 @@ export function createConvexRepositories(): RepositorySet {
         const client = getConvexHttpClient();
         const rows = await client.query((api as any).app.listAgentRunEvents, { runId: input.runId as never, sessionId: input.sessionId as never });
         return rows.map((row: any) => ({ id: String(row._id), sessionId: String(row.sessionId), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, type: row.type, at: row.at, sequence: row.sequence, text: row.text, status: row.status, metadata: row.metadata ? JSON.parse(row.metadata) : undefined }));
-      }
+      },
+
+      async addProposal(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addGraphActionProposal, { ...input, runId: input.runId as never, sessionId: input.sessionId as never, workspaceId: input.workspaceId as never, targetSystemId: input.targetSystemId as never, payload: JSON.stringify(input.payload), reviewDecision: input.reviewDecision ? JSON.stringify(input.reviewDecision) : undefined });
+        return { id: String(row._id), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionId: row.actionId, actionType: row.actionType, actor: { actorType: row.actorType, actorId: row.actorId, workspaceId: String(row.workspaceId) }, payload: JSON.parse(row.payload), rationale: row.rationale, riskClass: row.riskClass, applyMode: row.applyMode, sequence: row.sequence, validationStatus: row.validationStatus, status: row.status, proposedAt: row.proposedAt, appliedAt: row.appliedAt, reviewDecision: row.reviewDecision ? JSON.parse(row.reviewDecision) : undefined, error: row.error };
+      },
+      async listProposals(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listGraphActionProposals, { runId: input.runId as never, systemId: input.systemId as never, status: input.status });
+        return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionId: row.actionId, actionType: row.actionType, actor: { actorType: row.actorType, actorId: row.actorId, workspaceId: String(row.workspaceId) }, payload: JSON.parse(row.payload), rationale: row.rationale, riskClass: row.riskClass, applyMode: row.applyMode, sequence: row.sequence, validationStatus: row.validationStatus, status: row.status, proposedAt: row.proposedAt, appliedAt: row.appliedAt, reviewDecision: row.reviewDecision ? JSON.parse(row.reviewDecision) : undefined, error: row.error }));
+      },
+      async updateProposal(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.patchGraphActionProposal, { proposalId: input.proposalId as never, status: input.status, appliedAt: input.appliedAt, reviewDecision: input.reviewDecision ? JSON.stringify(input.reviewDecision) : undefined, error: input.error });
+      },
+      async getProposal(proposalId) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getGraphActionProposal, { proposalId: proposalId as never });
+        if (!row) return null;
+        return { id: String(row._id), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionId: row.actionId, actionType: row.actionType, actor: { actorType: row.actorType, actorId: row.actorId, workspaceId: String(row.workspaceId) }, payload: JSON.parse(row.payload), rationale: row.rationale, riskClass: row.riskClass, applyMode: row.applyMode, sequence: row.sequence, validationStatus: row.validationStatus, status: row.status, proposedAt: row.proposedAt, appliedAt: row.appliedAt, reviewDecision: row.reviewDecision ? JSON.parse(row.reviewDecision) : undefined, error: row.error };
+      },
+      async addAppliedAction(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.addAppliedGraphAction, { ...input, proposalId: input.proposalId as never, runId: input.runId as never, sessionId: input.sessionId as never, workspaceId: input.workspaceId as never, targetSystemId: input.targetSystemId as never, versionCheckpointId: input.versionCheckpointId as never });
+        return { id: String(row._id), proposalId: String(row.proposalId), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionType: row.actionType, appliedAt: row.appliedAt, validationIssueCount: row.validationIssueCount, versionCheckpointId: row.versionCheckpointId ? String(row.versionCheckpointId) : undefined };
+      },
+      async listAppliedActions(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAppliedGraphActions, { runId: input.runId as never, systemId: input.systemId as never });
+        return rows.map((row: any) => ({ id: String(row._id), proposalId: String(row.proposalId), runId: String(row.runId), sessionId: String(row.sessionId), workspaceId: String(row.workspaceId), targetSystemId: String(row.targetSystemId), actionType: row.actionType, appliedAt: row.appliedAt, validationIssueCount: row.validationIssueCount, versionCheckpointId: row.versionCheckpointId ? String(row.versionCheckpointId) : undefined }));
+      },
     }
   };
 }

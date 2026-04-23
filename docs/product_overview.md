@@ -66,3 +66,8 @@ This keeps Pipes a structured design platform, not a chat or orchestration engin
 - System editor now includes an attached builder chat panel with session + run history and realtime streamed run events.
 - Current capability is planning/explanation only; graph mutation remains explicitly out-of-scope in this slice.
 - Run events are persisted and replayable for deterministic UI hydration and later approval/action extension.
+
+
+### Builder agent live mutation
+
+Builder chat can now propose typed graph actions and apply safe actions live so the canvas updates from persisted state. Risky changes are explicitly held for user review before apply.
