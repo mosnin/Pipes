@@ -474,21 +474,21 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         <div>{data.presence.map((p) => <span key={p.id} className="badge">{p.name}{p.selectedNodeId ? ` · ${p.selectedNodeId}` : ""}</span>)}</div>
         <div className="nav-inline">
           <span className="badge">{saveLabel}</span>
-          <Button onClick={undo} disabled={history.undo.length === 0}>Undo ⌘Z</Button>
-          <Button onClick={redo} disabled={history.redo.length === 0}>Redo ⇧⌘Z</Button>
+          <Button onClick={undo} isDisabled={history.undo.length === 0}>Undo ⌘Z</Button>
+          <Button onClick={redo} isDisabled={history.redo.length === 0}>Redo ⇧⌘Z</Button>
           <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Insert ⌘K</Button>
-          <Button onClick={createSubsystem} disabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
+          <Button onClick={createSubsystem} isDisabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
           <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)}>
             <option value="left_to_right">Layout: Left → Right</option>
             <option value="top_to_bottom">Layout: Top ↓ Bottom</option>
           </Select>
-          <Button onClick={() => arrangeNodes("selected")} disabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
+          <Button onClick={() => arrangeNodes("selected")} isDisabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
           <Button onClick={() => arrangeNodes("all")}>Arrange Whole Graph</Button>
           <Button onClick={() => setRouteFocusMode((value) => !value)}>{routeFocusMode ? "Route Focus: On" : "Route Focus: Off"}</Button>
           <Button onClick={() => setFitRequest((n) => n + 1)}>Fit Content ⌘0</Button>
-          <Button onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}>Frame Selected ⇧F</Button>
-          <Button onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}>Duplicate ⌘D</Button>
-          <Button onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete Selection ⌫</Button>
+          <Button onClick={() => setFrameRequest((n) => n + 1)} isDisabled={selectedNodeIds.length === 0}>Frame Selected ⇧F</Button>
+          <Button onClick={duplicateSelection} isDisabled={selectedNodeIds.length === 0}>Duplicate ⌘D</Button>
+          <Button onClick={deleteSelection} isDisabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete Selection ⌫</Button>
           {saveState === "error" ? <Button onClick={() => setFailed(0)}>Retry save</Button> : null}
         </div>
       </div>
@@ -531,7 +531,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   <div className="nav-inline">
                     <Button onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
                     <Button onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open In Context</Button>
-                    <Button onClick={() => detachSubsystemCopy(subsystem.id)} disabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
+                    <Button onClick={() => detachSubsystemCopy(subsystem.id)} isDisabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
                   </div>
                 </Card>
               );
