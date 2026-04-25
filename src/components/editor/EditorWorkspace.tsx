@@ -3,7 +3,9 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CommentBubble, Input, Panel, SectionHeader, Tabs, ValidationBadge, Button, Textarea, Select, Badge } from "@/components/ui";
+import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
+import { Separator, Spinner } from "@heroui/react";
+import { Copy, Maximize2, Plus, Redo2, Star, Trash2, Undo2 } from "lucide-react";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
@@ -464,74 +466,91 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     return () => window.removeEventListener("keydown", onKey);
   }, [insertNodeFromEntry, paletteIndex, paletteOpen, paletteResults]);
 
-  if (!data) return <p>Loading system...</p>;
+  if (!data) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Spinner size="lg" />
+    </div>
+  );
 
   return (
     <div>
-      <SectionHeader title={data.system.name} description={data.system.description} />
-      <Tabs items={["Design", "Validation", "Simulation", "Versions"]} />
-      <div className="nav-inline" style={{ marginBottom: 8, justifyContent: "space-between" }}>
-        <div>{data.presence.map((p) => <span key={p.id} className="badge">{p.name}{p.selectedNodeId ? ` · ${p.selectedNodeId}` : ""}</span>)}</div>
-        <div className="nav-inline">
-          <span className="badge">{saveLabel}</span>
-          <Button onClick={undo} disabled={history.undo.length === 0}>Undo ⌘Z</Button>
-          <Button onClick={redo} disabled={history.redo.length === 0}>Redo ⇧⌘Z</Button>
-          <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Insert ⌘K</Button>
-          <Button onClick={createSubsystem} disabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
-          <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)}>
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-2 space-y-2">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">{data.system.name}</h1>
+            {data.system.description && <p className="text-xs text-slate-500 mt-0.5">{data.system.description}</p>}
+          </div>
+          <div className="flex items-center gap-2">
+            <AvatarStack names={data.presence.map((p) => p.name)} />
+            <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <Button variant="ghost" size="sm" onClick={undo} isDisabled={history.undo.length === 0}><Undo2 size={14} /> Undo</Button>
+          <Button variant="ghost" size="sm" onClick={redo} isDisabled={history.redo.length === 0}><Redo2 size={14} /> Redo</Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}><Plus size={14} /> Insert</Button>
+          <Button variant="ghost" size="sm" onClick={createSubsystem} isDisabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)} className="w-48 text-xs py-1">
             <option value="left_to_right">Layout: Left → Right</option>
             <option value="top_to_bottom">Layout: Top ↓ Bottom</option>
           </Select>
-          <Button onClick={() => arrangeNodes("selected")} disabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
-          <Button onClick={() => arrangeNodes("all")}>Arrange Whole Graph</Button>
-          <Button onClick={() => setRouteFocusMode((value) => !value)}>{routeFocusMode ? "Route Focus: On" : "Route Focus: Off"}</Button>
-          <Button onClick={() => setFitRequest((n) => n + 1)}>Fit Content ⌘0</Button>
-          <Button onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}>Frame Selected ⇧F</Button>
-          <Button onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}>Duplicate ⌘D</Button>
-          <Button onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete Selection ⌫</Button>
-          {saveState === "error" ? <Button onClick={() => setFailed(0)}>Retry save</Button> : null}
+          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("selected")} isDisabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
+          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("all")}>Arrange All</Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button variant="ghost" size="sm" onClick={() => setFitRequest((n) => n + 1)}><Maximize2 size={14} /> Fit</Button>
+          <Button variant="ghost" size="sm" onClick={() => setFrameRequest((n) => n + 1)} isDisabled={selectedNodeIds.length === 0}>Frame</Button>
+          <Button variant="ghost" size="sm" onClick={duplicateSelection} isDisabled={selectedNodeIds.length === 0}><Copy size={14} /> Dupe</Button>
+          <Button variant="danger-soft" size="sm" onClick={deleteSelection} isDisabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}><Trash2 size={14} /> Delete</Button>
+          <Button variant={routeFocusMode ? "secondary" : "ghost"} size="sm" onClick={() => setRouteFocusMode((v) => !v)}>Route Focus</Button>
+          {saveState === "error" && <Button variant="ghost" size="sm" onClick={() => setFailed(0)}>Retry</Button>}
         </div>
       </div>
       <div className="editor-shell" style={{ marginTop: 12 }}>
         <Panel title="Node Library">
           <Input value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} placeholder="Search nodes, tags, category..." />
-          <div className="nav-inline" style={{ marginTop: 8 }}>
-            <span className="badge">Favorites: {favorites.length}</span>
-            <span className="badge">Recents: {recents.length}</span>
-            <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Command Palette /</Button>
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Favorites: {favorites.length}</span>
+            <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Recents: {recents.length}</span>
+            <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}><Plus size={14} /> Command Palette</Button>
           </div>
           {groupedLibrary.map((group) => (
-            <div key={group.category} style={{ marginTop: 12 }}>
-              <h4 style={{ marginBottom: 6 }}>{group.category}</h4>
-              <div className="validation-list">
+            <div key={group.category}>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mt-4 mb-2">{group.category}</h4>
+              <div className="space-y-2">
                 {group.entries.slice(0, 8).map((entry) => (
-                  <Card key={entry.nodeType}>
-                    <div className="nav-inline" style={{ justifyContent: "space-between" }}>
-                      <strong>{entry.name}</strong>
-                      <Button onClick={() => toggleFavorite(entry.nodeType)}>{favorites.includes(entry.nodeType) ? "★" : "☆"}</Button>
+                  <Card key={entry.nodeType} className="p-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <strong className="text-sm text-slate-800">{entry.name}</strong>
+                      <Button variant="ghost" size="sm" isIconOnly onClick={() => toggleFavorite(entry.nodeType)}>
+                        {favorites.includes(entry.nodeType) ? <Star className="fill-amber-400 text-amber-400" size={14} /> : <Star size={14} />}
+                      </Button>
                     </div>
-                    <p>{entry.description}</p>
-                    <p className="badge">{entry.tags.join(" · ")}</p>
-                    <p>Use: {entry.typicalUse}</p>
-                    <p>In: {entry.inputTypes.join(", ")} → Out: {entry.outputTypes.join(", ")}</p>
-                    <Button onClick={() => insertNodeFromEntry(entry, { mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Add Node</Button>
+                    <p className="text-xs text-slate-500 mt-1">{entry.description}</p>
+                    <p className="text-xs text-slate-400 mt-1">{entry.tags.join(" · ")}</p>
+                    <p className="text-xs text-slate-500">Use: {entry.typicalUse}</p>
+                    <p className="text-xs text-slate-500">In: {entry.inputTypes.join(", ")} → Out: {entry.outputTypes.join(", ")}</p>
+                    <Button variant="ghost" size="sm" onClick={() => insertNodeFromEntry(entry, { mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Add Node</Button>
                   </Card>
                 ))}
               </div>
             </div>
           ))}
-          <div style={{ marginTop: 14 }}>
-            <h4>Subsystems</h4>
-            {subsystems.length === 0 ? <p className="badge">No subsystems yet. Select 2+ nodes and use “Create Subsystem”.</p> : subsystems.map((subsystem) => {
+          <div className="mt-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Subsystems</h4>
+            {subsystems.length === 0 ? (
+              <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No subsystems yet. Select 2+ nodes and use "Create Subsystem".</p>
+            ) : subsystems.map((subsystem) => {
               const boundary = computeSubsystemBoundary(subsystem, pipes);
               return (
                 <Card key={subsystem.id}>
-                  <p><strong>{subsystem.name}</strong> · {subsystem.collapsed ? "Collapsed" : "Expanded"}</p>
-                  <p>{subsystem.nodeIds.length} internal nodes · {boundary.inboundNodeIds.length} inbound · {boundary.outboundNodeIds.length} outbound</p>
-                  <div className="nav-inline">
-                    <Button onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
-                    <Button onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open In Context</Button>
-                    <Button onClick={() => detachSubsystemCopy(subsystem.id)} disabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
+                  <p className="text-sm font-medium text-slate-800"><strong>{subsystem.name}</strong> · {subsystem.collapsed ? "Collapsed" : "Expanded"}</p>
+                  <p className="text-xs text-slate-500">{subsystem.nodeIds.length} internal nodes · {boundary.inboundNodeIds.length} inbound · {boundary.outboundNodeIds.length} outbound</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    <Button variant="ghost" size="sm" onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open In Context</Button>
+                    <Button variant="ghost" size="sm" onClick={() => detachSubsystemCopy(subsystem.id)} isDisabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
                   </div>
                 </Card>
               );
@@ -584,7 +603,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <Panel title="Inspector">
             {selectedEdge ? (
               <Card>
-                <h4>Pipe semantics</h4>
+                <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Pipe semantics</h4>
                 <Input
                   value={pipeSemantics[selectedEdge.id]?.label ?? ""}
                   onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
@@ -610,19 +629,22 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", notes: e.target.value } }))}
                   placeholder="Route notes / rationale"
                 />
-                <p className="badge">Hit target: expanded for easier selection and relabeling.</p>
+                <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mt-1">Hit target: expanded for easier selection and relabeling.</p>
               </Card>
             ) : null}
             {selectedNode ? (
               <Card>
-                {occupancy.length > 1 ? <p className="badge">⚠ Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
-                <div className="nav-inline" style={{ flexWrap: "wrap" }}>
+                {occupancy.length > 1 ? <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">⚠ Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
+                <div className="flex gap-1 flex-wrap border-b border-slate-100 pb-2 mb-3">
                   {(["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]).map((tab) => (
-                    <Button key={tab} onClick={() => setInspectorTab(tab)}>{tab === inspectorTab ? `• ${tab}` : tab}</Button>
+                    <button key={tab} onClick={() => setInspectorTab(tab)}
+                      className={`px-2 py-1 text-xs rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}>
+                      {tab}
+                    </button>
                   ))}
                 </div>
                 {inspectorTab === "overview" ? (
-                  <div className="validation-list">
+                  <div className="space-y-2">
                     <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
                     <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} />
                     <Input value={selectedDefinition?.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
@@ -632,8 +654,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "inputs" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p className="badge">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mb-2">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
                     <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
                       {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
                     </Select>
@@ -656,8 +678,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "outputs" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p className="badge">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mb-2">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
                     <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
                       {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
                     </Select>
@@ -679,7 +701,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "config" && selectedDefinition ? (
-                  <div className="validation-list">
+                  <div className="space-y-2">
                     <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
                     <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
                     <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
@@ -688,7 +710,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "notes" && selectedDefinition ? (
-                  <div className="validation-list">
+                  <div className="space-y-2">
                     <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
                     <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
                     <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
@@ -696,60 +718,62 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "validation" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p><strong>Contract validation</strong></p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Contract validation</h4>
                     {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
-                    <p><strong>Compatibility hints</strong></p>
-                    {compatibilityHints.length === 0 ? <p className="badge">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
+                    <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Compatibility hints</h4>
+                    {compatibilityHints.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
                   </div>
                 ) : null}
                 {inspectorTab === "docs" && selectedDefinition ? (
-                  <div className="validation-list">
+                  <div className="space-y-2">
                     <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
                     <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
                     <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
                   </div>
                 ) : null}
-                <Button onClick={() => {
-                  recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
-                  setSelectedNodeIds([]);
-                }}>Delete Node</Button>
-                <div className="nav-inline">
-                  <Button onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
-                  <Button onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
+                <div className="flex items-center gap-2 flex-wrap mt-3">
+                  <Button variant="danger-soft" size="sm" onClick={() => {
+                    recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
+                    setSelectedNodeIds([]);
+                  }}><Trash2 size={14} /> Delete Node</Button>
+                  <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
+                  <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
                 </div>
               </Card>
-            ) : <p>Select a node to inspect details.</p>}
-            <h4>Validation</h4>
-            <div className="validation-list">{validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)}</div>
-            <h4>Simulation</h4>
-            <p>Status: {sim.status}</p>
-            <p>Steps: {sim.steps.length}</p>
-            <p>Traversed pipes: {tracedEdgeIds.length}</p>
-            <div className="validation-list">
+            ) : <p className="text-sm text-slate-400 py-2">Select a node to inspect details.</p>}
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Validation</h4>
+            <div className="space-y-2">{validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)}</div>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Simulation</h4>
+            <div className="text-xs text-slate-600 space-y-0.5 mb-2">
+              <p>Status: {sim.status}</p>
+              <p>Steps: {sim.steps.length}</p>
+              <p>Traversed pipes: {tracedEdgeIds.length}</p>
+            </div>
+            <div className="space-y-2">
               <Card>
-                <h5>Branch decisions</h5>
-                {traceSummary.branchDecisions.length === 0 ? <p className="badge">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item}>{item}</p>)}
+                <h5 className="text-xs font-semibold text-slate-600 mb-1">Branch decisions</h5>
+                {traceSummary.branchDecisions.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
               </Card>
               <Card>
-                <h5>Loop summary</h5>
-                {traceSummary.loopSummaries.length === 0 ? <p className="badge">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item}>{item}</p>)}
+                <h5 className="text-xs font-semibold text-slate-600 mb-1">Loop summary</h5>
+                {traceSummary.loopSummaries.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
               </Card>
               <Card>
-                <h5>Blocked/invalid routes</h5>
-                {traceSummary.blocked.length === 0 ? <p className="badge">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item}>{item}</p>)}
-                {invalidPipeIds.length > 0 ? <p className="badge">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
+                <h5 className="text-xs font-semibold text-slate-600 mb-1">Blocked/invalid routes</h5>
+                {traceSummary.blocked.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
+                {invalidPipeIds.length > 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
               </Card>
             </div>
-            <h4>Comments</h4>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Comments</h4>
             <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
             <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
-            {data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}
-            <h4>Versions</h4>
+            <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Versions</h4>
             <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
             <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
-            {data.versions.map((v) => <div key={v.id} className="nav-inline"><span>{v.name}</span></div>)}
-            <h4>AI Refactor</h4>
+            <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="text-sm text-slate-700">{v.name}</span></div>)}</div>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">AI Refactor</h4>
             <Input value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} />
             <Button onClick={async () => {
               const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
@@ -757,32 +781,32 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
             }}>Suggest Edits</Button>
             {pendingSuggestion ? <Card>
-              <p><strong>AI edit set under review</strong></p>
-              <p>{pendingSuggestion.summary}</p>
-              <p>Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
-              <p>Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
-              <p>Change count: {(pendingSuggestion.changes ?? []).length}</p>
-              <div className="validation-list">
+              <p className="text-sm font-semibold text-slate-800">AI edit set under review</p>
+              <p className="text-sm text-slate-600">{pendingSuggestion.summary}</p>
+              <p className="text-xs text-slate-500">Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
+              <p className="text-xs text-slate-500">Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
+              <p className="text-xs text-slate-500">Change count: {(pendingSuggestion.changes ?? []).length}</p>
+              <div className="space-y-2 mt-2">
                 {(pendingSuggestion.changes ?? []).map((change: any) => (
                   <Card key={change.id}>
                     <label><input type="checkbox" checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))} /> {change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</label>
-                    <p>{change.rationale ?? "No rationale"}</p>
+                    <p className="text-xs text-slate-500 mt-1">{change.rationale ?? "No rationale"}</p>
                   </Card>
                 ))}
               </div>
-              <div className="nav-inline">
-                <Button onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
-                <Button onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
-                <Button onClick={async () => {
+              <div className="flex items-center gap-2 flex-wrap mt-3">
+                <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
+                <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
+                <Button variant="secondary" size="sm" onClick={async () => {
                   await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
                   setPendingSuggestion(null);
                   setAcceptedChangeIds([]);
                   reload();
                 }}>Apply Selected Changes</Button>
-                <Button onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
               </div>
             </Card> : null}
-            <h4>Import Merge Review</h4>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Import Merge Review</h4>
             <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
             <Button onClick={async () => {
               const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
@@ -790,10 +814,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               if (resData.ok) setMergePlan(resData.data);
             }}>Plan Merge</Button>
             {mergePlan?.ok ? <Card>
-              <p><strong>Import review pending</strong></p>
-              <p>Additions: {mergePlan.summary?.additions ?? 0}</p>
-              <p>Updates: {mergePlan.summary?.updates ?? 0}</p>
-              <p>Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
+              <p className="text-sm font-semibold text-slate-800">Import review pending</p>
+              <p className="text-xs text-slate-600">Additions: {mergePlan.summary?.additions ?? 0}</p>
+              <p className="text-xs text-slate-600">Updates: {mergePlan.summary?.updates ?? 0}</p>
+              <p className="text-xs text-slate-600">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
               <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
               <Button onClick={async () => {
                 await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
@@ -801,9 +825,11 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                 reload();
               }}>Apply Merge (creates checkpoint)</Button>
             </Card> : null}
-            <h4>Export</h4>
-            <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
-            <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
+            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Export</h4>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
+              <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
+            </div>
           </Panel>
         </EditorErrorBoundary>
         <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
@@ -823,27 +849,29 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         </EditorErrorBoundary>
       </div>
       {paletteOpen ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(10,14,24,0.45)", zIndex: 60, display: "grid", placeItems: "start center", paddingTop: 80 }} onClick={() => setPaletteOpen(false)}>
-          <div onClick={(event) => event.stopPropagation()}>
-            <Card className="panel">
-              <h3>Insert Node</h3>
-              <p className="badge">Context: {insertRequest.mode}</p>
-              <Input autoFocus value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags, or use..." />
-              <div className="validation-list" style={{ marginTop: 8, maxHeight: 360, overflow: "auto" }}>
-                {paletteResults.map((entry, idx) => (
-                  <Card key={`${entry.nodeType}_${idx}`} className={idx === paletteIndex ? "card-selected" : undefined}>
-                    <div className="nav-inline" style={{ justifyContent: "space-between" }}>
-                      <strong>{entry.name}</strong>
-                      <span className="badge">{entry.category}</span>
-                    </div>
-                    <p>{entry.description}</p>
-                    <p>In: {entry.inputTypes.join(", ")} · Out: {entry.outputTypes.join(", ")}</p>
-                    <Button onClick={() => insertNodeFromEntry(entry)}>{idx === paletteIndex ? "Insert ↵" : "Insert"}</Button>
-                  </Card>
-                ))}
-                {paletteResults.length === 0 ? <p>No node matches this query.</p> : null}
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-20" onClick={() => setPaletteOpen(false)}>
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-base font-semibold text-slate-800">Insert Node</h3>
+                <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Context: {insertRequest.mode}</span>
               </div>
-            </Card>
+              <Input autoFocus value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags, or use..." className="w-full" />
+            </div>
+            <div className="overflow-y-auto max-h-96 divide-y divide-slate-100">
+              {paletteResults.map((entry, idx) => (
+                <div key={`${entry.nodeType}_${idx}`} className={`p-3 ${idx === paletteIndex ? "bg-indigo-50" : "hover:bg-slate-50"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-sm text-slate-800">{entry.name}</strong>
+                    <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">{entry.category}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{entry.description}</p>
+                  <p className="text-xs text-slate-400">In: {entry.inputTypes.join(", ")} · Out: {entry.outputTypes.join(", ")}</p>
+                  <Button variant="ghost" size="sm" onClick={() => insertNodeFromEntry(entry)} className="mt-1">{idx === paletteIndex ? "Insert ↵" : "Insert"}</Button>
+                </div>
+              ))}
+              {paletteResults.length === 0 ? <p className="p-4 text-sm text-slate-400">No node matches this query.</p> : null}
+            </div>
           </div>
         </div>
       ) : null}

@@ -1,29 +1,117 @@
+"use client";
+
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { Button, Card, Input, PageHeader } from "@/components/ui";
-import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { useSearchParams } from "next/navigation";
+import { Button, Card } from "@heroui/react";
+import { GitBranch, Check } from "lucide-react";
 import { SignupSourceTracker } from "@/components/marketing/SignupSourceTracker";
 
-export const metadata = {
-  title: "Sign up · Pipes",
-  description: "Create a Pipes workspace for structured system design, validation, and protocol-ready handoff."
-};
+const BENEFITS = [
+  "3 systems free",
+  "AI-assisted design",
+  "Protocol-ready",
+];
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ source?: string }> }) {
-  const params = await searchParams;
-  const source = params.source ?? "direct";
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const source = searchParams.get("source") ?? "direct";
+
+  const [name, setName] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const nameError = submitted && !name.trim() ? "Your name is required" : null;
+  const workspaceError = submitted && !workspaceName.trim() ? "Workspace name is required" : null;
+
+  function handleContinue() {
+    setSubmitted(true);
+    if (!name.trim() || !workspaceName.trim()) return;
+    const base = "/api/auth/login?returnTo=/onboarding";
+    const url = `${base}&workspace=${encodeURIComponent(workspaceName)}`;
+    window.location.href = url;
+  }
+
   return (
-    <div>
+    <>
       <SignupSourceTracker source={source} />
-      <PageHeader title="Create your workspace" subtitle="Start in mock mode locally, then connect production providers when ready." />
-      <Card>
-        <Input placeholder="Work email" />
-        <div style={{ height: 8 }} />
-        <Input placeholder="Workspace name" />
-        <div style={{ height: 12 }} />
-        <TrackedLink href="/api/auth/login?returnTo=/onboarding" event="signup_started" metadata={{ source }}><Button>Start free workspace</Button></TrackedLink>
-        <p>Entry source: <code>{source}</code></p>
-        <p>Already have access? <Link href="/login">Sign in</Link>.</p>
+
+      <Card className="w-full max-w-md shadow-lg">
+        <Card.Content className="flex flex-col gap-6 p-8">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <GitBranch className="h-6 w-6 text-black" strokeWidth={2} />
+            <span className="text-xl font-bold tracking-tight text-black">Pipes</span>
+          </div>
+
+          {/* Heading */}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold text-gray-900">Create your workspace</h1>
+            <p className="text-sm text-gray-500">Free forever. No credit card required.</p>
+          </div>
+
+          {/* Benefits */}
+          <ul className="flex flex-col gap-2">
+            {BENEFITS.map((benefit) => (
+              <li key={benefit} className="flex items-center gap-2 text-sm text-gray-700">
+                <Check className="h-4 w-4 text-green-500 shrink-0" strokeWidth={2.5} />
+                {benefit}
+              </li>
+            ))}
+          </ul>
+
+          {/* Form */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Your name</label>
+              <input
+                type="text"
+                placeholder="Alex Rivera"
+                value={name}
+                onChange={(e) => { setName(e.target.value); if (submitted) setSubmitted(false); }}
+                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${nameError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
+              />
+              {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Workspace name</label>
+              <input
+                type="text"
+                placeholder="Acme AI"
+                value={workspaceName}
+                onChange={(e) => { setWorkspaceName(e.target.value); if (submitted) setSubmitted(false); }}
+                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${workspaceError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
+              />
+              {workspaceError && <p className="text-xs text-red-500">{workspaceError}</p>}
+            </div>
+            <Button
+              onPress={handleContinue}
+              className="w-full bg-black text-white font-semibold"
+              size="lg"
+            >
+              Continue with Auth0
+            </Button>
+          </div>
+
+          {/* Sign-in link */}
+          <p className="text-center text-sm text-gray-500">
+            Already have an account?{" "}
+            <Link href="/login" className="text-black font-medium underline underline-offset-2 hover:opacity-70">
+              Sign in
+            </Link>
+          </p>
+        </Card.Content>
       </Card>
+    </>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+      <Suspense fallback={<div className="w-full max-w-md h-96 rounded-2xl bg-gray-100 animate-pulse" />}>
+        <SignupForm />
+      </Suspense>
     </div>
   );
 }
