@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   Button,
   Card,
@@ -25,6 +26,7 @@ import {
   Edit,
   RotateCcw,
   Layers,
+  Activity,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -52,6 +54,13 @@ type LibraryPayload = {
 };
 
 type TabKey = "all" | "active" | "archived" | "favorites" | "mine";
+
+type DashStats = {
+  total: number;
+  active: number;
+  favorites: number;
+  recentCount: number;
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -103,6 +112,56 @@ function EmptyStateView({ onNew }: { onNew: () => void }) {
             Browse Templates
           </Button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stats Bar
+// ---------------------------------------------------------------------------
+
+function StatCard({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recent Activity Feed
+// ---------------------------------------------------------------------------
+
+function RecentActivity({ items }: { items: LibraryRow[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <Activity className="w-4 h-4 text-slate-400" />
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Recently Updated
+        </h2>
+      </div>
+      <div className="flex flex-col gap-1">
+        {items.slice(0, 5).map((row) => (
+          <Link
+            key={row.id}
+            href={`/systems/${row.id}`}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors group"
+          >
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 group-hover:bg-slate-200 transition-colors">
+              <Layers className="w-3.5 h-3.5 text-slate-500" />
+            </div>
+            <span className="flex-1 min-w-0 text-sm font-medium text-slate-700 truncate">
+              {row.name}
+            </span>
+            <span className="shrink-0 text-[11px] text-slate-400">
+              {formatRelativeDate(row.updatedAt)}
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );
@@ -337,6 +396,26 @@ export function DashboardClient({
   const [loadingLibrary, setLoadingLibrary] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [page, setPage] = useState(1);
+  const [stats, setStats] = useState<DashStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/library?status=all")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) return;
+        const rows: LibraryRow[] = d.data.rows;
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        setStats({
+          total: rows.length,
+          active: rows.filter((r) => !r.archivedAt).length,
+          favorites: rows.filter((r) => r.favorite).length,
+          recentCount: rows.filter(
+            (r) => Date.now() - new Date(r.updatedAt).getTime() < sevenDays,
+          ).length,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Library fetch ────────────────────────────────────────────────────────
 
@@ -374,38 +453,54 @@ export function DashboardClient({
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const createSystem = async () => {
-    const res = await fetch("/api/systems", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: "New System" }),
-    });
-    const data = await res.json();
-    if (data.ok) router.push(`/systems/${data.data.systemId}`);
+    const id = toast.loading("Creating system…");
+    try {
+      const res = await fetch("/api/systems", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "New System" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("System created", { id });
+        router.push(`/systems/${data.data.systemId}`);
+      } else {
+        toast.error(data.error ?? "Failed to create system", { id });
+      }
+    } catch {
+      toast.error("Failed to create system", { id });
+    }
   };
 
   const handleImport = async (text: string) => {
-    const res = await fetch("/api/import/system", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ schema: text, mode: "new" }),
-    });
-    const data = await res.json();
-    if (data.ok && data.data.ok) {
-      setShowImport(false);
-      router.push(`/systems/${data.data.systemId}`);
+    const id = toast.loading("Importing…");
+    try {
+      const res = await fetch("/api/import/system", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ schema: text, mode: "new" }),
+      });
+      const data = await res.json();
+      if (data.ok && data.data.ok) {
+        toast.success("System imported", { id });
+        setShowImport(false);
+        router.push(`/systems/${data.data.systemId}`);
+      } else {
+        toast.error(data.error ?? "Import failed — check JSON format", { id });
+      }
+    } catch {
+      toast.error("Import failed", { id });
     }
   };
 
   const handleToggleFavorite = async (row: LibraryRow) => {
+    const next = !row.favorite;
     await fetch("/api/library", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "favorite",
-        systemId: row.id,
-        favorite: !row.favorite,
-      }),
+      body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: next }),
     });
+    toast.success(next ? "Added to favorites" : "Removed from favorites");
     void refreshLibrary();
   };
 
@@ -415,6 +510,7 @@ export function DashboardClient({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "archive" }),
     });
+    toast.success(`"${row.name}" archived`);
     void refreshLibrary();
   };
 
@@ -424,12 +520,16 @@ export function DashboardClient({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "restore" }),
     });
+    toast.success(`"${row.name}" restored`);
     void refreshLibrary();
   };
 
   const handleExport = async (row: LibraryRow) => {
     const res = await fetch(`/api/systems/${row.id}/export`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      toast.error("Export failed");
+      return;
+    }
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -437,6 +537,7 @@ export function DashboardClient({
     a.download = `${row.name.toLowerCase().replace(/\s+/g, "-")}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success(`"${row.name}" exported`);
   };
 
   const handleEdit = (row: LibraryRow) => {
@@ -491,6 +592,21 @@ export function DashboardClient({
           </Button>
         </div>
       </div>
+
+      {/* ── Stats Bar ───────────────────────────────────────────────────── */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatCard label="Total systems" value={stats.total} />
+          <StatCard label="Active" value={stats.active} />
+          <StatCard label="Favorites" value={stats.favorites} />
+          <StatCard label="Updated this week" value={stats.recentCount} />
+        </div>
+      )}
+
+      {/* ── Recent Activity ──────────────────────────────────────────────── */}
+      {library.recent.length > 0 && (
+        <RecentActivity items={library.recent} />
+      )}
 
       {/* ── Filter Toolbar ───────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">

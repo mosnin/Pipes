@@ -8,6 +8,7 @@ import {
   Spinner,
   Table,
 } from "@heroui/react";
+import { SkeletonCard } from "@/components/ui";
 import {
   Activity,
   AlertCircle,
@@ -84,6 +85,14 @@ export default function AdminInsightsPage() {
           </Card.Content>
         </Card>
       ) : null}
+
+      {loading && !data && (
+        <div className="space-y-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+      )}
 
       {data ? (
         <>

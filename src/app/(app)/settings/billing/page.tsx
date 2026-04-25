@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Card,
   Button,
@@ -8,6 +9,7 @@ import {
   Separator,
   Spinner,
 } from "@heroui/react";
+import { SkeletonCard } from "@/components/ui";
 import { CheckCircle2, XCircle, CreditCard, ExternalLink } from "lucide-react";
 
 type Plan = "Free" | "Pro" | "Builder";
@@ -120,7 +122,11 @@ export default function BillingSettingsPage() {
         body: JSON.stringify({ plan }),
       });
       const data = await res.json();
-      if (data.ok) window.location.href = data.data.checkoutUrl;
+      if (data.ok) {
+        window.location.href = data.data.checkoutUrl;
+      } else {
+        toast.error(data.error ?? "Checkout failed — please try again");
+      }
     } finally {
       setCheckoutLoading(null);
     }
@@ -131,7 +137,11 @@ export default function BillingSettingsPage() {
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await res.json();
-      if (data.ok) window.location.href = data.data.portalUrl;
+      if (data.ok) {
+        window.location.href = data.data.portalUrl;
+      } else {
+        toast.error(data.error ?? "Could not open billing portal");
+      }
     } finally {
       setPortalLoading(false);
     }
@@ -158,8 +168,12 @@ export default function BillingSettingsPage() {
 
       {/* ── Loading state ── */}
       {!summary && (
-        <div className="flex items-center justify-center py-20">
-          <Spinner size="lg" />
+        <div className="space-y-6">
+          <SkeletonCard className="h-48" />
+          <div className="grid grid-cols-2 gap-4">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
         </div>
       )}
 

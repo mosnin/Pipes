@@ -21,6 +21,7 @@ import {
 import { getAuthService } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
 import { canAccessAdmin } from "@/lib/admin/access";
+import { ThemeToggle } from "./ThemeToggle";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -269,6 +270,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Chip
               color="accent"
               variant="soft"

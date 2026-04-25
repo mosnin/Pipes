@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   Card,
   Button,
@@ -135,7 +136,7 @@ export default function TrustSettingsPage() {
   const saveAuth = async () => {
     setAuthSaving(true);
     try {
-      await fetch("/api/settings/trust", {
+      const res = await fetch("/api/settings/trust", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -151,7 +152,15 @@ export default function TrustSettingsPage() {
           },
         }),
       });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("Auth settings saved");
+      } else {
+        toast.error(body.error ?? "Failed to save auth settings");
+      }
       await loadTrust();
+    } catch {
+      toast.error("Failed to save auth settings");
     } finally {
       setAuthSaving(false);
     }
@@ -180,12 +189,20 @@ export default function TrustSettingsPage() {
         tool: { ...policy.tool, allowedTools: parsedTools },
         cost: { ...policy.cost, maxRunCostUsd: parsedCost },
       };
-      await fetch("/api/agent/policy", {
+      const res = await fetch("/api/agent/policy", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("Agent policy saved");
+      } else {
+        toast.error(body.error ?? "Failed to save agent policy");
+      }
       await loadPolicy();
+    } catch {
+      toast.error("Failed to save agent policy");
     } finally {
       setPolicySaving(false);
     }
@@ -196,7 +213,14 @@ export default function TrustSettingsPage() {
     try {
       const res = await fetch("/api/settings/export/workspace", { method: "POST" });
       const body = await res.json();
-      if (body.ok) setExportManifest(body.data);
+      if (body.ok) {
+        setExportManifest(body.data);
+        toast.success("Export manifest generated");
+      } else {
+        toast.error(body.error ?? "Failed to generate export");
+      }
+    } catch {
+      toast.error("Failed to generate export");
     } finally {
       setExportLoading(false);
     }
@@ -206,7 +230,7 @@ export default function TrustSettingsPage() {
     if (confirmPhrase !== "DEACTIVATE") return;
     setLifecycleSaving(true);
     try {
-      await fetch("/api/settings/trust", {
+      const res = await fetch("/api/settings/trust", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -215,7 +239,15 @@ export default function TrustSettingsPage() {
           confirmation: confirmPhrase,
         }),
       });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("Workspace deactivated");
+      } else {
+        toast.error(body.error ?? "Failed to deactivate workspace");
+      }
       await loadTrust();
+    } catch {
+      toast.error("Failed to deactivate workspace");
     } finally {
       setLifecycleSaving(false);
       setDeactivateOpen(false);
@@ -226,12 +258,20 @@ export default function TrustSettingsPage() {
   const handleReactivate = async () => {
     setLifecycleSaving(true);
     try {
-      await fetch("/api/settings/trust", {
+      const res = await fetch("/api/settings/trust", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "reactivate" }),
       });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("Workspace reactivated");
+      } else {
+        toast.error(body.error ?? "Failed to reactivate workspace");
+      }
       await loadTrust();
+    } catch {
+      toast.error("Failed to reactivate workspace");
     } finally {
       setLifecycleSaving(false);
     }

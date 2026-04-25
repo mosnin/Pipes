@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import {
   Card,
   Chip,
-  Spinner,
   Table,
 } from "@heroui/react";
+import { SkeletonCard } from "@/components/ui";
 
 type ChipColor = "success" | "warning" | "danger" | "default" | "accent";
 
@@ -58,8 +58,10 @@ export default function OperationsSettingsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
+        <div className="space-y-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : (
         <div className="space-y-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AGENT_CAPABILITIES } from "@/lib/protocol/tokens";
 import {
   Button,
@@ -10,6 +11,7 @@ import {
   Table,
   Separator,
 } from "@heroui/react";
+import { SkeletonCard } from "@/components/ui";
 import { Key, Copy, CheckCircle2, Trash2 } from "lucide-react";
 
 const CAPABILITY_LABELS: Record<string, string> = {
@@ -41,23 +43,30 @@ function formatDate(value: string | null | undefined): string {
 
 export default function TokensSettingsPage() {
   const [tokens, setTokens] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("CI Bot");
   const [capabilities, setCapabilities] = useState<string[]>(["systems:read", "schema:read"]);
   const [secret, setSecret] = useState<string | null>(null);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+
+  const nameError = nameTouched && !name.trim() ? "Token name is required" : null;
 
   const load = () =>
     fetch("/api/settings/tokens")
       .then((r) => r.json())
-      .then((d) => setTokens(d.data ?? []));
+      .then((d) => setTokens(d.data ?? []))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
   }, []);
 
   const handleCreate = async () => {
+    setNameTouched(true);
+    if (!name.trim()) return;
     setCreating(true);
     try {
       const res = await fetch("/api/settings/tokens", {
@@ -69,6 +78,9 @@ export default function TokensSettingsPage() {
       if (data.ok) {
         setSecret(data.data.secret);
         setAuthHeader(data.data.authHeaderExample);
+        toast.success("Token created — copy it now");
+      } else {
+        toast.error(data.error ?? "Failed to create token");
       }
       await load();
     } finally {
@@ -77,14 +89,20 @@ export default function TokensSettingsPage() {
   };
 
   const handleRevoke = async (tokenId: string) => {
-    await fetch(`/api/settings/tokens/${tokenId}/revoke`, { method: "POST" });
-    await load();
+    try {
+      await fetch(`/api/settings/tokens/${tokenId}/revoke`, { method: "POST" });
+      await load();
+      toast.success("Token revoked");
+    } catch {
+      toast.error("Failed to revoke token");
+    }
   };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      toast.success("Copied to clipboard");
     });
   };
 
@@ -114,7 +132,16 @@ export default function TokensSettingsPage() {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-default-700" htmlFor="tokenName">Token name</label>
-            <input id="tokenName" type="text" placeholder="e.g. CI pipeline, Claude agent" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input
+              id="tokenName"
+              type="text"
+              placeholder="e.g. CI pipeline, Claude agent"
+              value={name}
+              onChange={(e) => { setName(e.target.value); setNameTouched(true); }}
+              onBlur={() => setNameTouched(true)}
+              className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 ${nameError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-default-200 bg-white focus:ring-indigo-500"}`}
+            />
+            {nameError && <p className="text-xs text-red-500">{nameError}</p>}
           </div>
 
           {/* Capabilities */}
@@ -152,7 +179,7 @@ export default function TokensSettingsPage() {
             <Button
               variant="primary"
               onPress={handleCreate}
-              isDisabled={!name.trim() || capabilities.length === 0}
+              isDisabled={capabilities.length === 0}
             >
               {creating ? <Spinner size="sm" /> : <Key className="w-4 h-4" />}
               Create token
@@ -213,7 +240,9 @@ export default function TokensSettingsPage() {
         <Card.Content className="p-6 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Active tokens</h2>
 
-          {tokens.length === 0 ? (
+          {loading ? (
+            <SkeletonCard />
+          ) : tokens.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Key className="w-10 h-10 text-default-300 mb-3" />
               <p className="text-sm font-medium text-default-500">No tokens yet</p>

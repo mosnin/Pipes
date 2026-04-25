@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Avatar,
   Button,
@@ -169,9 +170,14 @@ export default function CollaborationSettingsPage() {
   // ── Invite form ──────────────────────────────────────────────────────────
   const [email, setEmail]               = useState("");
   const [inviteRole, setInviteRole]     = useState<Role>("Viewer");
-  const [inviteStatus, setInviteStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [inviteError, setInviteError]   = useState("");
-  const [invitedEmail, setInvitedEmail] = useState(""); // captured before clearing
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const emailError = emailTouched && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    ? "Enter a valid email address"
+    : emailTouched && !email.trim()
+    ? "Email is required"
+    : null;
 
   // ── Search / filter ──────────────────────────────────────────────────────
   const [query, setQuery]           = useState("");
@@ -246,9 +252,9 @@ export default function CollaborationSettingsPage() {
 
   // ── Invite submit ─────────────────────────────────────────────────────────
   async function handleSendInvite() {
-    if (!email.trim()) return;
-    setInviteStatus("loading");
-    setInviteError("");
+    setEmailTouched(true);
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
+    setInviteLoading(true);
     const target = email.trim();
     try {
       const res = await fetch("/api/invites", {
@@ -260,15 +266,15 @@ export default function CollaborationSettingsPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
       }
-      setInvitedEmail(target);
-      setInviteStatus("success");
       setEmail("");
       setInviteRole("Viewer");
+      setEmailTouched(false);
       load();
-      setTimeout(() => setInviteStatus("idle"), 3000);
+      toast.success(`Invite sent to ${target}`);
     } catch (err: unknown) {
-      setInviteError(err instanceof Error ? err.message : "Failed to send invite.");
-      setInviteStatus("error");
+      toast.error(err instanceof Error ? err.message : "Failed to send invite.");
+    } finally {
+      setInviteLoading(false);
     }
   }
 
@@ -281,16 +287,24 @@ export default function CollaborationSettingsPage() {
   async function confirmRoleChange() {
     if (!pendingChange) return;
     setChangeLoading(true);
+    const { member, newRole } = pendingChange;
     try {
-      await fetch("/api/workspace/collaborators", {
+      const res = await fetch("/api/workspace/collaborators", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          userId: pendingChange.member.userId,
-          role: pendingChange.newRole,
+          userId: member.userId,
+          role: newRole,
         }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
+      }
       load();
+      toast.success(`Role updated to ${newRole}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to update role.");
     } finally {
       setChangeLoading(false);
       // Clear pendingChange before closing so onOpenChange doesn't reset the row role
@@ -308,8 +322,15 @@ export default function CollaborationSettingsPage() {
   async function handleCancelInvite(token: string) {
     setCancellingTokens((prev) => new Set(prev).add(token));
     try {
-      await fetch(`/api/invites/${token}/cancel`, { method: "POST" });
+      const res = await fetch(`/api/invites/${token}/cancel`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
+      }
       load();
+      toast.success("Invite cancelled");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel invite.");
     } finally {
       setCancellingTokens((prev) => {
         const next = new Set(prev);
@@ -353,19 +374,25 @@ export default function CollaborationSettingsPage() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               {/* Email input — HeroUI v3 Input wraps a native <input> */}
-              <div className="flex-1 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                  <Mail size={15} />
-                </span>
-                <input
-                  aria-label="Invite collaborator email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && void handleSendInvite()}
-                  className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-                />
+              <div className="flex-1">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <Mail size={15} />
+                  </span>
+                  <input
+                    aria-label="Invite collaborator email"
+                    type="email"
+                    placeholder="name@company.com"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailTouched(true); }}
+                    onBlur={() => setEmailTouched(true)}
+                    onKeyDown={(e) => e.key === "Enter" && void handleSendInvite()}
+                    className={`w-full rounded-lg border pl-9 pr-3 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:ring-2 ${emailError ? "border-red-400 bg-red-50 focus:border-red-400 focus:ring-red-100" : "border-slate-200 bg-white focus:border-indigo-400 focus:ring-indigo-100"}`}
+                  />
+                </div>
+                {emailError && (
+                  <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                )}
               </div>
 
               <RoleSelect
@@ -377,11 +404,11 @@ export default function CollaborationSettingsPage() {
 
               <Button
                 variant="primary"
-                isDisabled={inviteStatus === "loading"}
+                isDisabled={inviteLoading}
                 onPress={() => void handleSendInvite()}
                 className="shrink-0 flex items-center gap-1.5"
               >
-                {inviteStatus === "loading" ? (
+                {inviteLoading ? (
                   <Spinner size="sm" />
                 ) : (
                   <UserPlus size={15} />
@@ -389,15 +416,6 @@ export default function CollaborationSettingsPage() {
                 Send invite
               </Button>
             </div>
-
-            {inviteStatus === "success" && (
-              <p className="text-sm text-green-600">
-                Invite sent to <span className="font-medium">{invitedEmail}</span> successfully.
-              </p>
-            )}
-            {inviteStatus === "error" && (
-              <p className="text-sm text-red-500">{inviteError}</p>
-            )}
           </Card.Content>
         </Card>
 

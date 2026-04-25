@@ -9,6 +9,7 @@ import {
   Table,
   Tabs,
 } from "@heroui/react";
+import { SkeletonCard } from "@/components/ui";
 import { AlertTriangle } from "lucide-react";
 
 const CATEGORY_COLORS: Record<string, "default" | "accent" | "default" | "success" | "warning" | "danger"> = {
@@ -157,8 +158,10 @@ export default function AdminIssuesPage() {
 
       {/* Loading */}
       {loading && !data && (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="lg" />
+        <div className="space-y-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       )}
 

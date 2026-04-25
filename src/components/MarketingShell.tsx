@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { GitBranch, Menu, X, ArrowRight, Zap } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 // ---------------------------------------------------------------------------
 // Data
@@ -119,6 +120,7 @@ function MarketingNavbar() {
 
           {/* Right actions — hidden on mobile */}
           <div className="hidden md:flex items-center gap-2 shrink-0">
+            <ThemeToggle />
             <Link
               href="/login"
               className="inline-flex items-center rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Button,
   Card,
+  Spinner,
   TextArea,
 } from "@heroui/react";
-import { CheckCircle2, MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send } from "lucide-react";
 
 export default function FeedbackSettingsPage() {
   const [category, setCategory] = useState("bug");
@@ -14,14 +16,17 @@ export default function FeedbackSettingsPage() {
   const [summary, setSummary] = useState("");
   const [details, setDetails] = useState("");
   const [systemId, setSystemId] = useState("");
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [summaryTouched, setSummaryTouched] = useState(false);
+
+  const summaryError = summaryTouched && summary.trim().length < 8
+    ? `${Math.max(0, 8 - summary.trim().length)} more character${8 - summary.trim().length === 1 ? "" : "s"} needed`
+    : null;
 
   async function handleSubmit() {
+    setSummaryTouched(true);
+    if (summary.trim().length < 8) return;
     setSubmitting(true);
-    setStatus("idle");
-    setErrorMessage("");
     try {
       const res = await fetch("/api/feedback", {
         method: "POST",
@@ -40,45 +45,15 @@ export default function FeedbackSettingsPage() {
         setSummary("");
         setDetails("");
         setSystemId("");
-        setStatus("success");
+        toast.success("Feedback submitted — thank you!");
       } else {
-        setErrorMessage(body.error ?? "Failed to submit feedback.");
-        setStatus("error");
+        toast.error(body.error ?? "Failed to submit feedback.");
       }
     } catch {
-      setErrorMessage("Network error. Please try again.");
-      setStatus("error");
+      toast.error("Network error. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (status === "success") {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Submit Feedback</h1>
-          <p className="text-sm text-default-500 mt-1">Help us improve Pipes</p>
-        </div>
-        <Card>
-          <Card.Content className="flex flex-col items-center gap-3 py-12">
-            <CheckCircle2 className="text-success" size={40} strokeWidth={1.5} />
-            <p className="text-lg font-semibold text-foreground">Thank you for your feedback!</p>
-            <p className="text-sm text-default-500 text-center max-w-xs">
-              We appreciate you taking the time to share your thoughts. Our team will review it
-              shortly.
-            </p>
-            <Button
-              variant="secondary"
-              className="mt-2"
-              onPress={() => setStatus("idle")}
-            >
-              Submit another
-            </Button>
-          </Card.Content>
-        </Card>
-      </div>
-    );
   }
 
   return (
@@ -142,14 +117,18 @@ export default function FeedbackSettingsPage() {
           </div>
 
           {/* Summary */}
-          <div>
-            <label className="text-xs text-default-600">Summary</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-default-600">Summary <span className="text-danger">*</span></label>
             <input
-              className="w-full rounded-lg border border-default-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${summaryError ? "border-danger bg-danger-50 focus:ring-danger-200" : "border-default-200 bg-white focus:ring-indigo-500"}`}
               placeholder="Brief description of the issue or request"
               value={summary}
-              onChange={(e) => setSummary(e.target.value)}
+              onChange={(e) => { setSummary(e.target.value); setSummaryTouched(true); }}
+              onBlur={() => setSummaryTouched(true)}
             />
+            {summaryError && (
+              <p className="text-xs text-danger mt-0.5">{summaryError}</p>
+            )}
           </div>
 
           {/* Details */}
@@ -172,21 +151,16 @@ export default function FeedbackSettingsPage() {
             />
           </div>
 
-          {/* Error state */}
-          {status === "error" && errorMessage && (
-            <p className="text-sm text-danger bg-danger-50 border border-danger-200 rounded-lg px-3 py-2">
-              {errorMessage}
-            </p>
-          )}
-
           {/* Submit */}
           <div className="flex justify-end pt-1">
             <Button
               variant="primary"
               onPress={handleSubmit}
-              isDisabled={submitting || summary.trim().length < 8}
+              isDisabled={submitting}
             >
-              {submitting ? "Submitting…" : (
+              {submitting ? (
+                <Spinner size="sm" />
+              ) : (
                 <span className="flex items-center gap-1.5">
                   Submit Feedback
                   <Send size={15} strokeWidth={1.75} />

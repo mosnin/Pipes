@@ -19,12 +19,16 @@ function SignupForm() {
 
   const [name, setName] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const nameError = submitted && !name.trim() ? "Your name is required" : null;
+  const workspaceError = submitted && !workspaceName.trim() ? "Workspace name is required" : null;
 
   function handleContinue() {
+    setSubmitted(true);
+    if (!name.trim() || !workspaceName.trim()) return;
     const base = "/api/auth/login?returnTo=/onboarding";
-    const url = workspaceName
-      ? `${base}&workspace=${encodeURIComponent(workspaceName)}`
-      : base;
+    const url = `${base}&workspace=${encodeURIComponent(workspaceName)}`;
     window.location.href = url;
   }
 
@@ -64,9 +68,10 @@ function SignupForm() {
                 type="text"
                 placeholder="Alex Rivera"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+                onChange={(e) => { setName(e.target.value); if (submitted) setSubmitted(false); }}
+                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${nameError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
               />
+              {nameError && <p className="text-xs text-red-500">{nameError}</p>}
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Workspace name</label>
@@ -74,9 +79,10 @@ function SignupForm() {
                 type="text"
                 placeholder="Acme AI"
                 value={workspaceName}
-                onChange={(e) => setWorkspaceName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-black"
+                onChange={(e) => { setWorkspaceName(e.target.value); if (submitted) setSubmitted(false); }}
+                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${workspaceError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
               />
+              {workspaceError && <p className="text-xs text-red-500">{workspaceError}</p>}
             </div>
             <Button
               onPress={handleContinue}
