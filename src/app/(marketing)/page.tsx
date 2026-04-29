@@ -8,16 +8,25 @@ export const metadata = {
   description: "Stop re-explaining your architecture in every chat. Draw it in Pipes. Hand it to any AI.",
 };
 
-const FEATURES = [
-  { emoji: "🎨", label: "Editor",        href: "/editor",        isNew: false },
-  { emoji: "🤖", label: "Agent Builder", href: "/agent-builder", isNew: true  },
-  { emoji: "📋", label: "Templates",     href: "/templates",     isNew: false },
-  { emoji: "🔌", label: "Protocol",      href: "/protocol",      isNew: true  },
-  { emoji: "📦", label: "Handoff",       href: "/handoff",       isNew: false },
-  { emoji: "⚡", label: "Simulation",    href: "/simulation",    isNew: false },
-  { emoji: "👥", label: "Collaboration", href: "/collaboration", isNew: false },
-  { emoji: "🛡️", label: "Governance",   href: "/governance",    isNew: false },
-  { emoji: "✅", label: "Validation",    href: "/validation",    isNew: false },
+const DIFFERENTIATORS = [
+  {
+    label: "Draw once, reuse everywhere",
+    body: "Nodes, connections, typed ports. Your architecture lives in one place — not scattered across docs, Slack threads, and chat history.",
+    href: "/templates",
+    cta: "Browse templates",
+  },
+  {
+    label: "Any agent reads it instantly",
+    body: "Connect Claude, GPT, or any agent via MCP. It sees your full system — inputs, outputs, contracts — without you typing a word of context.",
+    href: "/protocol",
+    cta: "See the protocol",
+  },
+  {
+    label: "Start in minutes, not days",
+    body: "Pick a proven template or let AI draft the structure. Your first system is ready before your coffee gets cold.",
+    href: "/docs",
+    cta: "Get started",
+  },
 ] as const;
 
 const PROOF_POINTS = [
@@ -146,45 +155,23 @@ export default async function HomePage() {
 
       <Separator />
 
-      {/* ── 2. FEATURE GRID ──────────────────────────────────────────────────── */}
+      {/* ── 2. THREE DIFFERENTIATORS ─────────────────────────────────────────── */}
       <section className="py-20 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#111]">
-              Everything in one place
-            </h2>
-            <p className="mt-3 text-[#3C3C43] text-lg max-w-xl mx-auto">
-              Draw, validate, version, and connect — without leaving the canvas.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2.5">
-            {FEATURES.map(({ emoji, label, href, isNew }) => (
-              <TrackedLink
-                key={label}
-                href={href}
-                event="feature_tile_clicked"
-                metadata={{ feature: label.toLowerCase().replace(/\s+/g, "_") }}
-                className="group"
-              >
-                <Card className="border border-black/[0.08] hover:border-indigo-300 transition-colors duration-150 cursor-pointer bg-white"
-                      style={{ borderRadius: "12px" }}>
-                  <Card.Content className="flex flex-row items-center gap-3 py-4 px-4">
-                    <span className="text-xl leading-none flex-shrink-0" role="img" aria-label={label}>
-                      {emoji}
-                    </span>
-                    <span className="t-label font-semibold text-[#111] group-hover:text-indigo-600 transition-colors truncate">
-                      {label}
-                    </span>
-                    {isNew && (
-                      <Chip size="sm" color="accent" variant="soft"
-                            className="ml-auto flex-shrink-0 text-[10px] font-bold">
-                        New
-                      </Chip>
-                    )}
-                  </Card.Content>
-                </Card>
-              </TrackedLink>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {DIFFERENTIATORS.map(({ label, body, href, cta }) => (
+              <div key={label} className="flex flex-col gap-4 p-7 border border-black/[0.08] bg-white"
+                   style={{ borderRadius: "16px" }}>
+                <h3 className="t-title font-bold text-[#111]" style={{ letterSpacing: "-0.02em" }}>
+                  {label}
+                </h3>
+                <p className="t-label text-[#3C3C43] leading-relaxed flex-1">{body}</p>
+                <TrackedLink href={href} event="differentiator_clicked" metadata={{ label }}>
+                  <span className="t-label font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
+                    {cta} →
+                  </span>
+                </TrackedLink>
+              </div>
             ))}
           </div>
         </div>

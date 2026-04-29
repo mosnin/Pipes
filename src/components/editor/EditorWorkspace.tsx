@@ -514,73 +514,70 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-2 space-y-2">
+      <div className="sticky top-0 z-10 bg-white border-b border-black/[0.08] px-4 pt-2.5 pb-1.5 space-y-1.5">
+
+        {/* Header: name + save state — no duplicate agent button */}
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">{data.system.name}</h1>
-            {data.system.description && <p className="text-xs text-slate-500 mt-0.5">{data.system.description}</p>}
+          <div className="min-w-0">
+            <h1 className="t-label font-bold text-[#111] truncate">{data.system.name}</h1>
+            {data.system.description && <p className="t-caption text-[#8E8E93] truncate">{data.system.description}</p>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <AvatarStack names={data.presence.map((p) => p.name)} />
             <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
-            <button
-              onClick={() => setShowConnectModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors shadow-sm"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              Connect to Agent
-            </button>
           </div>
         </div>
-        <div className="flex items-center gap-1 flex-wrap">
+
+        {/* Primary toolbar: only what every session needs */}
+        <div className="flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={undo} isDisabled={history.undo.length === 0}><Undo2 size={14} /> Undo</Button>
           <Button variant="ghost" size="sm" onClick={redo} isDisabled={history.redo.length === 0}><Redo2 size={14} /> Redo</Button>
           <Separator orientation="vertical" className="h-5 mx-1" />
           <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}><Plus size={14} /> Insert</Button>
-          <Button variant="ghost" size="sm" onClick={createSubsystem} isDisabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
-          <Separator orientation="vertical" className="h-5 mx-1" />
-          <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)} className="w-48 text-xs py-1">
-            <option value="left_to_right">Layout: Left → Right</option>
-            <option value="top_to_bottom">Layout: Top ↓ Bottom</option>
-          </Select>
-          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("selected")} isDisabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
-          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("all")}>Arrange All</Button>
-          <Separator orientation="vertical" className="h-5 mx-1" />
           <Button variant="ghost" size="sm" onClick={() => setFitRequest((n) => n + 1)}><Maximize2 size={14} /> Fit</Button>
-          <Button variant="ghost" size="sm" onClick={() => setFrameRequest((n) => n + 1)} isDisabled={selectedNodeIds.length === 0}>Frame</Button>
-          <Button variant="ghost" size="sm" onClick={duplicateSelection} isDisabled={selectedNodeIds.length === 0}><Copy size={14} /> Dupe</Button>
-          <Button variant="danger-soft" size="sm" onClick={deleteSelection} isDisabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}><Trash2 size={14} /> Delete</Button>
-          <Button variant={routeFocusMode ? "secondary" : "ghost"} size="sm" onClick={() => setRouteFocusMode((v) => !v)}>Focus</Button>
-          {saveState === "error" && <Button variant="ghost" size="sm" onClick={() => setFailed(0)}>Retry</Button>}
+          {(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) && (
+            <>
+              <Button variant="ghost" size="sm" onClick={duplicateSelection}><Copy size={14} /> Dupe</Button>
+              <Button variant="danger-soft" size="sm" onClick={deleteSelection}><Trash2 size={14} /> Delete</Button>
+            </>
+          )}
+          {selectedNodeIds.length >= 2 && (
+            <Button variant="ghost" size="sm" onClick={createSubsystem}>Group</Button>
+          )}
+          {saveState === "error" && (
+            <Button variant="ghost" size="sm" onClick={() => setFailed(0)} className="text-amber-600">Retry</Button>
+          )}
           <Separator orientation="vertical" className="h-5 mx-1" />
-          <Button variant={activeSystemPanel === "validation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("validation")} className={validationReport.issues.length > 0 ? "text-amber-600" : ""}>
+          <Button
+            variant={activeSystemPanel === "validation" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => toggleSystemPanel("validation")}
+            className={validationReport.issues.filter((i) => i.severity === "error").length > 0 ? "text-amber-600" : ""}
+          >
             <Shield size={14} /> Validate{validationReport.issues.filter((i) => i.severity === "error").length > 0 ? ` (${validationReport.issues.filter((i) => i.severity === "error").length})` : ""}
-          </Button>
-          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")}>
-            <Play size={14} /> Simulate
-          </Button>
-          <Button variant={activeSystemPanel === "comments" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("comments")}>
-            <MessageCircle size={14} /> Comments{data.comments.length > 0 ? ` (${data.comments.length})` : ""}
-          </Button>
-          <Button variant={activeSystemPanel === "versions" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("versions")}>
-            <History size={14} /> Versions
-          </Button>
-          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")}>
-            <Wand2 size={14} /> AI
-          </Button>
-          <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")}>
-            <Download size={14} /> Export
           </Button>
           <Separator orientation="vertical" className="h-5 mx-1" />
           <Button
             variant={activeSystemPanel === "agent" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); }}
-            className={activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}
+            className={`font-semibold ${activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}`}
           >
             <Bot size={14} /> Agent View
           </Button>
         </div>
+
+        {/* Secondary toolbar: power tools, de-emphasised */}
+        <div className="flex items-center gap-1 border-t border-black/[0.05] pt-1">
+          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("all")} className="text-[#8E8E93] hover:text-[#3C3C43]">Arrange</Button>
+          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Play size={13} /> Simulate</Button>
+          <Button variant={activeSystemPanel === "comments" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("comments")} className="text-[#8E8E93] hover:text-[#3C3C43]"><MessageCircle size={13} /> Comments{data.comments.length > 0 ? ` (${data.comments.length})` : ""}</Button>
+          <Button variant={activeSystemPanel === "versions" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("versions")} className="text-[#8E8E93] hover:text-[#3C3C43]"><History size={13} /> Versions</Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Wand2 size={13} /> AI</Button>
+          <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Download size={13} /> Export</Button>
+        </div>
+
       </div>
       {showNewBanner && (
         <div className="flex items-center justify-between gap-4 bg-indigo-600 px-4 py-2.5">

@@ -140,9 +140,6 @@ export function OnboardingClient({ initialTemplates }: { initialTemplates: Templ
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="t-label font-semibold text-[#111]">Generate with AI</p>
-                  <span className="t-caption font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                    Builder plan
-                  </span>
                 </div>
                 <p className="t-caption text-[#8E8E93] mt-0.5">Describe your system, AI drafts it in seconds</p>
               </div>
