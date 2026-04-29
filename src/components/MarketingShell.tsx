@@ -218,7 +218,7 @@ function MarketingFooter() {
             </Link>
 
             <p className="t-label text-[#8E8E93] leading-relaxed max-w-[16rem]">
-              Design systems that actually run. For humans and agents, together.
+              Draw it once. Any agent builds it right.
             </p>
 
             <Link

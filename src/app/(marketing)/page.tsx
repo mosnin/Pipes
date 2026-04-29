@@ -4,8 +4,8 @@ import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 
 export const metadata = {
-  title: "Pipes · Systems, not diagrams",
-  description: "Model reusable, validated, protocol-ready systems for humans and agents.",
+  title: "Pipes · Draw it once. Any agent builds it right.",
+  description: "Stop re-explaining your architecture in every chat. Draw it in Pipes. Hand it to any AI.",
 };
 
 const FEATURES = [
@@ -23,18 +23,18 @@ const FEATURES = [
 const PROOF_POINTS = [
   {
     icon: <Zap className="w-5 h-5 text-indigo-600" />,
-    title: "Not just diagrams",
-    body: "Typed nodes, ports, and pipes keep architecture executable, reviewable, and machine-consumable — not just pretty boxes.",
+    title: "Draw once, reuse everywhere",
+    body: "Your napkin sketch stays a napkin sketch. A Pipes system is a reusable, versioned blueprint any AI can query — not just a picture.",
   },
   {
     icon: <span className="text-xl leading-none" role="img" aria-label="robot">🤖</span>,
-    title: "Agent-native",
-    body: "Systems are modelled once and exposed through stable MCP/REST surfaces agents can plan against without re-prompting.",
+    title: "Any agent reads it instantly",
+    body: "Claude, GPT, or your own agent connects via MCP and sees your full architecture — inputs, outputs, contracts — without you typing a word.",
   },
   {
     icon: <Users className="w-5 h-5 text-indigo-600" />,
-    title: "Team-ready",
-    body: "Version, review, and share one system contract across engineers, PMs, and AI tools — no sync meetings required.",
+    title: "One source of truth",
+    body: "Engineers, PMs, and AI tools all read the same system. No drift, no stale docs, no explaining the same thing twice.",
   },
 ] as const;
 
@@ -75,27 +75,27 @@ export default async function HomePage() {
         <div className="relative inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-4 py-1.5 mb-8"
              style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}>
           <Sparkles className="w-3 h-3 text-indigo-500" aria-hidden />
-          <span className="t-label font-medium text-indigo-700">Now with Agent Builder &amp; Protocol</span>
+          <span className="t-label font-medium text-indigo-700">Connect to any AI via MCP</span>
         </div>
 
-        {/* Headline — tight tracking, flat indigo, no gradient soup */}
+        {/* Headline */}
         <h1 className="relative text-5xl md:text-[72px] font-bold text-[#111] max-w-3xl mx-auto leading-[1.04]"
             style={{ letterSpacing: "-0.04em" }}>
-          Design systems that<br />
-          <span className="text-indigo-600">actually run</span>
+          Draw it once.<br />
+          <span className="text-indigo-600">Any agent builds it right.</span>
         </h1>
 
         {/* Sub-headline */}
-        <p className="relative mt-5 text-xl text-[#3C3C43] max-w-md mx-auto font-normal">
-          For humans and agents, together.
+        <p className="relative mt-5 text-xl text-[#3C3C43] max-w-lg mx-auto font-normal">
+          Stop re-explaining your architecture in every chat. Design it in Pipes. Hand it to any AI.
         </p>
 
-        {/* Checklist */}
+        {/* How it works — 3 steps */}
         <ul className="relative mt-10 inline-flex flex-col gap-3 text-left">
           {[
-            { label: "Structure.", rest: "AI and humans design together with full context." },
-            { label: "Validate.", rest: "Catch issues before they reach production." },
-            { label: "Run.", rest: "Agent-ready execution with policy controls." },
+            { label: "Draw.", rest: "Your system on a canvas. Nodes, connections, contracts. Once." },
+            { label: "Share.", rest: "One link. Any agent reads the full architecture via MCP." },
+            { label: "Build.", rest: "Agents implement correctly — no back-and-forth, no re-explaining." },
           ].map(({ label, rest }) => (
             <li key={label} className="flex items-start gap-3 t-body">
               <CheckCircle2 className="w-[18px] h-[18px] mt-0.5 flex-shrink-0 text-indigo-500" aria-hidden />
@@ -151,10 +151,10 @@ export default async function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-[#111]">
-              Everything your system needs
+              Everything in one place
             </h2>
             <p className="mt-3 text-[#3C3C43] text-lg max-w-xl mx-auto">
-              One workspace. Design, validate, simulate, and ship.
+              Draw, validate, version, and connect — without leaving the canvas.
             </p>
           </div>
 
@@ -197,10 +197,10 @@ export default async function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-[#111]">
-              Why teams choose Pipes
+              How it works
             </h2>
             <p className="mt-3 text-[#3C3C43] text-lg max-w-xl mx-auto">
-              Built for operational system memory, not visual sketches.
+              A design tool where the output is something agents can actually use.
             </p>
           </div>
 
@@ -291,10 +291,10 @@ export default async function HomePage() {
 
           <h2 className="relative text-3xl md:text-5xl font-bold text-white"
               style={{ letterSpacing: "-0.03em" }}>
-            Ready to design your first system?
+            Stop re-explaining.<br />Start designing.
           </h2>
           <p className="relative mt-4 text-indigo-200 text-lg max-w-xl mx-auto">
-            Join teams who run their architecture — not just draw it.
+            Draw your first system in minutes. Any agent can read it immediately.
           </p>
 
           <div className="relative mt-10 flex flex-wrap items-center justify-center gap-3">

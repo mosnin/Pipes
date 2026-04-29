@@ -101,10 +101,10 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       </div>
 
       <h2 className="text-2xl font-bold text-[#111] mb-3 text-center">
-        Design your first system
+        Draw your first system
       </h2>
       <p className="t-body text-[#3C3C43] max-w-sm text-center mb-8 leading-relaxed">
-        Draw how your agents think. Connect it to any AI system in seconds.
+        Design it once on a canvas. Any AI agent can read it and build from it immediately.
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -120,9 +120,10 @@ function EmptyState({ onNew }: { onNew: () => void }) {
         </Link>
       </div>
 
-      <Link href="/connect" className="mt-6 t-caption text-[#8E8E93] hover:text-indigo-600 transition-colors flex items-center gap-1">
-        <Zap className="w-3 h-3" />
-        Already have a system? Connect it to an agent
+      <Link href="/connect" className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 t-label font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+            style={{ borderRadius: "8px" }}>
+        <Zap className="w-3.5 h-3.5" />
+        Connect a system to an agent
       </Link>
     </div>
   );
