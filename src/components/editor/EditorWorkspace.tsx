@@ -17,6 +17,8 @@ import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContrac
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
+import { getConfigSchema } from "@/domain/node_config/schema";
+import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -34,7 +36,7 @@ type ReviewRegion = { batchId: string; runId: string; nodeIds: string[]; pipeIds
 function normalizeBundle(bundle: any): SystemPayload {
   return {
     system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description },
-    nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [] })),
+    nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
@@ -56,9 +58,9 @@ type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; 
 function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphAction): { nodes: GraphNode[]; pipes: GraphPipe[] } {
   if (action.action === "addNode") {
     const id = action.clientNodeId ?? `tmp_${Math.random().toString(36).slice(2, 9)}`;
-    return { nodes: [...nodes, { id, type: action.type, title: action.title, description: action.description, position: { x: action.x ?? 240, y: action.y ?? 180 }, portIds: [`${id}_in`, `${id}_out`] }], pipes };
+    return { nodes: [...nodes, { id, type: action.type, title: action.title, description: action.description, position: { x: action.x ?? 240, y: action.y ?? 180 }, portIds: [`${id}_in`, `${id}_out`], config: {} }], pipes };
   }
-  if (action.action === "updateNode") return { nodes: nodes.map((n) => n.id === action.nodeId ? { ...n, title: action.title ?? n.title, description: action.description ?? n.description, position: action.position ?? n.position } : n), pipes };
+  if (action.action === "updateNode") return { nodes: nodes.map((n) => n.id === action.nodeId ? { ...n, title: action.title ?? n.title, description: action.description ?? n.description, position: action.position ?? n.position, config: action.config !== undefined ? action.config : n.config } : n), pipes };
   if (action.action === "deleteNode") return { nodes: nodes.filter((n) => n.id !== action.nodeId), pipes: pipes.filter((p) => p.fromNodeId !== action.nodeId && p.toNodeId !== action.nodeId) };
   if (action.action === "addPipe") {
     const id = action.clientPipeId ?? `tmp_pipe_${Math.random().toString(36).slice(2, 9)}`;
@@ -385,6 +387,16 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     }));
   }, [selectedNode, updateNodeDefinition]);
 
+  const updateNodeConfig = useCallback((nodeId: string, key: string, value: unknown) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    const newConfig = { ...(node.config ?? {}), [key]: value };
+    recordAction(
+      { action: "updateNode", nodeId, config: newConfig },
+      { action: "updateNode", nodeId, config: node.config ?? {} }
+    );
+  }, [nodes, recordAction]);
+
   const createSubsystem = useCallback(() => {
     if (selectedNodeIds.length < 2) return;
     const id = `sub_${Math.random().toString(36).slice(2, 9)}`;
@@ -701,7 +713,62 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   </div>
                 ) : null}
                 {inspectorTab === "config" && selectedDefinition ? (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
+                    {(() => {
+                      const fields = getConfigSchema(selectedNode.type as NodeType);
+                      if (fields.length === 0) return null;
+                      return (
+                        <div className="space-y-3">
+                          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Configuration</p>
+                          {fields.map((field) => (
+                            <div key={field.key} className="space-y-1">
+                              <label className="text-xs font-medium text-slate-600">
+                                {field.label}
+                                {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                              </label>
+                              {field.type === "select" ? (
+                                <Select
+                                  value={String((selectedNode.config?.[field.key] ?? field.defaultValue) ?? "")}
+                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                >
+                                  {field.options?.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </Select>
+                              ) : field.type === "boolean" ? (
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(selectedNode.config?.[field.key] ?? field.defaultValue)}
+                                    onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.checked)}
+                                    className="rounded border-slate-300"
+                                  />
+                                  <span className="text-xs text-slate-500">{field.description ?? field.label}</span>
+                                </div>
+                              ) : field.type === "textarea" ? (
+                                <Textarea
+                                  value={String(selectedNode.config?.[field.key] ?? "")}
+                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                  placeholder={field.placeholder}
+                                  rows={3}
+                                />
+                              ) : (
+                                <Input
+                                  type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
+                                  value={String(selectedNode.config?.[field.key] ?? "")}
+                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, field.type === "number" ? Number(e.target.value) : e.target.value)}
+                                  placeholder={field.placeholder}
+                                />
+                              )}
+                              {field.description && field.type !== "boolean" && (
+                                <p className="text-[10px] text-slate-400">{field.description}</p>
+                              )}
+                            </div>
+                          ))}
+                          <div className="border-t border-slate-100 pt-3" />
+                        </div>
+                      );
+                    })()}
                     <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
                     <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
                     <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />

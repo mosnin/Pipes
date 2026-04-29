@@ -4,6 +4,15 @@ import { v } from "convex/values";
 
 const now = () => new Date().toISOString();
 
+export const listSystemPresence = query({
+  args: { systemId: v.id("systems") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("system_presence").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
+    const cutoff = new Date(Date.now() - 120_000).toISOString();
+    return rows.filter((r) => r.lastSeenAt > cutoff);
+  }
+});
+
 export const provisionUser = mutation({
   args: { externalId: v.string(), email: v.string(), name: v.string() },
   handler: async (ctx, args) => {
