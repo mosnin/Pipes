@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Separator, Spinner } from "@heroui/react";
-import { Bot, Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { Bot, Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -112,6 +112,9 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
   const [agentViewLoading, setAgentViewLoading] = useState(false);
   const [showNewBanner, setShowNewBanner] = useState(false);
+  const [showAgentChat, setShowAgentChat] = useState(false);
+  const [libraryExpanded, setLibraryExpanded] = useState(false);
+  const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -245,6 +248,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const flowView = useMemo(() => collapseAwareGraph({ nodes: deferredNodes, pipes: deferredPipes, subsystems, compactMode: zoomLevel < 0.5 }), [deferredNodes, deferredPipes, subsystems, zoomLevel]);
 
   const selectedNodeId = selectedNodeIds[0];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setShowAllInspectorTabs(false); }, [selectedNodeId]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId), [nodes, selectedNodeId]);
   const selectedEdge = useMemo(() => pipes.find((pipe) => pipe.id === selectedEdgeIds[0]), [pipes, selectedEdgeIds]);
   const occupancy = useMemo(() => selectedNodeId && data ? data.presence.filter((p) => p.selectedNodeId === selectedNodeId) : [], [data, selectedNodeId]);
@@ -576,6 +581,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <Button variant={activeSystemPanel === "versions" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("versions")} className="text-[#8E8E93] hover:text-[#3C3C43]"><History size={13} /> Versions</Button>
           <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Wand2 size={13} /> AI</Button>
           <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Download size={13} /> Export</Button>
+          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={13} /> Chat</Button>
         </div>
 
       </div>
@@ -605,56 +612,113 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         </div>
       )}
       <div className="editor-shell" style={{ marginTop: 12 }}>
-        <Panel title="Node Library">
-          <Input value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} placeholder="Search nodes, tags, category..." />
-          <div className="flex items-center gap-2 flex-wrap mt-2">
-            <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Favorites: {favorites.length}</span>
-            <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Recents: {recents.length}</span>
-            <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}><Plus size={14} /> Command Palette</Button>
-          </div>
-          {groupedLibrary.map((group) => (
-            <div key={group.category}>
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mt-4 mb-2">{group.category}</h4>
-              <div className="space-y-2">
-                {group.entries.slice(0, 8).map((entry) => (
-                  <Card key={entry.nodeType} className="p-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <strong className="text-sm text-slate-800">{entry.name}</strong>
-                      <Button variant="ghost" size="sm" isIconOnly onClick={() => toggleFavorite(entry.nodeType)}>
-                        {favorites.includes(entry.nodeType) ? <Star className="fill-amber-400 text-amber-400" size={14} /> : <Star size={14} />}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">{entry.description}</p>
-                    <p className="text-xs text-slate-400 mt-1">{entry.tags.join(" · ")}</p>
-                    <p className="text-xs text-slate-500">Use: {entry.typicalUse}</p>
-                    <p className="text-xs text-slate-500">In: {entry.inputTypes.join(", ")} → Out: {entry.outputTypes.join(", ")}</p>
-                    <Button variant="ghost" size="sm" onClick={() => insertNodeFromEntry(entry, { mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Add Node</Button>
-                  </Card>
-                ))}
+        <Panel title="Nodes">
+          <Input value={libraryQuery} onChange={(e) => { setLibraryQuery(e.target.value); if (!libraryExpanded) setLibraryExpanded(true); }} placeholder="Search…" />
+          {(() => {
+            const ctx: InsertRequest = { mode: (selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas") as InsertRequest["mode"], edgeId: selectedEdge?.id, nodeId: selectedNode?.id };
+            const entryRow = (entry: (typeof nodeLibraryCatalog)[number]) => (
+              <div
+                key={entry.nodeType}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer group/entry"
+                onClick={() => insertNodeFromEntry(entry, ctx)}
+              >
+                <span className="t-label text-[#111] flex-1 truncate">{entry.name}</span>
+                <button
+                  className="opacity-0 group-hover/entry:opacity-100 transition-opacity shrink-0 p-0.5"
+                  onClick={(e) => { e.stopPropagation(); toggleFavorite(entry.nodeType); }}
+                  aria-label={favorites.includes(entry.nodeType) ? "Unfavorite" : "Favorite"}
+                >
+                  {favorites.includes(entry.nodeType)
+                    ? <Star className="fill-amber-400 text-amber-400" size={12} />
+                    : <Star size={12} className="text-[#C7C7CC]" />}
+                </button>
               </div>
-            </div>
-          ))}
-          <div className="mt-4">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Subsystems</h4>
-            {subsystems.length === 0 ? (
-              <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No subsystems yet. Select 2+ nodes and use "Create Subsystem".</p>
-            ) : subsystems.map((subsystem) => {
-              const boundary = computeSubsystemBoundary(subsystem, pipes);
-              return (
-                <Card key={subsystem.id}>
-                  <p className="text-sm font-medium text-slate-800"><strong>{subsystem.name}</strong> · {subsystem.collapsed ? "Collapsed" : "Expanded"}</p>
-                  <p className="text-xs text-slate-500">{subsystem.nodeIds.length} internal nodes · {boundary.inboundNodeIds.length} inbound · {boundary.outboundNodeIds.length} outbound</p>
-                  <div className="flex items-center gap-2 flex-wrap mt-2">
-                    <Button variant="ghost" size="sm" onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open In Context</Button>
-                    <Button variant="ghost" size="sm" onClick={() => detachSubsystemCopy(subsystem.id)} isDisabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
+            );
+
+            if (libraryExpanded) return (
+              <div className="mt-2 space-y-3">
+                {groupedLibrary.map((group) => (
+                  <div key={group.category}>
+                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">{group.category}</p>
+                    {group.entries.map(entryRow)}
                   </div>
-                </Card>
-              );
-            })}
-          </div>
+                ))}
+                <button onClick={() => setLibraryExpanded(false)} className="w-full t-caption text-[#8E8E93] hover:text-[#3C3C43] py-1 transition-colors">
+                  Show less ↑
+                </button>
+              </div>
+            );
+
+            const topEntries = groupedLibrary.flatMap((g) => g.entries).slice(0, 7);
+            const favEntries = nodeLibraryCatalog.filter((e) => favorites.includes(e.nodeType));
+            const recentEntries = recents.map((id) => nodeLibraryCatalog.find((e) => e.nodeType === id)).filter(Boolean) as typeof nodeLibraryCatalog;
+            return (
+              <div className="mt-2 space-y-3">
+                {favEntries.length > 0 && (
+                  <div>
+                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Favorites</p>
+                    {favEntries.slice(0, 3).map(entryRow)}
+                  </div>
+                )}
+                {recentEntries.length > 0 && (
+                  <div>
+                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Recent</p>
+                    {recentEntries.slice(0, 3).map(entryRow)}
+                  </div>
+                )}
+                <div>
+                  {favEntries.length === 0 && recentEntries.length === 0 && (
+                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">All nodes</p>
+                  )}
+                  {topEntries.map(entryRow)}
+                </div>
+                <button onClick={() => setLibraryExpanded(true)} className="w-full t-caption text-indigo-600 hover:text-indigo-700 py-1 transition-colors font-medium">
+                  Show all node types ↓
+                </button>
+              </div>
+            );
+          })()}
+          {subsystems.length > 0 && (
+            <div className="mt-4 border-t border-black/[0.06] pt-3">
+              <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Groups</p>
+              {subsystems.map((subsystem) => {
+                const boundary = computeSubsystemBoundary(subsystem, pipes);
+                return (
+                  <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer"
+                       onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>
+                    <span className="t-label text-[#111] flex-1 truncate">{subsystem.name}</span>
+                    <span className="t-caption text-[#8E8E93]">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Panel>
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+          {nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
+              <div className="pointer-events-auto text-center space-y-5 max-w-xs">
+                <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
+                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
+                  <div className="w-16 h-10 rounded-lg border border-indigo-200 bg-indigo-50" />
+                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
+                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                </div>
+                <div>
+                  <p className="t-title font-bold text-[#111]">Start with a node</p>
+                  <p className="t-label text-[#8E8E93] mt-1">Add the first component of your system.</p>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => openInsertPalette({ mode: "canvas" })}
+                  className="h-10 px-6 font-semibold"
+                >
+                  <Plus size={14} /> Insert node
+                </Button>
+              </div>
+            </div>
+          )}
           <EditorCanvas
             initialNodes={flowView.flowNodes}
             initialEdges={presentedEdges}
@@ -878,12 +942,21 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   <Card>
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
                     <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
-                      {(["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]).map((tab) => (
+                      {(showAllInspectorTabs
+                        ? ["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]
+                        : ["overview", "config"] as InspectorTab[]
+                      ).map((tab) => (
                         <button key={tab} onClick={() => setInspectorTab(tab)}
                           className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
                           {tab}
                         </button>
                       ))}
+                      {!showAllInspectorTabs && (
+                        <button onClick={() => setShowAllInspectorTabs(true)}
+                          className="px-2 py-1 t-caption rounded font-medium text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04] transition-colors">
+                          ···
+                        </button>
+                      )}
                     </div>
                     {inspectorTab === "overview" ? (
                       <div className="space-y-2">
@@ -1043,21 +1116,23 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             )}
           </Panel>
         </EditorErrorBoundary>
-        <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <AgentChatPanel
-            systemId={systemId}
-            systemName={data.system.name}
-            systemDescription={data.system.description}
-            onPreviewChange={(preview) => setReviewPreviewItems(preview as ReviewPreviewItem[])}
-            onRegionFocus={(region) => {
-              setReviewRegion(region as ReviewRegion | null);
-              if (region?.nodeIds?.length) {
-                setSelectedNodeIds(region.nodeIds);
-                setFrameRequest((count) => count + 1);
-              }
-            }}
-          />
-        </EditorErrorBoundary>
+        {showAgentChat && (
+          <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+            <AgentChatPanel
+              systemId={systemId}
+              systemName={data.system.name}
+              systemDescription={data.system.description}
+              onPreviewChange={(preview) => setReviewPreviewItems(preview as ReviewPreviewItem[])}
+              onRegionFocus={(region) => {
+                setReviewRegion(region as ReviewRegion | null);
+                if (region?.nodeIds?.length) {
+                  setSelectedNodeIds(region.nodeIds);
+                  setFrameRequest((count) => count + 1);
+                }
+              }}
+            />
+          </EditorErrorBoundary>
+        )}
       </div>
       {paletteOpen ? (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-20" onClick={() => setPaletteOpen(false)}>

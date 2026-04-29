@@ -20,8 +20,6 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "/pricing",    label: "Pricing"    },
       { href: "/templates",  label: "Templates"  },
-      { href: "/use-cases",  label: "Use cases"  },
-      { href: "/compare",    label: "Compare"    },
       { href: "/changelog",  label: "Changelog"  },
     ],
   },
