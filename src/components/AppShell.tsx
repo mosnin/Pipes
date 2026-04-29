@@ -17,6 +17,7 @@ import {
   BookOpen,
   LogOut,
   Settings,
+  Layers,
 } from "lucide-react";
 import { getAuthService } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
@@ -63,6 +64,11 @@ const mainGroup: NavGroup = {
       href: "/onboarding",
       label: "Onboarding",
       icon: <Rocket className={iconClass} />,
+    },
+    {
+      href: "/blueprints",
+      label: "Blueprints",
+      icon: <Layers className={iconClass} />,
     },
   ],
 };

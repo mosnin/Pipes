@@ -66,8 +66,20 @@ export async function POST(request: Request) {
     }
     if (payload.tool === "get_validation_report") {
       requireCapability(ctx, "validation:read", input.systemId);
+      const { validateSystem } = await import("@/domain/validation");
       const bundle = await services.systems.getBundle(ctx, input.systemId);
-      return NextResponse.json({ ok: true, data: { nodes: bundle.nodes.length, pipes: bundle.pipes.length }, requestId });
+      const ports = bundle.nodes.flatMap((n: any) => [
+        n.portIds?.[0] ? { id: n.portIds[0], nodeId: n.id, key: "in", label: "in", direction: "input", dataType: "any", required: false } : null,
+        n.portIds?.[1] ? { id: n.portIds[1], nodeId: n.id, key: "out", label: "out", direction: "output", dataType: "any", required: false } : null,
+      ]).filter(Boolean) as any[];
+      const system = bundle.system as any;
+      const report = validateSystem(
+        { id: system.id, workspaceId: system.workspaceId, name: system.name, description: system.description, createdBy: system.createdBy, createdAt: system.createdAt, updatedAt: system.updatedAt, nodeIds: bundle.nodes.map((n: any) => n.id), portIds: bundle.nodes.flatMap((n: any) => n.portIds ?? []), pipeIds: bundle.pipes.map((p: any) => p.id), groupIds: [], annotationIds: [], commentIds: [], assetIds: [], snippetIds: [], subsystemNodeIds: [] } as any,
+        bundle.nodes as any,
+        ports,
+        bundle.pipes as any,
+      );
+      return NextResponse.json({ ok: true, data: report, requestId });
     }
     if (payload.tool === "export_subsystem_blueprint") {
       requireCapability(ctx, "graph:write", input.systemId);
