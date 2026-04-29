@@ -9,7 +9,7 @@ type NavItem = { href: string; label: string; icon: React.ReactNode };
 const ic = "w-[17px] h-[17px] shrink-0";
 
 const PRIMARY: NavItem[] = [
-  { href: "/dashboard", label: "Design",    icon: <LayoutDashboard className={ic} /> },
+  { href: "/dashboard", label: "Systems",   icon: <LayoutDashboard className={ic} /> },
   { href: "/templates", label: "Templates", icon: <BookOpen className={ic} /> },
   { href: "/connect",   label: "Connect",   icon: <Zap className={ic} /> },
 ];

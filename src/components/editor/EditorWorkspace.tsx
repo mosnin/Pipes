@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Separator, Spinner } from "@heroui/react";
-import { Copy, Maximize2, Plus, Redo2, Star, Trash2, Undo2, Zap } from "lucide-react";
+import { Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Trash2, Undo2, Wand2, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -54,6 +54,7 @@ const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
 type InspectorTab = "overview" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
+type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
 
 function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphAction): { nodes: GraphNode[]; pipes: GraphPipe[] } {
@@ -107,6 +108,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [reviewPreviewItems, setReviewPreviewItems] = useState<ReviewPreviewItem[]>([]);
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [activeSystemPanel, setActiveSystemPanel] = useState<SystemPanel | null>(null);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -312,6 +314,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     setPaletteQuery("");
     setPaletteIndex(0);
     setPaletteOpen(true);
+  }, []);
+
+  const toggleSystemPanel = useCallback((panel: SystemPanel) => {
+    setActiveSystemPanel((prev) => prev === panel ? null : panel);
   }, []);
 
   const toggleFavorite = useCallback((nodeType: string) => {
@@ -524,8 +530,27 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <Button variant="ghost" size="sm" onClick={() => setFrameRequest((n) => n + 1)} isDisabled={selectedNodeIds.length === 0}>Frame</Button>
           <Button variant="ghost" size="sm" onClick={duplicateSelection} isDisabled={selectedNodeIds.length === 0}><Copy size={14} /> Dupe</Button>
           <Button variant="danger-soft" size="sm" onClick={deleteSelection} isDisabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}><Trash2 size={14} /> Delete</Button>
-          <Button variant={routeFocusMode ? "secondary" : "ghost"} size="sm" onClick={() => setRouteFocusMode((v) => !v)}>Route Focus</Button>
+          <Button variant={routeFocusMode ? "secondary" : "ghost"} size="sm" onClick={() => setRouteFocusMode((v) => !v)}>Focus</Button>
           {saveState === "error" && <Button variant="ghost" size="sm" onClick={() => setFailed(0)}>Retry</Button>}
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button variant={activeSystemPanel === "validation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("validation")} className={validationReport.issues.length > 0 ? "text-amber-600" : ""}>
+            <Shield size={14} /> Validate{validationReport.issues.filter((i) => i.severity === "error").length > 0 ? ` (${validationReport.issues.filter((i) => i.severity === "error").length})` : ""}
+          </Button>
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")}>
+            <Play size={14} /> Simulate
+          </Button>
+          <Button variant={activeSystemPanel === "comments" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("comments")}>
+            <MessageCircle size={14} /> Comments{data.comments.length > 0 ? ` (${data.comments.length})` : ""}
+          </Button>
+          <Button variant={activeSystemPanel === "versions" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("versions")}>
+            <History size={14} /> Versions
+          </Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")}>
+            <Wand2 size={14} /> AI
+          </Button>
+          <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")}>
+            <Download size={14} /> Export
+          </Button>
         </div>
       </div>
       <div className="editor-shell" style={{ marginTop: 12 }}>
@@ -621,291 +646,312 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           />
         </EditorErrorBoundary>
         <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <Panel title="Inspector">
-            {selectedEdge ? (
-              <Card>
-                <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Pipe semantics</h4>
-                <Input
-                  value={pipeSemantics[selectedEdge.id]?.label ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
-                  placeholder="Pipe label"
-                />
-                <Input
-                  value={pipeSemantics[selectedEdge.id]?.conditionLabel ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", conditionLabel: e.target.value } }))}
-                  placeholder="Condition label (e.g. score > 0.8)"
-                />
-                <Select
-                  value={pipeSemantics[selectedEdge.id]?.routeKind ?? "default"}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: e.target.value as PipeRouteKind } }))}
-                >
-                  <option value="default">default</option>
-                  <option value="success">success</option>
-                  <option value="failure">failure</option>
-                  <option value="conditional">conditional</option>
-                  <option value="loop">loop</option>
-                </Select>
-                <Textarea
-                  value={pipeSemantics[selectedEdge.id]?.notes ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", notes: e.target.value } }))}
-                  placeholder="Route notes / rationale"
-                />
-                <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mt-1">Hit target: expanded for easier selection and relabeling.</p>
-              </Card>
-            ) : null}
-            {selectedNode ? (
-              <Card>
-                {occupancy.length > 1 ? <p className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">⚠ Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
-                <div className="flex gap-1 flex-wrap border-b border-slate-100 pb-2 mb-3">
-                  {(["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]).map((tab) => (
-                    <button key={tab} onClick={() => setInspectorTab(tab)}
-                      className={`px-2 py-1 text-xs rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"}`}>
-                      {tab}
-                    </button>
-                  ))}
+          <Panel title={activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
+            {activeSystemPanel === "validation" && (
+              <div className="space-y-2">
+                {validationReport.issues.length === 0
+                  ? <p className="t-label text-[#8E8E93] py-2">No issues found.</p>
+                  : validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)
+                }
+              </div>
+            )}
+            {activeSystemPanel === "simulation" && (
+              <div className="space-y-2">
+                <div className="t-label text-[#8E8E93] space-y-0.5 mb-2">
+                  <p>Status: {sim.status}</p>
+                  <p>Steps: {sim.steps.length}</p>
+                  <p>Traversed pipes: {tracedEdgeIds.length}</p>
                 </div>
-                {inspectorTab === "overview" ? (
-                  <div className="space-y-2">
-                    <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
-                    <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} />
-                    <Input value={selectedDefinition?.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
-                    <Input value={selectedDefinition?.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
-                    <Input value={selectedDefinition?.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
-                    <Input value={selectedDefinition?.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
-                  </div>
-                ) : null}
-                {inspectorTab === "inputs" && selectedDefinition ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mb-2">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
-                    <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
-                      {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                    </Select>
-                    <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
-                    <Textarea value={selectedDefinition.input.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, samplePayload: e.target.value } }))} placeholder="Sample payload / shape" />
-                    <Button onClick={() => addDefinitionField("input")}>Add Input Field</Button>
-                    {selectedDefinition.input.fields.map((field) => (
-                      <Card key={field.id}>
-                        <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
-                        <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
-                        <Input value={field.sourceRef ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { sourceRef: e.target.value })} placeholder="Expected source reference" />
-                        <Input value={field.mappingExpr ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { mappingExpr: e.target.value })} placeholder="Mapping / expression placeholder" />
-                        <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
-                        <Button onClick={() => removeDefinitionField("input", field.id)}>Remove Field</Button>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Branch decisions</h5>
+                  {traceSummary.branchDecisions.length === 0 ? <p className="t-caption text-[#8E8E93]">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                </Card>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Loop summary</h5>
+                  {traceSummary.loopSummaries.length === 0 ? <p className="t-caption text-[#8E8E93]">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                </Card>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Blocked/invalid routes</h5>
+                  {traceSummary.blocked.length === 0 ? <p className="t-caption text-[#8E8E93]">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                  {invalidPipeIds.length > 0 ? <p className="t-caption text-[#8E8E93] mt-1">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
+                </Card>
+              </div>
+            )}
+            {activeSystemPanel === "comments" && (
+              <div className="space-y-2">
+                <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
+                <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
+                <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+              </div>
+            )}
+            {activeSystemPanel === "versions" && (
+              <div className="space-y-2">
+                <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
+                <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
+                <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="t-label text-[#3C3C43]">{v.name}</span></div>)}</div>
+              </div>
+            )}
+            {activeSystemPanel === "ai" && (
+              <div className="space-y-2">
+                <Input value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} placeholder="Describe the edits you want..." />
+                <Button onClick={async () => {
+                  const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
+                  const suggestion = await suggestionRes.json();
+                  if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
+                }}>Suggest Edits</Button>
+                {pendingSuggestion ? <Card>
+                  <p className="t-label font-semibold text-[#111]">AI edit set under review</p>
+                  <p className="t-label text-[#3C3C43]">{pendingSuggestion.summary}</p>
+                  <p className="t-caption text-[#8E8E93]">Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
+                  <p className="t-caption text-[#8E8E93]">Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
+                  <p className="t-caption text-[#8E8E93]">Change count: {(pendingSuggestion.changes ?? []).length}</p>
+                  <div className="space-y-2 mt-2">
+                    {(pendingSuggestion.changes ?? []).map((change: any) => (
+                      <Card key={change.id}>
+                        <label><input type="checkbox" checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))} /> {change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</label>
+                        <p className="t-caption text-[#8E8E93] mt-1">{change.rationale ?? "No rationale"}</p>
                       </Card>
                     ))}
                   </div>
-                ) : null}
-                {inspectorTab === "outputs" && selectedDefinition ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5 mb-2">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
-                    <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
-                      {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                    </Select>
-                    <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
-                    <Textarea value={selectedDefinition.output.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, samplePayload: e.target.value } }))} placeholder="Sample output payload" />
-                    <Button onClick={() => addDefinitionField("output")}>Add Output Field</Button>
-                    {selectedDefinition.output.fields.map((field) => (
-                      <Card key={field.id}>
-                        <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
-                        <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
-                        <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
-                        <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
-                        <Button onClick={() => removeDefinitionField("output", field.id)}>Remove Field</Button>
-                      </Card>
-                    ))}
+                  <div className="flex items-center gap-2 flex-wrap mt-3">
+                    <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
+                    <Button variant="secondary" size="sm" onClick={async () => {
+                      await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
+                      setPendingSuggestion(null);
+                      setAcceptedChangeIds([]);
+                      reload();
+                    }}>Apply Selected Changes</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
                   </div>
-                ) : null}
-                {inspectorTab === "config" && selectedDefinition ? (
-                  <div className="space-y-4">
-                    {(() => {
-                      const fields = getConfigSchema(selectedNode.type as NodeType);
-                      if (fields.length === 0) return null;
-                      return (
-                        <div className="space-y-3">
-                          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Configuration</p>
-                          {fields.map((field) => (
-                            <div key={field.key} className="space-y-1">
-                              <label className="text-xs font-medium text-slate-600">
-                                {field.label}
-                                {field.required && <span className="text-red-500 ml-0.5">*</span>}
-                              </label>
-                              {field.type === "select" ? (
-                                <Select
-                                  value={String((selectedNode.config?.[field.key] ?? field.defaultValue) ?? "")}
-                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
-                                >
-                                  {field.options?.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                  ))}
-                                </Select>
-                              ) : field.type === "boolean" ? (
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={Boolean(selectedNode.config?.[field.key] ?? field.defaultValue)}
-                                    onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.checked)}
-                                    className="rounded border-slate-300"
-                                  />
-                                  <span className="text-xs text-slate-500">{field.description ?? field.label}</span>
-                                </div>
-                              ) : field.type === "textarea" ? (
-                                <Textarea
-                                  value={String(selectedNode.config?.[field.key] ?? "")}
-                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
-                                  placeholder={field.placeholder}
-                                  rows={3}
-                                />
-                              ) : (
-                                <Input
-                                  type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
-                                  value={String(selectedNode.config?.[field.key] ?? "")}
-                                  onChange={(e) => updateNodeConfig(selectedNode.id, field.key, field.type === "number" ? Number(e.target.value) : e.target.value)}
-                                  placeholder={field.placeholder}
-                                />
-                              )}
-                              {field.description && field.type !== "boolean" && (
-                                <p className="text-[10px] text-slate-400">{field.description}</p>
-                              )}
-                            </div>
-                          ))}
-                          <div className="border-t border-slate-100 pt-3" />
-                        </div>
-                      );
-                    })()}
-                    <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
-                    <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
-                    <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
-                    <Textarea value={selectedDefinition.expectedSources ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expectedSources: e.target.value }))} placeholder="Expected input source references" />
-                    <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
-                  </div>
-                ) : null}
-                {inspectorTab === "notes" && selectedDefinition ? (
-                  <div className="space-y-2">
-                    <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
-                    <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
-                    <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
-                    <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
-                  </div>
-                ) : null}
-                {inspectorTab === "validation" && selectedDefinition ? (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Contract validation</h4>
-                    {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
-                    <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Compatibility hints</h4>
-                    {compatibilityHints.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
-                  </div>
-                ) : null}
-                {inspectorTab === "docs" && selectedDefinition ? (
-                  <div className="space-y-2">
-                    <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
-                    <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
-                    <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
-                  </div>
-                ) : null}
-                <div className="flex items-center gap-2 flex-wrap mt-3">
-                  <Button variant="danger-soft" size="sm" onClick={() => {
-                    recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
-                    setSelectedNodeIds([]);
-                  }}><Trash2 size={14} /> Delete Node</Button>
-                  <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
-                  <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
+                </Card> : null}
+              </div>
+            )}
+            {activeSystemPanel === "import" && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
+                  <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
                 </div>
-              </Card>
-            ) : <p className="text-sm text-slate-400 py-2">Select a node to inspect details.</p>}
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Validation</h4>
-            <div className="space-y-2">{validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)}</div>
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Simulation</h4>
-            <div className="text-xs text-slate-600 space-y-0.5 mb-2">
-              <p>Status: {sim.status}</p>
-              <p>Steps: {sim.steps.length}</p>
-              <p>Traversed pipes: {tracedEdgeIds.length}</p>
-            </div>
-            <div className="space-y-2">
-              <Card>
-                <h5 className="text-xs font-semibold text-slate-600 mb-1">Branch decisions</h5>
-                {traceSummary.branchDecisions.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
-              </Card>
-              <Card>
-                <h5 className="text-xs font-semibold text-slate-600 mb-1">Loop summary</h5>
-                {traceSummary.loopSummaries.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
-              </Card>
-              <Card>
-                <h5 className="text-xs font-semibold text-slate-600 mb-1">Blocked/invalid routes</h5>
-                {traceSummary.blocked.length === 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="text-xs text-slate-600">{item}</p>)}
-                {invalidPipeIds.length > 0 ? <p className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
-              </Card>
-            </div>
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Comments</h4>
-            <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
-            <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
-            <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Versions</h4>
-            <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
-            <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
-            <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="text-sm text-slate-700">{v.name}</span></div>)}</div>
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">AI Refactor</h4>
-            <Input value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} />
-            <Button onClick={async () => {
-              const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
-              const suggestion = await suggestionRes.json();
-              if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
-            }}>Suggest Edits</Button>
-            {pendingSuggestion ? <Card>
-              <p className="text-sm font-semibold text-slate-800">AI edit set under review</p>
-              <p className="text-sm text-slate-600">{pendingSuggestion.summary}</p>
-              <p className="text-xs text-slate-500">Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
-              <p className="text-xs text-slate-500">Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
-              <p className="text-xs text-slate-500">Change count: {(pendingSuggestion.changes ?? []).length}</p>
-              <div className="space-y-2 mt-2">
-                {(pendingSuggestion.changes ?? []).map((change: any) => (
-                  <Card key={change.id}>
-                    <label><input type="checkbox" checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))} /> {change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</label>
-                    <p className="text-xs text-slate-500 mt-1">{change.rationale ?? "No rationale"}</p>
+                <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
+                <Button onClick={async () => {
+                  const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
+                  const resData = await res.json();
+                  if (resData.ok) setMergePlan(resData.data);
+                }}>Plan Merge</Button>
+                {mergePlan?.ok ? <Card>
+                  <p className="t-label font-semibold text-[#111]">Import review pending</p>
+                  <p className="t-caption text-[#3C3C43]">Additions: {mergePlan.summary?.additions ?? 0}</p>
+                  <p className="t-caption text-[#3C3C43]">Updates: {mergePlan.summary?.updates ?? 0}</p>
+                  <p className="t-caption text-[#3C3C43]">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
+                  <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
+                  <Button onClick={async () => {
+                    await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
+                    setMergePlan(null);
+                    reload();
+                  }}>Apply Merge (creates checkpoint)</Button>
+                </Card> : null}
+              </div>
+            )}
+            {!activeSystemPanel && (
+              <>
+                {selectedEdge ? (
+                  <Card>
+                    <h4 className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Pipe semantics</h4>
+                    <Input
+                      value={pipeSemantics[selectedEdge.id]?.label ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
+                      placeholder="Pipe label"
+                    />
+                    <Input
+                      value={pipeSemantics[selectedEdge.id]?.conditionLabel ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", conditionLabel: e.target.value } }))}
+                      placeholder="Condition label (e.g. score > 0.8)"
+                    />
+                    <Select
+                      value={pipeSemantics[selectedEdge.id]?.routeKind ?? "default"}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: e.target.value as PipeRouteKind } }))}
+                    >
+                      <option value="default">default</option>
+                      <option value="success">success</option>
+                      <option value="failure">failure</option>
+                      <option value="conditional">conditional</option>
+                      <option value="loop">loop</option>
+                    </Select>
+                    <Textarea
+                      value={pipeSemantics[selectedEdge.id]?.notes ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", notes: e.target.value } }))}
+                      placeholder="Route notes / rationale"
+                    />
                   </Card>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 flex-wrap mt-3">
-                <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
-                <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
-                <Button variant="secondary" size="sm" onClick={async () => {
-                  await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
-                  setPendingSuggestion(null);
-                  setAcceptedChangeIds([]);
-                  reload();
-                }}>Apply Selected Changes</Button>
-                <Button variant="ghost" size="sm" onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
-              </div>
-            </Card> : null}
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Import Merge Review</h4>
-            <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
-            <Button onClick={async () => {
-              const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
-              const resData = await res.json();
-              if (resData.ok) setMergePlan(resData.data);
-            }}>Plan Merge</Button>
-            {mergePlan?.ok ? <Card>
-              <p className="text-sm font-semibold text-slate-800">Import review pending</p>
-              <p className="text-xs text-slate-600">Additions: {mergePlan.summary?.additions ?? 0}</p>
-              <p className="text-xs text-slate-600">Updates: {mergePlan.summary?.updates ?? 0}</p>
-              <p className="text-xs text-slate-600">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
-              <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
-              <Button onClick={async () => {
-                await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
-                setMergePlan(null);
-                reload();
-              }}>Apply Merge (creates checkpoint)</Button>
-            </Card> : null}
-            <h4 className="text-sm font-semibold text-slate-700 mt-4 mb-2">Export</h4>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
-              <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
-            </div>
+                ) : null}
+                {selectedNode ? (
+                  <Card>
+                    {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
+                    <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
+                      {(["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]).map((tab) => (
+                        <button key={tab} onClick={() => setInspectorTab(tab)}
+                          className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                    {inspectorTab === "overview" ? (
+                      <div className="space-y-2">
+                        <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
+                        <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} />
+                        <Input value={selectedDefinition?.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
+                        <Input value={selectedDefinition?.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
+                        <Input value={selectedDefinition?.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
+                        <Input value={selectedDefinition?.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
+                      </div>
+                    ) : null}
+                    {inspectorTab === "inputs" && selectedDefinition ? (
+                      <div className="space-y-2">
+                        <p className="t-caption text-[#8E8E93] mb-2">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
+                        <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
+                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                        </Select>
+                        <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
+                        <Textarea value={selectedDefinition.input.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, samplePayload: e.target.value } }))} placeholder="Sample payload / shape" />
+                        <Button onClick={() => addDefinitionField("input")}>Add Input Field</Button>
+                        {selectedDefinition.input.fields.map((field) => (
+                          <Card key={field.id}>
+                            <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
+                            <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
+                              {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                            </Select>
+                            <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
+                            <Input value={field.sourceRef ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { sourceRef: e.target.value })} placeholder="Expected source reference" />
+                            <Input value={field.mappingExpr ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { mappingExpr: e.target.value })} placeholder="Mapping / expression placeholder" />
+                            <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
+                            <Button onClick={() => removeDefinitionField("input", field.id)}>Remove Field</Button>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : null}
+                    {inspectorTab === "outputs" && selectedDefinition ? (
+                      <div className="space-y-2">
+                        <p className="t-caption text-[#8E8E93] mb-2">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
+                        <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
+                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                        </Select>
+                        <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
+                        <Textarea value={selectedDefinition.output.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, samplePayload: e.target.value } }))} placeholder="Sample output payload" />
+                        <Button onClick={() => addDefinitionField("output")}>Add Output Field</Button>
+                        {selectedDefinition.output.fields.map((field) => (
+                          <Card key={field.id}>
+                            <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
+                            <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
+                              {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                            </Select>
+                            <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
+                            <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
+                            <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
+                            <Button onClick={() => removeDefinitionField("output", field.id)}>Remove Field</Button>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : null}
+                    {inspectorTab === "config" && selectedDefinition ? (
+                      <div className="space-y-4">
+                        {(() => {
+                          const fields = getConfigSchema(selectedNode.type as NodeType);
+                          if (fields.length === 0) return null;
+                          return (
+                            <div className="space-y-3">
+                              <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">Configuration</p>
+                              {fields.map((field) => (
+                                <div key={field.key} className="space-y-1">
+                                  <label className="t-caption font-medium text-[#3C3C43]">
+                                    {field.label}
+                                    {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                                  </label>
+                                  {field.type === "select" ? (
+                                    <Select
+                                      value={String((selectedNode.config?.[field.key] ?? field.defaultValue) ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                    >
+                                      {field.options?.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                      ))}
+                                    </Select>
+                                  ) : field.type === "boolean" ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(selectedNode.config?.[field.key] ?? field.defaultValue)}
+                                        onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.checked)}
+                                        className="rounded border-black/[0.12]"
+                                      />
+                                      <span className="t-caption text-[#8E8E93]">{field.description ?? field.label}</span>
+                                    </div>
+                                  ) : field.type === "textarea" ? (
+                                    <Textarea
+                                      value={String(selectedNode.config?.[field.key] ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                      placeholder={field.placeholder}
+                                      rows={3}
+                                    />
+                                  ) : (
+                                    <Input
+                                      type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
+                                      value={String(selectedNode.config?.[field.key] ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, field.type === "number" ? Number(e.target.value) : e.target.value)}
+                                      placeholder={field.placeholder}
+                                    />
+                                  )}
+                                  {field.description && field.type !== "boolean" && (
+                                    <p className="t-caption text-[#8E8E93]">{field.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                              <div className="border-t border-black/[0.06] pt-3" />
+                            </div>
+                          );
+                        })()}
+                        <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
+                        <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
+                        <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
+                        <Textarea value={selectedDefinition.expectedSources ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expectedSources: e.target.value }))} placeholder="Expected input source references" />
+                        <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
+                      </div>
+                    ) : null}
+                    {inspectorTab === "notes" && selectedDefinition ? (
+                      <div className="space-y-2">
+                        <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
+                        <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
+                        <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
+                        <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
+                      </div>
+                    ) : null}
+                    {inspectorTab === "validation" && selectedDefinition ? (
+                      <div className="space-y-2">
+                        <p className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Contract validation</p>
+                        {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
+                        <p className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Compatibility hints</p>
+                        {compatibilityHints.length === 0 ? <p className="t-caption text-[#8E8E93]">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
+                      </div>
+                    ) : null}
+                    {inspectorTab === "docs" && selectedDefinition ? (
+                      <div className="space-y-2">
+                        <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
+                        <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
+                        <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
+                      </div>
+                    ) : null}
+                    <div className="flex items-center gap-2 flex-wrap mt-3">
+                      <Button variant="danger-soft" size="sm" onClick={() => {
+                        recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
+                        setSelectedNodeIds([]);
+                      }}><Trash2 size={14} /> Delete Node</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
+                    </div>
+                  </Card>
+                ) : <p className="t-label text-[#8E8E93] py-2">Select a node to inspect details.</p>}
+              </>
+            )}
           </Panel>
         </EditorErrorBoundary>
         <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>

@@ -124,12 +124,12 @@ const FAQS = [
 
 function ComparisonCell({ value }: { value: CellValue }) {
   if (typeof value === "string") {
-    return <span className="font-semibold text-slate-800">{value}</span>;
+    return <span className="t-label font-semibold text-[#111]">{value}</span>;
   }
   if (value) {
     return <Check className="w-4 h-4 text-indigo-500 mx-auto" aria-label="Included" />;
   }
-  return <X className="w-4 h-4 text-slate-300 mx-auto" aria-label="Not included" />;
+  return <X className="w-4 h-4 text-[#C7C7CC] mx-auto" aria-label="Not included" />;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -139,11 +139,11 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
 
       {/* ── 1. HEADER ───────────────────────────────────────────────────── */}
-      <section className="pt-20 pb-14 px-6 text-center bg-gradient-to-b from-slate-50 to-white">
-        <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+      <section className="pt-20 pb-14 px-6 text-center bg-[#F5F5F7]">
+        <h1 className="text-4xl font-bold text-[#111]" style={{ letterSpacing: "-0.04em" }}>
           Simple, honest pricing
         </h1>
-        <p className="mt-3 text-lg text-slate-600 max-w-md mx-auto">
+        <p className="mt-3 text-lg text-[#3C3C43] max-w-md mx-auto">
           Start free. Upgrade when you need more.
         </p>
       </section>
@@ -157,9 +157,10 @@ export default function PricingPage() {
               className={[
                 "flex flex-col",
                 plan.highlighted
-                  ? "border-2 border-indigo-500 relative shadow-lg"
-                  : "border border-slate-200 shadow-sm",
+                  ? "border-2 border-indigo-500 relative"
+                  : "border border-black/[0.08]",
               ].join(" ")}
+              style={{ borderRadius: "16px" }}
             >
               {/* "Most Popular" badge */}
               {plan.highlighted && (
@@ -175,19 +176,19 @@ export default function PricingPage() {
               )}
 
               <Card.Header className="px-6 pt-7 pb-0 flex flex-col items-start gap-1">
-                <span className="text-xl font-bold text-slate-900">{plan.name}</span>
+                <span className="t-title font-bold text-[#111]">{plan.name}</span>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-extrabold text-slate-900">{plan.price}</span>
-                  <span className="text-sm text-slate-500 font-medium">{plan.period}</span>
+                  <span className="text-4xl font-extrabold text-[#111]" style={{ letterSpacing: "-0.04em" }}>{plan.price}</span>
+                  <span className="t-label text-[#8E8E93] font-medium">{plan.period}</span>
                 </div>
-                <p className="text-sm text-slate-500 mt-2 leading-snug">{plan.tagline}</p>
+                <p className="t-label text-[#8E8E93] mt-2 leading-snug">{plan.tagline}</p>
               </Card.Header>
 
               <Card.Content className="px-6 py-5 flex-1">
                 <Separator className="mb-5" />
                 <ul className="flex flex-col gap-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-700">
+                    <li key={feature} className="flex items-start gap-2.5 t-label text-[#3C3C43]">
                       <Check
                         className="w-4 h-4 mt-0.5 shrink-0 text-indigo-500"
                         aria-hidden
@@ -226,32 +227,32 @@ export default function PricingPage() {
       <Separator />
 
       {/* ── 3. FEATURE COMPARISON TABLE ─────────────────────────────────── */}
-      <section className="py-20 px-6 bg-slate-50">
+      <section className="py-20 px-6 bg-[#F5F5F7]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold text-slate-900">Compare plans</h2>
             <p className="mt-2 text-slate-500 text-base">Everything side by side.</p>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto bg-white" style={{ borderRadius: "12px", border: "1px solid rgba(0,0,0,0.08)" }}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left px-6 py-4 font-semibold text-slate-700 w-1/2">
+                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+                  <th className="text-left px-6 py-4 t-label font-semibold text-[#3C3C43] w-1/2">
                     Feature
                   </th>
-                  <th className="text-center px-4 py-4 font-semibold text-slate-700">Free</th>
-                  <th className="text-center px-4 py-4 font-bold text-indigo-600">Pro</th>
-                  <th className="text-center px-4 py-4 font-semibold text-slate-700">Builder</th>
+                  <th className="text-center px-4 py-4 t-label font-semibold text-[#3C3C43]">Free</th>
+                  <th className="text-center px-4 py-4 t-label font-bold text-indigo-600">Pro</th>
+                  <th className="text-center px-4 py-4 t-label font-semibold text-[#3C3C43]">Builder</th>
                 </tr>
               </thead>
               <tbody>
                 {COMPARISON_ROWS.map((row, idx) => (
                   <tr
                     key={row.feature}
-                    className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/60"}
+                    className={idx % 2 === 0 ? "bg-white" : "bg-[#F5F5F7]"}
                   >
-                    <td className="px-6 py-3.5 text-slate-600">{row.feature}</td>
+                    <td className="px-6 py-3.5 t-label text-[#3C3C43]">{row.feature}</td>
                     <td className="px-4 py-3.5 text-center">
                       <ComparisonCell value={row.free} />
                     </td>
@@ -299,15 +300,17 @@ export default function PricingPage() {
       </section>
 
       {/* ── 5. BOTTOM CTA ───────────────────────────────────────────────── */}
-      <section className="px-6 pb-24 pt-2 bg-white">
-        <div className="max-w-3xl mx-auto rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 px-8 py-16 text-center shadow-xl">
-          <h2 className="text-3xl font-bold text-white">
+      <section className="px-6 pb-24 pt-4 bg-white">
+        <div className="max-w-3xl mx-auto bg-indigo-600 px-8 py-16 text-center relative overflow-hidden"
+             style={{ borderRadius: "24px" }}>
+          <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[260px] rounded-full bg-white opacity-[0.06] blur-3xl" />
+          <h2 className="relative text-3xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
             Ready to build your first system?
           </h2>
-          <p className="mt-3 text-indigo-200 text-base max-w-md mx-auto">
+          <p className="relative mt-3 text-indigo-200 t-body max-w-md mx-auto">
             Free forever. No credit card required. Upgrade when your team grows.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
             <TrackedLink
               href="/signup?source=pricing_bottom_cta"
               event="pricing_cta_clicked"
@@ -315,7 +318,8 @@ export default function PricingPage() {
             >
               <Button
                 size="lg"
-                className="rounded-full bg-white text-indigo-700 font-bold px-10 shadow-lg hover:bg-indigo-50"
+                className="bg-white text-indigo-700 font-bold px-10 hover:bg-indigo-50 transition-colors"
+                style={{ borderRadius: "10px", height: "46px" }}
               >
                 Get started free
               </Button>
@@ -328,7 +332,8 @@ export default function PricingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full border-indigo-300 text-white font-semibold px-8 hover:border-white"
+                className="border-indigo-400 text-white font-semibold px-8 hover:border-white transition-colors"
+                style={{ borderRadius: "10px", height: "46px" }}
               >
                 Upgrade to Pro
               </Button>

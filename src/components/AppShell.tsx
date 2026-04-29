@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Avatar } from "@heroui/react";
-import { LogOut } from "lucide-react";
+import { GitBranch, LogOut } from "lucide-react";
 import { getAuthService } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
 import { canAccessAdmin } from "@/lib/admin/access";
@@ -24,12 +24,17 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         className="flex flex-col w-[216px] shrink-0 h-full bg-[#F5F5F7]"
         aria-label="Primary navigation"
       >
-        {/* Wordmark */}
+        {/* Brand mark */}
         <div className="px-5 pt-6 pb-5 shrink-0">
-          <span className="text-[17px] font-semibold tracking-tight text-[#111] select-none"
-                style={{ letterSpacing: "-0.03em" }}>
-            Pipes
-          </span>
+          <div className="flex items-center gap-2.5 select-none">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 shrink-0">
+              <GitBranch className="w-3.5 h-3.5 text-white" aria-hidden />
+            </span>
+            <span className="text-[17px] font-semibold text-[#111]"
+                  style={{ letterSpacing: "-0.03em" }}>
+              Pipes
+            </span>
+          </div>
         </div>
 
         {/* Primary nav */}
