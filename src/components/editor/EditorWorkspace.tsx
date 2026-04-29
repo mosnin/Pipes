@@ -5,7 +5,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Separator, Spinner } from "@heroui/react";
-import { Copy, Maximize2, Plus, Redo2, Star, Trash2, Undo2 } from "lucide-react";
+import { Copy, Maximize2, Plus, Redo2, Star, Trash2, Undo2, Zap } from "lucide-react";
+import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
@@ -105,6 +106,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [routeFocusMode, setRouteFocusMode] = useState(false);
   const [reviewPreviewItems, setReviewPreviewItems] = useState<ReviewPreviewItem[]>([]);
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
+  const [showConnectModal, setShowConnectModal] = useState(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -495,6 +497,13 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <div className="flex items-center gap-2">
             <AvatarStack names={data.presence.map((p) => p.name)} />
             <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
+            <button
+              onClick={() => setShowConnectModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors shadow-sm"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              Connect to Agent
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
@@ -942,6 +951,14 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           </div>
         </div>
       ) : null}
+
+      {showConnectModal && (
+        <ConnectAgentModal
+          systemId={systemId}
+          systemName={data.system.name}
+          onClose={() => setShowConnectModal(false)}
+        />
+      )}
     </div>
   );
 }
