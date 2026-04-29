@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Separator, Spinner } from "@heroui/react";
-import { Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Trash2, Undo2, Wand2, Zap } from "lucide-react";
+import { Bot, Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -54,7 +54,7 @@ const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
 type InspectorTab = "overview" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
-type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import";
+type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
 
 function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphAction): { nodes: GraphNode[]; pipes: GraphPipe[] } {
@@ -109,6 +109,9 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [activeSystemPanel, setActiveSystemPanel] = useState<SystemPanel | null>(null);
+  const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
+  const [agentViewLoading, setAgentViewLoading] = useState(false);
+  const [showNewBanner, setShowNewBanner] = useState(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -128,6 +131,23 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     trackSignal("editor_opened", { systemId, nodeCount: nodes.length, pipeCount: pipes.length });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [systemId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+      setShowNewBanner(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSystemPanel !== "agent") return;
+    if (agentViewJson !== null) return;
+    setAgentViewLoading(true);
+    fetch(`/api/systems/${systemId}/export?format=json`)
+      .then((r) => r.json())
+      .then((body) => setAgentViewJson(JSON.stringify(body, null, 2)))
+      .catch(() => setAgentViewJson("// Failed to load"))
+      .finally(() => setAgentViewLoading(false));
+  }, [activeSystemPanel, agentViewJson, systemId]);
 
   useEffect(() => {
     fetch("/api/presence", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, selectedNodeId: selectedNodeIds[0] }) });
@@ -551,8 +571,42 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")}>
             <Download size={14} /> Export
           </Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button
+            variant={activeSystemPanel === "agent" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); }}
+            className={activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}
+          >
+            <Bot size={14} /> Agent View
+          </Button>
         </div>
       </div>
+      {showNewBanner && (
+        <div className="flex items-center justify-between gap-4 bg-indigo-600 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-indigo-200 shrink-0" />
+            <p className="t-label text-white font-medium">
+              Your system is drawn. Now connect it to an agent — any AI can read this architecture immediately.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); setShowNewBanner(false); }}
+              className="t-label font-semibold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
+            >
+              See what agents see
+            </button>
+            <button onClick={() => setShowConnectModal(true)}
+              className="t-label font-semibold text-indigo-700 bg-white hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">
+              Connect now
+            </button>
+            <button onClick={() => setShowNewBanner(false)} className="text-indigo-200 hover:text-white transition-colors ml-1">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="editor-shell" style={{ marginTop: 12 }}>
         <Panel title="Node Library">
           <Input value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} placeholder="Search nodes, tags, category..." />
@@ -646,7 +700,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           />
         </EditorErrorBoundary>
         <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <Panel title={activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
+          <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
             {activeSystemPanel === "validation" && (
               <div className="space-y-2">
                 {validationReport.issues.length === 0
@@ -751,6 +805,44 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     reload();
                   }}>Apply Merge (creates checkpoint)</Button>
                 </Card> : null}
+              </div>
+            )}
+            {activeSystemPanel === "agent" && (
+              <div className="space-y-3">
+                <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
+                  <p className="t-caption text-[#3C3C43] leading-relaxed">
+                    This is exactly what any AI agent receives when it queries your system via MCP. Paste this URL into Claude, GPT, or any agent to give it full architectural context.
+                  </p>
+                </div>
+                {agentViewLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Spinner size="sm" />
+                  </div>
+                ) : agentViewJson ? (
+                  <>
+                    <div className="relative">
+                      <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-4 overflow-auto max-h-80 whitespace-pre-wrap"
+                           style={{ borderRadius: "8px", lineHeight: "1.6" }}>
+                        {agentViewJson}
+                      </pre>
+                      <button
+                        onClick={() => { void navigator.clipboard.writeText(agentViewJson); }}
+                        className="absolute top-2 right-2 flex items-center gap-1 t-caption font-medium text-[#9ca3af] hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors"
+                      >
+                        <Copy size={11} /> Copy
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowConnectModal(true)}
+                      className="w-full flex items-center justify-center gap-2 h-9 t-label font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                      style={{ borderRadius: "8px" }}
+                    >
+                      <Zap size={13} /> Connect to an agent
+                    </button>
+                  </>
+                ) : (
+                  <p className="t-label text-[#8E8E93] py-2">Loading…</p>
+                )}
               </div>
             )}
             {!activeSystemPanel && (

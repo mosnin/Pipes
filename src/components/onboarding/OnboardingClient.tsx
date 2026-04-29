@@ -52,7 +52,7 @@ export function OnboardingClient({ initialTemplates }: { initialTemplates: Templ
         body: JSON.stringify({ name: "Untitled System" }),
       });
       const data = await res.json();
-      if (data.ok) router.push(`/systems/${data.data.systemId}`);
+      if (data.ok) router.push(`/systems/${data.data.systemId}?new=1`);
     } finally { setLoadingAction(false); }
   };
 
@@ -73,7 +73,7 @@ export function OnboardingClient({ initialTemplates }: { initialTemplates: Templ
         body: JSON.stringify({ commit: true, draft: draft.data }),
       });
       const commit = await commitRes.json();
-      if (commit.ok) router.push(`/systems/${commit.data.systemId}`);
+      if (commit.ok) router.push(`/systems/${commit.data.systemId}?new=1`);
     } finally { setLoadingAction(false); }
   };
 
@@ -87,7 +87,7 @@ export function OnboardingClient({ initialTemplates }: { initialTemplates: Templ
         body: JSON.stringify({}),
       });
       const data = await res.json();
-      if (data.ok) router.push(`/systems/${data.data.systemId}`);
+      if (data.ok) router.push(`/systems/${data.data.systemId}?new=1`);
     } finally { setLoadingAction(false); }
   };
 

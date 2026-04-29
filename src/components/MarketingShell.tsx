@@ -9,11 +9,8 @@ import { GitBranch, Menu, X, ArrowRight, Zap } from "lucide-react";
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
-  { href: "/pricing",   label: "Pricing"    },
   { href: "/templates", label: "Templates"  },
-  { href: "/use-cases", label: "Use cases"  },
-  { href: "/compare",   label: "Compare"    },
-  { href: "/protocol",  label: "Protocol"   },
+  { href: "/pricing",   label: "Pricing"    },
   { href: "/docs",      label: "Docs"       },
 ] as const;
 

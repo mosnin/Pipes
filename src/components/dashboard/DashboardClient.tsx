@@ -150,33 +150,21 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
       style={{ borderRadius: "12px" }}
       onClick={onOpen}
     >
-      {/* Visual canvas preview area */}
-      <div className="h-28 bg-[#F5F5F7] flex items-center justify-center overflow-hidden relative"
-           style={{ borderRadius: "12px 12px 0 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-        <div className="flex items-center gap-2 opacity-40 group-hover:opacity-70 transition-opacity">
-          <div className="w-12 h-8 rounded-lg bg-white border border-black/[0.12]" />
-          <div className="w-4 h-0.5 bg-black/[0.15] rounded" />
-          <div className="w-14 h-9 rounded-lg bg-indigo-50 border border-indigo-200" />
-          <div className="w-4 h-0.5 bg-black/[0.15] rounded" />
-          <div className="w-12 h-8 rounded-lg bg-white border border-black/[0.12]" />
-        </div>
-        {row.archivedAt && (
-          <div className="absolute top-2 left-2 t-caption font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-            Archived
-          </div>
-        )}
-        {row.favorite && (
-          <Star className="absolute top-2 right-2 w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-        )}
-      </div>
-
-      <Card.Content className="px-4 py-3">
+      <Card.Content className="px-4 py-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {row.archivedAt && (
+                <span className="t-caption font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full shrink-0">
+                  Archived
+                </span>
+              )}
+              {row.favorite && <Star className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />}
+            </div>
             <h3 className="t-label font-semibold text-[#111] leading-tight truncate group-hover:text-indigo-600 transition-colors">
               {row.name}
             </h3>
-            <p className="t-caption text-[#8E8E93] mt-0.5 line-clamp-1">
+            <p className="t-caption text-[#8E8E93] mt-0.5 line-clamp-2">
               {row.description || "No description"}
             </p>
           </div>
