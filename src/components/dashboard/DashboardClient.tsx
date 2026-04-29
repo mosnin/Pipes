@@ -77,50 +77,50 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       {/* Visual hint: a tiny node graph */}
       <div className="relative mb-10 select-none" aria-hidden>
         <div className="flex items-center gap-3">
-          <div className="w-20 h-12 rounded-xl bg-white border-2 border-slate-200 shadow-sm flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Input</span>
+          <div className="w-20 h-12 rounded-xl bg-white border border-black/[0.1] flex items-center justify-center">
+            <span className="t-caption font-semibold text-[#8E8E93] uppercase tracking-wide">Input</span>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="w-8 h-0.5 bg-slate-200 rounded" />
+            <div className="w-8 h-0.5 bg-black/[0.1] rounded" />
             <div className="w-8 h-0.5 bg-indigo-300 rounded" />
           </div>
-          <div className="w-24 h-14 rounded-xl bg-indigo-50 border-2 border-indigo-200 shadow-sm flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide">Agent</span>
+          <div className="w-24 h-14 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center">
+            <span className="t-caption font-semibold text-indigo-500 uppercase tracking-wide">Agent</span>
           </div>
           <div className="flex flex-col gap-1">
             <div className="w-8 h-0.5 bg-indigo-300 rounded" />
-            <div className="w-8 h-0.5 bg-slate-200 rounded" />
+            <div className="w-8 h-0.5 bg-black/[0.1] rounded" />
           </div>
-          <div className="w-20 h-12 rounded-xl bg-white border-2 border-slate-200 shadow-sm flex items-center justify-center">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Output</span>
+          <div className="w-20 h-12 rounded-xl bg-white border border-black/[0.1] flex items-center justify-center">
+            <span className="t-caption font-semibold text-[#8E8E93] uppercase tracking-wide">Output</span>
           </div>
         </div>
-        <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
+        <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
           <Zap className="w-3 h-3 text-white" />
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-slate-900 mb-3 text-center">
+      <h2 className="text-2xl font-bold text-[#111] mb-3 text-center">
         Design your first system
       </h2>
-      <p className="text-base text-slate-500 max-w-sm text-center mb-8 leading-relaxed">
+      <p className="t-body text-[#3C3C43] max-w-sm text-center mb-8 leading-relaxed">
         Draw how your agents think. Connect it to any AI system in seconds.
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-3">
-        <Button variant="primary" onPress={onNew} className="h-11 px-6 text-sm font-semibold">
+        <Button variant="primary" onPress={onNew} className="h-11 px-6 t-label font-semibold">
           <Plus className="w-4 h-4" />
           Start from scratch
         </Button>
         <Link href="/templates">
-          <Button variant="outline" className="h-11 px-6 text-sm font-semibold">
+          <Button variant="outline" className="h-11 px-6 t-label font-semibold">
             Browse templates
             <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
       </div>
 
-      <Link href="/connect" className="mt-6 text-xs text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1">
+      <Link href="/connect" className="mt-6 t-caption text-[#8E8E93] hover:text-indigo-600 transition-colors flex items-center gap-1">
         <Zap className="w-3 h-3" />
         Already have a system? Connect it to an agent
       </Link>
@@ -145,20 +145,22 @@ type SystemCardProps = {
 function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExport, onEdit }: SystemCardProps) {
   return (
     <Card
-      className="bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 rounded-2xl cursor-pointer group"
+      className="bg-white border border-black/[0.08] hover:border-indigo-300 transition-colors duration-150 cursor-pointer group"
+      style={{ borderRadius: "12px" }}
       onClick={onOpen}
     >
       {/* Visual canvas preview area */}
-      <div className="h-28 bg-gradient-to-br from-slate-50 to-slate-100 rounded-t-2xl border-b border-slate-100 flex items-center justify-center overflow-hidden relative">
-        <div className="flex items-center gap-2 opacity-40 group-hover:opacity-60 transition-opacity">
-          <div className="w-12 h-8 rounded-lg bg-white border border-slate-300 shadow-sm" />
-          <div className="w-4 h-0.5 bg-slate-300 rounded" />
-          <div className="w-14 h-9 rounded-lg bg-indigo-100 border border-indigo-300 shadow-sm" />
-          <div className="w-4 h-0.5 bg-slate-300 rounded" />
-          <div className="w-12 h-8 rounded-lg bg-white border border-slate-300 shadow-sm" />
+      <div className="h-28 bg-[#F5F5F7] flex items-center justify-center overflow-hidden relative"
+           style={{ borderRadius: "12px 12px 0 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+        <div className="flex items-center gap-2 opacity-40 group-hover:opacity-70 transition-opacity">
+          <div className="w-12 h-8 rounded-lg bg-white border border-black/[0.12]" />
+          <div className="w-4 h-0.5 bg-black/[0.15] rounded" />
+          <div className="w-14 h-9 rounded-lg bg-indigo-50 border border-indigo-200" />
+          <div className="w-4 h-0.5 bg-black/[0.15] rounded" />
+          <div className="w-12 h-8 rounded-lg bg-white border border-black/[0.12]" />
         </div>
         {row.archivedAt && (
-          <div className="absolute top-2 left-2 text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+          <div className="absolute top-2 left-2 t-caption font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
             Archived
           </div>
         )}
@@ -170,10 +172,10 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
       <Card.Content className="px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-slate-900 text-sm leading-tight truncate group-hover:text-indigo-600 transition-colors">
+            <h3 className="t-label font-semibold text-[#111] leading-tight truncate group-hover:text-indigo-600 transition-colors">
               {row.name}
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+            <p className="t-caption text-[#8E8E93] mt-0.5 line-clamp-1">
               {row.description || "No description"}
             </p>
           </div>
@@ -184,7 +186,7 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
                 size="sm"
                 isIconOnly
                 aria-label="Options"
-                className="shrink-0 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg -mr-1"
+                className="shrink-0 text-[#C7C7CC] hover:text-[#3C3C43] hover:bg-black/[0.04] rounded-lg -mr-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="w-4 h-4" />
@@ -193,24 +195,24 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
             <Dropdown.Popover>
               <DropdownMenu aria-label="System actions">
                 <DropdownItem id="fav" onAction={onToggleFavorite}>
-                  <span className="flex items-center gap-2 text-sm">
+                  <span className="flex items-center gap-2 t-label">
                     <Star className="w-3.5 h-3.5" />
                     {row.favorite ? "Unfavorite" : "Favorite"}
                   </span>
                 </DropdownItem>
                 <DropdownItem id="edit" onAction={onEdit}>
-                  <span className="flex items-center gap-2 text-sm"><Edit className="w-3.5 h-3.5" />Edit</span>
+                  <span className="flex items-center gap-2 t-label"><Edit className="w-3.5 h-3.5" />Edit</span>
                 </DropdownItem>
                 <DropdownItem id="export" onAction={onExport}>
-                  <span className="flex items-center gap-2 text-sm"><Download className="w-3.5 h-3.5" />Export</span>
+                  <span className="flex items-center gap-2 t-label"><Download className="w-3.5 h-3.5" />Export</span>
                 </DropdownItem>
                 {row.archivedAt ? (
                   <DropdownItem id="restore" onAction={onRestore}>
-                    <span className="flex items-center gap-2 text-sm"><RotateCcw className="w-3.5 h-3.5" />Restore</span>
+                    <span className="flex items-center gap-2 t-label"><RotateCcw className="w-3.5 h-3.5" />Restore</span>
                   </DropdownItem>
                 ) : (
                   <DropdownItem id="archive" onAction={onArchive}>
-                    <span className="flex items-center gap-2 text-sm text-red-600"><Archive className="w-3.5 h-3.5" />Archive</span>
+                    <span className="flex items-center gap-2 t-label text-red-600"><Archive className="w-3.5 h-3.5" />Archive</span>
                   </DropdownItem>
                 )}
               </DropdownMenu>
@@ -222,12 +224,12 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
           {row.tags.length > 0 ? (
             <div className="flex gap-1 flex-wrap">
               {row.tags.slice(0, 2).map((tag) => (
-                <Chip key={tag} variant="soft" color="default" size="sm" className="text-[10px] px-1.5">
+                <Chip key={tag} variant="soft" color="default" size="sm" className="t-caption px-1.5">
                   {tag}
                 </Chip>
               ))}
               {row.tags.length > 2 && (
-                <Chip variant="soft" color="default" size="sm" className="text-[10px] px-1.5">
+                <Chip variant="soft" color="default" size="sm" className="t-caption px-1.5">
                   +{row.tags.length - 2}
                 </Chip>
               )}
@@ -235,7 +237,7 @@ function SystemCard({ row, onOpen, onToggleFavorite, onArchive, onRestore, onExp
           ) : (
             <span />
           )}
-          <span className="text-[11px] text-slate-400 shrink-0">
+          <span className="t-caption text-[#8E8E93] shrink-0">
             {formatRelativeDate(row.updatedAt)}
           </span>
         </div>
@@ -261,13 +263,14 @@ function ImportModal({ onImport, onClose }: { onImport: (text: string) => Promis
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Import System</h2>
-        <p className="text-sm text-slate-500 mb-4">
-          Paste a <code className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">pipes_schema_v1</code> JSON.
+      <div className="bg-white w-full max-w-lg mx-4 p-6" style={{ borderRadius: "16px" }}>
+        <h2 className="t-title text-[#111] mb-1">Import System</h2>
+        <p className="t-label text-[#3C3C43] mb-4">
+          Paste a <code className="font-mono t-caption bg-[#F5F5F7] px-1 py-0.5 rounded">pipes_schema_v1</code> JSON.
         </p>
         <textarea
-          className="w-full h-40 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-mono text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          className="w-full h-40 border border-black/[0.08] bg-[#F5F5F7] p-3 t-caption font-mono text-[#111] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          style={{ borderRadius: "8px" }}
           placeholder='{ "pipes_schema_v1": ... }'
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
@@ -416,7 +419,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         <>
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-slate-900">Your Systems</h1>
+            <h1 className="text-2xl font-bold text-[#111]">Your Systems</h1>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onPress={() => setShowImport(true)}>Import</Button>
               <Button variant="primary" size="sm" onPress={createSystem}>
@@ -440,7 +443,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             </div>
             <button
               onClick={() => { setShowArchived((v) => !v); setPage(1); }}
-              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${showArchived ? "bg-amber-50 text-amber-700 border border-amber-200" : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"}`}
+              className={`t-caption font-medium px-3 py-1.5 rounded-lg transition-colors ${showArchived ? "bg-amber-50 text-amber-700 border border-amber-200" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}
             >
               {showArchived ? "← Back to active" : "Show archived"}
             </button>
@@ -450,16 +453,16 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-48 rounded-2xl border border-slate-100 bg-slate-50 animate-pulse" />
+                <div key={i} className="h-48 border border-black/[0.06] bg-[#F5F5F7] animate-pulse" style={{ borderRadius: "12px" }} />
               ))}
             </div>
           ) : visibleRows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-sm font-medium text-slate-500 mb-1">
+              <p className="t-label font-medium text-[#3C3C43] mb-1">
                 {query ? `No systems matching "${query}"` : "Nothing here yet"}
               </p>
               {query && (
-                <button onClick={() => setQuery("")} className="text-xs text-indigo-500 hover:underline mt-1">
+                <button onClick={() => setQuery("")} className="t-caption text-indigo-600 hover:underline mt-1">
                   Clear search
                 </button>
               )}
