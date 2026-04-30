@@ -211,7 +211,7 @@ export default function PricingPage() {
                     className={[
                       "w-full font-semibold",
                       plan.id === "builder"
-                        ? "bg-slate-900 text-white hover:bg-slate-800"
+                        ? "bg-[#111] text-white hover:bg-[#222]"
                         : "",
                     ].join(" ")}
                   >
@@ -230,8 +230,8 @@ export default function PricingPage() {
       <section className="py-20 px-6 bg-[#F5F5F7]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-slate-900">Compare plans</h2>
-            <p className="mt-2 text-slate-500 text-base">Everything side by side.</p>
+            <h2 className="text-2xl font-bold text-[#111]">Compare plans</h2>
+            <p className="mt-2 t-label text-[#8E8E93]">Everything side by side.</p>
           </div>
 
           <div className="overflow-x-auto bg-white" style={{ borderRadius: "12px", border: "1px solid rgba(0,0,0,0.08)" }}>
@@ -276,20 +276,20 @@ export default function PricingPage() {
       <section className="py-20 px-6 bg-white">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-slate-900">Frequently asked questions</h2>
+            <h2 className="text-2xl font-bold text-[#111]">Frequently asked questions</h2>
           </div>
 
-          <Accordion hideSeparator={false} className="flex flex-col divide-y divide-slate-200 border border-slate-200 rounded-xl overflow-hidden">
+          <Accordion hideSeparator={false} className="flex flex-col divide-y divide-black/[0.06] border border-black/[0.08] rounded-xl overflow-hidden">
             {FAQS.map((faq) => (
               <Accordion.Item key={faq.id} id={faq.id} className="bg-white">
                 <Accordion.Heading className="m-0">
-                  <Accordion.Trigger className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-semibold text-slate-800 hover:bg-slate-50 transition-colors">
+                  <Accordion.Trigger className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
                     {faq.question}
-                    <Accordion.Indicator className="shrink-0 text-slate-400" />
+                    <Accordion.Indicator className="shrink-0 text-[#8E8E93]" />
                   </Accordion.Trigger>
                 </Accordion.Heading>
                 <Accordion.Panel>
-                  <Accordion.Body className="px-6 pb-5 text-sm text-slate-600 leading-relaxed">
+                  <Accordion.Body className="px-6 pb-5 text-sm text-[#3C3C43] leading-relaxed">
                     {faq.answer}
                   </Accordion.Body>
                 </Accordion.Panel>
