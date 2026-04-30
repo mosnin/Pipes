@@ -4,8 +4,8 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
-import { Separator, Spinner } from "@heroui/react";
-import { Bot, Copy, Download, History, Maximize2, MessageCircle, Play, Plus, Redo2, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
+import { Bot, Copy, Download, History, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -99,7 +99,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [recents, setRecents] = useState<string[]>([]);
   const [insertRequest, setInsertRequest] = useState<InsertRequest>({ mode: "canvas" });
   const [nodeDefinitions, setNodeDefinitions] = useState<Record<string, NodeDefinition>>({});
-  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("overview");
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("config");
   const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
   const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>("left_to_right");
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -249,7 +249,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   const selectedNodeId = selectedNodeIds[0];
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setShowAllInspectorTabs(false); }, [selectedNodeId]);
+  useEffect(() => { setShowAllInspectorTabs(false); setInspectorTab("config"); }, [selectedNodeId]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId), [nodes, selectedNodeId]);
   const selectedEdge = useMemo(() => pipes.find((pipe) => pipe.id === selectedEdgeIds[0]), [pipes, selectedEdgeIds]);
   const occupancy = useMemo(() => selectedNodeId && data ? data.presence.filter((p) => p.selectedNodeId === selectedNodeId) : [], [data, selectedNodeId]);
@@ -572,17 +572,28 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           </Button>
         </div>
 
-        {/* Secondary toolbar: power tools, de-emphasised */}
+        {/* Secondary toolbar: 3 primary actions + overflow */}
         <div className="flex items-center gap-1 border-t border-black/[0.05] pt-1">
-          <Button variant="ghost" size="sm" onClick={() => arrangeNodes("all")} className="text-[#8E8E93] hover:text-[#3C3C43]">Arrange</Button>
-          <Separator orientation="vertical" className="h-4 mx-0.5" />
-          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Play size={13} /> Simulate</Button>
-          <Button variant={activeSystemPanel === "comments" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("comments")} className="text-[#8E8E93] hover:text-[#3C3C43]"><MessageCircle size={13} /> Comments{data.comments.length > 0 ? ` (${data.comments.length})` : ""}</Button>
-          <Button variant={activeSystemPanel === "versions" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("versions")} className="text-[#8E8E93] hover:text-[#3C3C43]"><History size={13} /> Versions</Button>
-          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Wand2 size={13} /> AI</Button>
-          <Button variant={activeSystemPanel === "import" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("import")} className="text-[#8E8E93] hover:text-[#3C3C43]"><Download size={13} /> Export</Button>
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={13} /> Simulate</Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={13} /> AI</Button>
           <Separator orientation="vertical" className="h-4 mx-0.5" />
           <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={13} /> Chat</Button>
+          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Dropdown>
+            <DropdownTrigger>
+              <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={13} /> More</Button>
+            </DropdownTrigger>
+            <Dropdown.Popover>
+              <DropdownMenu aria-label="More actions">
+                <DropdownItem id="arrange" onAction={() => arrangeNodes("all")}>Arrange nodes</DropdownItem>
+                <DropdownItem id="comments" onAction={() => toggleSystemPanel("comments")}>
+                  {`Comments${data.comments.length > 0 ? ` (${data.comments.length})` : ""}`}
+                </DropdownItem>
+                <DropdownItem id="versions" onAction={() => toggleSystemPanel("versions")}>Versions</DropdownItem>
+                <DropdownItem id="export" onAction={() => toggleSystemPanel("import")}>Export / Import</DropdownItem>
+              </DropdownMenu>
+            </Dropdown.Popover>
+          </Dropdown>
         </div>
 
       </div>
@@ -600,10 +611,6 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               className="t-label font-semibold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
             >
               See what agents see
-            </button>
-            <button onClick={() => setShowConnectModal(true)}
-              className="t-label font-semibold text-indigo-700 bg-white hover:bg-indigo-50 px-3 py-1 rounded-lg transition-colors">
-              Connect now
             </button>
             <button onClick={() => setShowNewBanner(false)} className="text-indigo-200 hover:text-white transition-colors ml-1">
               <X size={14} />
@@ -893,13 +900,6 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         <Copy size={11} /> Copy
                       </button>
                     </div>
-                    <button
-                      onClick={() => setShowConnectModal(true)}
-                      className="w-full flex items-center justify-center gap-2 h-9 t-label font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
-                      style={{ borderRadius: "8px" }}
-                    >
-                      <Zap size={13} /> Connect to an agent
-                    </button>
                   </>
                 ) : (
                   <p className="t-label text-[#8E8E93] py-2">Loading…</p>
@@ -943,8 +943,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
                     <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
                       {(showAllInspectorTabs
-                        ? ["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]
-                        : ["overview", "config"] as InspectorTab[]
+                        ? ["config", "overview", "inputs", "outputs", "notes", "validation", "docs"] as InspectorTab[]
+                        : ["config"] as InspectorTab[]
                       ).map((tab) => (
                         <button key={tab} onClick={() => setInspectorTab(tab)}
                           className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
