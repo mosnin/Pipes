@@ -4,15 +4,12 @@ import { useState } from "react";
 import {
   Badge,
   Button,
-  CardBody,
-  CardHeader,
   CardShell,
   EmptyState,
   HelpText,
   Input,
   InlineCode,
   KbdHint,
-  SegmentedControl,
   Select,
   Textarea,
   Tooltip,
@@ -33,16 +30,11 @@ import { type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe
 import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 
-export type InspectorTab = "overview" | "config" | "inputs" | "outputs" | "notes" | "validation" | "docs";
+export type InspectorTab = "config" | "advanced";
 
 const INSPECTOR_TABS: { id: InspectorTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
   { id: "config", label: "Config" },
-  { id: "inputs", label: "Inputs" },
-  { id: "outputs", label: "Outputs" },
-  { id: "notes", label: "Notes" },
-  { id: "validation", label: "Checks" },
-  { id: "docs", label: "Docs" },
+  { id: "advanced", label: "Advanced" },
 ];
 
 const CONTRACT_TYPES: ContractType[] = ["string", "number", "boolean", "json", "event", "file", "any"];
@@ -241,85 +233,6 @@ export function EditorInspector({
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 space-y-3">
-        {tab === "overview" && (
-          <div className="space-y-3">
-            <Field label="Title">
-              <Input
-                defaultValue={selectedNode.title}
-                onBlur={(e) =>
-                  onRecordAction(
-                    { action: "updateNode", nodeId: selectedNode.id, title: e.target.value },
-                    { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title },
-                  )
-                }
-              />
-            </Field>
-            <Field label="Description">
-              <Input
-                defaultValue={selectedNode.description ?? ""}
-                onBlur={(e) =>
-                  onRecordAction(
-                    { action: "updateNode", nodeId: selectedNode.id, description: e.target.value },
-                    {
-                      action: "updateNode",
-                      nodeId: selectedNode.id,
-                      description: selectedNode.description ?? "",
-                    },
-                  )
-                }
-              />
-            </Field>
-            <Field label="Summary">
-              <Input
-                value={safeDefinition.overview.summary ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, summary: e.target.value },
-                  }))
-                }
-                placeholder="Short summary"
-              />
-            </Field>
-            <Field label="Purpose">
-              <Input
-                value={safeDefinition.overview.purpose ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, purpose: e.target.value },
-                  }))
-                }
-                placeholder="Why this exists"
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Owner">
-                <Input
-                  value={safeDefinition.overview.owner ?? ""}
-                  onChange={(e) =>
-                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                      ...current,
-                      overview: { ...current.overview, owner: e.target.value },
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Reviewer">
-                <Input
-                  value={safeDefinition.overview.reviewer ?? ""}
-                  onChange={(e) =>
-                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                      ...current,
-                      overview: { ...current.overview, reviewer: e.target.value },
-                    }))
-                  }
-                />
-              </Field>
-            </div>
-          </div>
-        )}
-
         {tab === "config" && (
           <div className="space-y-4">
             {(() => {
@@ -389,8 +302,34 @@ export function EditorInspector({
                 </div>
               );
             })()}
+            <Field label="Title">
+              <Input
+                defaultValue={selectedNode.title}
+                onBlur={(e) =>
+                  onRecordAction(
+                    { action: "updateNode", nodeId: selectedNode.id, title: e.target.value },
+                    { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title },
+                  )
+                }
+              />
+            </Field>
+            <Field label="Description">
+              <Input
+                defaultValue={selectedNode.description ?? ""}
+                onBlur={(e) =>
+                  onRecordAction(
+                    { action: "updateNode", nodeId: selectedNode.id, description: e.target.value },
+                    {
+                      action: "updateNode",
+                      nodeId: selectedNode.id,
+                      description: selectedNode.description ?? "",
+                    },
+                  )
+                }
+              />
+            </Field>
             <CardShell padded className="bg-[var(--surface-subtle,#FAFAFA)]">
-              <p className="t-overline text-[#8E8E93] mb-2">Notes</p>
+              <p className="t-overline text-[#8E8E93] mb-2">Config notes</p>
               <Textarea
                 value={safeDefinition.configNotes ?? ""}
                 onChange={(e) =>
@@ -406,355 +345,422 @@ export function EditorInspector({
           </div>
         )}
 
-        {tab === "inputs" && (
-          <div className="space-y-3">
-            <HelpText>Schema: {summarizeContract(safeDefinition.input)}</HelpText>
-            <Field label="Port type">
-              <Select
-                value={safeDefinition.input.portType}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    input: { ...current.input, portType: e.target.value as ContractType },
-                  }))
-                }
-              >
-                {CONTRACT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Summary">
-              <Textarea
-                value={safeDefinition.input.summary ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    input: { ...current.input, summary: e.target.value },
-                  }))
-                }
-                placeholder="Input contract summary"
-                rows={2}
-              />
-            </Field>
-            <Field label="Sample payload">
-              <Textarea
-                value={safeDefinition.input.samplePayload ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    input: { ...current.input, samplePayload: e.target.value },
-                  }))
-                }
-                placeholder="Sample payload / shape"
-                rows={3}
-              />
-            </Field>
-            <div className="flex items-center justify-between">
-              <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.input.fields.length})</p>
-              <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("input")}>
-                <Plus size={12} /> Field
-              </Button>
-            </div>
-            {safeDefinition.input.fields.map((field) => (
-              <CardShell key={field.id} padded className="bg-[var(--surface-subtle,#FAFAFA)]">
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <Input
-                    value={field.key}
-                    onChange={(e) => onUpdateDefinitionField("input", field.id, { key: e.target.value })}
-                    placeholder="Field key"
-                  />
-                  <Tooltip content="Remove field">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => onRemoveDefinitionField("input", field.id)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </Tooltip>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <Select
-                    value={field.type}
-                    onChange={(e) =>
-                      onUpdateDefinitionField("input", field.id, { type: e.target.value as ContractType })
-                    }
-                  >
-                    {CONTRACT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </Select>
-                  <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
-                    <input
-                      type="checkbox"
-                      checked={field.required}
-                      onChange={(e) =>
-                        onUpdateDefinitionField("input", field.id, { required: e.target.checked })
-                      }
-                    />
-                    Required
-                  </label>
-                </div>
-                <Textarea
-                  value={field.transformNotes ?? ""}
-                  onChange={(e) =>
-                    onUpdateDefinitionField("input", field.id, { transformNotes: e.target.value })
-                  }
-                  placeholder="Transformation notes"
-                  rows={2}
-                />
-              </CardShell>
-            ))}
-          </div>
-        )}
-
-        {tab === "outputs" && (
-          <div className="space-y-3">
-            <HelpText>Schema: {summarizeContract(safeDefinition.output)}</HelpText>
-            <Field label="Port type">
-              <Select
-                value={safeDefinition.output.portType}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    output: { ...current.output, portType: e.target.value as ContractType },
-                  }))
-                }
-              >
-                {CONTRACT_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Summary">
-              <Textarea
-                value={safeDefinition.output.summary ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    output: { ...current.output, summary: e.target.value },
-                  }))
-                }
-                placeholder="Output contract summary"
-                rows={2}
-              />
-            </Field>
-            <Field label="Sample payload">
-              <Textarea
-                value={safeDefinition.output.samplePayload ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    output: { ...current.output, samplePayload: e.target.value },
-                  }))
-                }
-                placeholder="Sample output payload"
-                rows={3}
-              />
-            </Field>
-            <div className="flex items-center justify-between">
-              <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.output.fields.length})</p>
-              <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("output")}>
-                <Plus size={12} /> Field
-              </Button>
-            </div>
-            {safeDefinition.output.fields.map((field) => (
-              <CardShell key={field.id} padded className="bg-[var(--surface-subtle,#FAFAFA)]">
-                <div className="flex items-center justify-between mb-2 gap-2">
-                  <Input
-                    value={field.key}
-                    onChange={(e) => onUpdateDefinitionField("output", field.id, { key: e.target.value })}
-                    placeholder="Field key"
-                  />
-                  <Tooltip content="Remove field">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => onRemoveDefinitionField("output", field.id)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </Tooltip>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <Select
-                    value={field.type}
-                    onChange={(e) =>
-                      onUpdateDefinitionField("output", field.id, { type: e.target.value as ContractType })
-                    }
-                  >
-                    {CONTRACT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </Select>
-                  <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
-                    <input
-                      type="checkbox"
-                      checked={field.required}
-                      onChange={(e) =>
-                        onUpdateDefinitionField("output", field.id, { required: e.target.checked })
-                      }
-                    />
-                    Required
-                  </label>
-                </div>
+        {tab === "advanced" && (
+          <div className="space-y-5">
+            {/* Identity */}
+            <section className="space-y-3">
+              <p className="t-overline text-[#8E8E93]">Identity</p>
+              <Field label="Summary">
                 <Input
-                  value={field.example ?? ""}
+                  value={safeDefinition.overview.summary ?? ""}
                   onChange={(e) =>
-                    onUpdateDefinitionField("output", field.id, { example: e.target.value })
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, summary: e.target.value },
+                    }))
                   }
-                  placeholder="Example"
+                  placeholder="Short summary"
                 />
-                <Textarea
-                  className="mt-2"
-                  value={field.description ?? ""}
+              </Field>
+              <Field label="Purpose">
+                <Input
+                  value={safeDefinition.overview.purpose ?? ""}
                   onChange={(e) =>
-                    onUpdateDefinitionField("output", field.id, { description: e.target.value })
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, purpose: e.target.value },
+                    }))
                   }
-                  placeholder="Description"
+                  placeholder="Why this exists"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Owner">
+                  <Input
+                    value={safeDefinition.overview.owner ?? ""}
+                    onChange={(e) =>
+                      onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                        ...current,
+                        overview: { ...current.overview, owner: e.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+                <Field label="Reviewer">
+                  <Input
+                    value={safeDefinition.overview.reviewer ?? ""}
+                    onChange={(e) =>
+                      onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                        ...current,
+                        overview: { ...current.overview, reviewer: e.target.value },
+                      }))
+                    }
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <div className="border-t border-black/[0.06]" />
+
+            {/* Ports — Inputs */}
+            <section className="space-y-3">
+              <p className="t-overline text-[#8E8E93]">Ports — Inputs</p>
+              <HelpText>Schema: {summarizeContract(safeDefinition.input)}</HelpText>
+              <Field label="Port type">
+                <Select
+                  value={safeDefinition.input.portType}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      input: { ...current.input, portType: e.target.value as ContractType },
+                    }))
+                  }
+                >
+                  {CONTRACT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Summary">
+                <Textarea
+                  value={safeDefinition.input.summary ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      input: { ...current.input, summary: e.target.value },
+                    }))
+                  }
+                  placeholder="Input contract summary"
                   rows={2}
                 />
-              </CardShell>
-            ))}
-          </div>
-        )}
-
-        {tab === "notes" && (
-          <div className="space-y-3">
-            <Field label="Assumptions">
-              <Textarea
-                value={safeDefinition.overview.assumptions ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, assumptions: e.target.value },
-                  }))
-                }
-                rows={3}
-              />
-            </Field>
-            <Field label="Failure modes">
-              <Textarea
-                value={safeDefinition.overview.failureNotes ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, failureNotes: e.target.value },
-                  }))
-                }
-                rows={3}
-              />
-            </Field>
-            <Field label="Implementation notes">
-              <Textarea
-                value={safeDefinition.overview.implementationNotes ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, implementationNotes: e.target.value },
-                  }))
-                }
-                rows={3}
-              />
-            </Field>
-            <Field label="General notes">
-              <Textarea
-                value={safeDefinition.notes ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    notes: e.target.value,
-                  }))
-                }
-                rows={4}
-              />
-            </Field>
-          </div>
-        )}
-
-        {tab === "validation" && (
-          <div className="space-y-3">
-            <p className="t-overline text-[#8E8E93]">Definition checks</p>
-            {definitionIssues.length === 0 ? (
-              <Badge tone="good">No definition issues</Badge>
-            ) : (
-              definitionIssues.map((issue) => (
-                <CardShell key={issue} padded>
-                  <div className="flex items-start gap-2">
-                    <ValidationBadge severity="warning" />
-                    <p className="t-caption text-[#3C3C43]">{issue}</p>
+              </Field>
+              <Field label="Sample payload">
+                <Textarea
+                  value={safeDefinition.input.samplePayload ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      input: { ...current.input, samplePayload: e.target.value },
+                    }))
+                  }
+                  placeholder="Sample payload / shape"
+                  rows={3}
+                />
+              </Field>
+              <div className="flex items-center justify-between">
+                <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.input.fields.length})</p>
+                <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("input")}>
+                  <Plus size={12} /> Field
+                </Button>
+              </div>
+              {safeDefinition.input.fields.map((field) => (
+                <CardShell key={field.id} padded className="bg-[var(--surface-subtle,#FAFAFA)]">
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <Input
+                      value={field.key}
+                      onChange={(e) => onUpdateDefinitionField("input", field.id, { key: e.target.value })}
+                      placeholder="Field key"
+                    />
+                    <Tooltip content="Remove field">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => onRemoveDefinitionField("input", field.id)}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    </Tooltip>
                   </div>
-                </CardShell>
-              ))
-            )}
-            <p className="t-overline text-[#8E8E93] mt-3">Compatibility hints</p>
-            {compatibilityHints.length === 0 ? (
-              <HelpText>No connected nodes to compare.</HelpText>
-            ) : (
-              compatibilityHints.map((hint, index) => (
-                <CardShell key={`${hint.nodeTitle}_${index}`} padded>
-                  <div className="flex items-start gap-2">
-                    <ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} />
-                    <p className="t-caption text-[#3C3C43]">
-                      {hint.direction} . {hint.nodeTitle}: {hint.hint.reason}
-                    </p>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <Select
+                      value={field.type}
+                      onChange={(e) =>
+                        onUpdateDefinitionField("input", field.id, { type: e.target.value as ContractType })
+                      }
+                    >
+                      {CONTRACT_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </Select>
+                    <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) =>
+                          onUpdateDefinitionField("input", field.id, { required: e.target.checked })
+                        }
+                      />
+                      Required
+                    </label>
                   </div>
+                  <Textarea
+                    value={field.transformNotes ?? ""}
+                    onChange={(e) =>
+                      onUpdateDefinitionField("input", field.id, { transformNotes: e.target.value })
+                    }
+                    placeholder="Transformation notes"
+                    rows={2}
+                  />
                 </CardShell>
-              ))
-            )}
-          </div>
-        )}
+              ))}
+            </section>
 
-        {tab === "docs" && (
-          <div className="space-y-3">
-            <Field label="Linked asset">
-              <Input
-                value={safeDefinition.overview.linkedAsset ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, linkedAsset: e.target.value },
-                  }))
-                }
-                placeholder="Asset id or URL"
-              />
-            </Field>
-            <Field label="Linked snippet">
-              <Input
-                value={safeDefinition.overview.linkedSnippet ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, linkedSnippet: e.target.value },
-                  }))
-                }
-                placeholder="Snippet id or URL"
-              />
-            </Field>
-            <Field label="Documentation link">
-              <Input
-                value={safeDefinition.overview.docsRef ?? ""}
-                onChange={(e) =>
-                  onUpdateNodeDefinition(selectedNode.id, (current) => ({
-                    ...current,
-                    overview: { ...current.overview, docsRef: e.target.value },
-                  }))
-                }
-                placeholder="https://"
-              />
-            </Field>
-            <HelpText>
-              Reference: <InlineCode>pipes_schema_v1</InlineCode>
-            </HelpText>
+            <div className="border-t border-black/[0.06]" />
+
+            {/* Ports — Outputs */}
+            <section className="space-y-3">
+              <p className="t-overline text-[#8E8E93]">Ports — Outputs</p>
+              <HelpText>Schema: {summarizeContract(safeDefinition.output)}</HelpText>
+              <Field label="Port type">
+                <Select
+                  value={safeDefinition.output.portType}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      output: { ...current.output, portType: e.target.value as ContractType },
+                    }))
+                  }
+                >
+                  {CONTRACT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Summary">
+                <Textarea
+                  value={safeDefinition.output.summary ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      output: { ...current.output, summary: e.target.value },
+                    }))
+                  }
+                  placeholder="Output contract summary"
+                  rows={2}
+                />
+              </Field>
+              <Field label="Sample payload">
+                <Textarea
+                  value={safeDefinition.output.samplePayload ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      output: { ...current.output, samplePayload: e.target.value },
+                    }))
+                  }
+                  placeholder="Sample output payload"
+                  rows={3}
+                />
+              </Field>
+              <div className="flex items-center justify-between">
+                <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.output.fields.length})</p>
+                <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("output")}>
+                  <Plus size={12} /> Field
+                </Button>
+              </div>
+              {safeDefinition.output.fields.map((field) => (
+                <CardShell key={field.id} padded className="bg-[var(--surface-subtle,#FAFAFA)]">
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <Input
+                      value={field.key}
+                      onChange={(e) => onUpdateDefinitionField("output", field.id, { key: e.target.value })}
+                      placeholder="Field key"
+                    />
+                    <Tooltip content="Remove field">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onPress={() => onRemoveDefinitionField("output", field.id)}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    </Tooltip>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <Select
+                      value={field.type}
+                      onChange={(e) =>
+                        onUpdateDefinitionField("output", field.id, { type: e.target.value as ContractType })
+                      }
+                    >
+                      {CONTRACT_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </Select>
+                    <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) =>
+                          onUpdateDefinitionField("output", field.id, { required: e.target.checked })
+                        }
+                      />
+                      Required
+                    </label>
+                  </div>
+                  <Input
+                    value={field.example ?? ""}
+                    onChange={(e) =>
+                      onUpdateDefinitionField("output", field.id, { example: e.target.value })
+                    }
+                    placeholder="Example"
+                  />
+                  <Textarea
+                    className="mt-2"
+                    value={field.description ?? ""}
+                    onChange={(e) =>
+                      onUpdateDefinitionField("output", field.id, { description: e.target.value })
+                    }
+                    placeholder="Description"
+                    rows={2}
+                  />
+                </CardShell>
+              ))}
+            </section>
+
+            <div className="border-t border-black/[0.06]" />
+
+            {/* Notes */}
+            <section className="space-y-3">
+              <p className="t-overline text-[#8E8E93]">Notes</p>
+              <Field label="Assumptions">
+                <Textarea
+                  value={safeDefinition.overview.assumptions ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, assumptions: e.target.value },
+                    }))
+                  }
+                  rows={3}
+                />
+              </Field>
+              <Field label="Failure modes">
+                <Textarea
+                  value={safeDefinition.overview.failureNotes ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, failureNotes: e.target.value },
+                    }))
+                  }
+                  rows={3}
+                />
+              </Field>
+              <Field label="Implementation notes">
+                <Textarea
+                  value={safeDefinition.overview.implementationNotes ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, implementationNotes: e.target.value },
+                    }))
+                  }
+                  rows={3}
+                />
+              </Field>
+              <Field label="General notes">
+                <Textarea
+                  value={safeDefinition.notes ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      notes: e.target.value,
+                    }))
+                  }
+                  rows={4}
+                />
+              </Field>
+            </section>
+
+            <div className="border-t border-black/[0.06]" />
+
+            {/* Validation */}
+            <section className="space-y-2">
+              <p className="t-overline text-[#8E8E93]">Validation</p>
+              <p className="t-caption text-[#8E8E93]">Definition checks</p>
+              {definitionIssues.length === 0 ? (
+                <Badge tone="good">No definition issues</Badge>
+              ) : (
+                definitionIssues.map((issue) => (
+                  <CardShell key={issue} padded>
+                    <div className="flex items-start gap-2">
+                      <ValidationBadge severity="warning" />
+                      <p className="t-caption text-[#3C3C43]">{issue}</p>
+                    </div>
+                  </CardShell>
+                ))
+              )}
+              <p className="t-caption text-[#8E8E93] mt-3">Compatibility hints</p>
+              {compatibilityHints.length === 0 ? (
+                <HelpText>No connected nodes to compare.</HelpText>
+              ) : (
+                compatibilityHints.map((hint, index) => (
+                  <CardShell key={`${hint.nodeTitle}_${index}`} padded>
+                    <div className="flex items-start gap-2">
+                      <ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} />
+                      <p className="t-caption text-[#3C3C43]">
+                        {hint.direction} . {hint.nodeTitle}: {hint.hint.reason}
+                      </p>
+                    </div>
+                  </CardShell>
+                ))
+              )}
+            </section>
+
+            <div className="border-t border-black/[0.06]" />
+
+            {/* Docs */}
+            <section className="space-y-3">
+              <p className="t-overline text-[#8E8E93]">Docs</p>
+              <Field label="Linked asset">
+                <Input
+                  value={safeDefinition.overview.linkedAsset ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, linkedAsset: e.target.value },
+                    }))
+                  }
+                  placeholder="Asset id or URL"
+                />
+              </Field>
+              <Field label="Linked snippet">
+                <Input
+                  value={safeDefinition.overview.linkedSnippet ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, linkedSnippet: e.target.value },
+                    }))
+                  }
+                  placeholder="Snippet id or URL"
+                />
+              </Field>
+              <Field label="Documentation link">
+                <Input
+                  value={safeDefinition.overview.docsRef ?? ""}
+                  onChange={(e) =>
+                    onUpdateNodeDefinition(selectedNode.id, (current) => ({
+                      ...current,
+                      overview: { ...current.overview, docsRef: e.target.value },
+                    }))
+                  }
+                  placeholder="https://"
+                />
+              </Field>
+              <HelpText>
+                Reference: <InlineCode>pipes_schema_v1</InlineCode>
+              </HelpText>
+            </section>
           </div>
         )}
       </div>

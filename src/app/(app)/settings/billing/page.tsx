@@ -231,8 +231,8 @@ export default function BillingSettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Billing"
-        subtitle="Manage your plan, payment method, and invoices."
+        title="Workspace"
+        subtitle="Plan, billing, and workspace defaults."
         actions={
           summary && (
             <Button

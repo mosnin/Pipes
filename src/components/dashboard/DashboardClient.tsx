@@ -139,7 +139,7 @@ function SystemCard({
             {row.favorite && (
               <Star
                 size={12}
-                className="text-amber-400 fill-amber-400 shrink-0"
+                className="text-[#3C3C43] fill-[#3C3C43] shrink-0"
                 aria-hidden="true"
               />
             )}
@@ -149,9 +149,9 @@ function SystemCard({
           </p>
         </div>
         <div className="flex items-start gap-1.5 shrink-0">
-          <StatusBadge tone={row.archivedAt ? "warning" : "success"}>
-            {row.archivedAt ? "Archived" : "Active"}
-          </StatusBadge>
+          {row.archivedAt && (
+            <StatusBadge tone="warning">Archived</StatusBadge>
+          )}
           <Dropdown>
             <DropdownTrigger>
               <button
@@ -222,7 +222,7 @@ function SystemCard({
           Updated {formatRelativeDate(row.updatedAt)}
         </span>
         <span
-          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 t-caption font-semibold"
+          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#F5F5F7] text-[#3C3C43] t-caption font-semibold"
           title={row.createdBy}
           aria-label={`Owner ${row.createdBy}`}
         >
@@ -418,7 +418,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       render: (row) => (
         <div className="flex items-center gap-2 min-w-0">
           {row.favorite && (
-            <Star size={12} className="text-amber-400 fill-amber-400 shrink-0" />
+            <Star size={12} className="text-[#3C3C43] fill-[#3C3C43] shrink-0" />
           )}
           <span className="t-label font-medium text-[#111] truncate">{row.name}</span>
         </div>
@@ -428,11 +428,12 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       key: "status",
       header: "Status",
       width: "120px",
-      render: (row) => (
-        <StatusBadge tone={row.archivedAt ? "warning" : "success"}>
-          {row.archivedAt ? "Archived" : "Active"}
-        </StatusBadge>
-      ),
+      render: (row) =>
+        row.archivedAt ? (
+          <StatusBadge tone="warning">Archived</StatusBadge>
+        ) : (
+          <span className="t-caption text-[#8E8E93]">--</span>
+        ),
     },
     {
       key: "tags",
@@ -465,7 +466,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       width: "140px",
       render: (row) => (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 t-caption font-semibold">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#F5F5F7] text-[#3C3C43] t-caption font-semibold">
             {initials(row.createdBy)}
           </span>
           <span className="t-label text-[#3C3C43] truncate">{row.createdBy}</span>
@@ -654,52 +655,76 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               </div>
             </div>
           ) : visibleRows.length === 0 ? (
-            <EmptyState
-              title={
-                query
-                  ? `No systems match "${query}"`
-                  : filter === "archived"
-                    ? "Nothing archived"
-                    : filter === "favorites"
-                      ? "No favorites yet"
-                      : "No systems yet"
-              }
-              description={
-                query
-                  ? "Try a different search or clear the filter."
-                  : filter === "archived"
-                    ? "Archived systems live here. They are hidden from the default view."
-                    : filter === "favorites"
-                      ? "Favorite systems for quick access from the toolbar."
-                      : "Start fresh, import a schema, or grab a template."
-              }
-              action={
-                query ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => setQuery("")}
-                  >
-                    Clear search
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onPress={() => setShowImport(true)}
-                    >
-                      <Upload size={14} />
-                      Import schema
-                    </Button>
-                    <Button variant="primary" size="sm" onPress={createSystem}>
+            library.rows.length === 0 && !query && filter !== "archived" ? (
+              <div className="grid-bg min-h-[70vh] flex items-center justify-center rounded-[12px]">
+                <div className="flex flex-col items-center text-center gap-4 max-w-md px-6">
+                  <h2 className="t-h2 text-[#111]">Start your first system</h2>
+                  <p className="t-body text-[#3C3C43]">
+                    Pipes treats every node the same. You decide what each one is.
+                  </p>
+                  <div className="flex flex-col items-center gap-3 mt-2">
+                    <Button variant="primary" size="md" onPress={createSystem}>
                       <Plus size={14} />
-                      New System
+                      New system
                     </Button>
+                    <button
+                      type="button"
+                      onClick={() => router.push("/templates")}
+                      className="t-label text-[#3C3C43] hover:text-indigo-700 transition-colors"
+                    >
+                      or start from a template
+                    </button>
                   </div>
-                )
-              }
-            />
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                title={
+                  query
+                    ? `No systems match "${query}"`
+                    : filter === "archived"
+                      ? "Nothing archived"
+                      : filter === "favorites"
+                        ? "No favorites yet"
+                        : "No systems yet"
+                }
+                description={
+                  query
+                    ? "Try a different search or clear the filter."
+                    : filter === "archived"
+                      ? "Archived systems live here. They are hidden from the default view."
+                      : filter === "favorites"
+                        ? "Favorite systems for quick access from the toolbar."
+                        : "Start fresh, import a schema, or grab a template."
+                }
+                action={
+                  query ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onPress={() => setQuery("")}
+                    >
+                      Clear search
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onPress={() => setShowImport(true)}
+                      >
+                        <Upload size={14} />
+                        Import schema
+                      </Button>
+                      <Button variant="primary" size="sm" onPress={createSystem}>
+                        <Plus size={14} />
+                        New System
+                      </Button>
+                    </div>
+                  )
+                }
+              />
+            )
           ) : view === "grid" ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

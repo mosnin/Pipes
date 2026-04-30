@@ -12,7 +12,7 @@ export const metadata = {
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
 
-type PlanId = "starter" | "team" | "builder" | "enterprise";
+type PlanId = "starter" | "team" | "enterprise";
 
 type Plan = {
   id: PlanId;
@@ -54,7 +54,7 @@ const PLANS: readonly Plan[] = [
     id: "team",
     name: "Team",
     price: "$12",
-    period: "per workspace / month",
+    period: "per seat / month",
     tagline: "For teams collaborating on shared system memory.",
     highlighted: true,
     ctaLabel: "Start 14-day trial",
@@ -63,33 +63,12 @@ const PLANS: readonly Plan[] = [
     ctaEvent: "pricing_cta_clicked",
     ctaMeta: { plan: "team", source: "pricing_cards" },
     features: [
-      "Up to 25 systems",
-      "Unlimited collaborators",
-      "Version history and snapshots",
-      "Pro template library",
+      "Unlimited systems",
+      "Up to 10 collaborators",
+      "Priority support",
+      "SSO and audit log",
       "MCP and REST protocol access",
-      "Comments and review",
-    ],
-  },
-  {
-    id: "builder",
-    name: "Builder",
-    price: "$29",
-    period: "per workspace / month",
-    tagline: "For agent-native teams running production workloads.",
-    highlighted: false,
-    ctaLabel: "Choose Builder",
-    ctaTone: "secondary",
-    ctaHref: "/signup?source=pricing_builder",
-    ctaEvent: "pricing_cta_clicked",
-    ctaMeta: { plan: "builder", source: "pricing_cards" },
-    features: [
-      "Up to 250 systems",
-      "AI system generation",
-      "AI edit suggestions",
-      "Sub-agent builder",
-      "Capability-scoped tokens",
-      "Audit log export",
+      "Pro template library",
     ],
   },
   {
@@ -125,7 +104,6 @@ type ComparisonGroup = {
     feature: string;
     starter: CellValue;
     team: CellValue;
-    builder: CellValue;
     enterprise: CellValue;
   }[];
 };
@@ -134,41 +112,41 @@ const COMPARISON: readonly ComparisonGroup[] = [
   {
     group: "Workspace",
     rows: [
-      { feature: "Systems",                starter: "3",     team: "25",    builder: "250",   enterprise: "Unlimited" },
-      { feature: "Collaborators",          starter: "1",     team: "Unlimited", builder: "Unlimited", enterprise: "Unlimited" },
-      { feature: "Version history",        starter: false,   team: true,    builder: true,    enterprise: true },
-      { feature: "Comments and review",    starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "Systems",                starter: "3",     team: "25",   enterprise: "Unlimited" },
+      { feature: "Collaborators",          starter: "1",     team: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Version history",        starter: false,   team: true,    enterprise: true },
+      { feature: "Comments and review",    starter: false,   team: true,    enterprise: true },
     ],
   },
   {
     group: "Authoring",
     rows: [
-      { feature: "Validation engine",      starter: "Basic", team: "Advanced", builder: "Advanced", enterprise: "Advanced" },
-      { feature: "Simulation",             starter: true,    team: true,    builder: true,    enterprise: true },
-      { feature: "Pro template library",   starter: false,   team: true,    builder: true,    enterprise: true },
-      { feature: "AI system generation",   starter: false,   team: false,   builder: true,    enterprise: true },
-      { feature: "AI edit suggestions",    starter: false,   team: false,   builder: true,    enterprise: true },
-      { feature: "Sub-agent builder",      starter: false,   team: false,   builder: true,    enterprise: true },
+      { feature: "Validation engine",      starter: "Basic", team: "Advanced", enterprise: "Advanced" },
+      { feature: "Simulation",             starter: true,    team: true,    enterprise: true },
+      { feature: "Pro template library",   starter: false,   team: true,    enterprise: true },
+      { feature: "AI system generation",   starter: false,   team: false,    enterprise: true },
+      { feature: "AI edit suggestions",    starter: false,   team: false,    enterprise: true },
+      { feature: "Sub-agent builder",      starter: false,   team: false,    enterprise: true },
     ],
   },
   {
     group: "Protocol",
     rows: [
-      { feature: "MCP and REST access",    starter: false,   team: true,    builder: true,    enterprise: true },
-      { feature: "Capability-scoped tokens", starter: false, team: "Limited", builder: true,  enterprise: true },
-      { feature: "Idempotency keys",       starter: false,   team: true,    builder: true,    enterprise: true },
-      { feature: "Audit log export",       starter: false,   team: false,   builder: true,    enterprise: true },
+      { feature: "MCP and REST access",    starter: false,   team: true,    enterprise: true },
+      { feature: "Capability-scoped tokens", starter: false, team: "Limited",  enterprise: true },
+      { feature: "Idempotency keys",       starter: false,   team: true,    enterprise: true },
+      { feature: "Audit log export",       starter: false,   team: false,    enterprise: true },
     ],
   },
   {
     group: "Security and support",
     rows: [
-      { feature: "SSO / SAML",             starter: false,   team: false,   builder: false,   enterprise: true },
-      { feature: "SCIM provisioning",      starter: false,   team: false,   builder: false,   enterprise: true },
-      { feature: "SOC 2 Type II",          starter: true,    team: true,    builder: true,    enterprise: true },
-      { feature: "DPA",                    starter: false,   team: true,    builder: true,    enterprise: true },
-      { feature: "Self-hosted Convex",     starter: false,   team: false,   builder: false,   enterprise: true },
-      { feature: "Uptime SLA",             starter: "-",     team: "99.5%", builder: "99.9%", enterprise: "99.9%" },
+      { feature: "SSO / SAML",             starter: false,   team: false,   enterprise: true },
+      { feature: "SCIM provisioning",      starter: false,   team: false,   enterprise: true },
+      { feature: "SOC 2 Type II",          starter: true,    team: true,    enterprise: true },
+      { feature: "DPA",                    starter: false,   team: true,    enterprise: true },
+      { feature: "Self-hosted Convex",     starter: false,   team: false,   enterprise: true },
+      { feature: "Uptime SLA",             starter: "-",     team: "99.5%", enterprise: "99.9%" },
     ],
   },
 ] as const;
@@ -186,7 +164,7 @@ const FAQS = [
     id: "faq-workspace",
     question: "What counts as a workspace?",
     answer:
-      "A workspace is a shared environment where you and your collaborators design systems together. Billing is per workspace, not per seat.",
+      "A workspace is a shared environment where you and your collaborators design systems together. Team plans bill per active seat.",
   },
   {
     id: "faq-upgrade",
@@ -210,7 +188,7 @@ const FAQS = [
     id: "faq-trial",
     question: "Do paid plans have a trial?",
     answer:
-      "Team and Builder include a 14-day trial. No credit card required to start, and your work persists if you don't upgrade.",
+      "Team includes a 14-day trial. No credit card required to start, and your work persists if you do not upgrade.",
   },
 ] as const;
 
@@ -373,9 +351,6 @@ export default function PricingPage() {
                     Team
                   </th>
                   <th className="px-4 py-4 text-center t-overline text-[#8E8E93]">
-                    Builder
-                  </th>
-                  <th className="px-4 py-4 text-center t-overline text-[#8E8E93]">
                     Enterprise
                   </th>
                 </tr>
@@ -404,9 +379,6 @@ export default function PricingPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <ComparisonCell value={row.team} />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <ComparisonCell value={row.builder} />
                         </td>
                         <td className="px-4 py-3 text-center">
                           <ComparisonCell value={row.enterprise} />

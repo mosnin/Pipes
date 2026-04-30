@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { GitBranch, Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Data
@@ -102,16 +102,10 @@ function MarketingNavbar() {
           {/* Brand */}
           <Link
             href="/"
-            className="group flex shrink-0 items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+            className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
             aria-label="Pipes home"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#111] group-hover:bg-indigo-700 transition-colors">
-              <GitBranch size={14} className="text-white" aria-hidden="true" />
-            </span>
-            <span
-              className="t-label font-semibold text-[#111]"
-              style={{ letterSpacing: "-0.02em", fontSize: "15px" }}
-            >
+            <span className="t-h3 font-bold tracking-[-0.04em] text-[#111]">
               Pipes
             </span>
           </Link>
@@ -262,16 +256,10 @@ function MarketingFooter() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col gap-4">
             <Link
               href="/"
-              className="group flex items-center gap-2 w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+              className="flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
               aria-label="Pipes home"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#111]">
-                <GitBranch size={14} className="text-white" aria-hidden="true" />
-              </span>
-              <span
-                className="t-label font-semibold text-[#111]"
-                style={{ letterSpacing: "-0.02em", fontSize: "15px" }}
-              >
+              <span className="t-h3 font-bold tracking-[-0.04em] text-[#111]">
                 Pipes
               </span>
             </Link>

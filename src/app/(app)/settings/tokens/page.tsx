@@ -264,8 +264,8 @@ export default function TokensSettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Personal access tokens"
-        subtitle="Connect REST clients, CI pipelines, and MCP-compatible agents to this workspace."
+        title="Developer"
+        subtitle="API tokens, audit log, and developer integrations."
         actions={
           <Button
             variant="primary"

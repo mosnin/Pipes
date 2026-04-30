@@ -4,6 +4,7 @@ export const PIPES_SCHEMA_VERSION = 1 as const;
 export type PipesSchemaVersion = typeof PIPES_SCHEMA_VERSION;
 
 export const nodeTypeValues = [
+  "Node",
   "Agent",
   "Tool",
   "Model",
@@ -29,6 +30,12 @@ export const nodeTypeValues = [
   "Reference",
   "Annotation"
 ] as const;
+
+export const DEFAULT_NODE_TYPE = "Node" as const;
+
+export function isLegacyNodeType(type: string): boolean {
+  return (nodeTypeValues as readonly string[]).includes(type) && type !== DEFAULT_NODE_TYPE;
+}
 
 export const roleValues = ["Owner", "Admin", "Editor", "Commenter", "Viewer"] as const;
 export const planValues = ["Free", "Pro", "Builder"] as const;

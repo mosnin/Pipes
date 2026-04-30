@@ -352,7 +352,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
             )}
             <div className="flex items-center justify-between gap-2 pt-1">
               <a
-                href="/connect"
+                href="/docs"
                 className="inline-flex items-center gap-1 t-caption text-indigo-600 hover:text-indigo-700"
               >
                 Full setup guide <ExternalLink size={11} />

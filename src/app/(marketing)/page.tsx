@@ -3,18 +3,11 @@ import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
-  CircuitBoard,
-  GitBranch,
-  Layers,
-  Network,
-  ShieldCheck,
-  Workflow,
   Zap,
 } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
-import { FeatureCard } from "@/components/marketing/FeatureCard";
 
 export const metadata = {
   title: "Pipes - System memory for software you ship with agents",
@@ -28,7 +21,6 @@ const TRUST_LOGOS = [
   "Vercel",
   "Linear",
   "Stripe",
-  "Ramp",
   "Anthropic",
 ] as const;
 
@@ -76,52 +68,6 @@ const FEATURE_BLOCKS = [
     cta: { label: "Read the protocol", href: "/protocol" },
     visual: { label: "POST /api/protocol/mcp", caption: "Bearer ptk_..." },
     reverse: true,
-  },
-  {
-    eyebrow: "Versions",
-    title: "Branch, review, and roll back",
-    body: "Every system has a versioned history. Promote, diff, and revert with the same muscle memory you use for code.",
-    bullets: [
-      "Snapshots on demand or on schedule",
-      "Diff view across nodes, ports, and pipes",
-      "Promote to immutable releases",
-    ],
-    cta: { label: "See versioning", href: "/docs" },
-    visual: { label: "v3 - production", caption: "Versioned system snapshot" },
-    reverse: false,
-  },
-] as const;
-
-const PROOF_POINTS = [
-  {
-    icon: <Network size={16} aria-hidden="true" />,
-    title: "Typed, end to end",
-    body: "Schema-first nodes and ports. No drift between what you draw and what your agents execute.",
-  },
-  {
-    icon: <Workflow size={16} aria-hidden="true" />,
-    title: "Validate before you ship",
-    body: "Static analysis on the system graph. Catch broken routes, missing handlers, and contract mismatches inline.",
-  },
-  {
-    icon: <ShieldCheck size={16} aria-hidden="true" />,
-    title: "Governed by default",
-    body: "Capability-scoped tokens, per-workspace audit, plan-aware entitlements. Built for teams that need a paper trail.",
-  },
-  {
-    icon: <GitBranch size={16} aria-hidden="true" />,
-    title: "Versioned like code",
-    body: "Branches, snapshots, and immutable releases. The Git workflow your engineers expect.",
-  },
-  {
-    icon: <CircuitBoard size={16} aria-hidden="true" />,
-    title: "Agent-native",
-    body: "Every system is reachable over MCP. Claude, GPT, or your own runtime can query it without re-prompting.",
-  },
-  {
-    icon: <Layers size={16} aria-hidden="true" />,
-    title: "One source of truth",
-    body: "Engineers, PMs, and AI tools all read the same canonical schema. No stale docs, no parallel artifacts.",
   },
 ] as const;
 
@@ -219,9 +165,7 @@ export default async function HomePage() {
           </h1>
 
           <p className="mt-6 mx-auto max-w-2xl t-body text-[#3C3C43]">
-            Pipes is a typed canvas, validation engine, and protocol layer for the
-            architecture your team and agents share. One source of truth - machine
-            readable end to end.
+            One typed source of truth your team and your agents both read.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -361,36 +305,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. PROOF POINTS GRID ────────────────────────────────────────────── */}
-      <section className="border-b border-black/[0.06] bg-white py-24">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="max-w-2xl">
-            <SectionBadge label="Why Pipes" />
-            <h2
-              className="mt-4 t-h1 text-[#111]"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              Built for teams that ship production AI.
-            </h2>
-            <p className="mt-3 t-body text-[#3C3C43]">
-              The boring infrastructure your serious systems deserve.
-            </p>
-          </div>
-
-          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {PROOF_POINTS.map(({ icon, title, body }) => (
-              <FeatureCard
-                key={title}
-                icon={icon}
-                title={title}
-                description={body}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 6. TEMPLATES PREVIEW ────────────────────────────────────────────── */}
+      {/* ── 5. TEMPLATES PREVIEW ────────────────────────────────────────────── */}
       <section className="border-b border-black/[0.06] bg-white py-24">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
@@ -465,7 +380,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 7. CUSTOMER LOGOS / SOCIAL PROOF ────────────────────────────────── */}
+      {/* ── 6. CUSTOMER PROOF ───────────────────────────────────────────────── */}
       <section className="border-b border-black/[0.06] bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="rounded-[16px] border border-black/[0.08] bg-white px-8 py-12">
@@ -532,7 +447,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 8. FINAL CTA — surface-inverse, enterprise tone ─────────────────── */}
+      {/* ── 7. FINAL CTA — flat surface-inverse ─────────────────────────────── */}
       <section className="surface-inverse">
         <div className="mx-auto max-w-6xl px-6 py-24 text-center">
           <SectionBadge tone="neutral" label="Get started" />

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  GitBranch,
   ChevronsLeft,
   ChevronsRight,
   ChevronDown,
@@ -102,19 +101,12 @@ export function AppShellClient({
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 min-w-0 flex-1"
+              className="flex items-center min-w-0 flex-1 px-1"
               aria-label="Pipes home"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600 shrink-0">
-                <GitBranch className="w-3.5 h-3.5 text-white" aria-hidden />
+              <span className="t-title font-bold tracking-[-0.04em] text-[#111] truncate">
+                {collapsed ? "P" : "Pipes"}
               </span>
-              {!collapsed && (
-                <span
-                  className="text-[15px] font-semibold text-[#111] tracking-tight truncate"
-                >
-                  Pipes
-                </span>
-              )}
             </Link>
             {!collapsed && (
               <Tooltip content="Collapse sidebar" side="bottom">

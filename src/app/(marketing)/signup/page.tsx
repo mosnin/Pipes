@@ -44,7 +44,7 @@ function SignupForm() {
     ) {
       return;
     }
-    const url = `/api/auth/login?returnTo=/onboarding&workspace=${encodeURIComponent(workspaceName)}`;
+    const url = `/api/auth/login?returnTo=/dashboard&workspace=${encodeURIComponent(workspaceName)}`;
     window.location.href = url;
   }
 

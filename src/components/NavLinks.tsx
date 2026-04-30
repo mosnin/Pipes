@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   BookOpen,
-  Zap,
   Settings,
   BarChart2,
 } from "lucide-react";
@@ -28,18 +27,22 @@ const ic = "w-4 h-4 shrink-0";
 
 const PRIMARY_SECTIONS: NavSection[] = [
   {
-    title: "Build",
+    title: "Workspace",
     items: [
       { href: "/dashboard", label: "Systems", icon: <LayoutDashboard className={ic} />, shortcut: "G S" },
       { href: "/templates", label: "Templates", icon: <BookOpen className={ic} />, shortcut: "G T" },
-      { href: "/connect", label: "Connect", icon: <Zap className={ic} />, shortcut: "G C" },
     ],
   },
 ];
 
+function adminNavEnabled(): boolean {
+  if (typeof process === "undefined") return false;
+  return process.env.NEXT_PUBLIC_PIPES_ADMIN_NAV === "true";
+}
+
 function buildOperateSection(showAdmin: boolean): NavSection {
   const items: NavItem[] = [];
-  if (showAdmin) {
+  if (showAdmin && adminNavEnabled()) {
     items.push({
       href: "/admin",
       label: "Admin",

@@ -19,6 +19,19 @@ export type NodeConfigSchema = {
 };
 
 export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = {
+  Node: [
+    { key: "kind", label: "Kind", type: "text", placeholder: "what kind of node is this?" },
+    { key: "notes", label: "Notes", type: "textarea", placeholder: "Implementation notes" },
+    { key: "category", label: "Category", type: "select", options: [
+      { value: "agent", label: "Agent" },
+      { value: "tool", label: "Tool" },
+      { value: "data", label: "Data" },
+      { value: "control", label: "Control" },
+      { value: "human", label: "Human" },
+      { value: "external", label: "External" },
+      { value: "other", label: "Other" }
+    ] },
+  ],
   Agent: [
     { key: "model", label: "Model", type: "select", options: [{ value: "claude-opus-4-7", label: "Claude Opus 4.7" }, { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" }, { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" }, { value: "gpt-4o", label: "GPT-4o" }, { value: "gpt-4o-mini", label: "GPT-4o Mini" }], defaultValue: "claude-sonnet-4-6" },
     { key: "systemPrompt", label: "System prompt", type: "textarea", placeholder: "You are a helpful assistant..." },
@@ -114,4 +127,8 @@ export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = 
 
 export function getConfigSchema(nodeType: NodeType): ConfigFieldDef[] {
   return NODE_CONFIG_SCHEMAS[nodeType] ?? [];
+}
+
+export function getDefaultConfigSchema(): ConfigFieldDef[] {
+  return NODE_CONFIG_SCHEMAS["Node"] ?? [];
 }

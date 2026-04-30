@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
-import { Bot, Copy, Download, History, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -53,7 +53,7 @@ const SUBSYSTEMS_PREFIX = "pipes_subsystems_v1_";
 const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
-type InspectorTab = "overview" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
+type InspectorTab = "config" | "advanced";
 type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
 
@@ -115,6 +115,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [showAgentChat, setShowAgentChat] = useState(false);
   const [libraryExpanded, setLibraryExpanded] = useState(false);
   const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
+  const [leftPaneOpen, setLeftPaneOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -250,6 +252,11 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const selectedNodeId = selectedNodeIds[0];
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setShowAllInspectorTabs(false); setInspectorTab("config"); }, [selectedNodeId]);
+  // Auto-open the inspector when a single node is selected; auto-close when selection clears.
+  useEffect(() => {
+    if (selectedNodeIds.length === 1) setInspectorOpen(true);
+    else if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) setInspectorOpen(false);
+  }, [selectedNodeIds, selectedEdgeIds]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId), [nodes, selectedNodeId]);
   const selectedEdge = useMemo(() => pipes.find((pipe) => pipe.id === selectedEdgeIds[0]), [pipes, selectedEdgeIds]);
   const occupancy = useMemo(() => selectedNodeId && data ? data.presence.filter((p) => p.selectedNodeId === selectedNodeId) : [], [data, selectedNodeId]);
@@ -618,106 +625,105 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           </div>
         </div>
       )}
-      <div className="editor-shell" style={{ marginTop: 12 }}>
-        <Panel title="Nodes">
-          <Input value={libraryQuery} onChange={(e) => { setLibraryQuery(e.target.value); if (!libraryExpanded) setLibraryExpanded(true); }} placeholder="Search…" />
-          {(() => {
-            const ctx: InsertRequest = { mode: (selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas") as InsertRequest["mode"], edgeId: selectedEdge?.id, nodeId: selectedNode?.id };
-            const CATEGORY_STYLE: Record<string, string> = {
-              "I/O":       "bg-sky-100 text-sky-700",
-              "Reasoning": "bg-indigo-100 text-indigo-700",
-              "Core":      "bg-emerald-100 text-emerald-700",
-              "Data":      "bg-amber-100 text-amber-700",
-              "Control":   "bg-orange-100 text-orange-700",
-            };
-            const CATEGORY_ABBR: Record<string, string> = {
-              "I/O":       "IO",
-              "Reasoning": "AI",
-              "Core":      "CO",
-              "Data":      "DB",
-              "Control":   "CF",
-            };
-            const entryRow = (entry: (typeof nodeLibraryCatalog)[number]) => (
-              <div
-                key={entry.nodeType}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer group/entry"
-                onClick={() => insertNodeFromEntry(entry, ctx)}
-              >
-                <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold shrink-0 ${CATEGORY_STYLE[entry.category] ?? "bg-gray-100 text-gray-600"}`}>
-                  {CATEGORY_ABBR[entry.category] ?? entry.category.slice(0, 2).toUpperCase()}
-                </span>
-                <span className="t-label text-[#111] flex-1 truncate">{entry.name}</span>
-                <button
-                  className="opacity-0 group-hover/entry:opacity-100 transition-opacity shrink-0 p-0.5"
-                  onClick={(e) => { e.stopPropagation(); toggleFavorite(entry.nodeType); }}
-                  aria-label={favorites.includes(entry.nodeType) ? "Unfavorite" : "Favorite"}
-                >
-                  {favorites.includes(entry.nodeType)
-                    ? <Star className="fill-amber-400 text-amber-400" size={12} />
-                    : <Star size={12} className="text-[#C7C7CC]" />}
-                </button>
-              </div>
-            );
-
-            if (libraryExpanded) return (
-              <div className="mt-2 space-y-3">
-                {groupedLibrary.map((group) => (
-                  <div key={group.category}>
-                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">{group.category}</p>
-                    {group.entries.map(entryRow)}
-                  </div>
-                ))}
-                <button onClick={() => setLibraryExpanded(false)} className="w-full t-caption text-[#8E8E93] hover:text-[#3C3C43] py-1 transition-colors">
-                  Show less ↑
-                </button>
-              </div>
-            );
-
-            const topEntries = groupedLibrary.flatMap((g) => g.entries).slice(0, 7);
-            const favEntries = nodeLibraryCatalog.filter((e) => favorites.includes(e.nodeType));
-            const recentEntries = recents.map((id) => nodeLibraryCatalog.find((e) => e.nodeType === id)).filter(Boolean) as typeof nodeLibraryCatalog;
-            return (
-              <div className="mt-2 space-y-3">
-                {favEntries.length > 0 && (
-                  <div>
-                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Favorites</p>
-                    {favEntries.slice(0, 3).map(entryRow)}
-                  </div>
-                )}
-                {recentEntries.length > 0 && (
-                  <div>
-                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Recent</p>
-                    {recentEntries.slice(0, 3).map(entryRow)}
-                  </div>
-                )}
-                <div>
-                  {favEntries.length === 0 && recentEntries.length === 0 && (
-                    <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">All nodes</p>
-                  )}
-                  {topEntries.map(entryRow)}
-                </div>
-                <button onClick={() => setLibraryExpanded(true)} className="w-full t-caption text-indigo-600 hover:text-indigo-700 py-1 transition-colors font-medium">
-                  Show all node types ↓
-                </button>
-              </div>
-            );
-          })()}
-          {subsystems.length > 0 && (
-            <div className="mt-4 border-t border-black/[0.06] pt-3">
-              <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Groups</p>
-              {subsystems.map((subsystem) => {
-                const boundary = computeSubsystemBoundary(subsystem, pipes);
-                return (
-                  <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer"
-                       onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>
-                    <span className="t-label text-[#111] flex-1 truncate">{subsystem.name}</span>
-                    <span className="t-caption text-[#8E8E93]">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
-                  </div>
-                );
-              })}
+      <div
+        className="editor-shell"
+        style={{
+          marginTop: 12,
+          gridTemplateColumns: `${leftPaneOpen ? "260px" : "48px"} 1fr ${inspectorOpen ? "320px" : "48px"}`,
+          transition: "grid-template-columns 200ms ease",
+        }}
+      >
+        {leftPaneOpen ? (
+          <Panel title="Nodes">
+            <div className="flex items-center justify-between mb-2">
+              <span className="t-caption text-[#8E8E93]">Library</span>
+              <Button size="sm" variant="ghost" onClick={() => setLeftPaneOpen(false)} aria-label="Collapse"><ChevronLeft size={14} /></Button>
             </div>
-          )}
-        </Panel>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                const fallback = nodeLibraryCatalog[0];
+                if (fallback) insertNodeFromEntry(fallback, { mode: "canvas" });
+              }}
+              className="w-full justify-center font-semibold"
+            >
+              <Plus size={14} /> Add node
+            </Button>
+            {(() => {
+              const recentNodes = recents
+                .map((id) => nodes.find((n) => n.id === id))
+                .filter((n): n is GraphNode => Boolean(n))
+                .slice(0, 6);
+              if (recentNodes.length === 0) return null;
+              return (
+                <div className="mt-3 border-t border-black/[0.06] pt-3">
+                  <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Recents</p>
+                  <div className="space-y-0.5">
+                    {recentNodes.map((node) => (
+                      <button
+                        key={node.id}
+                        onClick={() => { setSelectedNodeIds([node.id]); setFrameRequest((n) => n + 1); }}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                      >
+                        <span className="t-label text-[#111] flex-1 truncate">{node.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {subsystems.length > 0 && (
+              <div className="mt-4 border-t border-black/[0.06] pt-3">
+                <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Groups</p>
+                {subsystems.map((subsystem) => {
+                  const boundary = computeSubsystemBoundary(subsystem, pipes);
+                  return (
+                    <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer"
+                         onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>
+                      <span className="t-label text-[#111] flex-1 truncate">{subsystem.name}</span>
+                      <span className="t-caption text-[#8E8E93]">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        ) : (
+          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Expand sidebar"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={() => {
+                const fallback = nodeLibraryCatalog[0];
+                if (fallback) insertNodeFromEntry(fallback, { mode: "canvas" });
+              }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Add node"
+            >
+              <Plus size={16} />
+            </button>
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Structure"
+            >
+              <Layers size={16} />
+            </button>
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Subsystems"
+            >
+              <Boxes size={16} />
+            </button>
+          </aside>
+        )}
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           {nodes.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
@@ -784,6 +790,31 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             }}
           />
         </EditorErrorBoundary>
+        {!inspectorOpen && !activeSystemPanel ? (
+          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+            <button
+              onClick={() => setInspectorOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Expand inspector"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => { setInspectorTab("config"); setInspectorOpen(true); }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Config"
+            >
+              <Settings size={16} />
+            </button>
+            <button
+              onClick={() => { setInspectorTab("advanced"); setInspectorOpen(true); }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Advanced"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+          </aside>
+        ) : (
         <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
             {activeSystemPanel === "validation" && (
@@ -1013,79 +1044,13 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   <Card>
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
                     <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
-                      {(showAllInspectorTabs
-                        ? ["config", "overview", "inputs", "outputs", "notes", "validation", "docs"] as InspectorTab[]
-                        : ["config"] as InspectorTab[]
-                      ).map((tab) => (
+                      {(["config", "advanced"] as InspectorTab[]).map((tab) => (
                         <button key={tab} onClick={() => setInspectorTab(tab)}
                           className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
-                          {tab}
+                          {tab === "config" ? "Config" : "Advanced"}
                         </button>
                       ))}
-                      {!showAllInspectorTabs && (
-                        <button onClick={() => setShowAllInspectorTabs(true)}
-                          className="px-2 py-1 t-caption rounded font-medium text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04] transition-colors">
-                          ···
-                        </button>
-                      )}
                     </div>
-                    {inspectorTab === "overview" ? (
-                      <div className="space-y-2">
-                        <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
-                        <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} />
-                        <Input value={selectedDefinition?.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
-                        <Input value={selectedDefinition?.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
-                        <Input value={selectedDefinition?.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
-                        <Input value={selectedDefinition?.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
-                      </div>
-                    ) : null}
-                    {inspectorTab === "inputs" && selectedDefinition ? (
-                      <div className="space-y-2">
-                        <p className="t-caption text-[#8E8E93] mb-2">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
-                        <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
-                        <Textarea value={selectedDefinition.input.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, samplePayload: e.target.value } }))} placeholder="Sample payload / shape" />
-                        <Button onClick={() => addDefinitionField("input")}>Add Input Field</Button>
-                        {selectedDefinition.input.fields.map((field) => (
-                          <Card key={field.id}>
-                            <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
-                            <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
-                              {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                            </Select>
-                            <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
-                            <Input value={field.sourceRef ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { sourceRef: e.target.value })} placeholder="Expected source reference" />
-                            <Input value={field.mappingExpr ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { mappingExpr: e.target.value })} placeholder="Mapping / expression placeholder" />
-                            <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
-                            <Button onClick={() => removeDefinitionField("input", field.id)}>Remove Field</Button>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : null}
-                    {inspectorTab === "outputs" && selectedDefinition ? (
-                      <div className="space-y-2">
-                        <p className="t-caption text-[#8E8E93] mb-2">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
-                        <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
-                        <Textarea value={selectedDefinition.output.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, samplePayload: e.target.value } }))} placeholder="Sample output payload" />
-                        <Button onClick={() => addDefinitionField("output")}>Add Output Field</Button>
-                        {selectedDefinition.output.fields.map((field) => (
-                          <Card key={field.id}>
-                            <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
-                            <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
-                              {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                            </Select>
-                            <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
-                            <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
-                            <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
-                            <Button onClick={() => removeDefinitionField("output", field.id)}>Remove Field</Button>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : null}
                     {inspectorTab === "config" && selectedDefinition ? (
                       <div className="space-y-4">
                         {(() => {
@@ -1150,27 +1115,84 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
                       </div>
                     ) : null}
-                    {inspectorTab === "notes" && selectedDefinition ? (
-                      <div className="space-y-2">
-                        <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
-                        <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
-                        <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
-                        <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
-                      </div>
-                    ) : null}
-                    {inspectorTab === "validation" && selectedDefinition ? (
-                      <div className="space-y-2">
-                        <p className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Contract validation</p>
-                        {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
-                        <p className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Compatibility hints</p>
-                        {compatibilityHints.length === 0 ? <p className="t-caption text-[#8E8E93]">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
-                      </div>
-                    ) : null}
-                    {inspectorTab === "docs" && selectedDefinition ? (
-                      <div className="space-y-2">
-                        <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
-                        <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
-                        <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
+                    {inspectorTab === "advanced" && selectedDefinition ? (
+                      <div className="space-y-5">
+                        {/* Identity */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Identity</p>
+                          <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} placeholder="Title" />
+                          <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} placeholder="Description" />
+                          <Input value={selectedDefinition.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
+                          <Input value={selectedDefinition.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
+                          <Input value={selectedDefinition.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
+                          <Input value={selectedDefinition.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Ports */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Ports — Inputs</p>
+                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.input)}</p>
+                          <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
+                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                          </Select>
+                          <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
+                          <Button size="sm" onClick={() => addDefinitionField("input")}><Plus size={12} /> Add input field</Button>
+                          {selectedDefinition.input.fields.map((field) => (
+                            <Card key={field.id}>
+                              <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
+                              <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
+                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                              </Select>
+                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
+                              <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
+                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("input", field.id)}>Remove</Button>
+                            </Card>
+                          ))}
+                          <p className="t-overline text-[#8E8E93] mt-3">Ports — Outputs</p>
+                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.output)}</p>
+                          <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
+                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                          </Select>
+                          <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
+                          <Button size="sm" onClick={() => addDefinitionField("output")}><Plus size={12} /> Add output field</Button>
+                          {selectedDefinition.output.fields.map((field) => (
+                            <Card key={field.id}>
+                              <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
+                              <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
+                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                              </Select>
+                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
+                              <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
+                              <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
+                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("output", field.id)}>Remove</Button>
+                            </Card>
+                          ))}
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Notes */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Notes</p>
+                          <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
+                          <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
+                          <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
+                          <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Validation */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Validation</p>
+                          {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
+                          <p className="t-caption text-[#8E8E93] mt-2">Compatibility hints</p>
+                          {compatibilityHints.length === 0 ? <p className="t-caption text-[#8E8E93]">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Docs */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Docs</p>
+                          <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
+                          <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
+                          <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
+                        </section>
                       </div>
                     ) : null}
                     <div className="flex items-center gap-2 flex-wrap mt-3">
@@ -1187,6 +1209,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             )}
           </Panel>
         </EditorErrorBoundary>
+        )}
         {showAgentChat && (
           <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
             <AgentChatPanel
