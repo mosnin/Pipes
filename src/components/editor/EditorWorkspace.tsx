@@ -623,12 +623,29 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <Input value={libraryQuery} onChange={(e) => { setLibraryQuery(e.target.value); if (!libraryExpanded) setLibraryExpanded(true); }} placeholder="Search…" />
           {(() => {
             const ctx: InsertRequest = { mode: (selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas") as InsertRequest["mode"], edgeId: selectedEdge?.id, nodeId: selectedNode?.id };
+            const CATEGORY_STYLE: Record<string, string> = {
+              "I/O":       "bg-sky-100 text-sky-700",
+              "Reasoning": "bg-indigo-100 text-indigo-700",
+              "Core":      "bg-emerald-100 text-emerald-700",
+              "Data":      "bg-amber-100 text-amber-700",
+              "Control":   "bg-orange-100 text-orange-700",
+            };
+            const CATEGORY_ABBR: Record<string, string> = {
+              "I/O":       "IO",
+              "Reasoning": "AI",
+              "Core":      "CO",
+              "Data":      "DB",
+              "Control":   "CF",
+            };
             const entryRow = (entry: (typeof nodeLibraryCatalog)[number]) => (
               <div
                 key={entry.nodeType}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer group/entry"
                 onClick={() => insertNodeFromEntry(entry, ctx)}
               >
+                <span className={`inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold shrink-0 ${CATEGORY_STYLE[entry.category] ?? "bg-gray-100 text-gray-600"}`}>
+                  {CATEGORY_ABBR[entry.category] ?? entry.category.slice(0, 2).toUpperCase()}
+                </span>
                 <span className="t-label text-[#111] flex-1 truncate">{entry.name}</span>
                 <button
                   className="opacity-0 group-hover/entry:opacity-100 transition-opacity shrink-0 p-0.5"
@@ -814,39 +831,93 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               </div>
             )}
             {activeSystemPanel === "ai" && (
-              <div className="space-y-2">
-                <Input value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} placeholder="Describe the edits you want..." />
-                <Button onClick={async () => {
-                  const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
-                  const suggestion = await suggestionRes.json();
-                  if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
-                }}>Suggest Edits</Button>
-                {pendingSuggestion ? <Card>
-                  <p className="t-label font-semibold text-[#111]">AI edit set under review</p>
-                  <p className="t-label text-[#3C3C43]">{pendingSuggestion.summary}</p>
-                  <p className="t-caption text-[#8E8E93]">Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
-                  <p className="t-caption text-[#8E8E93]">Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
-                  <p className="t-caption text-[#8E8E93]">Change count: {(pendingSuggestion.changes ?? []).length}</p>
-                  <div className="space-y-2 mt-2">
-                    {(pendingSuggestion.changes ?? []).map((change: any) => (
-                      <Card key={change.id}>
-                        <label><input type="checkbox" checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))} /> {change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</label>
-                        <p className="t-caption text-[#8E8E93] mt-1">{change.rationale ?? "No rationale"}</p>
-                      </Card>
-                    ))}
+              <div className="space-y-3">
+                {!pendingSuggestion ? (
+                  <>
+                    <p className="t-caption text-[#8E8E93] leading-relaxed">
+                      Describe a change and AI will draft it for you to review.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={aiEditPrompt}
+                        onChange={(e) => setAiEditPrompt(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey && aiEditPrompt.trim()) {
+                            e.preventDefault();
+                            void (async () => {
+                              const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
+                              const suggestion = await suggestionRes.json();
+                              if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
+                            })();
+                          }
+                        }}
+                        placeholder="e.g. Add a caching layer before the database"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isDisabled={!aiEditPrompt.trim()}
+                        onClick={async () => {
+                          const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
+                          const suggestion = await suggestionRes.json();
+                          if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
+                        }}
+                        className="shrink-0 h-10 px-3"
+                      >
+                        <Wand2 size={13} />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
+                      <p className="t-label font-semibold text-[#111] mb-0.5">{pendingSuggestion.summary}</p>
+                      <p className="t-caption text-[#8E8E93]">{(pendingSuggestion.changes ?? []).length} change{(pendingSuggestion.changes ?? []).length !== 1 ? "s" : ""} ready to apply</p>
+                    </div>
+
+                    {(pendingSuggestion.changes ?? []).length > 0 && (
+                      <div className="border border-black/[0.06] overflow-hidden" style={{ borderRadius: "8px" }}>
+                        {(pendingSuggestion.changes ?? []).slice(0, 5).map((change: any, i: number) => (
+                          <div key={change.id} className={`flex items-center gap-2.5 px-3 py-2 ${i > 0 ? "border-t border-black/[0.05]" : ""}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${change.action === "addNode" || change.action === "addPipe" ? "bg-emerald-500" : change.action === "deleteNode" || change.action === "deletePipe" ? "bg-red-400" : "bg-amber-400"}`} />
+                            <span className="t-caption text-[#3C3C43] flex-1 truncate">{change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</span>
+                          </div>
+                        ))}
+                        {(pendingSuggestion.changes ?? []).length > 5 && (
+                          <div className="px-3 py-2 border-t border-black/[0.05]">
+                            <p className="t-caption text-[#8E8E93]">+{(pendingSuggestion.changes ?? []).length - 5} more</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="flex-1 h-9 font-semibold"
+                        onClick={async () => {
+                          await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
+                          setPendingSuggestion(null);
+                          setAcceptedChangeIds([]);
+                          setAiEditPrompt("");
+                          reload();
+                        }}
+                      >
+                        Apply all
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 text-[#8E8E93]"
+                        onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap mt-3">
-                    <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
-                    <Button variant="ghost" size="sm" onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
-                    <Button variant="secondary" size="sm" onClick={async () => {
-                      await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
-                      setPendingSuggestion(null);
-                      setAcceptedChangeIds([]);
-                      reload();
-                    }}>Apply Selected Changes</Button>
-                    <Button variant="ghost" size="sm" onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
-                  </div>
-                </Card> : null}
+                )}
               </div>
             )}
             {activeSystemPanel === "import" && (
