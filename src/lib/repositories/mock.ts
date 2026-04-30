@@ -120,6 +120,7 @@ export function createMockRepositories(): RepositorySet {
         if (input.title !== undefined) node.title = input.title;
         if (input.description !== undefined) node.description = input.description;
         if (input.position) node.position = input.position;
+        if (input.config !== undefined) node.config = input.config;
         store.writeDb(db);
       },
       async deleteNode(nodeId) {

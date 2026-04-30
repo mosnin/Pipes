@@ -1,10 +1,19 @@
 "use client";
 
 import { ConvexProvider } from "convex/react";
+import { Toaster } from "sonner";
 import { getConvexReactClient } from "@/lib/convex/reactClient";
 import { clientRuntimeFlags } from "@/lib/env/client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  if (clientRuntimeFlags.useMocks || !clientRuntimeFlags.hasConvex) return <>{children}</>;
-  return <ConvexProvider client={getConvexReactClient()}>{children}</ConvexProvider>;
+  const inner = clientRuntimeFlags.useMocks || !clientRuntimeFlags.hasConvex
+    ? <>{children}</>
+    : <ConvexProvider client={getConvexReactClient()}>{children}</ConvexProvider>;
+
+  return (
+    <>
+      {inner}
+      <Toaster position="bottom-right" richColors closeButton />
+    </>
+  );
 }

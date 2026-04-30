@@ -1,9 +1,9 @@
-export type GraphNode = { id: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[] };
+export type GraphNode = { id: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[]; config?: Record<string, unknown> };
 export type GraphPipe = { id: string; fromPortId: string; toPortId: string; systemId: string; fromNodeId?: string; toNodeId?: string };
 
 export type EditorGraphAction =
   | { action: "addNode"; systemId: string; type: string; title: string; description?: string; x?: number; y?: number; clientNodeId?: string }
-  | { action: "updateNode"; nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }
+  | { action: "updateNode"; nodeId: string; title?: string; description?: string; position?: { x: number; y: number }; config?: Record<string, unknown> }
   | { action: "deleteNode"; nodeId: string }
   | { action: "addPipe"; systemId: string; fromNodeId: string; toNodeId: string; clientPipeId?: string }
   | { action: "deletePipe"; pipeId: string };

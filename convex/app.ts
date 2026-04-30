@@ -4,6 +4,15 @@ import { v } from "convex/values";
 
 const now = () => new Date().toISOString();
 
+export const listSystemPresence = query({
+  args: { systemId: v.id("systems") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("system_presence").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
+    const cutoff = new Date(Date.now() - 120_000).toISOString();
+    return rows.filter((r) => r.lastSeenAt > cutoff);
+  }
+});
+
 export const provisionUser = mutation({
   args: { externalId: v.string(), email: v.string(), name: v.string() },
   handler: async (ctx, args) => {
@@ -67,11 +76,11 @@ export const addNode = mutation({
 });
 
 export const updateNode = mutation({
-  args: { nodeId: v.id("system_nodes"), title: v.optional(v.string()), description: v.optional(v.string()), x: v.optional(v.number()), y: v.optional(v.number()) },
+  args: { nodeId: v.id("system_nodes"), title: v.optional(v.string()), description: v.optional(v.string()), x: v.optional(v.number()), y: v.optional(v.number()), config: v.optional(v.any()) },
   handler: async (ctx, args) => {
     const node = await ctx.db.get(args.nodeId);
     if (!node) return;
-    await ctx.db.patch(args.nodeId, { title: args.title ?? node.title, description: args.description ?? node.description, position: { x: args.x ?? node.position.x, y: args.y ?? node.position.y }, updatedAt: now() });
+    await ctx.db.patch(args.nodeId, { title: args.title ?? node.title, description: args.description ?? node.description, position: { x: args.x ?? node.position.x, y: args.y ?? node.position.y }, config: args.config ?? node.config, updatedAt: now() });
   }
 });
 
