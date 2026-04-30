@@ -63,11 +63,11 @@ function FeatureRow({ label, enabled }: FeatureRowProps) {
   return (
     <li className="flex items-center gap-2 text-sm">
       {isEnabled ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
       ) : (
-        <XCircle className="h-4 w-4 shrink-0 text-default-300" />
+        <XCircle className="h-4 w-4 shrink-0 text-[#C7C7CC]" />
       )}
-      <span className={isEnabled ? "text-foreground" : "text-default-400"}>
+      <span className={isEnabled ? "text-[#111]" : "text-[#8E8E93]"}>
         {label}
       </span>
     </li>
@@ -180,7 +180,7 @@ export default function BillingSettingsPage() {
       {summary && (
         <>
           {/* ── Current plan card ── */}
-          <Card className="shadow-sm">
+          <Card className="border border-black/[0.08]">
             <Card.Header className="flex items-center justify-between pb-0">
               <h2 className="text-base font-semibold">Current Plan</h2>
               <Chip
@@ -195,8 +195,8 @@ export default function BillingSettingsPage() {
               <p className="mb-4 text-xl font-bold">{summary.plan}</p>
               <Separator className="mb-4" />
               <ul className="space-y-2">
-                <li className="flex items-center gap-2 text-sm text-foreground">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                <li className="flex items-center gap-2 text-sm text-[#111]">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                   <span>
                     Max systems:{" "}
                     <strong>{summary.entitlements.maxSystems}</strong>
@@ -232,7 +232,7 @@ export default function BillingSettingsPage() {
                   return (
                     <Card
                       key={plan}
-                      className="shadow-sm border border-default-200"
+                      className="border border-black/[0.08]"
                     >
                       <Card.Header className="pb-0">
                         <div className="flex w-full items-center justify-between">
@@ -251,9 +251,9 @@ export default function BillingSettingsPage() {
                           {details.features.map((f) => (
                             <li
                               key={f}
-                              className="flex items-center gap-2 text-sm text-foreground"
+                              className="flex items-center gap-2 text-sm text-[#111]"
                             >
-                              <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                               {f}
                             </li>
                           ))}
@@ -275,17 +275,17 @@ export default function BillingSettingsPage() {
           )}
 
           {/* ── Billing portal ── */}
-          <Card className="shadow-sm">
+          <Card className="border border-black/[0.08]">
             <Card.Header className="pb-0">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-default-500" />
+                <CreditCard className="h-5 w-5 text-[#8E8E93]" />
                 <h2 className="text-base font-semibold">
                   Manage payment &amp; invoices
                 </h2>
               </div>
             </Card.Header>
             <Card.Content className="space-y-3 pt-3">
-              <p className="text-sm text-default-500">
+              <p className="t-label text-[#8E8E93]">
                 Update your payment method, download past invoices, or cancel
                 your subscription via the billing portal.
               </p>
