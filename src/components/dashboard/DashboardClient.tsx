@@ -369,7 +369,13 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     toast.success(`${row.name} exported`);
   };
 
-  // Stats
+  // Stats — compute against a stable "now" that ticks once a minute so memo stays pure
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(i);
+  }, []);
+
   const stats = useMemo(() => {
     const total = library.rows.length;
     const archived = library.rows.filter((r) => r.archivedAt).length;
@@ -378,10 +384,10 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     const activeThisWeek = library.rows.filter((r) => {
       if (r.archivedAt) return false;
       const ts = new Date(r.updatedAt).getTime();
-      return Date.now() - ts < ONE_WEEK_MS;
+      return now - ts < ONE_WEEK_MS;
     }).length;
     return { total, active, archived, favorites, activeThisWeek };
-  }, [library.rows]);
+  }, [library.rows, now]);
 
   // Visible rows by filter + sort
   const visibleRows = useMemo(() => {
