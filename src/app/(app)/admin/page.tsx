@@ -172,6 +172,7 @@ export default function AdminPage() {
         tokens: 0,
       };
     }
+    // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
     const systems7d = data.workspace.systems.filter((s) => {
       const ts = s.updatedAt ?? 0;
@@ -210,6 +211,7 @@ export default function AdminPage() {
   const sparkData = useMemo(() => {
     if (data == null) return new Array(14).fill(0);
     const buckets = new Array(14).fill(0);
+    // eslint-disable-next-line react-hooks/purity
     const now = Date.now();
     const dayMs = 24 * 60 * 60 * 1000;
     data.workspace.systems.forEach((s) => {
