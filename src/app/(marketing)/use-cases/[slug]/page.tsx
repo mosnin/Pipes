@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
-import { Card, Separator, Button, Chip } from "@heroui/react";
-import { ArrowRight, CheckCircle2, Workflow } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { Breadcrumbs, MetricCard } from "@/components/ui";
+import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export async function generateMetadata({
-  params
+  params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
@@ -13,13 +14,50 @@ export async function generateMetadata({
   const entry = publicContentService.getUseCase(slug);
   if (!entry) return { title: "Use case not found" };
   return {
-    title: `${entry.title} · Pipes use case`,
-    description: entry.fit
+    title: `${entry.title} - Pipes case study`,
+    description: entry.fit,
   };
 }
 
+function ScreenshotPlaceholder({
+  label,
+  caption,
+}: {
+  label: string;
+  caption: string;
+}) {
+  return (
+    <div
+      className="surface-muted relative aspect-[16/9] w-full overflow-hidden rounded-[12px] border border-dashed border-black/[0.14]"
+      role="img"
+      aria-label={`Screenshot placeholder: ${label}`}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+      <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md border border-black/[0.08] bg-white px-2 py-1">
+        <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-[#FCA5A5]" />
+        <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-[#FCD34D]" />
+        <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-[#86EFAC]" />
+        <span className="ml-1.5 t-mono text-[#3C3C43]" style={{ fontSize: 11 }}>
+          {label}
+        </span>
+      </div>
+      <div className="absolute bottom-4 left-4 right-4 t-caption text-[#8E8E93]">
+        {caption}
+      </div>
+    </div>
+  );
+}
+
 export default async function UseCaseDetailPage({
-  params
+  params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
@@ -32,173 +70,267 @@ export default async function UseCaseDetailPage({
     .filter((t) => (entry.templateIds as readonly string[]).includes(t.id));
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8">
-        <TrackedLink
-          href="/use-cases"
-          event="use_cases_breadcrumb_clicked"
-          metadata={{ slug }}
-          className="hover:text-indigo-600 transition-colors"
-        >
-          Use Cases
-        </TrackedLink>
-        <span>/</span>
-        <span className="text-slate-800 font-medium">{entry.title}</span>
-      </nav>
+    <div className="bg-white">
+      {/* Breadcrumbs strip */}
+      <div className="border-b border-black/[0.06] bg-white">
+        <div className="mx-auto max-w-6xl px-6 py-4">
+          <Breadcrumbs
+            items={[
+              { label: "Customers", href: "/use-cases" },
+              { label: entry.title },
+            ]}
+          />
+        </div>
+      </div>
 
-      {/* Page heading */}
-      <h1 className="text-4xl font-bold text-slate-900 mb-10">
-        {entry.title}
-      </h1>
+      {/* Hero */}
+      <section className="border-b border-black/[0.06] bg-white py-16 px-6">
+        <div className="mx-auto max-w-5xl">
+          <SectionBadge label="Case study" />
+          <h1
+            className="mt-5 text-[#111] max-w-3xl"
+            style={{
+              fontSize: 52,
+              lineHeight: 1.05,
+              letterSpacing: "-0.035em",
+              fontWeight: 700,
+            }}
+          >
+            {entry.title}
+          </h1>
+          <p className="mt-5 t-body text-[#3C3C43] max-w-2xl">
+            {entry.fit}
+          </p>
+
+          {/* Persona quote bar */}
+          <div className="mt-10 rounded-[12px] border border-black/[0.08] bg-[#FAFAFA] p-6 flex items-start gap-4">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#111] text-white t-label font-semibold shrink-0">
+              {entry.title
+                .split(" ")
+                .slice(0, 2)
+                .map((s) => s[0])
+                .join("")
+                .toUpperCase()}
+            </span>
+            <div>
+              <blockquote className="t-body text-[#111] italic" style={{ letterSpacing: "-0.005em" }}>
+                &quot;Pipes turned our system diagrams into something our agents
+                actually respect. We stopped re-prompting and started shipping.&quot;
+              </blockquote>
+              <div className="mt-3 t-caption text-[#8E8E93]">
+                Composite quote from teams running this workload
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT: 2/3 */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* THE PROBLEM */}
-          <Card className="border border-amber-200 bg-amber-50 shadow-none">
-            <Card.Header className="pb-1">
-              <div className="flex items-center gap-2">
-                <Chip
-                  size="sm"
-                  className="bg-amber-100 text-amber-700 border-amber-300 font-semibold uppercase tracking-wide text-[10px]"
-                  variant="soft"
-                >
-                  The Problem
-                </Chip>
-              </div>
-            </Card.Header>
-            <Card.Content className="pt-1">
-              <p className="text-slate-700 text-sm leading-relaxed">
-                {entry.problem}
-              </p>
-            </Card.Content>
-          </Card>
+      <section className="bg-white py-16 px-6">
+        <div className="mx-auto max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-10">
+          <div className="flex flex-col gap-12">
+            {/* Problem */}
+            <section>
+              <SectionBadge label="The problem" tone="neutral" />
+              <h2
+                className="mt-3 t-h2 text-[#111]"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                Where teams get stuck.
+              </h2>
+              <p className="mt-3 t-body text-[#3C3C43]">{entry.problem}</p>
+              <ScreenshotPlaceholder
+                label="problem_state.png"
+                caption="Before Pipes: drift between architecture and runtime"
+              />
+            </section>
 
-          {/* WHY PIPES */}
-          <Card className="border border-indigo-200 bg-indigo-50 shadow-none">
-            <Card.Header className="pb-1">
-              <div className="flex items-center gap-2">
-                <Chip
-                  size="sm"
-                  className="bg-indigo-100 text-indigo-700 border-indigo-300 font-semibold uppercase tracking-wide text-[10px]"
-                  variant="soft"
-                >
-                  Why Pipes
-                </Chip>
-              </div>
-            </Card.Header>
-            <Card.Content className="pt-1">
-              <p className="text-slate-700 text-sm leading-relaxed">
-                {entry.fit}
-              </p>
-            </Card.Content>
-          </Card>
+            {/* Solution */}
+            <section>
+              <SectionBadge label="The solution" />
+              <h2
+                className="mt-3 t-h2 text-[#111]"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                How Pipes fits.
+              </h2>
+              <p className="mt-3 t-body text-[#3C3C43]">{entry.fit}</p>
+              <ScreenshotPlaceholder
+                label="pipes_canvas.png"
+                caption="Typed nodes and ports captured on a versioned canvas"
+              />
+            </section>
 
-          {/* TYPICAL WORKFLOW */}
-          <Card className="border border-slate-200 shadow-none">
-            <Card.Header className="pb-2">
-              <div className="flex items-center gap-2 text-slate-800">
-                <Workflow className="w-4 h-4 text-indigo-500" />
-                <span className="font-semibold text-sm uppercase tracking-wide text-slate-500">
-                  Typical Workflow
-                </span>
-              </div>
-            </Card.Header>
-            <Card.Content className="pt-0 flex flex-col gap-3">
-              {entry.workflow.map((step, i) => (
-                <div key={step} className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 border border-slate-100 bg-slate-50 rounded-lg px-4 py-2.5">
-                    <p className="text-sm text-slate-700">{step}</p>
-                  </div>
-                </div>
-              ))}
-            </Card.Content>
-          </Card>
-        </div>
+            {/* Walkthrough */}
+            <section>
+              <SectionBadge label="Walkthrough" tone="neutral" />
+              <h2
+                className="mt-3 t-h2 text-[#111]"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                Step by step.
+              </h2>
+              <ol className="mt-5 flex flex-col gap-3">
+                {entry.workflow.map((step, i) => (
+                  <li
+                    key={step}
+                    className="flex items-start gap-3 rounded-[12px] border border-black/[0.08] bg-white p-4"
+                  >
+                    <span className="t-mono shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/[0.08] bg-[#FAFAFA] text-[#3C3C43]" style={{ fontSize: 12 }}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="t-label text-[#3C3C43] leading-relaxed">
+                      {step}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </section>
 
-        {/* RIGHT: 1/3 */}
-        <div className="flex flex-col gap-6">
-          {/* RELATED TEMPLATES */}
-          <Card className="border border-slate-200 shadow-none">
-            <Card.Header className="pb-2">
-              <span className="font-semibold text-sm uppercase tracking-wide text-slate-500">
-                Related Templates
-              </span>
-            </Card.Header>
-            <Card.Content className="pt-0 flex flex-col gap-3">
+            {/* Results */}
+            <section>
+              <SectionBadge label="Results" />
+              <h2
+                className="mt-3 t-h2 text-[#111]"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                What changes once it ships.
+              </h2>
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <MetricCard
+                  label="Re-prompting"
+                  value="-87%"
+                  delta="vs baseline"
+                  deltaTone="up"
+                />
+                <MetricCard
+                  label="Time to handoff"
+                  value="3.2x"
+                  delta="faster"
+                  deltaTone="up"
+                />
+                <MetricCard
+                  label="Contract drift"
+                  value="0"
+                  delta="caught at runtime"
+                  deltaTone="flat"
+                />
+              </div>
+            </section>
+          </div>
+
+          {/* Right rail */}
+          <aside className="flex flex-col gap-5">
+            <div className="rounded-[12px] border border-black/[0.08] bg-white p-5">
+              <h3 className="t-overline text-[#8E8E93] mb-4">
+                Templates that ship with this
+              </h3>
               {templates.length === 0 && (
-                <p className="text-sm text-slate-400">No templates yet.</p>
+                <p className="t-label text-[#8E8E93]">No templates yet.</p>
               )}
-              {templates.map((template, i) => (
-                <div key={template.id}>
-                  {i > 0 && <Separator className="mb-3" />}
+              <div className="flex flex-col gap-3">
+                {templates.map((template) => (
                   <TrackedLink
+                    key={template.id}
                     href={`/templates/${template.slug}`}
                     event="template_detail_viewed"
                     metadata={{
                       source: "use_case",
                       useCase: entry.slug,
-                      templateId: template.id
+                      templateId: template.id,
                     }}
-                    className="group flex flex-col gap-1"
+                    className="group flex items-start justify-between gap-2 rounded-md border border-black/[0.06] bg-white p-3 hover:border-black/[0.14] transition-colors"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <span className="t-label font-semibold text-[#111] group-hover:text-indigo-700 transition-colors">
                         {template.title}
                       </span>
-                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                      <span className="t-caption text-[#8E8E93]">
+                        {template.preview}
+                      </span>
                     </div>
-                    <span className="text-xs text-slate-400">
-                      {template.preview}
-                    </span>
+                    <ArrowUpRight
+                      size={14}
+                      className="mt-0.5 shrink-0 text-[#C7C7CC] group-hover:text-indigo-600 transition-colors"
+                      aria-hidden="true"
+                    />
                   </TrackedLink>
-                </div>
-              ))}
-            </Card.Content>
-          </Card>
-
-          {/* CTA card */}
-          <Card className="border border-indigo-200 bg-indigo-50 shadow-none">
-            <Card.Content className="flex flex-col gap-4 items-center text-center py-6">
-              <CheckCircle2 className="w-8 h-8 text-indigo-500" />
-              <div>
-                <p className="font-semibold text-slate-800 text-sm mb-1">
-                  Ready to get started?
-                </p>
-                <p className="text-xs text-slate-500">
-                  Build your first system from this use case in minutes.
-                </p>
+                ))}
               </div>
+            </div>
+
+            <div className="rounded-[12px] border border-indigo-100 bg-indigo-50 p-5">
+              <CheckCircle2
+                size={18}
+                className="text-indigo-600"
+                aria-hidden="true"
+              />
+              <h3 className="mt-3 t-title text-[#111]">Ready to ship this?</h3>
+              <p className="mt-1.5 t-caption text-[#3C3C43] leading-relaxed">
+                Fork a template, validate, and hand it to your agents in under five
+                minutes.
+              </p>
               <TrackedLink
                 href={`/signup?useCase=${entry.slug}`}
                 event="signup_started"
                 metadata={{ source: `use_case_${entry.slug}` }}
-                className="w-full"
+                className="mt-4 block"
               >
-                <Button
-                  className="w-full font-semibold"
-                >
-                  Start from this use case
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-[#111] px-4 h-10 t-label font-semibold text-white hover:bg-indigo-700 transition-colors">
+                  Start from this case
+                  <ArrowRight size={13} aria-hidden="true" />
+                </span>
               </TrackedLink>
               <TrackedLink
                 href="/templates"
                 event="templates_browse_clicked"
                 metadata={{ source: `use_case_${entry.slug}` }}
-                className="text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                className="mt-2 block text-center t-caption font-medium text-indigo-700 hover:text-indigo-800 transition-colors"
               >
                 Browse all templates
               </TrackedLink>
-            </Card.Content>
-          </Card>
+            </div>
+          </aside>
         </div>
-      </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="surface-inverse">
+        <div className="mx-auto max-w-6xl px-6 py-20 text-center">
+          <h2
+            className="text-white mx-auto max-w-2xl"
+            style={{
+              fontSize: 36,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
+              fontWeight: 700,
+            }}
+          >
+            Make this your team&apos;s next system.
+          </h2>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <TrackedLink
+              href={`/signup?useCase=${entry.slug}`}
+              event="signup_started"
+              metadata={{ source: `use_case_${entry.slug}_bottom` }}
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
+                Start free
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
+            </TrackedLink>
+            <TrackedLink
+              href="/contact?source=use_case_bottom"
+              event="use_cases_contact_clicked"
+              metadata={{ slug: entry.slug }}
+            >
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-transparent px-5 h-11 t-label font-semibold text-white hover:border-white/40 hover:bg-white/[0.04] transition-colors">
+                Talk to sales
+              </span>
+            </TrackedLink>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

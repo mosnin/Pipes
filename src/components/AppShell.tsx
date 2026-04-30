@@ -1,14 +1,22 @@
-import Link from "next/link";
-import { Avatar } from "@heroui/react";
-import { GitBranch, LogOut } from "lucide-react";
 import { getAuthService } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
 import { canAccessAdmin } from "@/lib/admin/access";
-import { ThemeToggle } from "./ThemeToggle";
-import { PrimaryNavLinks, BottomNavLinks } from "./NavLinks";
+import { AppShellClient } from "./AppShellClient";
 
 function getInitials(name: string): string {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
+
+function deriveWorkspaceName(workspaceId: string): string {
+  // Convex IDs and synthetic IDs are not user-friendly. Show a stable short label.
+  if (workspaceId.length === 0) return "Workspace";
+  if (workspaceId.length <= 12) return workspaceId;
+  return "Workspace";
 }
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -18,66 +26,21 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const initials = getInitials(user.name);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* ── Sidebar — #F5F5F7 chrome, white main creates separation without a border ── */}
-      <aside
-        className="flex flex-col w-[216px] shrink-0 h-full bg-[#F5F5F7]"
-        aria-label="Primary navigation"
-      >
-        {/* Brand mark */}
-        <div className="px-5 pt-6 pb-5 shrink-0">
-          <div className="flex items-center gap-2.5 select-none">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 shrink-0">
-              <GitBranch className="w-3.5 h-3.5 text-white" aria-hidden />
-            </span>
-            <span className="text-[17px] font-semibold text-[#111]"
-                  style={{ letterSpacing: "-0.03em" }}>
-              Pipes
-            </span>
-          </div>
-        </div>
-
-        {/* Primary nav */}
-        <nav className="flex-1 px-2.5 space-y-0.5 overflow-y-auto" aria-label="Primary">
-          <PrimaryNavLinks />
-        </nav>
-
-        {/* Bottom: settings + user */}
-        <div className="px-2.5 pb-3 space-y-0.5 shrink-0">
-          <BottomNavLinks showAdmin={showAdmin} />
-
-          {/* Divider */}
-          <div className="my-2 h-px bg-black/[0.06] mx-1" />
-
-          {/* User row */}
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl">
-            <Avatar size="sm" className="shrink-0 w-6 h-6">
-              <Avatar.Fallback color="default" className="text-[10px] font-semibold">
-                {initials}
-              </Avatar.Fallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="t-label font-semibold text-[#111] truncate leading-tight">{user.name}</p>
-              <p className="t-caption text-[#8E8E93] truncate leading-tight">{ctx.plan}</p>
-            </div>
-            <div className="flex items-center gap-0.5 shrink-0">
-              <ThemeToggle />
-              <Link
-                href="/api/auth/logout"
-                aria-label="Log out"
-                className="p-1.5 rounded-lg text-[#8E8E93] hover:text-red-500 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Main canvas — pure white ── */}
-      <main className="flex-1 overflow-y-auto bg-white">
-        {children}
-      </main>
-    </div>
+    <AppShellClient
+      user={{
+        name: user.name,
+        email: user.email,
+        initials,
+      }}
+      workspace={{
+        id: ctx.workspaceId,
+        name: deriveWorkspaceName(ctx.workspaceId),
+        plan: ctx.plan,
+        role: ctx.role,
+      }}
+      showAdmin={showAdmin}
+    >
+      {children}
+    </AppShellClient>
   );
 }

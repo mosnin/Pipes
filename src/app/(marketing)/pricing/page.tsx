@@ -1,64 +1,85 @@
-import { Accordion, Button, Card, Chip, Separator } from "@heroui/react";
-import { Check, X } from "lucide-react";
+import { Fragment } from "react";
+import Link from "next/link";
+import { ArrowRight, Check, Minus } from "lucide-react";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes · Pricing",
-  description: "Simple, honest pricing for structured system authoring, collaboration, and protocol-ready architecture workflows."
+  title: "Pipes - Pricing",
+  description:
+    "Transparent, per-workspace pricing. Start free. Upgrade when your team grows.",
 };
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
 
-const PLANS = [
+type PlanId = "starter" | "team" | "builder" | "enterprise";
+
+type Plan = {
+  id: PlanId;
+  name: string;
+  price: string;
+  period: string;
+  tagline: string;
+  highlighted: boolean;
+  ctaLabel: string;
+  ctaHref: string;
+  ctaEvent: string;
+  ctaMeta: Record<string, string>;
+  ctaTone: "primary" | "secondary";
+  features: readonly string[];
+};
+
+const PLANS: readonly Plan[] = [
   {
-    id: "free",
-    name: "Free",
+    id: "starter",
+    name: "Starter",
     price: "$0",
-    period: "/mo",
-    tagline: "For individuals exploring structured system design.",
+    period: "free forever",
+    tagline: "Explore Pipes and ship your first system.",
     highlighted: false,
-    ctaLabel: "Get started free",
-    ctaVariant: "outline" as const,
-    ctaHref: "/signup?source=pricing_free",
+    ctaLabel: "Start free",
+    ctaTone: "secondary",
+    ctaHref: "/signup?source=pricing_starter",
     ctaEvent: "pricing_cta_clicked",
-    ctaMeta: { plan: "free", source: "pricing_cards" },
+    ctaMeta: { plan: "starter", source: "pricing_cards" },
     features: [
       "Up to 3 systems",
-      "Simulation",
+      "Single workspace",
       "Community templates",
-      "Basic validation",
+      "Validation and simulation",
+      "Local export",
     ],
   },
   {
-    id: "pro",
-    name: "Pro",
+    id: "team",
+    name: "Team",
     price: "$12",
-    period: "/mo per workspace",
-    tagline: "For teams building and shipping real systems together.",
+    period: "per workspace / month",
+    tagline: "For teams collaborating on shared system memory.",
     highlighted: true,
-    ctaLabel: "Upgrade to Pro",
-    ctaVariant: "primary" as const,
-    ctaHref: "/signup?source=pricing_pro",
+    ctaLabel: "Start 14-day trial",
+    ctaTone: "primary",
+    ctaHref: "/signup?source=pricing_team",
     ctaEvent: "pricing_cta_clicked",
-    ctaMeta: { plan: "pro", source: "pricing_cards" },
+    ctaMeta: { plan: "team", source: "pricing_cards" },
     features: [
       "Up to 25 systems",
-      "Collaboration + invites",
-      "Version history",
-      "Advanced validation",
-      "API / MCP access",
-      "Pro templates",
+      "Unlimited collaborators",
+      "Version history and snapshots",
+      "Pro template library",
+      "MCP and REST protocol access",
+      "Comments and review",
     ],
   },
   {
     id: "builder",
     name: "Builder",
     price: "$29",
-    period: "/mo per workspace",
-    tagline: "For power users running agent-native workflows.",
+    period: "per workspace / month",
+    tagline: "For agent-native teams running production workloads.",
     highlighted: false,
-    ctaLabel: "Upgrade to Builder",
-    ctaVariant: "ghost" as const,
+    ctaLabel: "Choose Builder",
+    ctaTone: "secondary",
     ctaHref: "/signup?source=pricing_builder",
     ctaEvent: "pricing_cta_clicked",
     ctaMeta: { plan: "builder", source: "pricing_cards" },
@@ -67,56 +88,129 @@ const PLANS = [
       "AI system generation",
       "AI edit suggestions",
       "Sub-agent builder",
-      "All Pro features",
+      "Capability-scoped tokens",
+      "Audit log export",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: "Custom",
+    period: "talk to sales",
+    tagline: "For organizations with security, scale, and procurement needs.",
+    highlighted: false,
+    ctaLabel: "Contact sales",
+    ctaTone: "secondary",
+    ctaHref: "/contact?source=pricing_enterprise",
+    ctaEvent: "pricing_cta_clicked",
+    ctaMeta: { plan: "enterprise", source: "pricing_cards" },
+    features: [
+      "Unlimited systems and workspaces",
+      "SSO, SCIM, and audit log streaming",
+      "SOC 2 Type II + DPA",
+      "Self-hosted Convex option",
+      "Dedicated solutions engineer",
+      "99.9% uptime SLA",
     ],
   },
 ] as const;
 
-// ─── Feature comparison table data ────────────────────────────────────────────
+// ─── Feature comparison ───────────────────────────────────────────────────────
 
 type CellValue = string | boolean;
 
-const COMPARISON_ROWS: { feature: string; free: CellValue; pro: CellValue; builder: CellValue }[] = [
-  { feature: "Systems",              free: "3",     pro: "25",    builder: "250"  },
-  { feature: "Simulation",           free: true,    pro: true,    builder: true   },
-  { feature: "Community templates",  free: true,    pro: true,    builder: true   },
-  { feature: "Pro templates",        free: false,   pro: true,    builder: true   },
-  { feature: "Basic validation",     free: true,    pro: true,    builder: true   },
-  { feature: "Advanced validation",  free: false,   pro: true,    builder: true   },
-  { feature: "Collaboration",        free: false,   pro: true,    builder: true   },
-  { feature: "Version history",      free: false,   pro: true,    builder: true   },
-  { feature: "API / MCP access",     free: false,   pro: true,    builder: true   },
-  { feature: "AI system generation", free: false,   pro: false,   builder: true   },
-  { feature: "AI edit suggestions",  free: false,   pro: false,   builder: true   },
-  { feature: "Sub-agent builder",    free: false,   pro: false,   builder: true   },
-];
+type ComparisonGroup = {
+  group: string;
+  rows: readonly {
+    feature: string;
+    starter: CellValue;
+    team: CellValue;
+    builder: CellValue;
+    enterprise: CellValue;
+  }[];
+};
+
+const COMPARISON: readonly ComparisonGroup[] = [
+  {
+    group: "Workspace",
+    rows: [
+      { feature: "Systems",                starter: "3",     team: "25",    builder: "250",   enterprise: "Unlimited" },
+      { feature: "Collaborators",          starter: "1",     team: "Unlimited", builder: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Version history",        starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "Comments and review",    starter: false,   team: true,    builder: true,    enterprise: true },
+    ],
+  },
+  {
+    group: "Authoring",
+    rows: [
+      { feature: "Validation engine",      starter: "Basic", team: "Advanced", builder: "Advanced", enterprise: "Advanced" },
+      { feature: "Simulation",             starter: true,    team: true,    builder: true,    enterprise: true },
+      { feature: "Pro template library",   starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "AI system generation",   starter: false,   team: false,   builder: true,    enterprise: true },
+      { feature: "AI edit suggestions",    starter: false,   team: false,   builder: true,    enterprise: true },
+      { feature: "Sub-agent builder",      starter: false,   team: false,   builder: true,    enterprise: true },
+    ],
+  },
+  {
+    group: "Protocol",
+    rows: [
+      { feature: "MCP and REST access",    starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "Capability-scoped tokens", starter: false, team: "Limited", builder: true,  enterprise: true },
+      { feature: "Idempotency keys",       starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "Audit log export",       starter: false,   team: false,   builder: true,    enterprise: true },
+    ],
+  },
+  {
+    group: "Security and support",
+    rows: [
+      { feature: "SSO / SAML",             starter: false,   team: false,   builder: false,   enterprise: true },
+      { feature: "SCIM provisioning",      starter: false,   team: false,   builder: false,   enterprise: true },
+      { feature: "SOC 2 Type II",          starter: true,    team: true,    builder: true,    enterprise: true },
+      { feature: "DPA",                    starter: false,   team: true,    builder: true,    enterprise: true },
+      { feature: "Self-hosted Convex",     starter: false,   team: false,   builder: false,   enterprise: true },
+      { feature: "Uptime SLA",             starter: "-",     team: "99.5%", builder: "99.9%", enterprise: "99.9%" },
+    ],
+  },
+] as const;
 
 // ─── FAQ data ─────────────────────────────────────────────────────────────────
 
 const FAQS = [
   {
     id: "faq-free",
-    question: "Is the Free plan really free forever?",
+    question: "Is the Starter plan really free?",
     answer:
-      "Yes. The Free plan has no time limit. You can model up to 3 systems, run simulations, and use community templates with no credit card required. Upgrade only when you need more.",
+      "Yes, with no time limit. Build up to 3 systems, run validations, and export locally. Upgrade when you outgrow it.",
   },
   {
     id: "faq-workspace",
     question: "What counts as a workspace?",
     answer:
-      "A workspace is a shared environment where you and your team collaborate on systems. Billing is per workspace, so a team of 10 in one Pro workspace pays $12/mo — not $12 per person.",
+      "A workspace is a shared environment where you and your collaborators design systems together. Billing is per workspace, not per seat.",
   },
   {
     id: "faq-upgrade",
-    question: "Can I upgrade or downgrade at any time?",
+    question: "Can I change plans at any time?",
     answer:
-      "Yes. You can upgrade at any time and your new limits take effect immediately. If you downgrade, your plan changes at the end of the current billing period. Systems above the new limit become read-only.",
+      "Yes. Upgrades take effect immediately. Downgrades apply at the end of the current billing cycle. Systems above the new limit become read-only.",
   },
   {
     id: "faq-mcp",
-    question: "What is API / MCP access?",
+    question: "What is the Pipes Protocol?",
     answer:
-      "MCP (Model Context Protocol) access lets external agents and tools read your system contracts via a stable REST/MCP surface. This is how AI tools like Claude can plan and execute against your architecture without re-prompting.",
+      "A token-authenticated MCP and REST surface over the same bounded service layer. External agents and tools can read your system contracts without your team re-prompting them.",
+  },
+  {
+    id: "faq-enterprise",
+    question: "What does Enterprise include?",
+    answer:
+      "SSO, SCIM, audit log streaming, a signed DPA, an uptime SLA, and a self-hosted Convex option for sensitive deployments. Talk to sales for procurement and security questionnaires.",
+  },
+  {
+    id: "faq-trial",
+    question: "Do paid plans have a trial?",
+    answer:
+      "Team and Builder include a 14-day trial. No credit card required to start, and your work persists if you don't upgrade.",
   },
 ] as const;
 
@@ -124,12 +218,24 @@ const FAQS = [
 
 function ComparisonCell({ value }: { value: CellValue }) {
   if (typeof value === "string") {
-    return <span className="t-label font-semibold text-[#111]">{value}</span>;
+    return <span className="t-label font-medium text-[#111]">{value}</span>;
   }
   if (value) {
-    return <Check className="w-4 h-4 text-indigo-500 mx-auto" aria-label="Included" />;
+    return (
+      <Check
+        size={16}
+        className="mx-auto text-indigo-600"
+        aria-label="Included"
+      />
+    );
   }
-  return <X className="w-4 h-4 text-[#C7C7CC] mx-auto" aria-label="Not included" />;
+  return (
+    <Minus
+      size={14}
+      className="mx-auto text-[#C7C7CC]"
+      aria-label="Not included"
+    />
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -139,130 +245,175 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
 
       {/* ── 1. HEADER ───────────────────────────────────────────────────── */}
-      <section className="pt-20 pb-14 px-6 text-center bg-[#F5F5F7]">
-        <h1 className="text-4xl font-bold text-[#111]" style={{ letterSpacing: "-0.04em" }}>
-          Simple, honest pricing
+      <section className="border-b border-black/[0.06] bg-white pt-20 pb-14 px-6 text-center">
+        <SectionBadge label="Pricing" />
+        <h1
+          className="mt-6 t-display text-[#111] mx-auto max-w-3xl"
+          style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.035em" }}
+        >
+          Pricing built for teams, not seat counts.
         </h1>
-        <p className="mt-3 text-lg text-[#3C3C43] max-w-md mx-auto">
-          Start free. Upgrade when you need more.
+        <p className="mt-5 mx-auto max-w-xl t-body text-[#3C3C43]">
+          Per-workspace pricing. Start free. Pay only when your team is ready to ship.
         </p>
       </section>
 
       {/* ── 2. PRICING CARDS ────────────────────────────────────────────── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-          {PLANS.map((plan) => (
-            <Card
-              key={plan.id}
-              className={[
-                "flex flex-col",
-                plan.highlighted
-                  ? "border-2 border-indigo-500 relative"
-                  : "border border-black/[0.08]",
-              ].join(" ")}
-              style={{ borderRadius: "16px" }}
-            >
-              {/* "Most Popular" badge */}
-              {plan.highlighted && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <Chip
-                    size="sm"
-                    variant="secondary"
-                    className="font-semibold text-xs px-3"
+      <section className="surface-subtle border-b border-black/[0.06] py-16 px-6">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4 items-stretch">
+          {PLANS.map((plan) => {
+            const isHighlighted = plan.highlighted;
+            return (
+              <div
+                key={plan.id}
+                className={[
+                  "relative flex flex-col rounded-[16px] bg-white",
+                  isHighlighted
+                    ? "border-2 border-indigo-600 shadow-md-token"
+                    : "border border-black/[0.08]",
+                ].join(" ")}
+              >
+                {isHighlighted && (
+                  <div className="absolute -top-3 left-6">
+                    <span className="inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-1 t-micro font-semibold uppercase tracking-[0.08em] text-white">
+                      Most popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="p-6 flex flex-col gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="t-overline text-[#8E8E93]">
+                      {plan.name}
+                    </span>
+                    <div className="flex items-baseline gap-1.5 mt-1">
+                      <span
+                        className="text-[#111] t-num"
+                        style={{
+                          fontSize: 36,
+                          fontWeight: 700,
+                          letterSpacing: "-0.03em",
+                        }}
+                      >
+                        {plan.price}
+                      </span>
+                    </div>
+                    <span className="t-caption text-[#8E8E93]">{plan.period}</span>
+                  </div>
+                  <p className="t-label text-[#3C3C43] leading-snug min-h-[2.5rem]">
+                    {plan.tagline}
+                  </p>
+                  <TrackedLink
+                    href={plan.ctaHref}
+                    event={plan.ctaEvent}
+                    metadata={plan.ctaMeta}
+                    className="block w-full"
                   >
-                    Most Popular
-                  </Chip>
+                    <span
+                      className={[
+                        "inline-flex w-full items-center justify-center gap-1.5 rounded-md h-10 px-4 t-label font-semibold transition-colors",
+                        plan.ctaTone === "primary"
+                          ? "bg-[#111] text-white hover:bg-indigo-700"
+                          : "border border-black/[0.14] bg-white text-[#111] hover:border-black/[0.24] hover:bg-black/[0.02]",
+                      ].join(" ")}
+                    >
+                      {plan.ctaLabel}
+                      <ArrowRight size={13} aria-hidden="true" />
+                    </span>
+                  </TrackedLink>
                 </div>
-              )}
 
-              <Card.Header className="px-6 pt-7 pb-0 flex flex-col items-start gap-1">
-                <span className="t-title font-bold text-[#111]">{plan.name}</span>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-extrabold text-[#111]" style={{ letterSpacing: "-0.04em" }}>{plan.price}</span>
-                  <span className="t-label text-[#8E8E93] font-medium">{plan.period}</span>
+                <div className="border-t border-black/[0.06] p-6 flex-1">
+                  <ul className="flex flex-col gap-3">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature}
+                        className="flex items-start gap-2.5 t-label text-[#3C3C43]"
+                      >
+                        <Check
+                          size={15}
+                          className="mt-0.5 shrink-0 text-indigo-600"
+                          aria-hidden="true"
+                        />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="t-label text-[#8E8E93] mt-2 leading-snug">{plan.tagline}</p>
-              </Card.Header>
-
-              <Card.Content className="px-6 py-5 flex-1">
-                <Separator className="mb-5" />
-                <ul className="flex flex-col gap-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 t-label text-[#3C3C43]">
-                      <Check
-                        className="w-4 h-4 mt-0.5 shrink-0 text-indigo-500"
-                        aria-hidden
-                      />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </Card.Content>
-
-              <Card.Footer className="px-6 pb-6 pt-0">
-                <TrackedLink
-                  href={plan.ctaHref}
-                  event={plan.ctaEvent}
-                  metadata={plan.ctaMeta}
-                  className="w-full"
-                >
-                  <Button
-                    variant={plan.ctaVariant}
-                    className={[
-                      "w-full font-semibold",
-                      plan.id === "builder"
-                        ? "bg-[#111] text-white hover:bg-[#222]"
-                        : "",
-                    ].join(" ")}
-                  >
-                    {plan.ctaLabel}
-                  </Button>
-                </TrackedLink>
-              </Card.Footer>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      <Separator />
-
       {/* ── 3. FEATURE COMPARISON TABLE ─────────────────────────────────── */}
-      <section className="py-20 px-6 bg-[#F5F5F7]">
-        <div className="max-w-4xl mx-auto">
+      <section className="border-b border-black/[0.06] bg-white py-20 px-6">
+        <div className="mx-auto max-w-6xl">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-[#111]">Compare plans</h2>
-            <p className="mt-2 t-label text-[#8E8E93]">Everything side by side.</p>
+            <SectionBadge label="Compare" />
+            <h2
+              className="mt-4 t-h1 text-[#111]"
+              style={{ letterSpacing: "-0.025em" }}
+            >
+              Every feature, side by side.
+            </h2>
           </div>
 
-          <div className="overflow-x-auto bg-white" style={{ borderRadius: "12px", border: "1px solid rgba(0,0,0,0.08)" }}>
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-[12px] border border-black/[0.08] bg-white">
+            <table className="w-full text-left t-label">
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                  <th className="text-left px-6 py-4 t-label font-semibold text-[#3C3C43] w-1/2">
+                <tr className="border-b border-black/[0.08] bg-[#FAFAFA]">
+                  <th className="px-5 py-4 t-overline text-[#8E8E93] w-[40%]">
                     Feature
                   </th>
-                  <th className="text-center px-4 py-4 t-label font-semibold text-[#3C3C43]">Free</th>
-                  <th className="text-center px-4 py-4 t-label font-bold text-indigo-600">Pro</th>
-                  <th className="text-center px-4 py-4 t-label font-semibold text-[#3C3C43]">Builder</th>
+                  <th className="px-4 py-4 text-center t-overline text-[#8E8E93]">
+                    Starter
+                  </th>
+                  <th className="px-4 py-4 text-center t-overline text-indigo-700">
+                    Team
+                  </th>
+                  <th className="px-4 py-4 text-center t-overline text-[#8E8E93]">
+                    Builder
+                  </th>
+                  <th className="px-4 py-4 text-center t-overline text-[#8E8E93]">
+                    Enterprise
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {COMPARISON_ROWS.map((row, idx) => (
-                  <tr
-                    key={row.feature}
-                    className={idx % 2 === 0 ? "bg-white" : "bg-[#F5F5F7]"}
-                  >
-                    <td className="px-6 py-3.5 t-label text-[#3C3C43]">{row.feature}</td>
-                    <td className="px-4 py-3.5 text-center">
-                      <ComparisonCell value={row.free} />
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <ComparisonCell value={row.pro} />
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <ComparisonCell value={row.builder} />
-                    </td>
-                  </tr>
+                {COMPARISON.map((group) => (
+                  <Fragment key={`g-${group.group}`}>
+                    <tr className="bg-[#FAFAFA]">
+                      <td
+                        colSpan={5}
+                        className="px-5 py-2.5 t-overline text-[#3C3C43]"
+                      >
+                        {group.group}
+                      </td>
+                    </tr>
+                    {group.rows.map((row) => (
+                      <tr
+                        key={`${group.group}-${row.feature}`}
+                        className="border-t border-black/[0.06]"
+                      >
+                        <td className="px-5 py-3 t-label text-[#3C3C43]">
+                          {row.feature}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ComparisonCell value={row.starter} />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ComparisonCell value={row.team} />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ComparisonCell value={row.builder} />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ComparisonCell value={row.enterprise} />
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -270,74 +421,79 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <Separator />
-
       {/* ── 4. FAQ ──────────────────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-2xl mx-auto">
+      <section className="border-b border-black/[0.06] bg-white py-20 px-6">
+        <div className="mx-auto max-w-3xl">
           <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-[#111]">Frequently asked questions</h2>
+            <SectionBadge label="FAQ" />
+            <h2
+              className="mt-4 t-h1 text-[#111]"
+              style={{ letterSpacing: "-0.025em" }}
+            >
+              Questions, answered.
+            </h2>
           </div>
 
-          <Accordion hideSeparator={false} className="flex flex-col divide-y divide-black/[0.06] border border-black/[0.08] rounded-xl overflow-hidden">
+          <div className="rounded-[12px] border border-black/[0.08] bg-white divide-y divide-black/[0.06]">
             {FAQS.map((faq) => (
-              <Accordion.Item key={faq.id} id={faq.id} className="bg-white">
-                <Accordion.Heading className="m-0">
-                  <Accordion.Trigger className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
+              <details
+                key={faq.id}
+                className="group p-5 [&_summary::-webkit-details-marker]:hidden"
+              >
+                <summary className="flex cursor-pointer items-center justify-between gap-4 list-none">
+                  <span className="t-label font-semibold text-[#111]">
                     {faq.question}
-                    <Accordion.Indicator className="shrink-0 text-[#8E8E93]" />
-                  </Accordion.Trigger>
-                </Accordion.Heading>
-                <Accordion.Panel>
-                  <Accordion.Body className="px-6 pb-5 text-sm text-[#3C3C43] leading-relaxed">
-                    {faq.answer}
-                  </Accordion.Body>
-                </Accordion.Panel>
-              </Accordion.Item>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-black/[0.08] text-[#8E8E93] transition-transform group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 t-label text-[#3C3C43] leading-relaxed">
+                  {faq.answer}
+                </p>
+              </details>
             ))}
-          </Accordion>
+          </div>
         </div>
       </section>
 
       {/* ── 5. BOTTOM CTA ───────────────────────────────────────────────── */}
-      <section className="px-6 pb-24 pt-4 bg-white">
-        <div className="max-w-3xl mx-auto bg-indigo-600 px-8 py-16 text-center relative overflow-hidden"
-             style={{ borderRadius: "24px" }}>
-          <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[260px] rounded-full bg-white opacity-[0.06] blur-3xl" />
-          <h2 className="relative text-3xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
-            Ready to build your first system?
+      <section className="surface-inverse">
+        <div className="mx-auto max-w-6xl px-6 py-20 text-center">
+          <h2
+            className="text-white mx-auto max-w-2xl"
+            style={{
+              fontSize: 36,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
+              fontWeight: 700,
+            }}
+          >
+            Ship your first system this week.
           </h2>
-          <p className="relative mt-3 text-indigo-200 t-body max-w-md mx-auto">
-            Free forever. No credit card required. Upgrade when your team grows.
+          <p className="mt-4 mx-auto max-w-md t-body text-[#C7C7CC]">
+            Start on Starter. Upgrade when your team is ready.
           </p>
-          <div className="relative mt-8 flex flex-wrap items-center justify-center gap-4">
+
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <TrackedLink
               href="/signup?source=pricing_bottom_cta"
               event="pricing_cta_clicked"
               metadata={{ source: "pricing_bottom_cta" }}
             >
-              <Button
-                size="lg"
-                className="bg-white text-indigo-700 font-bold px-10 hover:bg-indigo-50 transition-colors"
-                style={{ borderRadius: "10px", height: "46px" }}
-              >
-                Get started free
-              </Button>
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
+                Start free
+                <ArrowRight size={14} aria-hidden="true" />
+              </span>
             </TrackedLink>
-            <TrackedLink
-              href="/signup?source=pricing_bottom_pro"
-              event="pricing_cta_clicked"
-              metadata={{ source: "pricing_bottom_pro" }}
-            >
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-indigo-400 text-white font-semibold px-8 hover:border-white transition-colors"
-                style={{ borderRadius: "10px", height: "46px" }}
-              >
-                Upgrade to Pro
-              </Button>
-            </TrackedLink>
+            <Link href="/contact?source=pricing_bottom_sales">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-transparent px-5 h-11 t-label font-semibold text-white hover:border-white/40 hover:bg-white/[0.04] transition-colors">
+                Talk to sales
+              </span>
+            </Link>
           </div>
         </div>
       </section>

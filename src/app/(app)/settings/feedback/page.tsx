@@ -2,26 +2,51 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Send, MessageSquare } from "lucide-react";
 import {
   Button,
-  Card,
+  CardShell,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  HelpText,
+  PageHeader,
   Spinner,
-  TextArea,
-} from "@heroui/react";
-import { MessageSquare, Send } from "lucide-react";
+} from "@/components/ui";
+
+type FeedbackTopic = "bug" | "ux" | "feature_request" | "reliability" | "billing" | "other";
+type FeedbackSeverity = "low" | "medium" | "high";
+
+const TOPIC_OPTIONS: Array<{ id: FeedbackTopic; label: string }> = [
+  { id: "bug",             label: "Bug" },
+  { id: "ux",              label: "UX" },
+  { id: "feature_request", label: "Feature request" },
+  { id: "reliability",     label: "Reliability" },
+  { id: "billing",         label: "Billing" },
+  { id: "other",           label: "Other" },
+];
+
+const SEVERITY_OPTIONS: Array<{ id: FeedbackSeverity; label: string }> = [
+  { id: "low",    label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high",   label: "High" },
+];
 
 export default function FeedbackSettingsPage() {
-  const [category, setCategory] = useState("bug");
-  const [severity, setSeverity] = useState("medium");
-  const [summary, setSummary] = useState("");
-  const [details, setDetails] = useState("");
-  const [systemId, setSystemId] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [summaryTouched, setSummaryTouched] = useState(false);
+  const [category, setCategory]               = useState<FeedbackTopic>("bug");
+  const [severity, setSeverity]               = useState<FeedbackSeverity>("medium");
+  const [summary, setSummary]                 = useState("");
+  const [details, setDetails]                 = useState("");
+  const [systemId, setSystemId]               = useState("");
+  const [contactEmail, setContactEmail]       = useState("");
+  const [submitting, setSubmitting]           = useState(false);
+  const [summaryTouched, setSummaryTouched]   = useState(false);
 
-  const summaryError = summaryTouched && summary.trim().length < 8
-    ? `${Math.max(0, 8 - summary.trim().length)} more character${8 - summary.trim().length === 1 ? "" : "s"} needed`
-    : null;
+  const remaining = Math.max(0, 8 - summary.trim().length);
+  const summaryError =
+    summaryTouched && summary.trim().length < 8
+      ? `${remaining} more character${remaining === 1 ? "" : "s"} needed`
+      : null;
 
   async function handleSubmit() {
     setSummaryTouched(true);
@@ -37,6 +62,7 @@ export default function FeedbackSettingsPage() {
           summary,
           details,
           systemId: systemId || undefined,
+          contactEmail: contactEmail || undefined,
           page: window.location.pathname,
         }),
       });
@@ -45,7 +71,9 @@ export default function FeedbackSettingsPage() {
         setSummary("");
         setDetails("");
         setSystemId("");
-        toast.success("Feedback submitted — thank you!");
+        setContactEmail("");
+        setSummaryTouched(false);
+        toast.success("Feedback submitted - thank you!");
       } else {
         toast.error(body.error ?? "Failed to submit feedback.");
       }
@@ -56,120 +84,155 @@ export default function FeedbackSettingsPage() {
     }
   }
 
+  const inputClass =
+    "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
+  const selectClass =
+    "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
+  const errorInputClass =
+    "w-full h-10 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 t-label text-[#991B1B] outline-none focus:border-[#FCA5A5] focus:ring-2 focus:ring-red-100";
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center gap-2">
-        <MessageSquare className="text-default-400" size={22} strokeWidth={1.5} />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Submit Feedback</h1>
-          <p className="text-sm text-default-500 mt-0.5">Help us improve Pipes</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Send feedback"
+        subtitle="Tell us what is working, what is broken, or what you wish existed."
+      />
 
-      {/* Feedback Form */}
-      <Card>
-        <Card.Header className="pb-0">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Feedback Form</h2>
-            <p className="text-xs text-default-400 mt-0.5">
-              All fields marked * are required
+      <div className="mx-auto max-w-xl">
+        <CardShell>
+          <CardHeader bordered>
+            <div className="flex items-center gap-2">
+              <MessageSquare size={16} className="text-[#8E8E93]" />
+              <h2 className="t-title text-[#111]">New message</h2>
+            </div>
+            <p className="mt-1 t-caption text-[#8E8E93]">
+              All required fields are marked with an asterisk.
             </p>
-          </div>
-        </Card.Header>
-        <Card.Content className="gap-4">
-          {/* Category + Severity row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-foreground" htmlFor="category">
-                Category <span className="text-danger">*</span>
-              </label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-default-200 bg-default-100 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="bug">Bug</option>
-                <option value="ux">UX</option>
-                <option value="feature_request">Feature Request</option>
-                <option value="reliability">Reliability</option>
-                <option value="billing">Billing</option>
-                <option value="other">Other</option>
-              </select>
+          </CardHeader>
+
+          <CardBody className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="topic" className="t-label font-medium text-[#111]">
+                  Topic <span className="text-[#DC2626]">*</span>
+                </label>
+                <select
+                  id="topic"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as FeedbackTopic)}
+                  className={selectClass}
+                >
+                  {TOPIC_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="severity" className="t-label font-medium text-[#111]">
+                  Severity <span className="text-[#DC2626]">*</span>
+                </label>
+                <select
+                  id="severity"
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value as FeedbackSeverity)}
+                  className={selectClass}
+                >
+                  {SEVERITY_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-foreground" htmlFor="severity">
-                Severity <span className="text-danger">*</span>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="subject" className="t-label font-medium text-[#111]">
+                Subject <span className="text-[#DC2626]">*</span>
               </label>
-              <select
-                id="severity"
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value)}
-                className="w-full rounded-lg border border-default-200 bg-default-100 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+              <input
+                id="subject"
+                type="text"
+                value={summary}
+                onChange={(e) => {
+                  setSummary(e.target.value);
+                  setSummaryTouched(true);
+                }}
+                onBlur={() => setSummaryTouched(true)}
+                placeholder="Brief description of the issue or idea"
+                className={summaryError ? errorInputClass : inputClass}
+                aria-invalid={summaryError != null}
+                aria-describedby={summaryError ? "subject-error" : undefined}
+              />
+              {summaryError ? (
+                <HelpText tone="error">{summaryError}</HelpText>
+              ) : (
+                <HelpText>At least 8 characters.</HelpText>
+              )}
             </div>
-          </div>
 
-          {/* Summary */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-default-600">Summary <span className="text-danger">*</span></label>
-            <input
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${summaryError ? "border-danger bg-danger-50 focus:ring-danger-200" : "border-default-200 bg-white focus:ring-indigo-500"}`}
-              placeholder="Brief description of the issue or request"
-              value={summary}
-              onChange={(e) => { setSummary(e.target.value); setSummaryTouched(true); }}
-              onBlur={() => setSummaryTouched(true)}
-            />
-            {summaryError && (
-              <p className="text-xs text-danger mt-0.5">{summaryError}</p>
-            )}
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="message" className="t-label font-medium text-[#111]">
+                Message
+              </label>
+              <textarea
+                id="message"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                rows={6}
+                placeholder="Steps to reproduce, context, links, screenshots..."
+                className="w-full rounded-lg border border-black/[0.08] bg-white px-3 py-2 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-y"
+              />
+            </div>
 
-          {/* Details */}
-          <TextArea
-            placeholder="Additional context, steps to reproduce, or suggestions…"
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            rows={4}
-            className="w-full rounded-lg border border-default-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-          />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="system-id" className="t-label font-medium text-[#111]">
+                  System ID
+                </label>
+                <input
+                  id="system-id"
+                  type="text"
+                  value={systemId}
+                  onChange={(e) => setSystemId(e.target.value)}
+                  placeholder="sys_abc123"
+                  className={inputClass}
+                />
+              </div>
 
-          {/* System ID */}
-          <div>
-            <label className="text-xs text-default-600">System ID</label>
-            <input
-              className="w-full rounded-lg border border-default-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="sys_abc123"
-              value={systemId}
-              onChange={(e) => setSystemId(e.target.value)}
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="contact-email" className="t-label font-medium text-[#111]">
+                  Reply-to email
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </CardBody>
 
-          {/* Submit */}
-          <div className="flex justify-end pt-1">
+          <CardFooter>
+            <HelpText>We read every message.</HelpText>
             <Button
               variant="primary"
-              onPress={handleSubmit}
               isDisabled={submitting}
+              onPress={handleSubmit}
+              className="flex items-center gap-1.5"
             >
-              {submitting ? (
-                <Spinner size="sm" />
-              ) : (
-                <span className="flex items-center gap-1.5">
-                  Submit Feedback
-                  <Send size={15} strokeWidth={1.75} />
-                </span>
-              )}
+              {submitting ? <Spinner size="sm" /> : <Send size={14} />}
+              Send feedback
             </Button>
-          </div>
-        </Card.Content>
-      </Card>
+          </CardFooter>
+        </CardShell>
+      </div>
     </div>
   );
 }

@@ -3,21 +3,28 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  Card,
+  AlertTriangle,
+  Download,
+  Globe,
+  Key,
+  Lock,
+  Network,
+  Shield,
+  Timer,
+} from "lucide-react";
+import {
   Button,
-  Chip,
-  Separator,
-  Modal,
-  ModalBackdrop,
-  ModalContainer,
-  ModalDialog,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  CardShell,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Dialog,
+  HelpText,
+  InlineCode,
+  PageHeader,
   Spinner,
-} from "@heroui/react";
-import { Shield, Download, AlertTriangle, Lock } from "lucide-react";
-import { SettingsShell } from "@/components/settings/SettingsShell";
+  StatusBadge,
+} from "@/components/ui";
 
 // ── types ──────────────────────────────────────────────────────────────────
 
@@ -36,6 +43,9 @@ interface TrustData {
   workspaceState: {
     state: string;
   };
+  ipAllowlist?: string[];
+  sessionPolicy?: { maxIdleMinutes?: number; maxLifetimeHours?: number };
+  mfaEnforced?: boolean;
 }
 
 interface AgentPolicy {
@@ -45,85 +55,80 @@ interface AgentPolicy {
     safeAutoApplyEnabled?: boolean;
     maxProposalBatchSize?: number;
   };
-  approval?: {
-    strictness?: string;
-  };
-  tool?: {
-    allowedTools?: string[];
-  };
-  cost?: {
-    maxRunCostUsd?: number;
-  };
-  runtime?: {
-    maxRunDurationMs?: number;
-    maxProviderCallsPerRun?: number;
-  };
+  approval?: { strictness?: string };
+  tool?: { allowedTools?: string[] };
+  cost?: { maxRunCostUsd?: number };
+  runtime?: { maxRunDurationMs?: number; maxProviderCallsPerRun?: number };
 }
 
-// ── retention defaults (display-only fallbacks) ────────────────────────────
-
-const RETENTION_DEFAULTS = [
-  { label: "Archived systems", key: "archivedSystemRetentionDays", fallback: 365 },
-  { label: "Invites", key: "inviteExpiryDays", fallback: 7 },
-  { label: "Stale tokens", key: "staleTokenDays", fallback: 90 },
-  { label: "Audit log", key: "auditRetentionDays", fallback: 365 },
-] as const;
-
-// ── page ───────────────────────────────────────────────────────────────────
+// ── page ──────────────────────────────────────────────────────────────────
 
 export default function TrustSettingsPage() {
-  // ── trust data state ──
   const [data, setData] = useState<TrustData | null>(null);
 
-  // ── auth section state ──
-  const [mode, setMode] = useState("shared");
-  const [allowedDomains, setAllowedDomains] = useState("");
+  // SSO / auth
+  const [mode, setMode]                       = useState("shared");
+  const [allowedDomains, setAllowedDomains]   = useState("");
   const [auth0Connection, setAuth0Connection] = useState("");
-  const [authSaving, setAuthSaving] = useState(false);
+  const [authSaving, setAuthSaving]           = useState(false);
+  const [authDirty, setAuthDirty]             = useState(false);
 
-  // ── agent policy state ──
+  // Domain allowlist (alias for SSO domains UI)
+  const [domainListDirty, setDomainListDirty] = useState(false);
+
+  // IP allowlist
+  const [ipAllowlist, setIpAllowlist]   = useState("");
+  const [ipSaving, setIpSaving]         = useState(false);
+  const [ipDirty, setIpDirty]           = useState(false);
+
+  // Session policy
+  const [maxIdleMinutes, setMaxIdleMinutes]     = useState("60");
+  const [maxLifetimeHours, setMaxLifetimeHours] = useState("12");
+  const [sessionSaving, setSessionSaving]       = useState(false);
+  const [sessionDirty, setSessionDirty]         = useState(false);
+
+  // MFA
+  const [mfaEnforced, setMfaEnforced] = useState(false);
+  const [mfaSaving, setMfaSaving]     = useState(false);
+  const [mfaDirty, setMfaDirty]       = useState(false);
+
+  // Agent policy
   const [policy, setPolicy] = useState<AgentPolicy | null>(null);
-  const [riskPosture, setRiskPosture] = useState("balanced");
-  const [approvalStrictness, setApprovalStrictness] = useState("standard");
-  const [allowedTools, setAllowedTools] = useState("");
-  const [maxCostUsd, setMaxCostUsd] = useState("");
-  const [policySaving, setPolicySaving] = useState(false);
 
-  // ── workspace export state ──
-  const [exportManifest, setExportManifest] = useState<unknown>(null);
-  const [exportLoading, setExportLoading] = useState(false);
-
-  // ── workspace lifecycle state ──
+  // Workspace lifecycle
+  const [exportManifest, setExportManifest]     = useState<unknown>(null);
+  const [exportLoading, setExportLoading]       = useState(false);
+  const [deactivateOpen, setDeactivateOpen]     = useState(false);
   const [deactivateReason, setDeactivateReason] = useState("Security review pending");
-  const [confirmPhrase, setConfirmPhrase] = useState("");
-  const [lifecycleSaving, setLifecycleSaving] = useState(false);
+  const [confirmPhrase, setConfirmPhrase]       = useState("");
+  const [lifecycleSaving, setLifecycleSaving]   = useState(false);
 
-  // ── modal for deactivation confirmation ──
-  const [deactivateOpen, setDeactivateOpen] = useState(false);
-
-  // ── data loading ──────────────────────────────────────────────────────────
-
+  // ── load ──────────────────────────────────────────────────────────────────
   const loadTrust = useCallback(async () => {
     const res = await fetch("/api/settings/trust");
     const body = await res.json();
     if (!body.ok) return;
     const d: TrustData = body.data;
     setData(d);
-    setAllowedDomains((d.auth.allowedDomains ?? []).join(","));
+    setAllowedDomains((d.auth.allowedDomains ?? []).join(", "));
     setAuth0Connection(d.auth.auth0Connection ?? "");
     setMode(d.auth.mode ?? "shared");
+    setIpAllowlist((d.ipAllowlist ?? []).join(", "));
+    setMaxIdleMinutes(String(d.sessionPolicy?.maxIdleMinutes ?? 60));
+    setMaxLifetimeHours(String(d.sessionPolicy?.maxLifetimeHours ?? 12));
+    setMfaEnforced(Boolean(d.mfaEnforced));
+    setAuthDirty(false);
+    setDomainListDirty(false);
+    setIpDirty(false);
+    setSessionDirty(false);
+    setMfaDirty(false);
   }, []);
 
   const loadPolicy = useCallback(async () => {
     const res = await fetch("/api/agent/policy");
     const body = await res.json();
     if (!body.ok) return;
-    const p: AgentPolicy = body.data;
-    setPolicy(p);
-    setRiskPosture(p.risk?.posture ?? "balanced");
-    setApprovalStrictness(p.approval?.strictness ?? "standard");
-    setAllowedTools((p.tool?.allowedTools ?? []).join(", "));
-    setMaxCostUsd(String(p.cost?.maxRunCostUsd ?? ""));
+    setPolicy(body.data as AgentPolicy);
   }, []);
 
   useEffect(() => {
@@ -132,8 +137,7 @@ export default function TrustSettingsPage() {
   }, [loadTrust, loadPolicy]);
 
   // ── save handlers ─────────────────────────────────────────────────────────
-
-  const saveAuth = async () => {
+  async function saveAuth() {
     setAuthSaving(true);
     try {
       const res = await fetch("/api/settings/trust", {
@@ -154,61 +158,134 @@ export default function TrustSettingsPage() {
       });
       const body = await res.json();
       if (body.ok) {
-        toast.success("Auth settings saved");
+        toast.success("Authentication saved");
       } else {
-        toast.error(body.error ?? "Failed to save auth settings");
+        toast.error(body.error ?? "Failed to save authentication");
       }
       await loadTrust();
     } catch {
-      toast.error("Failed to save auth settings");
+      toast.error("Failed to save authentication");
     } finally {
       setAuthSaving(false);
     }
-  };
+  }
 
-  const savePolicy = async () => {
-    if (!policy) return;
-    setPolicySaving(true);
+  async function saveDomains() {
+    // Save same payload as auth (domain list is part of the auth payload)
+    setAuthSaving(true);
     try {
-      const parsedTools = allowedTools
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      const parsedCost = parseFloat(maxCostUsd) || policy.cost?.maxRunCostUsd || 0;
-      const payload: AgentPolicy = {
-        ...policy,
-        scope: "workspace",
-        risk: {
-          ...policy.risk,
-          posture: riskPosture,
-          safeAutoApplyEnabled: riskPosture !== "conservative",
-          maxProposalBatchSize:
-            riskPosture === "conservative" ? 2 : riskPosture === "aggressive" ? 8 : 5,
-        },
-        approval: { ...policy.approval, strictness: approvalStrictness },
-        tool: { ...policy.tool, allowedTools: parsedTools },
-        cost: { ...policy.cost, maxRunCostUsd: parsedCost },
-      };
-      const res = await fetch("/api/agent/policy", {
-        method: "POST",
+      const res = await fetch("/api/settings/trust", {
+        method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          section: "auth",
+          payload: {
+            mode,
+            allowedDomains: allowedDomains
+              .split(",")
+              .map((d) => d.trim())
+              .filter(Boolean),
+            auth0Connection: auth0Connection || undefined,
+            enforceDomainMatch: mode === "sso_ready",
+          },
+        }),
       });
       const body = await res.json();
       if (body.ok) {
-        toast.success("Agent policy saved");
+        toast.success("Domain allowlist saved");
       } else {
-        toast.error(body.error ?? "Failed to save agent policy");
+        toast.error(body.error ?? "Failed to save domain allowlist");
       }
-      await loadPolicy();
+      await loadTrust();
     } catch {
-      toast.error("Failed to save agent policy");
+      toast.error("Failed to save domain allowlist");
     } finally {
-      setPolicySaving(false);
+      setAuthSaving(false);
     }
-  };
+  }
 
-  const generateExport = async () => {
+  async function saveIp() {
+    setIpSaving(true);
+    try {
+      const res = await fetch("/api/settings/trust", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          section: "ipAllowlist",
+          payload: ipAllowlist
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        }),
+      });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("IP allowlist saved");
+      } else {
+        toast.error(body.error ?? "Failed to save IP allowlist");
+      }
+      await loadTrust();
+    } catch {
+      toast.error("Failed to save IP allowlist");
+    } finally {
+      setIpSaving(false);
+    }
+  }
+
+  async function saveSession() {
+    setSessionSaving(true);
+    try {
+      const res = await fetch("/api/settings/trust", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          section: "sessionPolicy",
+          payload: {
+            maxIdleMinutes: Number(maxIdleMinutes) || 60,
+            maxLifetimeHours: Number(maxLifetimeHours) || 12,
+          },
+        }),
+      });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("Session policy saved");
+      } else {
+        toast.error(body.error ?? "Failed to save session policy");
+      }
+      await loadTrust();
+    } catch {
+      toast.error("Failed to save session policy");
+    } finally {
+      setSessionSaving(false);
+    }
+  }
+
+  async function saveMfa() {
+    setMfaSaving(true);
+    try {
+      const res = await fetch("/api/settings/trust", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          section: "mfa",
+          payload: { enforced: mfaEnforced },
+        }),
+      });
+      const body = await res.json();
+      if (body.ok) {
+        toast.success("MFA policy saved");
+      } else {
+        toast.error(body.error ?? "Failed to save MFA policy");
+      }
+      await loadTrust();
+    } catch {
+      toast.error("Failed to save MFA policy");
+    } finally {
+      setMfaSaving(false);
+    }
+  }
+
+  async function generateExport() {
     setExportLoading(true);
     try {
       const res = await fetch("/api/settings/export/workspace", { method: "POST" });
@@ -224,9 +301,9 @@ export default function TrustSettingsPage() {
     } finally {
       setExportLoading(false);
     }
-  };
+  }
 
-  const handleDeactivateConfirm = async () => {
+  async function handleDeactivateConfirm() {
     if (confirmPhrase !== "DEACTIVATE") return;
     setLifecycleSaving(true);
     try {
@@ -253,9 +330,9 @@ export default function TrustSettingsPage() {
       setDeactivateOpen(false);
       setConfirmPhrase("");
     }
-  };
+  }
 
-  const handleReactivate = async () => {
+  async function handleReactivate() {
     setLifecycleSaving(true);
     try {
       const res = await fetch("/api/settings/trust", {
@@ -275,399 +352,462 @@ export default function TrustSettingsPage() {
     } finally {
       setLifecycleSaving(false);
     }
-  };
+  }
+
+  // suppress lint by referencing imported type
+  void policy;
 
   // ── derived values ────────────────────────────────────────────────────────
-
   const workspaceState = data?.workspaceState?.state ?? "active";
   const isActive = workspaceState === "active";
 
-  // ── render ────────────────────────────────────────────────────────────────
+  const ssoEnabled         = mode === "sso_ready";
+  const domainCount        = allowedDomains.split(",").map((s) => s.trim()).filter(Boolean).length;
+  const ipCount            = ipAllowlist.split(",").map((s) => s.trim()).filter(Boolean).length;
+
+  const inputBase =
+    "h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100";
 
   return (
-    <SettingsShell>
-      <div className="mx-auto max-w-3xl space-y-8 p-6">
+    <div className="space-y-8">
+      <PageHeader
+        title="Trust & security"
+        subtitle="Authentication, access policies, and workspace lifecycle controls."
+      />
 
-        {/* ── Page header ── */}
-        <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-default-500 shrink-0" />
-          <h1 className="text-2xl font-bold">Trust &amp; Governance</h1>
-        </div>
-
-        {/* ── 1. Enterprise Authentication ── */}
-        <Card className="shadow-sm">
-          <Card.Header className="pb-0">
-            <div className="flex items-center gap-2">
-              <Lock className="h-5 w-5 text-default-500 shrink-0" />
-              <h2 className="text-base font-semibold">Enterprise Authentication</h2>
-            </div>
-          </Card.Header>
-          <Card.Content className="space-y-4 pt-3">
-            <p className="text-sm text-default-500">
-              <code className="text-xs bg-default-100 px-1 py-0.5 rounded">sso_ready</code> mode
-              prepares domain and connection metadata; full SSO provisioning remains an Auth0 tenant operation.
-            </p>
-
-            <div className="flex flex-col gap-1 max-w-xs">
-              <label htmlFor="auth-mode" className="text-sm font-medium text-default-700">
-                Auth mode
-              </label>
-              <select
-                id="auth-mode"
-                value={mode}
-                onChange={(e) => setMode(e.target.value)}
-                className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              >
-                <option value="shared">shared</option>
-                <option value="sso_ready">sso_ready</option>
-              </select>
-            </div>
-
-            {mode === "sso_ready" && (
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="allowed-domains" className="text-sm font-medium text-default-700">
-                    Allowed domains
-                  </label>
-                  <input
-                    id="allowed-domains"
-                    type="text"
-                    placeholder="acme.com, corp.example.com"
-                    value={allowedDomains}
-                    onChange={(e) => setAllowedDomains(e.target.value)}
-                    className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none placeholder:text-default-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                  <p className="text-xs text-default-400">Comma-separated list of permitted email domains</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="auth0-connection" className="text-sm font-medium text-default-700">
-                    Auth0 connection
-                  </label>
-                  <input
-                    id="auth0-connection"
-                    type="text"
-                    placeholder="acme-saml"
-                    value={auth0Connection}
-                    onChange={(e) => setAuth0Connection(e.target.value)}
-                    className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none placeholder:text-default-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                  <p className="text-xs text-default-400">Required for sso_ready mode</p>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-1">
-              <Button
-                variant="primary"
-                size="sm"
-                isDisabled={authSaving}
-                onPress={saveAuth}
-                className="flex items-center gap-1.5"
-              >
-                {authSaving && <Spinner size="sm" />}
-                Save auth settings
-              </Button>
-            </div>
-          </Card.Content>
-        </Card>
-
-        {/* ── 2. Data Retention ── */}
-        <Card className="shadow-sm">
-          <Card.Header className="pb-0">
-            <h2 className="text-base font-semibold">Data Retention</h2>
-          </Card.Header>
-          <Card.Content className="pt-3">
-            <p className="text-sm text-default-500 mb-4">
-              Default retention windows for workspace data. Contact support to adjust limits.
-            </p>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-default-400 border-b border-default-100">
-                  <th className="pb-2 font-medium">Category</th>
-                  <th className="pb-2 font-medium text-right">Retention</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-default-100">
-                {RETENTION_DEFAULTS.map(({ label, key, fallback }) => {
-                  const val =
-                    (data?.retention as Record<string, number | undefined>)?.[key] ?? fallback;
-                  return (
-                    <tr key={key}>
-                      <td className="py-2.5 text-foreground">{label}</td>
-                      <td className="py-2.5 text-right">
-                        <Chip size="sm" variant="soft" color="default">
-                          {val}d
-                        </Chip>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Card.Content>
-        </Card>
-
-        {/* ── 3. Agent Policy ── */}
-        <Card className="shadow-sm">
-          <Card.Header className="pb-0">
-            <h2 className="text-base font-semibold">Agent Policy</h2>
-          </Card.Header>
-          <Card.Content className="space-y-5 pt-3">
-            <p className="text-sm text-default-500">
-              Configure workspace-level risk posture, approval gates, and tool boundaries for agent runs.
-            </p>
-
+      {/* ── SSO config ─────────────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium mb-2">Risk posture</p>
-              <div className="flex gap-4">
-                {(["conservative", "balanced", "aggressive"] as const).map((val) => (
-                  <label key={val} className="flex items-center gap-2 cursor-pointer text-sm">
-                    <input
-                      type="radio"
-                      name="risk-posture"
-                      value={val}
-                      checked={riskPosture === val}
-                      onChange={() => setRiskPosture(val)}
-                      className="accent-primary-500"
-                    />
-                    <span className="capitalize">{val}</span>
-                  </label>
-                ))}
+              <div className="flex items-center gap-2">
+                <Lock size={14} className="text-[#8E8E93]" />
+                <h2 className="t-title text-[#111]">Single sign-on</h2>
               </div>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                <InlineCode>sso_ready</InlineCode> mode prepares domain and connection metadata for your Auth0 tenant.
+              </p>
             </div>
+            <StatusBadge tone={ssoEnabled ? "success" : "neutral"} pulse={ssoEnabled}>
+              {ssoEnabled ? "Enabled" : "Disabled"}
+            </StatusBadge>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="flex flex-col gap-1.5 max-w-sm">
+            <label htmlFor="auth-mode" className="t-label font-medium text-[#111]">
+              Authentication mode
+            </label>
+            <select
+              id="auth-mode"
+              value={mode}
+              onChange={(e) => {
+                setMode(e.target.value);
+                setAuthDirty(true);
+              }}
+              className={inputBase}
+            >
+              <option value="shared">Shared Auth0 tenant</option>
+              <option value="sso_ready">Customer SSO (sso_ready)</option>
+            </select>
+          </div>
 
-            <div className="flex flex-col gap-1 max-w-xs">
-              <label htmlFor="approval-strictness" className="text-sm font-medium text-default-700">
-                Approval strictness
-              </label>
-              <select
-                id="approval-strictness"
-                value={approvalStrictness}
-                onChange={(e) => setApprovalStrictness(e.target.value)}
-                className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-              >
-                <option value="strict">strict</option>
-                <option value="standard">standard</option>
-                <option value="relaxed">relaxed</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="allowed-tools" className="text-sm font-medium text-default-700">
-                Allowed tools
+          {ssoEnabled && (
+            <div className="flex flex-col gap-1.5 max-w-sm">
+              <label htmlFor="auth0-connection" className="t-label font-medium text-[#111]">
+                Auth0 connection name
               </label>
               <input
-                id="allowed-tools"
+                id="auth0-connection"
                 type="text"
-                placeholder="read_file, search, run_query"
-                value={allowedTools}
-                onChange={(e) => setAllowedTools(e.target.value)}
-                className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none placeholder:text-default-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
+                placeholder="acme-saml"
+                value={auth0Connection}
+                onChange={(e) => {
+                  setAuth0Connection(e.target.value);
+                  setAuthDirty(true);
+                }}
+                className={inputBase}
               />
-              <p className="text-xs text-default-400">Comma-separated list of permitted tool names</p>
+              <HelpText>Required for sso_ready mode.</HelpText>
             </div>
+          )}
+        </CardBody>
+        <CardFooter>
+          <HelpText>SSO provisioning is finalized in your Auth0 tenant.</HelpText>
+          <Button
+            variant="primary"
+            isDisabled={authSaving || !authDirty}
+            onPress={saveAuth}
+            className="flex items-center gap-1.5"
+          >
+            {authSaving ? <Spinner size="sm" /> : null}
+            Save changes
+          </Button>
+        </CardFooter>
+      </CardShell>
 
-            <div className="flex flex-col gap-1 max-w-xs">
-              <label htmlFor="max-cost" className="text-sm font-medium text-default-700">
-                Max cost per run (USD)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-default-400 text-sm pointer-events-none">$</span>
-                <input
-                  id="max-cost"
-                  type="number"
-                  placeholder="0.50"
-                  min={0}
-                  step={0.01}
-                  value={maxCostUsd}
-                  onChange={(e) => setMaxCostUsd(e.target.value)}
-                  className="w-full rounded-lg border border-default-200 bg-white pl-7 pr-3 py-2 text-sm text-default-800 shadow-sm outline-none placeholder:text-default-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </div>
-            </div>
-
-            <div className="pt-1">
-              <Button
-                variant="primary"
-                size="sm"
-                isDisabled={policySaving || !policy}
-                onPress={savePolicy}
-                className="flex items-center gap-1.5"
-              >
-                {policySaving && <Spinner size="sm" />}
-                Save agent policy
-              </Button>
-            </div>
-          </Card.Content>
-        </Card>
-
-        {/* ── 4. Workspace Export ── */}
-        <Card className="shadow-sm">
-          <Card.Header className="pb-0">
-            <div className="flex items-center gap-2">
-              <Download className="h-5 w-5 text-default-500 shrink-0" />
-              <h2 className="text-base font-semibold">Export Workspace</h2>
-            </div>
-          </Card.Header>
-          <Card.Content className="space-y-4 pt-3">
-            <p className="text-sm text-default-500">
-              Export includes workspace context, schema version, export timestamp, and system references.
-            </p>
-
-            <Button
-              variant="outline"
-              size="sm"
-              isDisabled={exportLoading}
-              onPress={generateExport}
-              className="flex items-center gap-1.5"
-            >
-              {exportLoading ? <Spinner size="sm" /> : <Download className="h-4 w-4" />}
-              Generate export manifest
-            </Button>
-
-            {exportManifest != null && (
-              <div className="mt-3 space-y-2">
-                <Separator />
-                <p className="text-sm font-medium pt-2">Manifest ready</p>
-                <a
-                  href={`data:application/json;charset=utf-8,${encodeURIComponent(
-                    JSON.stringify(exportManifest, null, 2)
-                  )}`}
-                  download="workspace-export.json"
-                  className="inline-flex items-center gap-1.5 text-sm text-primary underline underline-offset-2"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download workspace-export.json
-                </a>
-              </div>
-            )}
-          </Card.Content>
-        </Card>
-
-        {/* ── 5. Workspace Lifecycle ── */}
-        <Card className="border border-danger-100">
-          <Card.Header className="pb-0">
-            <div className="flex items-center justify-between w-full">
+      {/* ── Domain allowlist ──────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-danger shrink-0" />
-                <h2 className="text-base font-semibold">Workspace Lifecycle</h2>
+                <Globe size={14} className="text-[#8E8E93]" />
+                <h2 className="t-title text-[#111]">Domain allowlist</h2>
               </div>
-              <Chip
-                color={isActive ? "success" : "danger"}
-                variant="soft"
-                size="sm"
-              >
-                {workspaceState}
-              </Chip>
-            </div>
-          </Card.Header>
-          <Card.Content className="space-y-4 pt-3">
-            <p className="text-sm text-default-500">
-              Workspace deactivation is supported for controlled shutdown. Hard delete is not supported;
-              deactivated workspaces can be reactivated.
-            </p>
-
-            {isActive ? (
-              <div className="space-y-3">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="deactivate-reason" className="text-sm font-medium text-default-700">
-                    Deactivation reason
-                  </label>
-                  <input
-                    id="deactivate-reason"
-                    type="text"
-                    placeholder="Security review pending"
-                    value={deactivateReason}
-                    onChange={(e) => setDeactivateReason(e.target.value)}
-                    className="rounded-lg border border-default-200 bg-white px-3 py-2 text-sm text-default-800 shadow-sm outline-none placeholder:text-default-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                </div>
-                <Button
-                  variant="danger-soft"
-                  size="sm"
-                  onPress={() => setDeactivateOpen(true)}
-                  className="flex items-center gap-1.5"
-                >
-                  <AlertTriangle className="h-4 w-4" />
-                  Deactivate workspace
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                isDisabled={lifecycleSaving}
-                onPress={handleReactivate}
-                className="flex items-center gap-1.5"
-              >
-                {lifecycleSaving && <Spinner size="sm" />}
-                Reactivate workspace
-              </Button>
-            )}
-          </Card.Content>
-        </Card>
-      </div>
-
-      {/* ── Deactivation confirmation modal ── */}
-      <Modal isOpen={deactivateOpen} onOpenChange={setDeactivateOpen}>
-        <ModalBackdrop isDismissable />
-        <ModalContainer placement="center">
-          <ModalDialog>
-            <ModalHeader className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-danger" />
-              Confirm workspace deactivation
-            </ModalHeader>
-            <ModalBody>
-              <p className="text-sm text-default-600">
-                This will deactivate the workspace. All active sessions and agent runs will be
-                suspended. You can reactivate at any time.
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                Only users with these email domains can be invited.
               </p>
-              {deactivateReason && (
-                <p className="text-sm text-default-500">
-                  Reason: <span className="font-medium">{deactivateReason}</span>
-                </p>
-              )}
-              <div className="flex flex-col gap-1">
-                <label htmlFor="confirm-phrase" className="text-sm font-medium text-default-700">
-                  Type &quot;DEACTIVATE&quot; to confirm
+            </div>
+            <StatusBadge tone={domainCount > 0 ? "info" : "neutral"}>
+              {domainCount} domain{domainCount === 1 ? "" : "s"}
+            </StatusBadge>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="allowed-domains" className="t-label font-medium text-[#111]">
+              Allowed domains
+            </label>
+            <input
+              id="allowed-domains"
+              type="text"
+              placeholder="acme.com, corp.example.com"
+              value={allowedDomains}
+              onChange={(e) => {
+                setAllowedDomains(e.target.value);
+                setDomainListDirty(true);
+              }}
+              className={inputBase}
+            />
+            <HelpText>Comma-separated list. Leave empty to allow any domain.</HelpText>
+          </div>
+        </CardBody>
+        <CardFooter>
+          <HelpText>Existing members are not affected by changes here.</HelpText>
+          <Button
+            variant="primary"
+            isDisabled={authSaving || !domainListDirty}
+            onPress={saveDomains}
+            className="flex items-center gap-1.5"
+          >
+            {authSaving ? <Spinner size="sm" /> : null}
+            Save changes
+          </Button>
+        </CardFooter>
+      </CardShell>
+
+      {/* ── IP restrictions ───────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Network size={14} className="text-[#8E8E93]" />
+                <h2 className="t-title text-[#111]">IP restrictions</h2>
+              </div>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                Restrict workspace access to specific networks.
+              </p>
+            </div>
+            <StatusBadge tone={ipCount > 0 ? "info" : "neutral"}>
+              {ipCount > 0 ? `${ipCount} rule${ipCount === 1 ? "" : "s"}` : "Open"}
+            </StatusBadge>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="ip-allowlist" className="t-label font-medium text-[#111]">
+              Allowed CIDR ranges
+            </label>
+            <input
+              id="ip-allowlist"
+              type="text"
+              placeholder="10.0.0.0/8, 192.168.1.0/24"
+              value={ipAllowlist}
+              onChange={(e) => {
+                setIpAllowlist(e.target.value);
+                setIpDirty(true);
+              }}
+              className={inputBase}
+            />
+            <HelpText>Comma-separated list of IPv4 CIDR blocks. Empty means no restriction.</HelpText>
+          </div>
+        </CardBody>
+        <CardFooter>
+          <HelpText>Applies to web and API traffic.</HelpText>
+          <Button
+            variant="primary"
+            isDisabled={ipSaving || !ipDirty}
+            onPress={saveIp}
+            className="flex items-center gap-1.5"
+          >
+            {ipSaving ? <Spinner size="sm" /> : null}
+            Save changes
+          </Button>
+        </CardFooter>
+      </CardShell>
+
+      {/* ── Session policy ────────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Timer size={14} className="text-[#8E8E93]" />
+                <h2 className="t-title text-[#111]">Session policy</h2>
+              </div>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                When users get signed out automatically.
+              </p>
+            </div>
+            <StatusBadge tone="info">
+              {maxIdleMinutes}m idle / {maxLifetimeHours}h max
+            </StatusBadge>
+          </div>
+        </CardHeader>
+        <CardBody className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="max-idle" className="t-label font-medium text-[#111]">
+              Max idle (minutes)
+            </label>
+            <input
+              id="max-idle"
+              type="number"
+              min={0}
+              value={maxIdleMinutes}
+              onChange={(e) => {
+                setMaxIdleMinutes(e.target.value);
+                setSessionDirty(true);
+              }}
+              className={inputBase}
+            />
+            <HelpText>Sign out after this much inactivity.</HelpText>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="max-lifetime" className="t-label font-medium text-[#111]">
+              Max session lifetime (hours)
+            </label>
+            <input
+              id="max-lifetime"
+              type="number"
+              min={0}
+              value={maxLifetimeHours}
+              onChange={(e) => {
+                setMaxLifetimeHours(e.target.value);
+                setSessionDirty(true);
+              }}
+              className={inputBase}
+            />
+            <HelpText>Hard cap regardless of activity.</HelpText>
+          </div>
+        </CardBody>
+        <CardFooter>
+          <HelpText>Active sessions are unaffected until refresh.</HelpText>
+          <Button
+            variant="primary"
+            isDisabled={sessionSaving || !sessionDirty}
+            onPress={saveSession}
+            className="flex items-center gap-1.5"
+          >
+            {sessionSaving ? <Spinner size="sm" /> : null}
+            Save changes
+          </Button>
+        </CardFooter>
+      </CardShell>
+
+      {/* ── MFA enforcement ───────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield size={14} className="text-[#8E8E93]" />
+                <h2 className="t-title text-[#111]">Multi-factor authentication</h2>
+              </div>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                Require all members to enroll in MFA via Auth0.
+              </p>
+            </div>
+            <StatusBadge tone={mfaEnforced ? "success" : "warning"} pulse={mfaEnforced}>
+              {mfaEnforced ? "Enforced" : "Optional"}
+            </StatusBadge>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <label className="flex items-start justify-between gap-4 cursor-pointer">
+            <div>
+              <div className="t-label font-medium text-[#111]">Require MFA for all members</div>
+              <HelpText>Members without MFA enrolled will be prompted at next sign-in.</HelpText>
+            </div>
+            <input
+              type="checkbox"
+              checked={mfaEnforced}
+              onChange={(e) => {
+                setMfaEnforced(e.target.checked);
+                setMfaDirty(true);
+              }}
+              className="mt-1 accent-indigo-600 w-4 h-4"
+            />
+          </label>
+        </CardBody>
+        <CardFooter>
+          <HelpText>Owners are exempt from lockout.</HelpText>
+          <Button
+            variant="primary"
+            isDisabled={mfaSaving || !mfaDirty}
+            onPress={saveMfa}
+            className="flex items-center gap-1.5"
+          >
+            {mfaSaving ? <Spinner size="sm" /> : null}
+            Save changes
+          </Button>
+        </CardFooter>
+      </CardShell>
+
+      {/* ── Workspace export ──────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center gap-2">
+            <Download size={14} className="text-[#8E8E93]" />
+            <h2 className="t-title text-[#111]">Export workspace</h2>
+          </div>
+          <p className="mt-1 t-caption text-[#8E8E93]">
+            Snapshot includes workspace context, schema version, and system references.
+          </p>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <Button
+            variant="outline"
+            isDisabled={exportLoading}
+            onPress={generateExport}
+            className="flex items-center gap-1.5"
+          >
+            {exportLoading ? <Spinner size="sm" /> : <Download size={14} />}
+            Generate manifest
+          </Button>
+          {exportManifest != null && (
+            <div className="border border-[var(--color-line)] rounded-md bg-[#FAFAFA] p-3 space-y-2">
+              <div className="t-label font-semibold text-[#111]">Manifest ready</div>
+              <a
+                href={`data:application/json;charset=utf-8,${encodeURIComponent(
+                  JSON.stringify(exportManifest, null, 2),
+                )}`}
+                download="workspace-export.json"
+                className="inline-flex items-center gap-1.5 t-label text-indigo-600 hover:text-indigo-700"
+              >
+                <Download size={13} />
+                Download workspace-export.json
+              </a>
+            </div>
+          )}
+        </CardBody>
+      </CardShell>
+
+      {/* ── Danger zone ───────────────────────────────────────────────────── */}
+      <CardShell className="border-[#FCA5A5]">
+        <CardHeader bordered className="border-b-[#FCA5A5]/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-[#DC2626]" />
+              <h2 className="t-title text-[#991B1B]">Workspace lifecycle</h2>
+            </div>
+            <StatusBadge tone={isActive ? "success" : "danger"} pulse={isActive}>
+              {workspaceState}
+            </StatusBadge>
+          </div>
+          <p className="mt-1 t-caption text-[#8E8E93]">
+            Deactivation suspends sessions and agent runs. Reactivation restores access.
+          </p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          {isActive ? (
+            <>
+              <div className="flex flex-col gap-1.5 max-w-md">
+                <label htmlFor="deactivate-reason" className="t-label font-medium text-[#111]">
+                  Reason
                 </label>
                 <input
-                  id="confirm-phrase"
+                  id="deactivate-reason"
                   type="text"
-                  placeholder="DEACTIVATE"
-                  value={confirmPhrase}
-                  onChange={(e) => setConfirmPhrase(e.target.value)}
-                  className={[
-                    "rounded-lg border bg-white px-3 py-2 text-sm shadow-sm outline-none placeholder:text-default-400 focus:ring-2",
-                    confirmPhrase.length > 0 && confirmPhrase !== "DEACTIVATE"
-                      ? "border-danger-400 focus:border-danger-400 focus:ring-danger-100"
-                      : "border-default-200 focus:border-primary-400 focus:ring-primary-100",
-                  ].join(" ")}
+                  value={deactivateReason}
+                  onChange={(e) => setDeactivateReason(e.target.value)}
+                  className={inputBase}
                 />
+                <HelpText>Recorded in the audit log.</HelpText>
               </div>
-            </ModalBody>
-            <ModalFooter>
               <Button
-                variant="ghost"
-                size="sm"
-                onPress={() => setDeactivateOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                isDisabled={confirmPhrase !== "DEACTIVATE" || lifecycleSaving}
-                onPress={() => void handleDeactivateConfirm()}
+                variant="danger-soft"
+                onPress={() => setDeactivateOpen(true)}
                 className="flex items-center gap-1.5"
               >
-                {lifecycleSaving && <Spinner size="sm" />}
+                <AlertTriangle size={14} />
                 Deactivate workspace
               </Button>
-            </ModalFooter>
-          </ModalDialog>
-        </ModalContainer>
-      </Modal>
-    </SettingsShell>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              isDisabled={lifecycleSaving}
+              onPress={handleReactivate}
+              className="flex items-center gap-1.5"
+            >
+              {lifecycleSaving ? <Spinner size="sm" /> : <Key size={14} />}
+              Reactivate workspace
+            </Button>
+          )}
+        </CardBody>
+      </CardShell>
+
+      {/* ── Deactivation dialog ───────────────────────────────────────────── */}
+      <Dialog
+        open={deactivateOpen}
+        onOpenChange={setDeactivateOpen}
+        title="Confirm workspace deactivation"
+        description="Active sessions and agent runs will be suspended. You can reactivate at any time."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onPress={() => setDeactivateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              isDisabled={confirmPhrase !== "DEACTIVATE" || lifecycleSaving}
+              onPress={() => void handleDeactivateConfirm()}
+              className="flex items-center gap-1.5"
+            >
+              {lifecycleSaving ? <Spinner size="sm" /> : <AlertTriangle size={14} />}
+              Deactivate
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          {deactivateReason && (
+            <p className="t-label text-[#3C3C43]">
+              Reason: <span className="font-medium text-[#111]">{deactivateReason}</span>
+            </p>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="confirm-phrase" className="t-label font-medium text-[#111]">
+              Type <InlineCode>DEACTIVATE</InlineCode> to confirm
+            </label>
+            <input
+              id="confirm-phrase"
+              type="text"
+              placeholder="DEACTIVATE"
+              value={confirmPhrase}
+              onChange={(e) => setConfirmPhrase(e.target.value)}
+              className={
+                confirmPhrase.length > 0 && confirmPhrase !== "DEACTIVATE"
+                  ? "h-10 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 t-label text-[#991B1B] outline-none focus:ring-2 focus:ring-red-100"
+                  : inputBase
+              }
+            />
+          </div>
+        </div>
+      </Dialog>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { Tooltip } from "@/components/ui";
 
 export function ThemeToggle() {
   const [dark, setDark] = useState(false);
@@ -21,12 +22,15 @@ export function ThemeToggle() {
   }
 
   return (
-    <button
-      onClick={toggle}
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-    >
-      {dark ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
+    <Tooltip content="Theme">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-black/[0.04] hover:text-[#111] transition-colors"
+      >
+        {dark ? <Sun size={14} /> : <Moon size={14} />}
+      </button>
+    </Tooltip>
   );
 }

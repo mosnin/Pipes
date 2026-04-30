@@ -1,15 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Download, Filter } from "lucide-react";
 import {
   Button,
-  Card,
-  Chip,
+  CardShell,
+  CardHeader,
+  CardBody,
+  DataTable,
+  EmptyState,
+  HelpText,
+  PageHeader,
+  SearchInput,
+  SegmentedControl,
   Spinner,
-  Table,
+  StatusBadge,
   Tooltip,
-} from "@heroui/react";
-import { Download, Filter, RefreshCw, Search } from "lucide-react";
+  type DataTableColumn,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 // ── types ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +34,8 @@ interface AuditEvent {
   systemId?: string;
   metadata?: string;
 }
+
+type ActorFilter = "all" | "user" | "agent";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -49,47 +60,45 @@ function formatFull(iso: string): string {
   }
 }
 
-function actionColor(action: string): string {
-  if (action.startsWith("signal")) return "text-violet-500";
-  if (action.startsWith("governance")) return "text-amber-500";
-  if (action.startsWith("protocol")) return "text-sky-500";
-  if (action.startsWith("agent")) return "text-emerald-500";
-  return "text-default-600";
-}
-
 function getTransport(metadata?: string): string {
   try {
-    return JSON.parse(metadata ?? "{}").transport ?? "-";
+    const parsed = JSON.parse(metadata ?? "{}") as { transport?: string; ip?: string };
+    return parsed.transport ?? "-";
   } catch {
     return "-";
   }
 }
 
-function truncate(str: string, n = 32): string {
-  return str.length > n ? str.slice(0, n) + "…" : str;
+function getIp(metadata?: string): string {
+  try {
+    const parsed = JSON.parse(metadata ?? "{}") as { ip?: string };
+    return parsed.ip ?? "-";
+  } catch {
+    return "-";
+  }
+}
+
+function safeParseJson(value?: string): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 // ── page ──────────────────────────────────────────────────────────────────
 
 export default function AuditSettingsPage() {
-  // ── filter state (preserved) ──
-  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [events, setEvents]   = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [actorType, setActorType] = useState("");
-  const [actorId, setActorId] = useState("");
-  const [actionPrefix, setActionPrefix] = useState("");
-  const [systemId, setSystemId] = useState("");
-  const [transport, setTransport] = useState("");
-  const [outcome, setOutcome] = useState("");
-  const [since, setSince] = useState("");
-
-  // pending (debounced) text fields
-  const [pendingActorId, setPendingActorId] = useState("");
+  const [actorType, setActorType]         = useState<ActorFilter>("all");
+  const [actionPrefix, setActionPrefix]   = useState("");
   const [pendingActionPrefix, setPendingActionPrefix] = useState("");
-  const [pendingSystemId, setPendingSystemId] = useState("");
+  const [since, setSince]                 = useState("");
+  const [expandedId, setExpandedId]       = useState<string | null>(null);
 
-  // ── debounce (220 ms, preserved) ──
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function debounceCommit(setter: (v: string) => void, value: string) {
@@ -98,298 +107,289 @@ export default function AuditSettingsPage() {
   }
 
   // ── CSV export URL ──
-  const csvParams = new URLSearchParams({
-    actorType,
-    actorId,
-    actionPrefix,
-    systemId,
-    transport,
-    outcome,
-    since,
-    format: "csv",
-  });
-  // strip empty values
-  Array.from(csvParams.keys()).forEach((k) => {
-    if (!csvParams.get(k)) csvParams.delete(k);
-  });
-  const csvUrl = `/api/settings/audit?${csvParams.toString()}`;
+  const csvUrl = useMemo(() => {
+    const csvParams = new URLSearchParams({ format: "csv" });
+    if (actorType !== "all") csvParams.set("actorType", actorType);
+    if (actionPrefix)        csvParams.set("actionPrefix", actionPrefix);
+    if (since)               csvParams.set("since", since);
+    return `/api/settings/audit?${csvParams.toString()}`;
+  }, [actorType, actionPrefix, since]);
 
-  // ── fetch (preserved API call + query params) ──
+  // ── fetch ──
   const load = useCallback(() => {
     const query = new URLSearchParams();
-    if (actorType) query.set("actorType", actorType);
-    if (actorId) query.set("actorId", actorId);
-    if (actionPrefix) query.set("actionPrefix", actionPrefix);
-    if (systemId) query.set("systemId", systemId);
-    if (transport) query.set("transport", transport);
-    if (outcome) query.set("outcome", outcome);
-    if (since) query.set("since", since);
+    if (actorType !== "all") query.set("actorType", actorType);
+    if (actionPrefix)        query.set("actionPrefix", actionPrefix);
+    if (since)               query.set("since", since);
     setLoading(true);
     fetch(`/api/settings/audit?${query.toString()}`)
       .then((r) => r.json())
-      .then((d) => setEvents(d.data ?? []))
+      .then((d: { data?: AuditEvent[] }) => setEvents(d.data ?? []))
       .finally(() => setLoading(false));
-  }, [actorType, actorId, actionPrefix, outcome, since, systemId, transport]);
+  }, [actorType, actionPrefix, since]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // ── clear all filters ──
+  function outcomeTone(outcome: string): "success" | "danger" | "neutral" {
+    if (outcome === "success") return "success";
+    if (outcome === "failure") return "danger";
+    return "neutral";
+  }
+
+  const columns: DataTableColumn<AuditEvent>[] = [
+    {
+      key: "createdAt",
+      header: "Timestamp",
+      width: "168px",
+      render: (row) => (
+        <Tooltip content={formatFull(row.createdAt)}>
+          <span className="t-label text-[#3C3C43] cursor-default">
+            {relativeTime(row.createdAt)}
+          </span>
+        </Tooltip>
+      ),
+    },
+    {
+      key: "actor",
+      header: "Actor",
+      render: (row) => (
+        <div className="flex flex-col">
+          <span className="t-label text-[#111] truncate">{row.actorId}</span>
+          <span className="t-micro text-[#8E8E93]">{row.actorType}</span>
+        </div>
+      ),
+    },
+    {
+      key: "action",
+      header: "Event",
+      render: (row) => (
+        <span className="t-mono text-[12px] text-[#111]">{row.action}</span>
+      ),
+    },
+    {
+      key: "target",
+      header: "Resource",
+      render: (row) => (
+        <span className="t-label text-[#3C3C43] truncate">
+          {row.targetType}
+          {row.targetId != null ? `/${row.targetId}` : ""}
+        </span>
+      ),
+    },
+    {
+      key: "ip",
+      header: "IP",
+      width: "140px",
+      render: (row) => (
+        <span className="t-mono text-[12px] text-[#8E8E93]">{getIp(row.metadata)}</span>
+      ),
+    },
+    {
+      key: "outcome",
+      header: "Outcome",
+      width: "120px",
+      render: (row) => (
+        <StatusBadge tone={outcomeTone(row.outcome)}>{row.outcome}</StatusBadge>
+      ),
+    },
+    {
+      key: "expand",
+      header: "",
+      width: "40px",
+      align: "right",
+      render: (row) => (
+        <ChevronDown
+          size={14}
+          className={cn(
+            "text-[#8E8E93] transition-transform",
+            expandedId === row.id && "rotate-180",
+          )}
+        />
+      ),
+    },
+  ];
+
   function clearFilters() {
-    setActorType("");
-    setActorId("");
-    setPendingActorId("");
+    setActorType("all");
     setActionPrefix("");
     setPendingActionPrefix("");
-    setSystemId("");
-    setPendingSystemId("");
-    setTransport("");
-    setOutcome("");
     setSince("");
   }
 
-  // ── render ──
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-6">
-
-      {/* ── 1. Page header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Audit Log</h1>
-          <p className="mt-1 text-sm text-default-500">
-            Track all actions in your workspace
-          </p>
-        </div>
-        <a href={csvUrl} download className="inline-flex items-center gap-1.5 rounded-lg border border-default-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-default-50 transition-colors">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </a>
-      </div>
-
-      {/* ── 2. Filter toolbar ── */}
-      <Card className="shadow-sm">
-        <Card.Content className="space-y-3 p-4">
-
-          {/* row 1: Actor Type · Actor ID · Action prefix */}
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex items-center gap-1.5 self-center text-sm text-default-500">
-              <Filter className="h-4 w-4 shrink-0" />
-              <span className="font-medium">Filters</span>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Actor Type</label>
-              <select
-                value={actorType || "all"}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setActorType(v === "all" ? "" : v);
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                aria-label="Actor type filter"
-              >
-                <option value="all">All actors</option>
-                <option value="user">User</option>
-                <option value="agent">Agent</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Actor ID</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-default-400" />
-                <input type="text" placeholder="e.g. user_abc123" value={pendingActorId} onChange={(e) => { setPendingActorId(e.target.value); debounceCommit(setActorId, e.target.value); }} className="w-52 rounded-lg border border-slate-300 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Action prefix</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-default-400" />
-                <input type="text" placeholder="signal.*, governance.*" value={pendingActionPrefix} onChange={(e) => { setPendingActionPrefix(e.target.value); debounceCommit(setActionPrefix, e.target.value); }} className="w-52 rounded-lg border border-slate-300 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* row 2: System ID · Transport · Outcome */}
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">System ID</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-default-400" />
-                <input type="text" placeholder="e.g. sys_xyz" value={pendingSystemId} onChange={(e) => { setPendingSystemId(e.target.value); debounceCommit(setSystemId, e.target.value); }} className="w-52 rounded-lg border border-slate-300 bg-white pl-8 pr-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Transport</label>
-              <select
-                value={transport || "all"}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setTransport(v === "all" ? "" : v);
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                aria-label="Transport filter"
-              >
-                <option value="all">All transports</option>
-                <option value="rest">REST</option>
-                <option value="mcp">MCP</option>
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Outcome</label>
-              <select
-                value={outcome || "all"}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setOutcome(v === "all" ? "" : v);
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                aria-label="Outcome filter"
-              >
-                <option value="all">All outcomes</option>
-                <option value="success">Success</option>
-                <option value="failure">Failure</option>
-              </select>
-            </div>
-          </div>
-
-          {/* row 3: Since · Apply · Clear */}
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-default-500">Since</label>
-              <input type="datetime-local" value={since} onChange={(e) => setSince(e.target.value)} className="w-56 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <Button
-              size="sm"
-              variant="primary"
-              onPress={load}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Apply filters
+    <div className="space-y-6">
+      <PageHeader
+        title="Audit log"
+        subtitle="Every action taken in this workspace by users, agents, and integrations."
+        actions={
+          <a href={csvUrl} download>
+            <Button variant="outline" className="flex items-center gap-1.5">
+              <Download size={14} />
+              Export CSV
             </Button>
-            <Button size="sm" variant="secondary" onPress={clearFilters}>
-              Clear
-            </Button>
+          </a>
+        }
+      />
+
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-[#8E8E93]" />
+            <h2 className="t-title text-[#111]">Filters</h2>
           </div>
-
-        </Card.Content>
-      </Card>
-
-      {/* ── 3 / 4 / 5. Table · Loading · Empty ── */}
-      {loading ? (
-        /* 4. Loading state */
-        <div className="flex items-center justify-center py-20">
-          <Spinner />
-        </div>
-      ) : events.length === 0 ? (
-        /* 5. Empty state */
-        <div className="flex flex-col items-center justify-center gap-2 py-20 text-center">
-          <p className="text-base font-medium text-default-600">
-            No audit events found
+          <p className="mt-1 t-caption text-[#8E8E93]">
+            Refine the timeline by actor, event prefix, or date.
           </p>
-          <p className="text-sm text-default-400">
-            No audit events found with current filters
-          </p>
-        </div>
-      ) : (
-        /* 3. Audit log table */
-        <Table
-          aria-label="Audit log events"
-        >
-          <Table.Content>
-            <Table.Header>
-              <Table.Row>
-                <Table.Column>Time</Table.Column>
-                <Table.Column>Actor</Table.Column>
-                <Table.Column>Action</Table.Column>
-                <Table.Column>Target</Table.Column>
-                <Table.Column>Transport</Table.Column>
-                <Table.Column>Outcome</Table.Column>
-              </Table.Row>
-            </Table.Header>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="t-overline text-[#8E8E93]">Actor</span>
+              <SegmentedControl
+                size="sm"
+                value={actorType}
+                onChange={(id) => setActorType(id as ActorFilter)}
+                items={[
+                  { id: "all",   label: "All" },
+                  { id: "user",  label: "Users" },
+                  { id: "agent", label: "Agents" },
+                ]}
+              />
+            </div>
 
-            <Table.Body>
-              {events.map((ev) => {
-                const t = getTransport(ev.metadata);
-                const actor = truncate(`${ev.actorType}:${ev.actorId}`);
-                const target = truncate(
-                  `${ev.targetType}${ev.targetId ? "/" + ev.targetId : ""}`,
-                );
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[220px] max-w-sm">
+              <span className="t-overline text-[#8E8E93]">Event prefix</span>
+              <SearchInput
+                value={pendingActionPrefix}
+                onChange={(v) => {
+                  setPendingActionPrefix(v);
+                  debounceCommit(setActionPrefix, v);
+                }}
+                placeholder="signal., governance., protocol."
+              />
+            </div>
 
-                return (
-                  <Table.Row key={ev.id}>
+            <div className="flex flex-col gap-1.5 min-w-[220px]">
+              <span className="t-overline text-[#8E8E93]">Since</span>
+              <input
+                type="datetime-local"
+                value={since}
+                onChange={(e) => setSince(e.target.value)}
+                className="h-9 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              />
+            </div>
 
-                    {/* Time — relative + full-timestamp tooltip */}
-                    <Table.Cell className="whitespace-nowrap text-sm">
-                      <Tooltip>
-                        <Tooltip.Trigger><span className="cursor-default text-default-500">{relativeTime(ev.createdAt)}</span></Tooltip.Trigger>
-                        <Tooltip.Content>{formatFull(ev.createdAt)}</Tooltip.Content>
-                      </Tooltip>
-                    </Table.Cell>
+            <div className="flex items-end gap-2 ml-auto">
+              <Button variant="ghost" onPress={clearFilters}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </CardShell>
 
-                    {/* Actor — "type:id", truncated */}
-                    <Table.Cell className="max-w-[160px] truncate text-sm text-default-700">
-                      <Tooltip>
-                        <Tooltip.Trigger><span className="cursor-default">{actor}</span></Tooltip.Trigger>
-                        <Tooltip.Content>{ev.actorType}:{ev.actorId}</Tooltip.Content>
-                      </Tooltip>
-                    </Table.Cell>
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <h2 className="t-title text-[#111]">Events</h2>
+            <HelpText>
+              {loading ? "Loading..." : `${events.length} event${events.length === 1 ? "" : "s"}`}
+            </HelpText>
+          </div>
+        </CardHeader>
 
-                    {/* Action — monospace, color-coded by prefix */}
-                    <Table.Cell>
-                      <span
-                        className={`font-mono text-xs ${actionColor(ev.action)}`}
-                      >
-                        {ev.action}
-                      </span>
-                    </Table.Cell>
-
-                    {/* Target — "type/id", truncated */}
-                    <Table.Cell className="max-w-[160px] truncate text-sm text-default-600">
-                      <Tooltip>
-                        <Tooltip.Trigger><span className="cursor-default">{target}</span></Tooltip.Trigger>
-                        <Tooltip.Content>{ev.targetType}{ev.targetId ? "/" + ev.targetId : ""}</Tooltip.Content>
-                      </Tooltip>
-                    </Table.Cell>
-
-                    {/* Transport — Chip (rest=default, mcp=accent) */}
-                    <Table.Cell>
-                      {t === "-" ? (
-                        <span className="text-sm text-default-400">—</span>
-                      ) : (
-                        <Chip
-                          size="sm"
-                          variant="soft"
-                          color={t === "mcp" ? "accent" : "default"}
-                        >
-                          {t}
-                        </Chip>
+        {loading ? (
+          <CardBody>
+            <div className="flex items-center justify-center py-16">
+              <Spinner size="md" />
+            </div>
+          </CardBody>
+        ) : events.length === 0 ? (
+          <CardBody>
+            <EmptyState
+              title="No audit events"
+              description="No audit events match these filters. Try widening the date range or clearing filters."
+            />
+          </CardBody>
+        ) : (
+          <>
+            <DataTable
+              columns={columns}
+              rows={events}
+              onRowClick={(row) =>
+                setExpandedId((prev) => (prev === row.id ? null : row.id))
+              }
+            />
+            {expandedId != null && (
+              <div className="border-t border-[var(--color-line)] bg-[#FAFAFA] px-4 py-4">
+                {(() => {
+                  const ev = events.find((e) => e.id === expandedId);
+                  if (!ev) return null;
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="t-label font-semibold text-[#111]">
+                          Event details
+                        </h3>
+                        <span className="t-mono text-[12px] text-[#8E8E93]">
+                          {ev.id}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <DetailRow label="Timestamp" value={formatFull(ev.createdAt)} />
+                        <DetailRow label="Outcome" value={ev.outcome} />
+                        <DetailRow
+                          label="Actor"
+                          value={`${ev.actorType}:${ev.actorId}`}
+                        />
+                        <DetailRow
+                          label="Target"
+                          value={`${ev.targetType}${ev.targetId ? "/" + ev.targetId : ""}`}
+                        />
+                        <DetailRow label="Transport" value={getTransport(ev.metadata)} />
+                        <DetailRow label="IP" value={getIp(ev.metadata)} />
+                        {ev.systemId != null && (
+                          <DetailRow label="System" value={ev.systemId} />
+                        )}
+                      </div>
+                      {ev.metadata && (
+                        <div>
+                          <div className="t-overline text-[#8E8E93] mb-1">Metadata</div>
+                          <pre className="t-mono text-[11px] text-[#111] bg-white border border-[var(--color-line)] rounded-md p-3 overflow-x-auto">
+                            {JSON.stringify(safeParseJson(ev.metadata), null, 2)}
+                          </pre>
+                        </div>
                       )}
-                    </Table.Cell>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            <div className="px-4 py-3 border-t border-[var(--color-line)] flex items-center justify-between">
+              <HelpText>Click a row for full event detail.</HelpText>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" isDisabled>
+                  Previous
+                </Button>
+                <Button variant="ghost" isDisabled>
+                  Next
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </CardShell>
+    </div>
+  );
+}
 
-                    {/* Outcome — Chip (success=success, failure=danger) */}
-                    <Table.Cell>
-                      <Chip
-                        size="sm"
-                        variant="soft"
-                        color={ev.outcome === "success" ? "success" : "danger"}
-                      >
-                        {ev.outcome}
-                      </Chip>
-                    </Table.Cell>
-
-                  </Table.Row>
-                );
-              })}
-            </Table.Body>
-          </Table.Content>
-        </Table>
-      )}
-
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="t-overline text-[#8E8E93]">{label}</span>
+      <span className="t-label text-[#111] truncate">{value}</span>
     </div>
   );
 }

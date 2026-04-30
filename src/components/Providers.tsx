@@ -13,7 +13,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
       {inner}
-      <Toaster position="bottom-right" richColors closeButton />
+      <Toaster
+        position="top-right"
+        expand
+        closeButton
+        richColors
+        toastOptions={{
+          classNames: {
+            toast:
+              "bg-white border border-black/[0.08] shadow-md-token text-[#111] rounded-[12px]",
+            title: "t-label font-semibold text-[#111]",
+            description: "t-caption text-[#3C3C43]",
+            actionButton: "t-label text-[#111]",
+            cancelButton: "t-label text-[#3C3C43]",
+          },
+        }}
+      />
     </>
   );
 }

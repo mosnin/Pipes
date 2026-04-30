@@ -2,37 +2,25 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Avatar } from "@heroui/react";
+import { Mail, Trash2, UserPlus, Users } from "lucide-react";
 import {
-  Avatar,
   Button,
-  Card,
-  Chip,
-  ListBox,
-  ListBoxItem,
-  ModalBackdrop,
-  ModalBody,
-  ModalContainer,
-  ModalDialog,
-  ModalFooter,
-  ModalHeader,
-  ModalRoot,
-  SelectIndicator,
-  SelectPopover,
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
+  CardShell,
+  CardHeader,
+  CardBody,
+  DataTable,
+  Dialog,
+  EmptyState,
+  HelpText,
+  PageHeader,
+  SearchInput,
+  SegmentedControl,
   Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableContent,
-  TableHeader,
-  TableRow,
-} from "@heroui/react";
-import { useOverlayState } from "@heroui/react";
-import { Mail, UserPlus, Users } from "lucide-react";
-import { SettingsShell } from "@/components/settings/SettingsShell";
+  StatusBadge,
+  type DataTableColumn,
+  type StatusBadgeTone,
+} from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,6 +33,8 @@ interface Member {
   name?: string;
   email?: string;
   role: Role;
+  joinedAt?: string;
+  lastActiveAt?: string;
 }
 
 interface Invite {
@@ -58,26 +48,25 @@ interface Invite {
 interface CollaboratorsData {
   members: Member[];
   invites: Invite[];
+  teams?: Array<{ id: string; name: string; memberCount: number }>;
 }
 
+type RowMember = Member & { id: string };
+type RowInvite = Invite & { id: string };
+
 // ---------------------------------------------------------------------------
-// Constants
+// Constants & helpers
 // ---------------------------------------------------------------------------
 
 const ROLES: Role[] = ["Viewer", "Commenter", "Editor", "Admin"];
 
-// HeroUI v3 chip colors: "accent" | "danger" | "default" | "success" | "warning"
-const ROLE_CHIP_COLOR: Record<Role, "warning" | "accent" | "default" | "success"> = {
+const ROLE_TONE: Record<Role, StatusBadgeTone> = {
+  Owner:     "info",
   Admin:     "warning",
-  Editor:    "accent",
-  Commenter: "default",
-  Viewer:    "default",
-  Owner:     "success",
+  Editor:    "info",
+  Commenter: "neutral",
+  Viewer:    "neutral",
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getInitials(member: Member): string {
   if (member.name) {
@@ -92,71 +81,31 @@ function getInitials(member: Member): string {
   return label.slice(0, 2).toUpperCase();
 }
 
-function formatExpiry(expiresAt?: string): string {
-  if (!expiresAt) return "—";
+function formatDate(value?: string): string {
+  if (!value) return "-";
   try {
-    return new Date(expiresAt).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
   } catch {
-    return expiresAt;
+    return value;
   }
 }
 
-// ---------------------------------------------------------------------------
-// RoleSelect — compound HeroUI v3 Select for picking a Role
-// ---------------------------------------------------------------------------
-
-interface RoleSelectProps {
-  value: Role;
-  onChange: (role: Role) => void;
-  options?: Role[];
-  label?: string;
-  className?: string;
-  size?: "sm" | "md" | "lg";
-}
-
-function RoleSelect({
-  value,
-  onChange,
-  options = ROLES,
-  label = "Select role",
-  className,
-}: RoleSelectProps) {
-  return (
-    <SelectRoot<{ id: Role; label: Role }>
-      aria-label={label}
-      selectedKey={value}
-      onSelectionChange={(key) => {
-        if (key) onChange(key as Role);
-      }}
-      className={className}
-    >
-      <SelectTrigger className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 data-[placeholder]:text-slate-400">
-        <SelectValue className="flex-1 text-left" />
-        <SelectIndicator className="text-slate-400 shrink-0" />
-      </SelectTrigger>
-      <SelectPopover>
-        <ListBox
-          className="rounded-lg border border-slate-200 bg-white shadow-lg py-1 outline-none"
-          aria-label={label}
-        >
-          {options.map((r) => (
-            <ListBoxItem
-              key={r}
-              id={r}
-              textValue={r}
-              className="px-3 py-1.5 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 outline-none data-[focused]:bg-indigo-50 data-[focused]:text-indigo-700 data-[selected]:font-medium data-[selected]:text-indigo-700"
-            >
-              {r}
-            </ListBoxItem>
-          ))}
-        </ListBox>
-      </SelectPopover>
-    </SelectRoot>
-  );
+function relativeTime(iso?: string): string {
+  if (!iso) return "-";
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const abs = Math.abs(diff);
+    if (abs < 60_000) return "just now";
+    if (abs < 3_600_000) return `${Math.floor(abs / 60_000)} min ago`;
+    if (abs < 86_400_000) return `${Math.floor(abs / 3_600_000)} hr ago`;
+    return `${Math.floor(abs / 86_400_000)} d ago`;
+  } catch {
+    return iso;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -164,85 +113,51 @@ function RoleSelect({
 // ---------------------------------------------------------------------------
 
 export default function CollaborationSettingsPage() {
-  // ── Data ─────────────────────────────────────────────────────────────────
   const [rows, setRows] = useState<CollaboratorsData>({ members: [], invites: [] });
-
-  // ── Invite form ──────────────────────────────────────────────────────────
-  const [email, setEmail]               = useState("");
-  const [inviteRole, setInviteRole]     = useState<Role>("Viewer");
-  const [inviteLoading, setInviteLoading] = useState(false);
-  const [emailTouched, setEmailTouched] = useState(false);
-
-  const emailError = emailTouched && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-    ? "Enter a valid email address"
-    : emailTouched && !email.trim()
-    ? "Email is required"
-    : null;
-
-  // ── Search / filter ──────────────────────────────────────────────────────
   const [query, setQuery]           = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [loading, setLoading]       = useState(true);
 
-  // ── Role-change modal ────────────────────────────────────────────────────
-  const [pendingChange, setPendingChange] = useState<{
-    member: Member;
-    newRole: Role;
-  } | null>(null);
-  const [changeLoading, setChangeLoading] = useState(false);
+  // ── Invite dialog ─────────────────────────────────────────────────────────
+  const [inviteOpen, setInviteOpen]         = useState(false);
+  const [email, setEmail]                   = useState("");
+  const [inviteRole, setInviteRole]         = useState<Role>("Viewer");
+  const [inviteLoading, setInviteLoading]   = useState(false);
+  const [emailTouched, setEmailTouched]     = useState(false);
 
-  // When the modal closes for any reason (backdrop click, Escape, Cancel),
-  // reset the row select back to the member's current role.
-  const modalState = useOverlayState({
-    onOpenChange(isOpen) {
-      if (!isOpen && pendingChange) {
-        setRowRoles((prev) => ({
-          ...prev,
-          [pendingChange.member.userId]: pendingChange.member.role,
-        }));
-        setPendingChange(null);
-      }
-    },
-  });
+  const emailError =
+    emailTouched && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ? "Enter a valid email address"
+      : emailTouched && !email.trim()
+      ? "Email is required"
+      : null;
 
-  // ── Cancel-invite loading map ─────────────────────────────────────────────
+  // ── Remove member dialog ──────────────────────────────────────────────────
+  const [removeTarget, setRemoveTarget]     = useState<Member | null>(null);
+  const [removeLoading, setRemoveLoading]   = useState(false);
+
+  // ── Cancel-invite tracking ────────────────────────────────────────────────
   const [cancellingTokens, setCancellingTokens] = useState<Set<string>>(new Set());
-
-  // ── Per-row role select state ─────────────────────────────────────────────
-  const [rowRoles, setRowRoles] = useState<Record<string, Role>>({});
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(() => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
+    setLoading(true);
     fetch(`/api/workspace/collaborators?${params.toString()}`)
       .then((r) => r.json())
-      .then((d) => setRows(d.data ?? { members: [], invites: [] }))
-      .catch(() => {});
+      .then((d: { data?: CollaboratorsData }) =>
+        setRows(d.data ?? { members: [], invites: [] }),
+      )
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [query, roleFilter]);
 
-  // Initial load
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Debounced reload on query / filter change
   useEffect(() => {
     const timer = setTimeout(() => load(), 220);
     return () => clearTimeout(timer);
-  }, [query, roleFilter, load]);
-
-  // Sync rowRoles whenever the members list changes
-  useEffect(() => {
-    setRowRoles((prev) => {
-      const next: Record<string, Role> = {};
-      for (const m of rows.members) {
-        next[m.userId] = prev[m.userId] ?? m.role;
-      }
-      return next;
-    });
-  }, [rows.members]);
+  }, [load]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const pendingInvites = useMemo(
@@ -250,7 +165,17 @@ export default function CollaborationSettingsPage() {
     [rows.invites],
   );
 
-  // ── Invite submit ─────────────────────────────────────────────────────────
+  const memberRows: RowMember[] = useMemo(
+    () => rows.members.map((m) => ({ ...m, id: m.userId })),
+    [rows.members],
+  );
+
+  const inviteRows: RowInvite[] = useMemo(
+    () => pendingInvites.map((i) => ({ ...i, id: i.token })),
+    [pendingInvites],
+  );
+
+  // ── Invite ────────────────────────────────────────────────────────────────
   async function handleSendInvite() {
     setEmailTouched(true);
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
@@ -263,12 +188,13 @@ export default function CollaborationSettingsPage() {
         body: JSON.stringify({ email: target, role: inviteRole }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       setEmail("");
       setInviteRole("Viewer");
       setEmailTouched(false);
+      setInviteOpen(false);
       load();
       toast.success(`Invite sent to ${target}`);
     } catch (err: unknown) {
@@ -278,44 +204,32 @@ export default function CollaborationSettingsPage() {
     }
   }
 
-  // ── Role change ───────────────────────────────────────────────────────────
-  function requestRoleChange(member: Member, newRole: Role) {
-    setPendingChange({ member, newRole });
-    modalState.open();
-  }
-
-  async function confirmRoleChange() {
-    if (!pendingChange) return;
-    setChangeLoading(true);
-    const { member, newRole } = pendingChange;
+  // ── Remove member ─────────────────────────────────────────────────────────
+  async function confirmRemove() {
+    if (!removeTarget) return;
+    setRemoveLoading(true);
     try {
       const res = await fetch("/api/workspace/collaborators", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          userId: member.userId,
-          role: newRole,
+          userId: removeTarget.userId,
+          role: "Viewer",
+          remove: true,
         }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       load();
-      toast.success(`Role updated to ${newRole}`);
+      toast.success("Member removed");
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to update role.");
+      toast.error(err instanceof Error ? err.message : "Failed to remove member.");
     } finally {
-      setChangeLoading(false);
-      // Clear pendingChange before closing so onOpenChange doesn't reset the row role
-      setPendingChange(null);
-      modalState.close();
+      setRemoveLoading(false);
+      setRemoveTarget(null);
     }
-  }
-
-  function cancelRoleChange() {
-    // Closing the modal triggers onOpenChange which resets rowRoles and pendingChange
-    modalState.close();
   }
 
   // ── Cancel invite ─────────────────────────────────────────────────────────
@@ -324,8 +238,8 @@ export default function CollaborationSettingsPage() {
     try {
       const res = await fetch(`/api/invites/${token}/cancel`, { method: "POST" });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string })?.error ?? `HTTP ${res.status}`);
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       load();
       toast.success("Invite cancelled");
@@ -340,382 +254,382 @@ export default function CollaborationSettingsPage() {
     }
   }
 
+  // ── Columns ───────────────────────────────────────────────────────────────
+  const memberColumns: DataTableColumn<RowMember>[] = [
+    {
+      key: "name",
+      header: "Member",
+      render: (row) => (
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar size="sm" className="shrink-0">
+            <Avatar.Fallback>{getInitials(row)}</Avatar.Fallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="t-label font-medium text-[#111] truncate">
+              {row.name ?? row.email ?? row.userId}
+            </div>
+            {row.name && row.email && (
+              <div className="t-caption text-[#8E8E93] truncate">{row.email}</div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "email",
+      header: "Email",
+      render: (row) => (
+        <span className="t-label text-[#3C3C43] truncate">{row.email ?? "-"}</span>
+      ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      width: "120px",
+      render: (row) => (
+        <StatusBadge tone={ROLE_TONE[row.role]}>{row.role}</StatusBadge>
+      ),
+    },
+    {
+      key: "joinedAt",
+      header: "Joined",
+      width: "120px",
+      render: (row) => (
+        <span className="t-caption text-[#8E8E93]">{formatDate(row.joinedAt)}</span>
+      ),
+    },
+    {
+      key: "lastActiveAt",
+      header: "Last active",
+      width: "120px",
+      render: (row) => (
+        <span className="t-caption text-[#8E8E93]">{relativeTime(row.lastActiveAt)}</span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      width: "80px",
+      align: "right",
+      render: (row) =>
+        row.role === "Owner" ? (
+          <span className="t-caption text-[#C7C7CC]">-</span>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            onPress={() => setRemoveTarget(row)}
+            className="text-[#991B1B] hover:bg-[#FEF2F2]"
+            aria-label={`Remove ${row.name ?? row.email ?? row.userId}`}
+          >
+            <Trash2 size={13} />
+          </Button>
+        ),
+    },
+  ];
+
+  const inviteColumns: DataTableColumn<RowInvite>[] = [
+    {
+      key: "email",
+      header: "Email",
+      render: (row) => <span className="t-label text-[#111]">{row.email}</span>,
+    },
+    {
+      key: "role",
+      header: "Role",
+      width: "120px",
+      render: (row) => <StatusBadge tone={ROLE_TONE[row.role]}>{row.role}</StatusBadge>,
+    },
+    {
+      key: "expiresAt",
+      header: "Expires",
+      width: "140px",
+      render: (row) => (
+        <span className="t-caption text-[#8E8E93]">{formatDate(row.expiresAt)}</span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      width: "120px",
+      align: "right",
+      render: (row) => (
+        <Button
+          size="sm"
+          variant="danger-soft"
+          isDisabled={cancellingTokens.has(row.token)}
+          onPress={() => void handleCancelInvite(row.token)}
+        >
+          {cancellingTokens.has(row.token) ? <Spinner size="sm" /> : null}
+          Cancel
+        </Button>
+      ),
+    },
+  ];
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <SettingsShell>
-      <div className="flex flex-col gap-6 max-w-4xl">
-
-        {/* ── Page Header ──────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Team &amp; Collaboration</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Manage members, roles, and invitations for this workspace.
-            </p>
-          </div>
-          <Chip
-            color="default"
-            variant="soft"
-            size="sm"
-            className="ml-auto shrink-0 flex items-center gap-1"
+    <div className="space-y-8">
+      <PageHeader
+        title="Members & teams"
+        subtitle="Manage who can view, comment on, and edit this workspace."
+        actions={
+          <Button
+            variant="primary"
+            onPress={() => setInviteOpen(true)}
+            className="flex items-center gap-1.5"
           >
-            <Users size={13} className="inline-block" />
-            {" "}{rows.members.length} member{rows.members.length !== 1 ? "s" : ""}
-          </Chip>
-        </div>
+            <UserPlus size={14} />
+            Invite member
+          </Button>
+        }
+      />
 
-        {/* ── Invite Member ─────────────────────────────────────────────────── */}
-        <Card className="border border-slate-200 shadow-sm rounded-xl bg-white">
-          <Card.Content className="flex flex-col gap-4 p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <UserPlus size={16} className="text-slate-500" />
-              <h2 className="text-sm font-semibold text-slate-700">Invite a team member</h2>
+      {/* ── Members ────────────────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="t-title text-[#111]">Members</h2>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                {rows.members.length} active member{rows.members.length === 1 ? "" : "s"} in this workspace.
+              </p>
             </div>
+          </div>
+        </CardHeader>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Email input — HeroUI v3 Input wraps a native <input> */}
-              <div className="flex-1">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                    <Mail size={15} />
-                  </span>
-                  <input
-                    aria-label="Invite collaborator email"
-                    type="email"
-                    placeholder="name@company.com"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setEmailTouched(true); }}
-                    onBlur={() => setEmailTouched(true)}
-                    onKeyDown={(e) => e.key === "Enter" && void handleSendInvite()}
-                    className={`w-full rounded-lg border pl-9 pr-3 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:ring-2 ${emailError ? "border-red-400 bg-red-50 focus:border-red-400 focus:ring-red-100" : "border-slate-200 bg-white focus:border-indigo-400 focus:ring-indigo-100"}`}
-                  />
-                </div>
-                {emailError && (
-                  <p className="text-xs text-red-500 mt-1">{emailError}</p>
-                )}
-              </div>
-
-              <RoleSelect
-                label="Invite role"
-                value={inviteRole}
-                onChange={setInviteRole}
-                className="w-40 shrink-0"
-              />
-
-              <Button
-                variant="primary"
-                isDisabled={inviteLoading}
-                onPress={() => void handleSendInvite()}
-                className="shrink-0 flex items-center gap-1.5"
-              >
-                {inviteLoading ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <UserPlus size={15} />
-                )}
-                Send invite
-              </Button>
-            </div>
-          </Card.Content>
-        </Card>
-
-        {/* ── Search + Filter ───────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <input
-              aria-label="Search members"
-              type="text"
-              placeholder="Search by name or email…"
+        <CardBody className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchInput
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              onChange={setQuery}
+              placeholder="Search by name or email"
+              className="max-w-xs"
             />
-            {query && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={() => setQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                ×
-              </button>
+            <SegmentedControl
+              size="sm"
+              value={roleFilter}
+              onChange={setRoleFilter}
+              items={[
+                { id: "all",       label: "All" },
+                { id: "Owner",     label: "Owner" },
+                { id: "Admin",     label: "Admin" },
+                { id: "Editor",    label: "Editor" },
+                { id: "Commenter", label: "Commenter" },
+                { id: "Viewer",    label: "Viewer" },
+              ]}
+            />
+          </div>
+        </CardBody>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Spinner size="md" />
+          </div>
+        ) : memberRows.length === 0 ? (
+          <CardBody>
+            <EmptyState
+              title="No members"
+              description="Invite teammates to collaborate on systems."
+              action={
+                <Button
+                  variant="primary"
+                  onPress={() => setInviteOpen(true)}
+                  className="flex items-center gap-1.5"
+                >
+                  <UserPlus size={14} />
+                  Invite member
+                </Button>
+              }
+            />
+          </CardBody>
+        ) : (
+          <DataTable columns={memberColumns} rows={memberRows} />
+        )}
+      </CardShell>
+
+      {/* ── Pending invites ───────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="t-title text-[#111] flex items-center gap-2">
+                <Mail size={14} className="text-[#8E8E93]" />
+                Pending invites
+              </h2>
+              <p className="mt-1 t-caption text-[#8E8E93]">
+                Invites awaiting acceptance.
+              </p>
+            </div>
+            {inviteRows.length > 0 && (
+              <StatusBadge tone="warning">{inviteRows.length} pending</StatusBadge>
             )}
           </div>
+        </CardHeader>
+        {inviteRows.length === 0 ? (
+          <CardBody>
+            <EmptyState
+              title="No pending invites"
+              description="Invitations you send will appear here until accepted or cancelled."
+            />
+          </CardBody>
+        ) : (
+          <DataTable columns={inviteColumns} rows={inviteRows} />
+        )}
+      </CardShell>
 
-          {/* Role filter */}
-          <SelectRoot<{ id: string; label: string }>
-            aria-label="Filter by role"
-            selectedKey={roleFilter}
-            onSelectionChange={(key) => {
-              if (key) setRoleFilter(key as string);
-            }}
-            className="w-44 shrink-0"
-          >
-            <SelectTrigger className="flex items-center gap-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none hover:border-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-              <SelectValue className="flex-1 text-left" />
-              <SelectIndicator className="text-slate-400 shrink-0" />
-            </SelectTrigger>
-            <SelectPopover>
-              <ListBox
-                className="rounded-lg border border-slate-200 bg-white shadow-lg py-1 outline-none"
-                aria-label="Filter by role"
-              >
-                {(["all", "Owner", ...ROLES] as string[]).map((r) => (
-                  <ListBoxItem
-                    key={r}
-                    id={r}
-                    textValue={r === "all" ? "All Roles" : r}
-                    className="px-3 py-1.5 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 outline-none data-[focused]:bg-indigo-50 data-[focused]:text-indigo-700 data-[selected]:font-medium data-[selected]:text-indigo-700"
-                  >
-                    {r === "all" ? "All Roles" : r}
-                  </ListBoxItem>
-                ))}
-              </ListBox>
-            </SelectPopover>
-          </SelectRoot>
+      {/* ── Teams ─────────────────────────────────────────────────────────── */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center gap-2">
+            <Users size={14} className="text-[#8E8E93]" />
+            <h2 className="t-title text-[#111]">Teams</h2>
+          </div>
+          <p className="mt-1 t-caption text-[#8E8E93]">
+            Group members for shared access patterns.
+          </p>
+        </CardHeader>
+        <CardBody>
+          {rows.teams && rows.teams.length > 0 ? (
+            <ul className="divide-y divide-[var(--color-line)]">
+              {rows.teams.map((team) => (
+                <li
+                  key={team.id}
+                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                >
+                  <div>
+                    <div className="t-label font-medium text-[#111]">{team.name}</div>
+                    <HelpText>
+                      {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
+                    </HelpText>
+                  </div>
+                  <Button variant="ghost">Manage</Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              title="No teams yet"
+              description="Teams let you grant access to groups instead of individuals. Coming soon."
+            />
+          )}
+        </CardBody>
+      </CardShell>
+
+      {/* ── Invite dialog ─────────────────────────────────────────────────── */}
+      <Dialog
+        open={inviteOpen}
+        onOpenChange={(o) => {
+          setInviteOpen(o);
+          if (!o) {
+            setEmail("");
+            setEmailTouched(false);
+            setInviteRole("Viewer");
+          }
+        }}
+        title="Invite a member"
+        description="Send an invite to add a new member to this workspace."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onPress={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              isDisabled={inviteLoading}
+              onPress={() => void handleSendInvite()}
+              className="flex items-center gap-1.5"
+            >
+              {inviteLoading ? <Spinner size="sm" /> : <UserPlus size={14} />}
+              Send invite
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="invite-email" className="t-label font-medium text-[#111]">
+              Email address
+            </label>
+            <input
+              id="invite-email"
+              type="email"
+              placeholder="name@company.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailTouched(true);
+              }}
+              onBlur={() => setEmailTouched(true)}
+              onKeyDown={(e) => e.key === "Enter" && void handleSendInvite()}
+              className={
+                emailError
+                  ? "w-full h-10 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 t-label text-[#991B1B] outline-none focus:ring-2 focus:ring-red-100"
+                  : "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              }
+            />
+            {emailError && <HelpText tone="error">{emailError}</HelpText>}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="invite-role" className="t-label font-medium text-[#111]">
+              Role
+            </label>
+            <select
+              id="invite-role"
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as Role)}
+              className="w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <HelpText>You can change a member&apos;s role at any time.</HelpText>
+          </div>
         </div>
+      </Dialog>
 
-        {/* ── Active Members ────────────────────────────────────────────────── */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-            <Users size={16} className="text-slate-400" />
-            Active Members
-          </h2>
-
-          {rows.members.length === 0 ? (
-            <Card className="border border-slate-200 shadow-sm rounded-xl bg-white">
-              <Card.Content className="py-10 flex flex-col items-center text-center gap-2">
-                <Users size={32} className="text-slate-300" />
-                <p className="text-sm font-medium text-slate-500">No members yet</p>
-                <p className="text-xs text-slate-400">Invite teammates to collaborate on systems.</p>
-              </Card.Content>
-            </Card>
-          ) : (
-            <Card className="border border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden">
-              <Card.Content className="p-0 overflow-hidden">
-                <Table className="w-full">
-                  <Table.Content>
-                    <TableHeader className="bg-slate-50">
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5">
-                        MEMBER
-                      </TableColumn>
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5">
-                        ROLE
-                      </TableColumn>
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5 w-72">
-                        CHANGE ROLE
-                      </TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.members.map((m) => {
-                        const isOwner        = m.role === "Owner";
-                        const displayName    = m.name ?? m.email ?? m.userId;
-                        const currentRowRole = rowRoles[m.userId] ?? m.role;
-
-                        return (
-                          <TableRow key={m.userId} className="border-t border-slate-100">
-                            {/* Member info */}
-                            <TableCell className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <Avatar
-                                  size="sm"
-                                  className="shrink-0"
-                                >
-                                  <Avatar.Fallback>
-                                    {getInitials(m)}
-                                  </Avatar.Fallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-slate-800 truncate">
-                                    {displayName}
-                                  </p>
-                                  {m.email && m.name && (
-                                    <p className="text-xs text-slate-400 truncate">{m.email}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-
-                            {/* Current role chip */}
-                            <TableCell className="px-4 py-3">
-                              <Chip
-                                color={ROLE_CHIP_COLOR[m.role] ?? "default"}
-                                variant="soft"
-                                size="sm"
-                              >
-                                {m.role}
-                              </Chip>
-                            </TableCell>
-
-                            {/* Role select + confirm button */}
-                            <TableCell className="px-4 py-3">
-                              {isOwner ? (
-                                <span className="text-xs text-slate-400 italic">
-                                  Owner role is fixed
-                                </span>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <RoleSelect
-                                    label={`Change role for ${displayName}`}
-                                    value={currentRowRole}
-                                    onChange={(val) =>
-                                      setRowRoles((prev) => ({ ...prev, [m.userId]: val }))
-                                    }
-                                    className="w-36"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    isDisabled={currentRowRole === m.role}
-                                    onPress={() => requestRoleChange(m, currentRowRole)}
-                                  >
-                                    Change role
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table.Content>
-                </Table>
-              </Card.Content>
-            </Card>
-          )}
-        </section>
-
-        {/* ── Pending Invites ───────────────────────────────────────────────── */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-            <Mail size={16} className="text-slate-400" />
-            Pending Invites
-            {pendingInvites.length > 0 && (
-              <Chip color="warning" variant="soft" size="sm">
-                {pendingInvites.length}
-              </Chip>
-            )}
-          </h2>
-
-          {pendingInvites.length === 0 ? (
-            <Card className="border border-slate-200 shadow-sm rounded-xl bg-white">
-              <Card.Content className="py-10 flex flex-col items-center text-center gap-2">
-                <Mail size={32} className="text-slate-300" />
-                <p className="text-sm font-medium text-slate-500">No pending invites</p>
-                <p className="text-xs text-slate-400">New invites will appear here.</p>
-              </Card.Content>
-            </Card>
-          ) : (
-            <Card className="border border-slate-200 shadow-sm rounded-xl bg-white overflow-hidden">
-              <Card.Content className="p-0 overflow-hidden">
-                <Table className="w-full">
-                  <Table.Content>
-                    <TableHeader className="bg-slate-50">
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5">
-                        EMAIL
-                      </TableColumn>
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5">
-                        ROLE
-                      </TableColumn>
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5">
-                        EXPIRES
-                      </TableColumn>
-                      <TableColumn className="text-xs font-semibold text-slate-500 px-4 py-2.5 w-28">
-                        ACTION
-                      </TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingInvites.map((inv) => (
-                        <TableRow key={inv.token} className="border-t border-slate-100">
-                          <TableCell className="px-4 py-3">
-                            <span className="text-sm text-slate-700">{inv.email}</span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Chip
-                              color={ROLE_CHIP_COLOR[inv.role] ?? "default"}
-                              variant="soft"
-                              size="sm"
-                            >
-                              {inv.role}
-                            </Chip>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <span className="text-xs text-slate-500">
-                              {formatExpiry(inv.expiresAt)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="px-4 py-3">
-                            <Button
-                              size="sm"
-                              variant="danger-soft"
-                              isDisabled={cancellingTokens.has(inv.token)}
-                              onPress={() => void handleCancelInvite(inv.token)}
-                              className="flex items-center gap-1"
-                            >
-                              {cancellingTokens.has(inv.token) && <Spinner size="sm" />}
-                              Cancel
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table.Content>
-                </Table>
-              </Card.Content>
-            </Card>
-          )}
-        </section>
-      </div>
-
-      {/* ── Role-change confirmation modal ────────────────────────────────── */}
-      <ModalRoot state={modalState}>
-        <ModalBackdrop isDismissable />
-        <ModalContainer size="sm" placement="center">
-          <ModalDialog>
-            <ModalHeader className="text-base font-semibold text-slate-900">
-              Confirm role change
-            </ModalHeader>
-
-            <ModalBody>
-              {pendingChange && (
-                <p className="text-sm text-slate-700">
-                  Are you sure you want to change{" "}
-                  <span className="font-medium">
-                    {pendingChange.member.name ??
-                      pendingChange.member.email ??
-                      pendingChange.member.userId}
-                  </span>
-                  &apos;s role to{" "}
-                  <Chip
-                    color={ROLE_CHIP_COLOR[pendingChange.newRole] ?? "default"}
-                    variant="soft"
-                    size="sm"
-                  >
-                    {pendingChange.newRole}
-                  </Chip>
-                  ?
-                </p>
-              )}
-            </ModalBody>
-
-            <ModalFooter className="flex justify-end gap-2">
-              <Button variant="secondary" onPress={cancelRoleChange}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                isDisabled={changeLoading}
-                onPress={() => void confirmRoleChange()}
-                className="flex items-center gap-1.5"
-              >
-                {changeLoading && <Spinner size="sm" />}
-                Confirm
-              </Button>
-            </ModalFooter>
-          </ModalDialog>
-        </ModalContainer>
-      </ModalRoot>
-    </SettingsShell>
+      {/* ── Remove dialog ─────────────────────────────────────────────────── */}
+      <Dialog
+        open={removeTarget != null}
+        onOpenChange={(o) => {
+          if (!o) setRemoveTarget(null);
+        }}
+        title="Remove member?"
+        description="This member will lose access to this workspace immediately."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onPress={() => setRemoveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              isDisabled={removeLoading}
+              onPress={() => void confirmRemove()}
+              className="flex items-center gap-1.5"
+            >
+              {removeLoading ? <Spinner size="sm" /> : <Trash2 size={14} />}
+              Remove
+            </Button>
+          </>
+        }
+      >
+        {removeTarget && (
+          <p className="t-label text-[#3C3C43]">
+            Remove{" "}
+            <span className="font-semibold text-[#111]">
+              {removeTarget.name ?? removeTarget.email ?? removeTarget.userId}
+            </span>{" "}
+            from this workspace?
+          </p>
+        )}
+      </Dialog>
+    </div>
   );
 }
+

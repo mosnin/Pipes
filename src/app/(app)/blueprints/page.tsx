@@ -1,20 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Chip, Spinner } from "@heroui/react";
-import { Layers, Copy, Download, Plus } from "lucide-react";
+import { Layers, Plus, ArrowRight, Network, GitMerge } from "lucide-react";
+import {
+  Button,
+  Spinner,
+  Badge,
+  Breadcrumbs,
+  PageHeader,
+  CardShell,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Toolbar,
+  SegmentedControl,
+  EmptyState,
+  StatusBadge,
+  Select,
+  HelpText,
+} from "@/components/ui";
 import type { SubsystemBlueprint } from "@/domain/subsystem_blueprint/types";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type System = { id: string; name: string };
+
+type LibraryRowLite = {
+  id: string;
+  name: string;
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function formatDate(value: string): string {
   try {
-    return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    return new Date(value).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   } catch {
     return value;
   }
 }
 
-type System = { id: string; name: string };
+const ALL_TAG = "__all__";
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function BlueprintsPage() {
   const [blueprints, setBlueprints] = useState<SubsystemBlueprint[]>([]);
@@ -22,8 +61,10 @@ export default function BlueprintsPage() {
   const [loading, setLoading] = useState(true);
   const [inserting, setInserting] = useState<string | null>(null);
   const [selectedSystem, setSelectedSystem] = useState<Record<string, string>>({});
+  const [tagFilter, setTagFilter] = useState<string>(ALL_TAG);
 
   const load = async () => {
+    setLoading(true);
     try {
       const [bpRes, sysRes] = await Promise.all([
         fetch("/api/blueprints"),
@@ -31,8 +72,9 @@ export default function BlueprintsPage() {
       ]);
       const bpData = await bpRes.json();
       const sysData = await sysRes.json();
-      setBlueprints(bpData.data ?? []);
-      setSystems((sysData.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
+      setBlueprints((bpData.data as SubsystemBlueprint[]) ?? []);
+      const rawRows: LibraryRowLite[] = sysData.data?.rows ?? [];
+      setSystems(rawRows.map((s) => ({ id: s.id, name: s.name })));
     } catch {
       toast.error("Failed to load blueprints");
     } finally {
@@ -40,7 +82,9 @@ export default function BlueprintsPage() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const handleInstantiate = async (blueprintId: string) => {
     const targetSystemId = selectedSystem[blueprintId];
@@ -68,89 +112,176 @@ export default function BlueprintsPage() {
     }
   };
 
+  // Tag filter list
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const bp of blueprints) {
+      for (const tag of bp.tags ?? []) set.add(tag);
+    }
+    return Array.from(set).sort();
+  }, [blueprints]);
+
+  const filteredBlueprints = useMemo(() => {
+    if (tagFilter === ALL_TAG) return blueprints;
+    return blueprints.filter((bp) => (bp.tags ?? []).includes(tagFilter));
+  }, [blueprints, tagFilter]);
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Layers className="w-6 h-6 text-primary" />
-          Subsystem Blueprints
-        </h1>
-        <p className="mt-1 text-sm text-default-500">
-          Reusable subsystem snapshots you can insert into any system. Export a subsystem node from the editor to create one.
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Spinner size="lg" />
+    <div className="surface-subtle min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <Breadcrumbs items={[{ label: "Workspace" }, { label: "Blueprints" }]} />
+        <div className="mt-3">
+          <PageHeader
+            title="Subsystem Blueprints"
+            subtitle="Reusable subsystem snapshots. Insert into any system in seconds."
+            actions={
+              <Button variant="outline" size="sm">
+                <Plus size={14} />
+                Save current as blueprint
+              </Button>
+            }
+          />
         </div>
-      ) : blueprints.length === 0 ? (
-        <Card className="shadow-sm border border-divider">
-          <Card.Content className="p-12 flex flex-col items-center text-center gap-3">
-            <Layers className="w-12 h-12 text-default-300" />
-            <p className="text-sm font-medium text-default-500">No blueprints yet</p>
-            <p className="text-xs text-default-400 max-w-sm">
-              Open a system in the editor, right-click a Subsystem node, and choose &quot;Export as Blueprint&quot; to save it here.
-            </p>
-          </Card.Content>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {blueprints.map((bp) => (
-            <Card key={bp.id} className="shadow-sm border border-divider">
-              <Card.Content className="p-5 space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm truncate">{bp.name}</h3>
-                    {bp.description && (
-                      <p className="text-xs text-default-500 mt-0.5 line-clamp-2">{bp.description}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    {(bp.tags ?? []).map((tag) => (
-                      <Chip key={tag} size="sm" variant="soft" color="accent" className="text-[10px]">{tag}</Chip>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4 text-xs text-default-400">
-                  <span className="flex items-center gap-1">
-                    <Copy className="w-3 h-3" />
-                    {bp.nodeCount} nodes
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Download className="w-3 h-3" />
-                    {bp.pipeCount} pipes
-                  </span>
-                  <span>{formatDate(bp.createdAt)}</span>
-                </div>
+        {/* Toolbar */}
+        <CardShell className="mb-4">
+          <Toolbar
+            left={
+              <SegmentedControl
+                size="sm"
+                value={tagFilter}
+                onChange={setTagFilter}
+                items={[
+                  { id: ALL_TAG, label: `All (${blueprints.length})` },
+                  ...allTags.map((t) => ({ id: t, label: t })),
+                ]}
+              />
+            }
+            right={
+              <span className="t-caption text-[#8E8E93]">
+                {filteredBlueprints.length} blueprint
+                {filteredBlueprints.length === 1 ? "" : "s"}
+              </span>
+            }
+          />
+        </CardShell>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <select
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Spinner size="md" />
+          </div>
+        ) : filteredBlueprints.length === 0 ? (
+          <EmptyState
+            title={blueprints.length === 0 ? "No blueprints yet" : "No matches"}
+            description={
+              blueprints.length === 0
+                ? "Open a system, right-click a Subsystem node, and choose Export as Blueprint to save it here."
+                : "No blueprints match the selected tag. Try All to see everything."
+            }
+            action={
+              blueprints.length === 0 ? (
+                <Button variant="outline" size="sm">
+                  <Layers size={14} />
+                  Learn more
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => setTagFilter(ALL_TAG)}
+                >
+                  Show all
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filteredBlueprints.map((bp) => (
+              <CardShell key={bp.id} className="hover-lift transition-colors hover:border-indigo-300">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="t-label font-semibold text-[#111] truncate">
+                        {bp.name}
+                      </h3>
+                      <p className="t-caption text-[#8E8E93] mt-1 line-clamp-2 leading-snug">
+                        {bp.description || "No description"}
+                      </p>
+                    </div>
+                    <StatusBadge tone="info">v1</StatusBadge>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  <div className="flex items-center gap-3 t-caption text-[#8E8E93]">
+                    <span className="inline-flex items-center gap-1">
+                      <Network size={12} />
+                      {bp.nodeCount} node{bp.nodeCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <GitMerge size={12} />
+                      {bp.pipeCount} pipe{bp.pipeCount === 1 ? "" : "s"}
+                    </span>
+                    <span className="ml-auto">{formatDate(bp.createdAt)}</span>
+                  </div>
+                  {(bp.tags ?? []).length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-3">
+                      {(bp.tags ?? []).map((tag) => (
+                        <Badge key={tag} tone="neutral">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardBody>
+                <CardFooter>
+                  <Select
+                    aria-label="Target system"
                     value={selectedSystem[bp.id] ?? ""}
-                    onChange={(e) => setSelectedSystem((prev) => ({ ...prev, [bp.id]: e.target.value }))}
-                    className="flex-1 rounded-lg border border-default-200 bg-white dark:bg-default-100 px-2 py-1.5 text-xs text-default-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    onChange={(e) =>
+                      setSelectedSystem((prev) => ({
+                        ...prev,
+                        [bp.id]: e.target.value,
+                      }))
+                    }
+                    className="h-9"
                   >
-                    <option value="">Select target system…</option>
+                    <option value="">Select target system...</option>
                     {systems.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
                     ))}
-                  </select>
+                  </Select>
                   <Button
-                    size="sm"
                     variant="primary"
+                    size="sm"
                     onPress={() => handleInstantiate(bp.id)}
                     isDisabled={!selectedSystem[bp.id] || inserting === bp.id}
                   >
-                    {inserting === bp.id ? <Spinner size="sm" /> : <Plus className="w-3.5 h-3.5" />}
-                    Insert
+                    {inserting === bp.id ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <>
+                        Use
+                        <ArrowRight size={14} />
+                      </>
+                    )}
                   </Button>
-                </div>
-              </Card.Content>
-            </Card>
-          ))}
-        </div>
-      )}
+                </CardFooter>
+              </CardShell>
+            ))}
+          </div>
+        )}
+
+        {!loading && systems.length === 0 && filteredBlueprints.length > 0 && (
+          <div className="mt-4">
+            <HelpText>
+              No systems available -- create one from the dashboard before inserting a blueprint.
+            </HelpText>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

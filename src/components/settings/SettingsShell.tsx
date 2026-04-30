@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Separator } from "@heroui/react";
 import {
   CreditCard,
   Key,
   Users,
   Shield,
-  Lock,
   Sliders,
   MessageSquare,
   Menu,
   X,
   Settings,
+  ScrollText,
 } from "lucide-react";
+import { Breadcrumbs } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Nav data
@@ -34,23 +35,23 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    heading: "ACCOUNT",
+    heading: "Workspace",
     items: [
-      { label: "Billing",  href: "/settings/billing",  icon: CreditCard    },
-      { label: "Tokens",   href: "/settings/tokens",   icon: Key           },
+      { label: "Billing",          href: "/settings/billing",       icon: CreditCard },
+      { label: "Collaboration",    href: "/settings/collaboration", icon: Users      },
+      { label: "Operations",       href: "/settings/operations",    icon: Sliders    },
+      { label: "Trust & Security", href: "/settings/trust",         icon: Shield     },
     ],
   },
   {
-    heading: "WORKSPACE",
+    heading: "Developer",
     items: [
-      { label: "Collaboration", href: "/settings/collaboration", icon: Users    },
-      { label: "Audit log",     href: "/settings/audit",         icon: Shield   },
-      { label: "Trust",         href: "/settings/trust",         icon: Lock     },
-      { label: "Operations",    href: "/settings/operations",    icon: Sliders  },
+      { label: "Tokens",    href: "/settings/tokens", icon: Key        },
+      { label: "Audit log", href: "/settings/audit",  icon: ScrollText },
     ],
   },
   {
-    heading: "SUPPORT",
+    heading: "Other",
     items: [
       { label: "Feedback", href: "/settings/feedback", icon: MessageSquare },
     ],
@@ -58,22 +59,34 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Shared nav content
+// Helpers
+// ---------------------------------------------------------------------------
+
+function findActiveLabel(pathname: string): string | null {
+  for (const g of NAV_GROUPS) {
+    for (const item of g.items) {
+      if (pathname === item.href || pathname.startsWith(item.href + "/")) {
+        return item.label;
+      }
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Nav content
 // ---------------------------------------------------------------------------
 
 function NavContent({ onClose }: { onClose?: () => void }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
 
   return (
-    <div className="flex flex-col gap-4">
-      {NAV_GROUPS.map((group, groupIdx) => (
-        <div key={group.heading}>
-          {groupIdx > 0 && <Separator className="my-1" />}
-
-          <p className="px-2 mb-1 text-[11px] font-semibold tracking-wider text-[#8E8E93]">
+    <nav aria-label="Settings sections" className="flex flex-col gap-6">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.heading} className="flex flex-col gap-1">
+          <div className="t-overline text-[#8E8E93] px-2 mb-1">
             {group.heading}
-          </p>
-
+          </div>
           <ul className="flex flex-col gap-0.5">
             {group.items.map(({ label, href, icon: Icon }) => {
               const isActive = pathname === href || pathname.startsWith(href + "/");
@@ -82,15 +95,23 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                   <Link
                     href={href}
                     onClick={onClose}
-                    className={[
-                      "flex items-center gap-2.5 px-2 py-2 text-sm font-medium rounded-lg transition-colors",
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1.5 rounded-md t-label transition-colors",
                       isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-[#3C3C43] hover:bg-black/[0.04]",
-                    ].join(" ")}
+                        ? "bg-white shadow-xs ring-1 ring-black/5 text-[#111] font-medium"
+                        : "text-[#3C3C43] hover:bg-white/60 hover:text-[#111]",
+                    )}
                   >
-                    <Icon size={16} strokeWidth={1.75} className="shrink-0" />
-                    {label}
+                    <Icon
+                      size={15}
+                      strokeWidth={1.75}
+                      className={cn(
+                        "shrink-0",
+                        isActive ? "text-indigo-600" : "text-[#8E8E93]",
+                      )}
+                    />
+                    <span className="flex-1 truncate">{label}</span>
                   </Link>
                 </li>
               );
@@ -98,7 +119,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
           </ul>
         </div>
       ))}
-    </div>
+    </nav>
   );
 }
 
@@ -106,14 +127,26 @@ function NavContent({ onClose }: { onClose?: () => void }) {
 // Shell
 // ---------------------------------------------------------------------------
 
-export function SettingsShell({ children }: { children: React.ReactNode }) {
+export function SettingsShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname() ?? "";
+  const activeLabel = findActiveLabel(pathname);
+
+  const breadcrumbItems = activeLabel
+    ? [
+        { label: "Settings", href: "/settings/billing" },
+        { label: activeLabel },
+      ]
+    : [{ label: "Settings" }];
 
   return (
-    <div className="flex w-full min-h-screen">
+    <div className="flex w-full min-h-screen bg-white">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-black/[0.08] bg-[#F5F5F7] px-3 py-6 flex-col gap-4">
-        <h1 className="text-[17px] font-semibold text-[#111] px-2">Settings</h1>
+      <aside className="hidden lg:flex w-[240px] shrink-0 sticky top-0 self-start h-screen border-r border-black/[0.08] bg-[#F5F5F7] px-3 py-6 flex-col gap-6 overflow-y-auto">
+        <div className="px-2">
+          <div className="t-overline text-[#8E8E93] mb-1">Account</div>
+          <h1 className="t-h3 font-semibold text-[#111]">Settings</h1>
+        </div>
         <NavContent />
       </aside>
 
@@ -121,14 +154,15 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-black/[0.08] bg-white px-4">
         <div className="flex items-center gap-2">
           <Settings size={18} className="text-[#8E8E93]" />
-          <span className="font-semibold text-[#111]">Settings</span>
+          <span className="t-label font-semibold text-[#111]">Settings</span>
         </div>
         <button
+          type="button"
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg hover:bg-black/[0.04]"
-          aria-label="Open navigation"
+          className="p-2 rounded-md hover:bg-black/[0.04]"
+          aria-label="Open settings navigation"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
       </div>
 
@@ -139,13 +173,17 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
             className="lg:hidden fixed inset-0 z-40 bg-black/40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-64 bg-white px-3 py-6 flex flex-col gap-4 shadow-xl">
-            <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-[17px] font-semibold text-[#111]">Settings</span>
+          <aside className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-72 bg-[#F5F5F7] px-3 py-6 flex flex-col gap-6 shadow-xl-token">
+            <div className="flex items-center justify-between px-2 mb-1">
+              <div>
+                <div className="t-overline text-[#8E8E93] mb-1">Account</div>
+                <span className="t-h3 font-semibold text-[#111]">Settings</span>
+              </div>
               <button
+                type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-black/[0.04]"
-                aria-label="Close navigation"
+                className="p-2 rounded-md hover:bg-black/[0.04]"
+                aria-label="Close settings navigation"
               >
                 <X size={18} />
               </button>
@@ -156,8 +194,13 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Content area */}
-      <main className="flex-1 min-w-0 bg-white px-4 lg:px-8 py-6 lg:py-8 mt-14 lg:mt-0">
-        {children}
+      <main className="flex-1 min-w-0 mt-14 lg:mt-0">
+        <div className="px-6 lg:px-10 pt-6 lg:pt-8 pb-2">
+          <Breadcrumbs items={breadcrumbItems} />
+        </div>
+        <div className="px-6 lg:px-10 pb-16 pt-4">
+          <div className="mx-auto max-w-3xl">{children}</div>
+        </div>
       </main>
     </div>
   );

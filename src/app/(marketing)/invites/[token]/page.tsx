@@ -2,8 +2,22 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, Button, Chip, Spinner } from "@heroui/react";
-import { Users, CheckCircle2, XCircle, Mail } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  GitBranch,
+  Mail,
+  Users,
+  XCircle,
+} from "lucide-react";
+import {
+  CardShell,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Spinner,
+  StatusBadge,
+} from "@/components/ui";
 
 type AcceptState =
   | { kind: "idle" }
@@ -12,6 +26,14 @@ type AcceptState =
   | { kind: "already_member" }
   | { kind: "invalid" }
   | { kind: "error"; message: string };
+
+// Until invite metadata is wired through a server fetch, surface placeholder
+// values so the layout reflects what the real card will show. The accept
+// submission logic is unchanged from the prior implementation.
+const PLACEHOLDER_INVITER = "Alex Rivera";
+const PLACEHOLDER_WORKSPACE = "Acme AI";
+const PLACEHOLDER_ROLE: "owner" | "admin" | "member" = "member";
+const PLACEHOLDER_MESSAGE: string | null = null;
 
 export default function InviteAcceptPage() {
   const params = useParams<{ token: string }>();
@@ -33,7 +55,10 @@ export default function InviteAcceptPage() {
 
       const msg: string = data.error ?? "Something went wrong.";
 
-      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("member")) {
+      if (
+        msg.toLowerCase().includes("already") ||
+        msg.toLowerCase().includes("member")
+      ) {
         setState({ kind: "already_member" });
       } else if (
         msg.toLowerCase().includes("invalid") ||
@@ -50,167 +75,228 @@ export default function InviteAcceptPage() {
     }
   }
 
-  // ── Accepted ──────────────────────────────────────────────────────────────
+  // Accepted
   if (state.kind === "accepted") {
     return (
-      <PageShell>
-        <Card className="border border-slate-200 w-full max-w-md">
-          <Card.Content className="p-8 flex flex-col items-center gap-4 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 border border-emerald-100">
-              <CheckCircle2 className="w-7 h-7 text-emerald-600" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                You&apos;re in!
-              </h1>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Your invitation has been accepted. You now have access to the workspace.
-              </p>
-            </div>
-            <Button
-              onPress={() => router.push("/dashboard")}
-              className="bg-slate-900 text-white font-semibold w-full mt-2 hover:bg-slate-800 transition-colors"
-            >
-              Go to dashboard
-            </Button>
-          </Card.Content>
-        </Card>
-      </PageShell>
+      <Shell>
+        <ResultCard
+          tone="success"
+          icon={<CheckCircle2 className="w-6 h-6 text-[#059669]" aria-hidden="true" />}
+          title="You are in!"
+          description="Your invitation has been accepted. You now have access to the workspace."
+          primaryLabel="Go to dashboard"
+          onPrimary={() => router.push("/dashboard")}
+        />
+      </Shell>
     );
   }
 
-  // ── Already a member ──────────────────────────────────────────────────────
+  // Already a member
   if (state.kind === "already_member") {
     return (
-      <PageShell>
-        <Card className="border border-slate-200 w-full max-w-md">
-          <Card.Content className="p-8 flex flex-col items-center gap-4 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100">
-              <Users className="w-7 h-7 text-indigo-500" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                You&apos;ve already joined this workspace
-              </h1>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Your account is already a member. Head to your dashboard to continue.
-              </p>
-            </div>
-            <Button
-              onPress={() => router.push("/dashboard")}
-              className="bg-slate-900 text-white font-semibold w-full mt-2 hover:bg-slate-800 transition-colors"
-            >
-              Go to dashboard
-            </Button>
-          </Card.Content>
-        </Card>
-      </PageShell>
+      <Shell>
+        <ResultCard
+          tone="info"
+          icon={<Users className="w-6 h-6 text-indigo-600" aria-hidden="true" />}
+          title="You have already joined"
+          description="Your account is already a member of this workspace. Head to your dashboard to continue."
+          primaryLabel="Go to dashboard"
+          onPrimary={() => router.push("/dashboard")}
+        />
+      </Shell>
     );
   }
 
-  // ── Invalid / expired ─────────────────────────────────────────────────────
+  // Invalid / expired
   if (state.kind === "invalid") {
     return (
-      <PageShell>
-        <Card className="border border-slate-200 w-full max-w-md">
-          <Card.Content className="p-8 flex flex-col items-center gap-4 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 border border-red-100">
-              <XCircle className="w-7 h-7 text-red-500" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                This invitation is no longer valid
-              </h1>
-              <p className="mt-1.5 text-sm text-slate-500">
-                The link may have expired or already been used. Ask the workspace
-                owner to send a new invite.
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              onPress={() => router.push("/")}
-              className="border-slate-300 text-slate-700 font-medium w-full mt-2 hover:border-slate-500 transition-colors"
-            >
-              Back to home
-            </Button>
-          </Card.Content>
-        </Card>
-      </PageShell>
+      <Shell>
+        <ResultCard
+          tone="danger"
+          icon={<XCircle className="w-6 h-6 text-[#DC2626]" aria-hidden="true" />}
+          title="This invitation is no longer valid"
+          description="The link may have expired or already been used. Ask the workspace owner to send a new invite."
+          primaryLabel="Back to home"
+          primaryGhost
+          onPrimary={() => router.push("/")}
+        />
+      </Shell>
     );
   }
 
-  // ── Idle / loading / error (default accept UI) ────────────────────────────
+  // Idle / loading / error
   const isLoading = state.kind === "loading";
+  const inviterInitials = PLACEHOLDER_INVITER.split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <PageShell>
-      <Card className="border border-slate-200 w-full max-w-md">
-        <Card.Content className="p-8 flex flex-col items-center gap-5 text-center">
-          {/* Icon */}
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100">
-            <Mail className="w-7 h-7 text-indigo-500" aria-hidden />
+    <Shell>
+      <CardShell className="w-full max-w-md shadow-sm-token">
+        <CardHeader className="text-center">
+          <div className="flex flex-col items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100">
+              <Mail className="w-5 h-5 text-indigo-600" aria-hidden="true" />
+            </span>
+            <h1 className="t-h3 text-[#111]">You have been invited</h1>
+          </div>
+        </CardHeader>
+
+        <CardBody>
+          <div className="flex items-center gap-3 rounded-lg border border-black/[0.06] bg-[#FAFAFA] p-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white t-label font-semibold">
+              {inviterInitials}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="t-label text-[#3C3C43]">
+                <span className="font-semibold text-[#111]">{PLACEHOLDER_INVITER}</span>{" "}
+                invited you to join
+              </p>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <GitBranch size={12} className="text-[#8E8E93]" aria-hidden="true" />
+                <span className="t-caption text-[#3C3C43]">/invites</span>
+              </div>
+            </div>
           </div>
 
-          {/* Copy */}
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">
-              You&apos;ve been invited to join a workspace
-            </h1>
-            <p className="text-sm text-slate-500">
-              Accept below to gain access and start collaborating.
-            </p>
+          <div className="mt-4 text-center">
+            <p className="t-caption text-[#8E8E93]">Workspace</p>
+            <p className="mt-1 t-h3 text-[#111]">{PLACEHOLDER_WORKSPACE}</p>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="t-caption text-[#8E8E93]">Role</span>
+              <StatusBadge tone="info">
+                <Users className="w-3 h-3" aria-hidden="true" />
+                <span className="capitalize">{PLACEHOLDER_ROLE}</span>
+              </StatusBadge>
+            </div>
           </div>
 
-          {/* Role chip */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Role:</span>
-            <Chip
-              size="sm"
-              color="default"
-              variant="soft"
-              className="font-semibold capitalize"
-            >
-              <Users className="w-3 h-3 mr-1" aria-hidden />
-              Member
-            </Chip>
-          </div>
+          {PLACEHOLDER_MESSAGE != null && (
+            <div className="mt-4 rounded-lg border border-black/[0.06] bg-white p-3">
+              <p className="t-label text-[#3C3C43] leading-relaxed">
+                {PLACEHOLDER_MESSAGE}
+              </p>
+            </div>
+          )}
 
-          {/* Error banner */}
           {state.kind === "error" && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2 w-full">
+            <p
+              role="alert"
+              className="mt-4 t-caption text-[#991B1B] bg-[#FEF2F2] border border-[#FCA5A5] rounded-lg px-3 py-2"
+            >
               {state.message}
             </p>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-3 w-full mt-1">
-            <Button
-              onPress={handleAccept}
-              className="bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors"
+          <div className="mt-5 flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={handleAccept}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg t-label transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading && <Spinner size="sm" />}
-              Accept invitation
-            </Button>
-
+              Accept invite
+              {!isLoading && <ArrowRight size={14} aria-hidden="true" />}
+            </button>
             <button
               type="button"
               onClick={() => router.push("/")}
               disabled={isLoading}
-              className="text-sm text-slate-400 hover:text-slate-600 transition-colors disabled:pointer-events-none"
+              className="w-full h-10 bg-white border border-black/[0.14] hover:border-black/[0.24] text-[#3C3C43] font-medium rounded-lg t-label transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
               Decline
             </button>
           </div>
-        </Card.Content>
-      </Card>
-    </PageShell>
+        </CardBody>
+
+        <CardFooter className="!justify-center">
+          <p className="t-caption text-[#8E8E93]">
+            By accepting, you agree to the workspace{" "}
+            <a
+              href="/terms"
+              className="text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              Terms
+            </a>
+            .
+          </p>
+        </CardFooter>
+      </CardShell>
+    </Shell>
   );
 }
 
-function PageShell({ children }: { children: React.ReactNode }) {
+// ---------------------------------------------------------------------------
+// Layout shell
+// ---------------------------------------------------------------------------
+
+function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-16">
+    <main className="min-h-screen surface-subtle flex items-center justify-center px-4 py-12">
       {children}
-    </div>
+    </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Result card (shared by accepted / already_member / invalid states)
+// ---------------------------------------------------------------------------
+
+function ResultCard({
+  tone,
+  icon,
+  title,
+  description,
+  primaryLabel,
+  primaryGhost = false,
+  onPrimary,
+}: {
+  tone: "success" | "info" | "danger";
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  primaryLabel: string;
+  primaryGhost?: boolean;
+  onPrimary: () => void;
+}) {
+  const ringClass =
+    tone === "success"
+      ? "bg-[#ECFDF5] border-[#A7F3D0]"
+      : tone === "danger"
+        ? "bg-[#FEF2F2] border-[#FCA5A5]"
+        : "bg-indigo-50 border-indigo-100";
+
+  return (
+    <CardShell className="w-full max-w-md shadow-sm-token">
+      <CardBody>
+        <div className="flex flex-col items-center gap-4 text-center py-2">
+          <span
+            className={`flex h-12 w-12 items-center justify-center rounded-full border ${ringClass}`}
+          >
+            {icon}
+          </span>
+          <div>
+            <h1 className="t-h3 text-[#111]">{title}</h1>
+            <p className="mt-1.5 t-label text-[#3C3C43] leading-relaxed">
+              {description}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onPrimary}
+            className={`w-full h-10 font-semibold rounded-lg t-label transition-colors mt-2 ${
+              primaryGhost
+                ? "bg-white border border-black/[0.14] hover:border-black/[0.24] text-[#111]"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            }`}
+          >
+            {primaryLabel}
+          </button>
+        </div>
+      </CardBody>
+    </CardShell>
   );
 }

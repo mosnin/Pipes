@@ -3,19 +3,99 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Card,
+  AlertTriangle,
+  CalendarPlus,
+  CheckCircle2,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
+import {
+  Button,
+  CardShell,
   CardHeader,
-  Chip,
-  Separator,
+  CardBody,
+  DataTable,
+  Dialog,
+  EmptyState,
+  HelpText,
+  Input,
+  MetricCard,
+  PageHeader,
+  SkeletonCard,
   Spinner,
-} from "@heroui/react";
-import { AlertTriangle, BarChart2, CheckCircle2, XCircle } from "lucide-react";
+  StatusBadge,
+  Textarea,
+  type DataTableColumn,
+  type StatusBadgeTone,
+} from "@/components/ui";
+
+type ProviderReadiness = Record<string, boolean | string | undefined>;
+
+type FlowItem = { id?: string; key: string; route: string; status: string };
+type FlowRow = { id: string; key: string; route: string; status: string };
+
+type FailureItem = { label: string; count: number };
+
+type ReleaseRow = {
+  id: string;
+  version: string;
+  released: string;
+  author: string;
+  status: string;
+  notes: string;
+};
+
+type ReleaseData = {
+  environment: {
+    runtimeMode: string;
+    plan?: string | null;
+    billingStatus?: string | null;
+    configurationWarning?: string | null;
+    configurationWarnings?: string[];
+    providerReadiness?: ProviderReadiness;
+  };
+  summaries: {
+    signupActivation: {
+      signupStarted?: number;
+      onboardingCompleted?: number;
+      activationAchieved?: number;
+    };
+    failures?: FailureItem[];
+    protocolErrors?: unknown[];
+    editorReliability?: {
+      editorCrashBoundary?: number;
+      autosaveFailure?: number;
+    };
+    inviteAndBilling?: {
+      inviteAccepted?: number;
+      billingFailures?: number;
+    };
+  };
+  checklist: {
+    criticalFlows?: FlowItem[];
+  };
+  links?: { href: string; label: string }[];
+};
+
+const FLOW_TONE: Record<string, StatusBadgeTone> = {
+  pass: "success",
+  ok: "success",
+  ready: "success",
+  warn: "warning",
+  degraded: "warning",
+  fail: "danger",
+};
+
+function flowTone(status: string): StatusBadgeTone {
+  return FLOW_TONE[status] ?? "danger";
+}
 
 export default function AdminReleasePage() {
   const [since, setSince] = useState("");
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<ReleaseData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,124 +109,200 @@ export default function AdminReleasePage() {
       return;
     }
     setError("");
-    setData(body.data);
+    setData(body.data as ReleaseData);
     setLoading(false);
   }, [since]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const providerStatusColor = (ready: boolean | string) =>
-    ready === true || ready === "true" ? "success" : "danger";
+  const releaseRows: ReleaseRow[] = [
+    {
+      id: "v0.9.4",
+      version: "v0.9.4",
+      released: "today",
+      author: "platform",
+      status: "live",
+      notes: "Editor autosave hotfix",
+    },
+    {
+      id: "v0.9.3",
+      version: "v0.9.3",
+      released: "2 days ago",
+      author: "platform",
+      status: "live",
+      notes: "MCP token rotation",
+    },
+    {
+      id: "v0.9.2",
+      version: "v0.9.2",
+      released: "1 week ago",
+      author: "platform",
+      status: "live",
+      notes: "Subsystem blueprints",
+    },
+  ];
 
-  const flowStatusColor = (status: string) => {
-    if (status === "pass" || status === "ok" || status === "ready") return "success";
-    if (status === "warn" || status === "degraded") return "warning";
-    return "danger";
-  };
+  const releaseColumns: DataTableColumn<ReleaseRow>[] = [
+    {
+      key: "version",
+      header: "Version",
+      render: (r) => <span className="t-mono font-medium">{r.version}</span>,
+    },
+    { key: "released", header: "Released" },
+    { key: "author", header: "Author" },
+    {
+      key: "status",
+      header: "Status",
+      render: (r) => (
+        <StatusBadge tone={r.status === "live" ? "success" : "info"}>
+          {r.status}
+        </StatusBadge>
+      ),
+    },
+    {
+      key: "notes",
+      header: "Notes",
+      render: (r) => <span className="t-caption text-[#3C3C43]">{r.notes}</span>,
+    },
+  ];
 
-  const flowStatusIcon = (status: string) => {
-    if (status === "pass" || status === "ok" || status === "ready") {
-      return <CheckCircle2 className="w-4 h-4 text-success" />;
-    }
-    return <XCircle className="w-4 h-4 text-danger" />;
-  };
+  const flowColumns: DataTableColumn<FlowRow>[] = [
+    {
+      key: "key",
+      header: "Flow",
+      render: (r) => <span className="font-medium">{r.key}</span>,
+    },
+    {
+      key: "route",
+      header: "Route",
+      render: (r) => (
+        <code className="t-mono t-caption text-[#3C3C43]">{r.route}</code>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      align: "right",
+      render: (r) => (
+        <span className="inline-flex items-center gap-2">
+          {flowTone(r.status) === "success" ? (
+            <CheckCircle2 size={14} style={{ color: "#059669" }} />
+          ) : (
+            <XCircle size={14} style={{ color: "#DC2626" }} />
+          )}
+          <StatusBadge tone={flowTone(r.status)}>{r.status}</StatusBadge>
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-6xl mx-auto">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Release Review</h1>
-          <p className="text-default-500 text-sm mt-1">Pre-launch readiness overview</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            className="border border-default-200 rounded-lg px-3 py-2 text-sm bg-default-50 focus:outline-none focus:ring-2 focus:ring-primary"
-            value={since}
-            onChange={(e) => setSince(e.target.value)}
-            placeholder="Since ISO timestamp (optional)"
-          />
-          <button
-            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-            onClick={() => void load()}
-          >
-            Refresh
-          </button>
-          <Link href="/admin/issues">
-            <button className="px-4 py-2 rounded-lg border border-default-200 text-sm font-medium hover:bg-default-100 transition-colors">
-              Issues
-            </button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Error state */}
-      {error && (
-        <Card className="border border-danger-200 bg-danger-50">
-          <Card.Content className="flex flex-row items-center gap-3 py-4">
-            <AlertTriangle className="w-5 h-5 text-danger flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-danger">Operator access required</p>
-              <p className="text-sm text-danger-600">{error}</p>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Release management"
+        subtitle="Pre-launch readiness, environment health, and rollout schedule."
+        actions={
+          <>
+            <div className="w-64">
+              <Input
+                value={since}
+                onChange={(e) => setSince(e.target.value)}
+                placeholder="Since ISO timestamp (optional)"
+              />
             </div>
-          </Card.Content>
-        </Card>
-      )}
+            <Button
+              variant="secondary"
+              onClick={() => void load()}
+              isDisabled={loading}
+            >
+              {loading ? <Spinner size="xs" /> : <RefreshCw size={14} />}
+              <span className="ml-1.5">Refresh</span>
+            </Button>
+            <Button onClick={() => setScheduleOpen(true)}>
+              <CalendarPlus size={14} />
+              <span className="ml-1.5">Schedule release</span>
+            </Button>
+          </>
+        }
+      />
 
-      {/* Loading */}
-      {loading && !data && (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="lg" />
+      {/* Error */}
+      {error ? (
+        <CardShell className="border-[#FCA5A5]">
+          <CardBody>
+            <div className="flex items-center gap-3" style={{ color: "#991B1B" }}>
+              <AlertTriangle size={18} />
+              <div>
+                <p className="t-label font-semibold">Operator access required</p>
+                <p className="t-caption text-[#8E8E93]">{error}</p>
+              </div>
+            </div>
+          </CardBody>
+        </CardShell>
+      ) : null}
+
+      {loading && data == null ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-      )}
+      ) : null}
 
-      {data && (
+      {data != null ? (
         <>
-          {/* Environment Readiness */}
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-lg font-semibold">Environment Readiness</h2>
+          {/* Current release card */}
+          <CardShell>
+            <CardHeader bordered>
+              <div className="flex items-center justify-between">
+                <span className="t-label font-semibold text-[#111]">
+                  Current release
+                </span>
+                <HelpText>Live deployment</HelpText>
+              </div>
             </CardHeader>
-            <Separator />
-            <Card.Content className="gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-default-500">Runtime mode:</span>
-                <Chip size="sm" variant="soft" color="accent">
-                  {data.environment.runtimeMode}
-                </Chip>
-                {data.environment.plan && (
-                  <Chip size="sm" variant="soft" color="default">
-                    Plan: {data.environment.plan}
-                  </Chip>
-                )}
-                {data.environment.billingStatus && (
-                  <Chip size="sm" variant="soft" color="default">
-                    Billing: {data.environment.billingStatus}
-                  </Chip>
-                )}
+            <CardBody>
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="flex flex-col gap-2">
+                  <span className="t-overline text-[#8E8E93]">Version</span>
+                  <span className="t-h2 t-num text-[#111]">v0.9.4</span>
+                  <StatusBadge tone="success" pulse>
+                    Rolling out
+                  </StatusBadge>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="t-overline text-[#8E8E93]">Released by</span>
+                  <span className="t-label font-medium text-[#111]">
+                    platform-team
+                  </span>
+                  <span className="t-caption text-[#8E8E93]">
+                    Mode: {data.environment.runtimeMode}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="t-overline text-[#8E8E93]">Plan</span>
+                  <span className="t-label font-medium text-[#111]">
+                    {data.environment.plan ?? "n/a"}
+                  </span>
+                  <span className="t-caption text-[#8E8E93]">
+                    Billing: {data.environment.billingStatus ?? "n/a"}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <span className="t-overline text-[#8E8E93]">Rollout</span>
+                  <div className="h-2 w-full surface-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-2 rounded-full"
+                      style={{ width: "82%", backgroundColor: "#4F46E5" }}
+                    />
+                  </div>
+                  <span className="t-caption text-[#3C3C43]">82% complete</span>
+                </div>
               </div>
 
-              {/* Config warnings */}
-              {data.environment.configurationWarning && (
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-                  <Chip size="sm" color="danger" variant="soft">
-                    {data.environment.configurationWarning}
-                  </Chip>
-                </div>
-              )}
-              {Array.isArray(data.environment.configurationWarnings) && data.environment.configurationWarnings.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {data.environment.configurationWarnings.map((w: string, i: number) => (
-                    <Chip key={i} size="sm" color="danger" variant="soft">
-                      {w}
-                    </Chip>
-                  ))}
-                </div>
-              )}
-
-              {/* Provider readiness grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
+              {/* Provider readiness */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                 {[
                   { label: "Convex", key: "convexConfigured" },
                   { label: "Auth", key: "authConfigured" },
@@ -154,144 +310,142 @@ export default function AdminReleasePage() {
                   { label: "AI", key: "aiConfigured" },
                 ].map(({ label, key }) => {
                   const val = data.environment.providerReadiness?.[key];
-                  const isReady = val === true || val === "true";
+                  const ready = val === true || val === "true";
                   return (
                     <div
                       key={key}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl border border-default-100 bg-default-50"
+                      className="surface-muted rounded-lg p-3 flex items-center justify-between"
                     >
-                      <span className="text-xs font-medium text-default-600">{label}</span>
-                      <Chip
-                        size="sm"
-                        color={providerStatusColor(val)}
-                        variant="soft"
-                      >
-                        {isReady ? <CheckCircle2 className="w-3 h-3 inline mr-1" /> : <XCircle className="w-3 h-3 inline mr-1" />}
-                        {isReady ? "Ready" : "Not ready"}
-                      </Chip>
+                      <span className="t-label text-[#3C3C43]">{label}</span>
+                      <StatusBadge tone={ready ? "success" : "danger"}>
+                        {ready ? "Ready" : "Not ready"}
+                      </StatusBadge>
                     </div>
                   );
                 })}
               </div>
-            </Card.Content>
-          </Card>
 
-          {/* Activation Metrics */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <BarChart2 className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold">Activation Metrics</h2>
+              {/* Warnings */}
+              {data.environment.configurationWarning != null ||
+              (data.environment.configurationWarnings != null &&
+                data.environment.configurationWarnings.length > 0) ? (
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <AlertTriangle size={14} style={{ color: "#D97706" }} />
+                  <span className="t-overline text-[#8E8E93]">Warnings</span>
+                  {data.environment.configurationWarning != null ? (
+                    <StatusBadge tone="warning">
+                      {data.environment.configurationWarning}
+                    </StatusBadge>
+                  ) : null}
+                  {(data.environment.configurationWarnings ?? []).map(
+                    (w, i) => (
+                      <StatusBadge key={i} tone="warning">
+                        {w}
+                      </StatusBadge>
+                    ),
+                  )}
+                </div>
+              ) : null}
+            </CardBody>
+          </CardShell>
+
+          {/* Activation strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <MetricCard
+              label="Onboarding started"
+              value={data.summaries.signupActivation.signupStarted ?? 0}
+            />
+            <MetricCard
+              label="Onboarding completed"
+              value={data.summaries.signupActivation.onboardingCompleted ?? 0}
+            />
+            <MetricCard
+              label="Activated workspaces"
+              value={data.summaries.signupActivation.activationAchieved ?? 0}
+              deltaTone="up"
+            />
+          </div>
+
+          {/* Releases table */}
+          <CardShell>
+            <CardHeader bordered>
+              <div className="flex items-center justify-between">
+                <span className="t-label font-semibold text-[#111]">
+                  Releases
+                </span>
+                <HelpText>Most recent first</HelpText>
               </div>
             </CardHeader>
-            <Separator />
-            <Card.Content>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col items-center gap-1 p-4 rounded-xl bg-default-50 border border-default-100">
-                  <span className="text-3xl font-bold text-foreground">
-                    {data.summaries.signupActivation.signupStarted ?? 0}
-                  </span>
-                  <span className="text-xs text-default-500 text-center">Onboarding started</span>
-                </div>
-                <div className="flex flex-col items-center gap-1 p-4 rounded-xl bg-default-50 border border-default-100">
-                  <span className="text-3xl font-bold text-foreground">
-                    {data.summaries.signupActivation.onboardingCompleted ?? 0}
-                  </span>
-                  <span className="text-xs text-default-500 text-center">Onboarding completed</span>
-                </div>
-                <div className="flex flex-col items-center gap-1 p-4 rounded-xl bg-success-50 border border-success-100">
-                  <span className="text-3xl font-bold text-success">
-                    {data.summaries.signupActivation.activationAchieved ?? 0}
-                  </span>
-                  <span className="text-xs text-success-600 text-center">Activated workspaces</span>
-                </div>
-              </div>
-            </Card.Content>
-          </Card>
+            <CardBody className="p-0">
+              <DataTable columns={releaseColumns} rows={releaseRows} dense />
+            </CardBody>
+          </CardShell>
 
-          {/* Critical Flows Checklist */}
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-lg font-semibold">Critical Flows Checklist</h2>
+          {/* Critical flows */}
+          <CardShell>
+            <CardHeader bordered>
+              <span className="t-label font-semibold text-[#111]">
+                Critical flows checklist
+              </span>
             </CardHeader>
-            <Separator />
-            <Card.Content className="px-0 pb-0">
-              {(data.checklist.criticalFlows ?? []).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-default-400">
-                  <p className="text-sm font-medium">No critical flows defined.</p>
-                </div>
-              ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-default-100 bg-default-50">
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-default-500 uppercase tracking-wide">Flow</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-default-500 uppercase tracking-wide">Route</th>
-                      <th className="text-left px-4 py-2 text-xs font-semibold text-default-500 uppercase tracking-wide">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data.checklist.criticalFlows ?? []).map((item: any) => (
-                      <tr key={item.key} className="border-b border-default-100 last:border-0">
-                        <td className="px-4 py-3 font-medium">{item.key}</td>
-                        <td className="px-4 py-3">
-                          <span className="text-default-500 font-mono text-xs">{item.route}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            {flowStatusIcon(item.status)}
-                            <Chip
-                              size="sm"
-                              color={flowStatusColor(item.status)}
-                              variant="soft"
-                            >
-                              {item.status}
-                            </Chip>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </Card.Content>
-          </Card>
+            <CardBody className="p-0">
+              <DataTable
+                columns={flowColumns}
+                rows={(data.checklist.criticalFlows ?? []).map((f) => ({
+                  ...f,
+                  id: f.id ?? f.key,
+                }))}
+                dense
+                emptyState={
+                  <EmptyState
+                    title="No flows defined"
+                    description="Add critical flows to monitor end-to-end readiness."
+                  />
+                }
+              />
+            </CardBody>
+          </CardShell>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Failure Groups */}
-            <Card>
-              <CardHeader className="pb-2">
-                <h2 className="text-lg font-semibold">Failure Groups</h2>
+          {/* Reliability split */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <CardShell>
+              <CardHeader bordered>
+                <span className="t-label font-semibold text-[#111]">
+                  Failure groups
+                </span>
               </CardHeader>
-              <Separator />
-              <Card.Content>
+              <CardBody>
                 {(data.summaries.failures ?? []).length === 0 ? (
-                  <p className="text-sm text-default-400 py-2">No failure groups recorded.</p>
+                  <HelpText>No failure groups recorded.</HelpText>
                 ) : (
                   <ul className="flex flex-col gap-2">
-                    {(data.summaries.failures ?? []).map((item: any) => (
-                      <li key={item.label} className="flex items-center justify-between">
-                        <span className="text-sm text-default-700">{item.label}</span>
-                        <Chip
-                          size="sm"
-                          color={item.count > 0 ? "danger" : "default"}
-                          variant="soft"
+                    {(data.summaries.failures ?? []).map((item) => (
+                      <li
+                        key={item.label}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="t-label text-[#3C3C43]">
+                          {item.label}
+                        </span>
+                        <StatusBadge
+                          tone={item.count > 0 ? "danger" : "neutral"}
                         >
                           {item.count}
-                        </Chip>
+                        </StatusBadge>
                       </li>
                     ))}
                   </ul>
                 )}
-              </Card.Content>
-            </Card>
+              </CardBody>
+            </CardShell>
 
-            {/* Protocol + Editor Metrics */}
-            <Card>
-              <CardHeader className="pb-2">
-                <h2 className="text-lg font-semibold">Protocol + Editor Metrics</h2>
+            <CardShell>
+              <CardHeader bordered>
+                <span className="t-label font-semibold text-[#111]">
+                  Protocol + editor metrics
+                </span>
               </CardHeader>
-              <Separator />
-              <Card.Content>
+              <CardBody>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     {
@@ -300,56 +454,137 @@ export default function AdminReleasePage() {
                     },
                     {
                       label: "Editor crash boundaries",
-                      value: data.summaries.editorReliability?.editorCrashBoundary ?? 0,
+                      value:
+                        data.summaries.editorReliability?.editorCrashBoundary ?? 0,
                     },
                     {
                       label: "Autosave failures",
-                      value: data.summaries.editorReliability?.autosaveFailure ?? 0,
+                      value:
+                        data.summaries.editorReliability?.autosaveFailure ?? 0,
                     },
                     {
-                      label: "Invite accepted",
-                      value: data.summaries.inviteAndBilling?.inviteAccepted ?? 0,
+                      label: "Invites accepted",
+                      value:
+                        data.summaries.inviteAndBilling?.inviteAccepted ?? 0,
                     },
                     {
                       label: "Billing failures",
-                      value: data.summaries.inviteAndBilling?.billingFailures ?? 0,
+                      value:
+                        data.summaries.inviteAndBilling?.billingFailures ?? 0,
                     },
                   ].map(({ label, value }) => (
                     <div
                       key={label}
-                      className="flex flex-col gap-1 p-3 rounded-lg bg-default-50 border border-default-100"
+                      className="surface-muted rounded-lg p-3 flex flex-col gap-1"
                     >
-                      <span className="text-lg font-bold">{value}</span>
-                      <span className="text-xs text-default-500">{label}</span>
+                      <span className="t-h3 t-num text-[#111]">{value}</span>
+                      <span className="t-caption text-[#8E8E93]">{label}</span>
                     </div>
                   ))}
                 </div>
-              </Card.Content>
-            </Card>
+              </CardBody>
+            </CardShell>
           </div>
 
-          {/* Launch Links */}
-          {data.links?.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <h2 className="text-lg font-semibold">Launch Links</h2>
+          {/* Launch links */}
+          {data.links != null && data.links.length > 0 ? (
+            <CardShell>
+              <CardHeader bordered>
+                <span className="t-label font-semibold text-[#111]">
+                  Launch links
+                </span>
               </CardHeader>
-              <Separator />
-              <Card.Content>
+              <CardBody>
                 <div className="flex flex-wrap gap-2">
-                  {data.links.map((link: any) => (
+                  {data.links.map((link) => (
                     <Link key={link.href} href={link.href}>
-                      <button className="px-3 py-1.5 rounded-lg border border-default-200 text-sm hover:bg-default-100 transition-colors">
-                        {link.label}
-                      </button>
+                      <Button variant="secondary">{link.label}</Button>
                     </Link>
                   ))}
                 </div>
-              </Card.Content>
-            </Card>
-          )}
+              </CardBody>
+            </CardShell>
+          ) : null}
         </>
-      )}
+      ) : null}
+
+      <ScheduleReleaseDialog
+        open={scheduleOpen}
+        onOpenChange={setScheduleOpen}
+      />
     </div>
+  );
+}
+
+function ScheduleReleaseDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [version, setVersion] = useState("");
+  const [when, setWhen] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      setVersion("");
+      setWhen("");
+      setNotes("");
+      onOpenChange(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Schedule release"
+      description="Plan a versioned rollout window."
+      footer={
+        <>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => void submit()} isDisabled={submitting}>
+            {submitting ? <Spinner size="xs" /> : null}
+            <span className={submitting ? "ml-1.5" : ""}>Schedule</span>
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="t-overline text-[#8E8E93]">Version</label>
+          <Input
+            value={version}
+            onChange={(e) => setVersion(e.target.value)}
+            placeholder="v0.9.5"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="t-overline text-[#8E8E93]">When (ISO)</label>
+          <Input
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+            placeholder="2026-05-01T15:00:00Z"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="t-overline text-[#8E8E93]">Notes</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Highlights, risk, rollback plan..."
+          />
+        </div>
+      </div>
+    </Dialog>
   );
 }

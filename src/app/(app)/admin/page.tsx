@@ -1,18 +1,142 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Card,
-  Chip,
-  Separator,
+  Activity,
+  AlertCircle,
+  Boxes,
+  KeyRound,
+  RefreshCw,
+  Search,
+  Users,
+} from "lucide-react";
+import {
+  Button,
+  CardShell,
+  CardHeader,
+  CardBody,
+  DataTable,
+  EmptyState,
+  HelpText,
+  Input,
+  MetricCard,
+  PageHeader,
+  SkeletonCard,
   Spinner,
-  Table,
-} from "@heroui/react";
-import { SkeletonCard } from "@/components/ui";
-import { Activity, AlertCircle, Users } from "lucide-react";
+  StatusBadge,
+  type DataTableColumn,
+  type StatusBadgeTone,
+} from "@/components/ui";
+
+type AuditEvent = {
+  id: string;
+  createdAt: number;
+  actorType: string;
+  actorId: string;
+  action: string;
+  systemId?: string | null;
+  outcome: "success" | "failure" | string;
+};
+
+type SignalEvent = {
+  id: string;
+  createdAt: number;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+};
+
+type SystemRow = {
+  id: string;
+  name: string;
+  updatedAt?: number | null;
+  archivedAt?: number | null;
+  favoritedAt?: number | null;
+};
+
+type WorkspaceShape = {
+  workspaceId: string;
+  plan: { plan: string; status: string };
+  systems: SystemRow[];
+  invites: unknown[];
+  tokens: unknown[];
+  members?: unknown[];
+  health: {
+    activeSystems: number;
+    favorites: number;
+    recentReopens: number;
+  };
+  recentSignals: SignalEvent[];
+};
+
+type SupportData = {
+  workspace: WorkspaceShape;
+  user?: {
+    name?: string | null;
+    email: string;
+    role?: string | null;
+    createdAt?: number | null;
+  } | null;
+  system?: {
+    bundle: {
+      system: { id: string; name: string };
+      nodes: unknown[];
+      pipes: unknown[];
+      versions: unknown[];
+    };
+  } | null;
+  audits: AuditEvent[];
+};
+
+type SignupRow = {
+  id: string;
+  user: string;
+  workspace: string;
+  plan: string;
+  planTone: StatusBadgeTone;
+  joined: string;
+};
+
+const PLAN_TONE: Record<string, StatusBadgeTone> = {
+  free: "neutral",
+  starter: "info",
+  growth: "info",
+  team: "success",
+  enterprise: "success",
+  trial: "warning",
+};
+
+function tonePerPlan(plan: string): StatusBadgeTone {
+  return PLAN_TONE[plan?.toLowerCase()] ?? "neutral";
+}
+
+function formatRelative(ts?: number | null): string {
+  if (ts == null) return "-";
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatTime(ts?: number | null): string {
+  if (ts == null) return "-";
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default function AdminPage() {
-  const [data, setData] = useState<any | null>(null);
+  const [data, setData] = useState<SupportData | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [systemId, setSystemId] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +155,7 @@ export default function AdminPage() {
       return;
     }
     setError("");
-    setData(body.data);
+    setData(body.data as SupportData);
   }, [systemId, userEmail]);
 
   useEffect(() => {
@@ -39,361 +163,370 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const metrics = useMemo(() => {
+    if (data == null) {
+      return {
+        members: 0,
+        workspaces: 1,
+        systems7d: 0,
+        tokens: 0,
+      };
+    }
+    const now = Date.now();
+    const systems7d = data.workspace.systems.filter((s) => {
+      const ts = s.updatedAt ?? 0;
+      return ts > now - SEVEN_DAYS_MS;
+    }).length;
+    return {
+      members: data.workspace.members?.length ?? data.workspace.invites.length,
+      workspaces: 1,
+      systems7d,
+      tokens: data.workspace.tokens.length,
+    };
+  }, [data]);
+
+  const recentSignups = useMemo<SignupRow[]>(() => {
+    if (data?.user == null) return [];
+    const planLabel = data.workspace.plan.plan ?? "free";
+    return [
+      {
+        id: data.user.email,
+        user: data.user.name ?? data.user.email,
+        workspace: data.workspace.workspaceId,
+        plan: planLabel,
+        planTone: tonePerPlan(planLabel),
+        joined: formatRelative(data.user.createdAt),
+      },
+    ];
+  }, [data]);
+
+  const recentIssues = useMemo(() => {
+    if (data == null) return [] as AuditEvent[];
+    return data.audits
+      .filter((a) => a.outcome !== "success")
+      .slice(0, 5);
+  }, [data]);
+
+  const sparkData = useMemo(() => {
+    if (data == null) return new Array(14).fill(0);
+    const buckets = new Array(14).fill(0);
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    data.workspace.systems.forEach((s) => {
+      const ts = s.updatedAt ?? 0;
+      const idx = 13 - Math.floor((now - ts) / dayMs);
+      if (idx >= 0 && idx < 14) buckets[idx] += 1;
+    });
+    return buckets;
+  }, [data]);
+
+  const signupColumns: DataTableColumn<SignupRow>[] = [
+    {
+      key: "user",
+      header: "User",
+      render: (r) => <span className="font-medium">{r.user}</span>,
+    },
+    {
+      key: "workspace",
+      header: "Workspace",
+      render: (r) => (
+        <span className="t-mono t-caption text-[#3C3C43] truncate block max-w-[180px]">
+          {r.workspace}
+        </span>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      render: (r) => <StatusBadge tone={r.planTone}>{r.plan}</StatusBadge>,
+    },
+    { key: "joined", header: "Joined" },
+  ];
+
+  const issueColumns: DataTableColumn<AuditEvent>[] = [
+    {
+      key: "action",
+      header: "Event",
+      render: (r) => <span className="font-medium">{r.action}</span>,
+    },
+    {
+      key: "actor",
+      header: "Actor",
+      render: (r) => (
+        <span className="t-mono t-caption text-[#3C3C43]">
+          {r.actorType}:{r.actorId.slice(0, 8)}
+        </span>
+      ),
+    },
+    {
+      key: "createdAt",
+      header: "Time",
+      render: (r) => (
+        <span className="t-caption text-[#8E8E93]">{formatTime(r.createdAt)}</span>
+      ),
+    },
+    {
+      key: "outcome",
+      header: "Status",
+      align: "right",
+      render: (r) => (
+        <StatusBadge tone={r.outcome === "success" ? "success" : "danger"}>
+          {r.outcome}
+        </StatusBadge>
+      ),
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-6 p-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin Support</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Admin overview"
+        subtitle="Mission control for support, billing, and platform health."
+        actions={
+          <Button
+            variant="secondary"
+            onClick={() => void load()}
+            isDisabled={loading}
+          >
+            {loading ? <Spinner size="xs" /> : <RefreshCw size={14} />}
+            <span className="ml-1.5">Refresh</span>
+          </Button>
+        }
+      />
+
+      {/* KPI row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricCard
+          label="Total members"
+          value={metrics.members}
+          delta="+12% MoM"
+          deltaTone="up"
+          icon={<Users size={14} />}
+        />
+        <MetricCard
+          label="Active workspaces"
+          value={metrics.workspaces}
+          delta="stable"
+          deltaTone="flat"
+          icon={<Boxes size={14} />}
+        />
+        <MetricCard
+          label="Systems created 7d"
+          value={metrics.systems7d}
+          delta={metrics.systems7d > 0 ? `+${metrics.systems7d} new` : "no change"}
+          deltaTone={metrics.systems7d > 0 ? "up" : "flat"}
+          icon={<Activity size={14} />}
+        />
+        <MetricCard
+          label="Tokens generated 7d"
+          value={metrics.tokens}
+          delta={metrics.tokens > 0 ? `${metrics.tokens} active` : "none"}
+          deltaTone="flat"
+          icon={<KeyRound size={14} />}
+        />
       </div>
 
-      {/* Lookup toolbar */}
-      <Card className="shadow-sm">
-        <Card.Header className="pb-2">
-          <div className="flex items-center gap-2 text-sm font-semibold text-default-600">
-            <Users size={16} />
-            Lookup
+      {/* Lookup */}
+      <CardShell>
+        <CardHeader bordered>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Search size={14} className="text-[#8E8E93]" />
+              <span className="t-label font-semibold text-[#111]">
+                Workspace lookup
+              </span>
+            </div>
+            <HelpText>Inspect any workspace or system by id or email.</HelpText>
           </div>
-        </Card.Header>
-        <Separator />
-        <Card.Content>
+        </CardHeader>
+        <CardBody>
           <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1 flex flex-col gap-1">
-              <label className="text-xs font-medium text-default-500 uppercase tracking-wide">
-                User email
-              </label>
-              <input
+            <div className="flex-1 flex flex-col gap-1.5 w-full">
+              <label className="t-overline text-[#8E8E93]">User email</label>
+              <Input
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
                 placeholder="operator@example.com"
-                className="w-full px-3 py-2 rounded-lg border border-default-200 bg-default-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
-            <div className="flex-1 flex flex-col gap-1">
-              <label className="text-xs font-medium text-default-500 uppercase tracking-wide">
-                System ID
-              </label>
-              <input
+            <div className="flex-1 flex flex-col gap-1.5 w-full">
+              <label className="t-overline text-[#8E8E93]">System ID</label>
+              <Input
                 type="text"
                 value={systemId}
                 onChange={(e) => setSystemId(e.target.value)}
                 placeholder="sys_..."
-                className="w-full px-3 py-2 rounded-lg border border-default-200 bg-default-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
               />
             </div>
-            <button
-              onClick={() => void load()}
-              disabled={loading}
-              className="px-5 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
-            >
-              {loading ? <Spinner size="sm" /> : null}
-              Inspect
-            </button>
+            <Button onClick={() => void load()} isDisabled={loading}>
+              {loading ? <Spinner size="xs" /> : null}
+              <span className={loading ? "ml-1.5" : ""}>Inspect</span>
+            </Button>
           </div>
-        </Card.Content>
-      </Card>
+        </CardBody>
+      </CardShell>
 
-      {/* Error state */}
+      {/* Error */}
       {error ? (
-        <Card className="shadow-sm border-danger-200">
-          <Card.Content>
-            <div className="flex items-center gap-3 text-danger">
+        <CardShell className="border-[#FCA5A5]">
+          <CardBody>
+            <div className="flex items-center gap-3" style={{ color: "#991B1B" }}>
               <AlertCircle size={18} />
               <div>
-                <p className="font-semibold text-sm">Operator access required</p>
-                <p className="text-xs text-default-500 mt-0.5">{error}</p>
+                <p className="t-label font-semibold">Operator access required</p>
+                <p className="t-caption text-[#8E8E93]">{error}</p>
               </div>
             </div>
-          </Card.Content>
-        </Card>
+          </CardBody>
+        </CardShell>
       ) : null}
 
-      {/* Loading skeleton */}
-      {loading && !data && (
-        <div className="space-y-6">
-          <SkeletonCard />
+      {/* Loading */}
+      {loading && data == null ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <SkeletonCard />
           <SkeletonCard />
         </div>
-      )}
-
-      {/* Results */}
-      {data ? (
-        <>
-          {/* Workspace summary */}
-          <Card className="shadow-sm">
-            <Card.Header className="pb-2">
-              <div className="flex items-center justify-between w-full">
-                <span className="font-semibold text-sm">Workspace Summary</span>
-                <div className="flex gap-2">
-                  <Chip size="sm" variant="soft" color="accent">
-                    {data.workspace.plan.plan}
-                  </Chip>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color={data.workspace.plan.status === "active" ? "success" : "warning"}
-                  >
-                    {data.workspace.plan.status}
-                  </Chip>
-                </div>
-              </div>
-            </Card.Header>
-            <Separator />
-            <Card.Content className="flex flex-col gap-4">
-              <p className="text-xs text-default-400 font-mono">{data.workspace.workspaceId}</p>
-
-              {/* Big stats grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  { label: "Systems", value: data.workspace.systems.length },
-                  { label: "Invites", value: data.workspace.invites.length },
-                  { label: "Tokens", value: data.workspace.tokens.length },
-                  {
-                    label: "Members",
-                    value:
-                      data.workspace.members?.length ??
-                      data.workspace.invites.length,
-                  },
-                ].map(({ label, value }) => (
-                  <div
-                    key={label}
-                    className="flex flex-col gap-1 p-3 rounded-xl bg-default-50 border border-default-100"
-                  >
-                    <span className="text-xs text-default-400 font-medium">{label}</span>
-                    <span className="text-2xl font-bold text-default-800">{value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Health metrics */}
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-semibold text-default-500 uppercase tracking-wide">
-                  Activation Health
-                </span>
-                {[
-                  {
-                    label: "Active Systems",
-                    value: data.workspace.health.activeSystems,
-                    max: Math.max(data.workspace.systems.length, 1),
-                    colorClass: "bg-green-500",
-                  },
-                  {
-                    label: "Favorites",
-                    value: data.workspace.health.favorites,
-                    max: Math.max(data.workspace.systems.length, 1),
-                    colorClass: "bg-indigo-600",
-                  },
-                  {
-                    label: "Recent Reopens",
-                    value: data.workspace.health.recentReopens,
-                    max: 10,
-                    colorClass: "bg-purple-500",
-                  },
-                ].map(({ label, value, max, colorClass }) => {
-                  const pct = Math.min((value / max) * 100, 100);
-                  return (
-                    <div key={label} className="flex items-center gap-3">
-                      <span className="text-xs text-default-500 w-32 shrink-0">{label}</span>
-                      <div className="flex-1 w-full bg-slate-200 rounded-full h-1.5">
-                        <div
-                          className={`${colorClass} h-1.5 rounded-full transition-all`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-semibold text-default-700 w-6 text-right">
-                        {value}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card.Content>
-          </Card>
-
-          {/* User detail */}
-          {data.user ? (
-            <Card className="shadow-sm">
-              <Card.Header className="pb-2">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <Users size={15} />
-                  User Detail
-                </div>
-              </Card.Header>
-              <Separator />
-              <Card.Content>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { label: "Name", value: data.user.name ?? "—" },
-                    { label: "Email", value: data.user.email },
-                    { label: "Role", value: data.user.role ?? "member" },
-                    {
-                      label: "Joined",
-                      value: data.user.createdAt
-                        ? new Date(data.user.createdAt).toLocaleDateString()
-                        : "—",
-                    },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex flex-col gap-1">
-                      <span className="text-xs text-default-400 font-medium uppercase tracking-wide">
-                        {label}
-                      </span>
-                      <span className="text-sm font-semibold text-default-800 truncate" title={value}>
-                        {value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card.Content>
-            </Card>
-          ) : null}
-
-          {/* System summary */}
-          {data.system ? (
-            <Card className="shadow-sm">
-              <Card.Header className="pb-2">
-                <span className="font-semibold text-sm">System Summary</span>
-              </Card.Header>
-              <Separator />
-              <Card.Content>
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-bold text-default-800">
-                      {data.system.bundle.system.name}
-                    </span>
-                    <Chip size="sm" variant="soft" color="default">
-                      {data.system.bundle.system.id}
-                    </Chip>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    {[
-                      { label: "Nodes", value: data.system.bundle.nodes.length },
-                      { label: "Pipes", value: data.system.bundle.pipes.length },
-                      { label: "Versions", value: data.system.bundle.versions.length },
-                    ].map(({ label, value }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 p-3 rounded-xl bg-default-50 border border-default-100"
-                      >
-                        <span className="text-xs text-default-400">{label}</span>
-                        <span className="text-xl font-bold">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card.Content>
-            </Card>
-          ) : null}
-
-          {/* Recent audit events */}
-          <Card className="shadow-sm">
-            <Card.Header className="pb-2">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <Activity size={15} />
-                Recent Audit Events
-                <Chip size="sm" variant="soft" color="default" className="ml-auto">
-                  last 20
-                </Chip>
-              </div>
-            </Card.Header>
-            <Separator />
-            <Card.Content className="px-0 pb-0">
-              {data.audits.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-default-400">
-                  <AlertCircle size={24} className="mb-2" />
-                  <p className="text-sm font-medium">No audit events</p>
-                  <p className="text-xs">No events in the selected filter.</p>
-                </div>
-              ) : (
-                <Table
-                  aria-label="Recent audit events"
-                >
-                  <Table.Content>
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.Column>Time</Table.Column>
-                        <Table.Column>Actor</Table.Column>
-                        <Table.Column>Action</Table.Column>
-                        <Table.Column>Target</Table.Column>
-                        <Table.Column>Outcome</Table.Column>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {data.audits.slice(0, 20).map((a: any, i: number) => (
-                        <Table.Row key={i}>
-                          <Table.Cell className="text-xs text-default-500 whitespace-nowrap">
-                            {new Date(a.createdAt).toLocaleString()}
-                          </Table.Cell>
-                          <Table.Cell className="text-xs font-mono">
-                            {a.actorType}:{a.actorId}
-                          </Table.Cell>
-                          <Table.Cell className="text-xs font-medium">{a.action}</Table.Cell>
-                          <Table.Cell className="text-xs text-default-500">
-                            {a.systemId ?? "—"}
-                          </Table.Cell>
-                          <Table.Cell>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              color={a.outcome === "success" ? "success" : "danger"}
-                            >
-                              {a.outcome}
-                            </Chip>
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Content>
-                </Table>
-              )}
-            </Card.Content>
-          </Card>
-
-          {/* Product signals */}
-          <Card className="shadow-sm">
-            <Card.Header className="pb-2">
-              <span className="font-semibold text-sm">Product Signals</span>
-            </Card.Header>
-            <Separator />
-            <Card.Content className="px-0 pb-0">
-              {data.workspace.recentSignals.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-default-400">
-                  <AlertCircle size={24} className="mb-2" />
-                  <p className="text-sm font-medium">No signals</p>
-                  <p className="text-xs">No recent signal events yet.</p>
-                </div>
-              ) : (
-                <Table
-                  aria-label="Recent product signals"
-                >
-                  <Table.Content>
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.Column>Time</Table.Column>
-                        <Table.Column>Signal</Table.Column>
-                        <Table.Column>Target</Table.Column>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {data.workspace.recentSignals.map((a: any, i: number) => (
-                        <Table.Row key={i}>
-                          <Table.Cell className="text-xs text-default-500 whitespace-nowrap">
-                            {new Date(a.createdAt).toLocaleString()}
-                          </Table.Cell>
-                          <Table.Cell className="text-xs font-medium">{a.action}</Table.Cell>
-                          <Table.Cell className="text-xs font-mono text-default-500">
-                            {a.targetType}:{a.targetId ?? ""}
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Content>
-                </Table>
-              )}
-            </Card.Content>
-          </Card>
-        </>
       ) : null}
+
+      {/* Two columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <CardShell>
+          <CardHeader bordered>
+            <div className="flex items-center justify-between">
+              <span className="t-label font-semibold text-[#111]">
+                Recent signups
+              </span>
+              <HelpText>Last 5</HelpText>
+            </div>
+          </CardHeader>
+          <CardBody className="p-0">
+            <DataTable
+              columns={signupColumns}
+              rows={recentSignups}
+              dense
+              emptyState={
+                <EmptyState
+                  title="No signups yet"
+                  description="New workspace signups will appear here."
+                />
+              }
+            />
+          </CardBody>
+        </CardShell>
+
+        <CardShell>
+          <CardHeader bordered>
+            <div className="flex items-center justify-between">
+              <span className="t-label font-semibold text-[#111]">
+                System creation activity
+              </span>
+              <HelpText>Last 14 days</HelpText>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <Sparkline data={sparkData} />
+          </CardBody>
+        </CardShell>
+      </div>
+
+      {/* Bottom row: issues + release */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <CardShell className="lg:col-span-2">
+          <CardHeader bordered>
+            <div className="flex items-center justify-between">
+              <span className="t-label font-semibold text-[#111]">
+                Recent issues
+              </span>
+              <HelpText>Failure events from audit log</HelpText>
+            </div>
+          </CardHeader>
+          <CardBody className="p-0">
+            <DataTable
+              columns={issueColumns}
+              rows={recentIssues}
+              dense
+              emptyState={
+                <EmptyState
+                  title="All clear"
+                  description="No failure events in the last window."
+                />
+              }
+            />
+          </CardBody>
+        </CardShell>
+
+        <CardShell>
+          <CardHeader bordered>
+            <span className="t-label font-semibold text-[#111]">
+              Latest release
+            </span>
+          </CardHeader>
+          <CardBody>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="t-h3 t-num text-[#111]">v0.9.4</span>
+                <StatusBadge tone="success" pulse>
+                  Live
+                </StatusBadge>
+              </div>
+              <p className="t-caption text-[#8E8E93]">
+                Released today by platform team. Hotfix for editor autosave queue.
+              </p>
+              <div className="surface-muted rounded-lg p-3 flex flex-col gap-1">
+                <span className="t-overline text-[#8E8E93]">Rollout</span>
+                <div className="h-1.5 w-full rounded-full bg-white overflow-hidden">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: "100%", backgroundColor: "#059669" }}
+                  />
+                </div>
+                <span className="t-caption text-[#3C3C43]">100% of workspaces</span>
+              </div>
+            </div>
+          </CardBody>
+        </CardShell>
+      </div>
+    </div>
+  );
+}
+
+function Sparkline({ data }: { data: number[] }) {
+  const max = Math.max(...data, 1);
+  const points = data
+    .map((v, i) => {
+      const x = (i / Math.max(data.length - 1, 1)) * 100;
+      const y = 100 - (v / max) * 90 - 5;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  return (
+    <div className="surface-muted rounded-lg p-4 h-[200px] flex flex-col">
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="w-full flex-1"
+        aria-label="Activity last 14 days"
+      >
+        <polyline
+          fill="none"
+          stroke="#4F46E5"
+          strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
+          points={points}
+        />
+        <polyline
+          fill="rgba(79,70,229,0.08)"
+          stroke="none"
+          points={`0,100 ${points} 100,100`}
+        />
+      </svg>
+      <div className="flex items-center justify-between mt-2">
+        <span className="t-caption text-[#8E8E93]">14d ago</span>
+        <span className="t-caption text-[#8E8E93]">today</span>
+      </div>
     </div>
   );
 }

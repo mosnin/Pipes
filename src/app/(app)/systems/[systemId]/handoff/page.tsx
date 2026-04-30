@@ -1,24 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Accordion,
+  CheckCircle2,
+  Download,
+  Eye,
+  MessageSquare,
+  Package,
+  XCircle,
+  Copy,
+  FileText,
+  Code,
+  Link2,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
   Button,
-  Card,
-  Chip,
-  Modal,
-  Separator,
   Spinner,
-} from "@heroui/react";
-import { CheckCircle2, Download, Eye, MessageSquare, Package, XCircle } from "lucide-react";
+  Breadcrumbs,
+  PageHeader,
+  CardShell,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Select,
+  Badge,
+  StatusBadge,
+  Dialog,
+  Toolbar,
+  EmptyState,
+  HelpText,
+  InlineCode,
+  Tooltip,
+} from "@/components/ui";
 import type {
   HandoffAcceptanceCriteria,
   HandoffArtifact,
   HandoffPackage,
 } from "@/domain/handoff/model";
 
-// ── types ──────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type PackageDetail = {
   package: HandoffPackage;
@@ -34,31 +57,37 @@ type SandboxArtifact = {
   normalized: boolean;
 };
 
-// ── constants ──────────────────────────────────────────────────────────────
+type ReviewDecision = "approved" | "rejected" | "revision_requested";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const TARGET_LABELS: Record<string, string> = {
-  human_engineer: "👤 Human Engineer",
-  codex: "🤖 Codex",
-  claude_code: "🧠 Claude Code",
-  general_llm_builder: "🌐 LLM Builder",
+  human_engineer: "Human Engineer",
+  codex: "Codex",
+  claude_code: "Claude Code",
+  general_llm_builder: "LLM Builder",
 };
 
-const TARGET_OPTIONS = [
-  { value: "human_engineer", label: "👤 Human Engineer" },
-  { value: "codex", label: "🤖 Codex" },
-  { value: "claude_code", label: "🧠 Claude Code" },
-  { value: "general_llm_builder", label: "🌐 LLM Builder" },
+const TARGET_OPTIONS: { value: string; label: string }[] = [
+  { value: "human_engineer", label: "Human Engineer" },
+  { value: "codex", label: "Codex" },
+  { value: "claude_code", label: "Claude Code" },
+  { value: "general_llm_builder", label: "LLM Builder" },
 ];
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-type StatusColor = "warning" | "success" | "danger" | "default";
+type Tone = "success" | "warning" | "danger" | "info" | "neutral";
 
-function statusColor(status: string): StatusColor {
-  if (status === "in_review" || status === "revision_requested") return "warning";
+function statusTone(status: string): Tone {
   if (status === "approved" || status === "exported") return "success";
+  if (status === "in_review" || status === "revision_requested") return "warning";
   if (status === "rejected") return "danger";
-  return "default";
+  return "neutral";
 }
 
 function statusLabel(status: string): string {
@@ -73,7 +102,7 @@ function statusLabel(status: string): string {
   return labels[status] ?? status;
 }
 
-function criteriaStatusColor(status: string): StatusColor {
+function criteriaTone(status: string): Tone {
   if (status === "satisfied") return "success";
   if (status === "blocked") return "danger";
   return "warning";
@@ -87,80 +116,108 @@ function formatDate(iso: string): string {
   });
 }
 
-// ── sub-components ─────────────────────────────────────────────────────────
-
-function StatusChip({ status }: { status: string }) {
-  return (
-    <Chip color={statusColor(status)} size="sm" variant="soft">
-      {statusLabel(status)}
-    </Chip>
-  );
+function copyToClipboard(text: string) {
+  void navigator.clipboard.writeText(text).then(() => {
+    toast.success("Copied to clipboard");
+  });
 }
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 function CriteriaRow({ criterion }: { criterion: HandoffAcceptanceCriteria }) {
   const icon =
     criterion.status === "satisfied" ? (
-      <CheckCircle2 className="shrink-0 text-success-500" size={15} />
+      <CheckCircle2 className="shrink-0 text-[#059669]" size={14} />
     ) : criterion.status === "blocked" ? (
-      <XCircle className="shrink-0 text-danger-500" size={15} />
+      <XCircle className="shrink-0 text-[#DC2626]" size={14} />
     ) : (
-      <div className="shrink-0 w-[15px] h-[15px] rounded-full border-2 border-warning-400" />
+      <span className="shrink-0 w-3.5 h-3.5 rounded-full border-2 border-[#D97706]" />
     );
 
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-default-50 px-3 py-2.5">
+    <div className="flex items-start gap-3 rounded-[8px] surface-muted px-3 py-2.5">
       <div className="pt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">{criterion.title}</p>
-        <p className="text-xs text-default-500 mt-0.5">{criterion.description}</p>
+        <p className="t-label font-semibold text-[#111]">{criterion.title}</p>
+        <p className="t-caption text-[#8E8E93] mt-0.5 leading-snug">
+          {criterion.description}
+        </p>
       </div>
-      <Chip color={criteriaStatusColor(criterion.status)} size="sm" variant="soft">
+      <StatusBadge tone={criteriaTone(criterion.status)}>
         {criterion.status}
-      </Chip>
+      </StatusBadge>
     </div>
   );
 }
 
-// ── page ──────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function SystemHandoffPage({
   params,
 }: {
-  params: { systemId: string };
+  params: Promise<{ systemId: string }>;
 }) {
+  const { systemId } = use(params);
+
   const [target, setTarget] = useState("human_engineer");
   const [packages, setPackages] = useState<HandoffPackage[]>([]);
+  const [systemName, setSystemName] = useState<string>("System");
   const [selected, setSelected] = useState<PackageDetail | null>(null);
   const [sandboxArtifacts, setSandboxArtifacts] = useState<SandboxArtifact[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
-
   const [detailOpen, setDetailOpen] = useState(false);
+  const [expandedArtifact, setExpandedArtifact] = useState<string | null>(null);
 
-  // ── data loading ───────────────────────────────────────────────────────
+  // -------------------------------------------------------------------------
+  // Data
+  // -------------------------------------------------------------------------
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/handoff/systems/${params.systemId}/packages`);
+    const res = await fetch(`/api/handoff/systems/${systemId}/packages`);
     const data = await res.json();
-    setPackages(data.data ?? []);
-  }, [params.systemId]);
+    setPackages((data.data as HandoffPackage[]) ?? []);
+  }, [systemId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // ── handlers ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch(`/api/systems/${systemId}`);
+        const data = await res.json();
+        if (data.ok && data.data?.name) {
+          setSystemName(String(data.data.name));
+        }
+      } catch {
+        // tolerate; name is decorative
+      }
+    })();
+  }, [systemId]);
+
+  // -------------------------------------------------------------------------
+  // Handlers
+  // -------------------------------------------------------------------------
 
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      await fetch(`/api/handoff/systems/${params.systemId}/packages`, {
+      await fetch(`/api/handoff/systems/${systemId}/packages`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ target }),
       });
       await load();
+      toast.success("Package generated");
+    } catch {
+      toast.error("Failed to generate package");
     } finally {
       setGenerating(false);
     }
@@ -171,25 +228,25 @@ export default function SystemHandoffPage({
     setSandboxArtifacts([]);
     setLoadingDetail(true);
     setDetailOpen(true);
+    setExpandedArtifact(null);
     try {
-      const detail = await fetch(`/api/handoff/packages/${pkg.id}`).then((r) => r.json());
-      setSelected(detail.data);
+      const detail = await fetch(`/api/handoff/packages/${pkg.id}`).then((r) =>
+        r.json(),
+      );
+      setSelected(detail.data as PackageDetail);
       const runId = (detail.data as PackageDetail)?.package?.sourceRunId;
       if (runId) {
-        const arts = await fetch(`/api/agent/runs/${runId}/sandbox/artifacts`).then((r) =>
-          r.json()
-        );
-        setSandboxArtifacts(arts.data ?? []);
+        const arts = await fetch(
+          `/api/agent/runs/${runId}/sandbox/artifacts`,
+        ).then((r) => r.json());
+        setSandboxArtifacts((arts.data as SandboxArtifact[]) ?? []);
       }
     } finally {
       setLoadingDetail(false);
     }
   };
 
-  const handleReview = async (
-    decision: "approved" | "rejected" | "revision_requested",
-    note?: string
-  ) => {
+  const handleReview = async (decision: ReviewDecision, note?: string) => {
     if (!selected) return;
     setReviewLoading(true);
     try {
@@ -198,370 +255,582 @@ export default function SystemHandoffPage({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ decision, ...(note ? { note } : {}) }),
       });
-      const updated = await fetch(`/api/handoff/packages/${selected.package.id}`).then((r) =>
-        r.json()
-      );
-      setSelected(updated.data);
+      const updated = await fetch(
+        `/api/handoff/packages/${selected.package.id}`,
+      ).then((r) => r.json());
+      setSelected(updated.data as PackageDetail);
       await load();
+      toast.success(`Marked as ${decision.replace("_", " ")}`);
     } finally {
       setReviewLoading(false);
     }
   };
 
-  const handleExport = async () => {
+  const handleExportMarkdown = async () => {
     if (!selected) return;
-    const exported = await fetch(`/api/handoff/packages/${selected.package.id}/export`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ format: "markdown_bundle" }),
-    }).then((r) => r.json());
-    // eslint-disable-next-line no-alert
-    alert(`Export digest: ${exported.data.record.digest}`);
+    const exported = await fetch(
+      `/api/handoff/packages/${selected.package.id}/export`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ format: "markdown_bundle" }),
+      },
+    ).then((r) => r.json());
+    if (exported?.data?.record?.digest) {
+      copyToClipboard(exported.data.record.digest);
+      toast.success("Markdown bundle exported -- digest copied");
+    }
     await load();
   };
 
-  // ── derived ────────────────────────────────────────────────────────────
+  const handleExportSchema = async () => {
+    const res = await fetch(`/api/systems/${systemId}/export`);
+    if (!res.ok) {
+      toast.error("Schema export failed");
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${systemName.toLowerCase().replace(/\s+/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Schema downloaded");
+  };
+
+  // -------------------------------------------------------------------------
+  // Derived
+  // -------------------------------------------------------------------------
 
   const selectedStatus = selected?.package.status;
   const isInReview = selectedStatus === "in_review";
   const isApproved = selectedStatus === "approved";
 
-  // ── render ─────────────────────────────────────────────────────────────
+  const sortedPackages = useMemo(
+    () =>
+      [...packages].sort(
+        (a, b) =>
+          new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime(),
+      ),
+    [packages],
+  );
+
+  const schemaPreview = useMemo(
+    () =>
+      `{
+  "pipes_schema_v1": {
+    "system": {
+      "id": "${systemId}",
+      "name": "${systemName}",
+      "version": 1
+    },
+    "nodes": [ ... ],
+    "pipes": [ ... ]
+  }
+}`,
+    [systemId, systemName],
+  );
+
+  const mcpUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/protocol/mcp`;
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 flex flex-col gap-6">
+    <div className="surface-subtle min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <Breadcrumbs
+          items={[
+            { label: "Systems", href: "/dashboard" },
+            { label: systemName, href: `/systems/${systemId}` },
+            { label: "Handoff" },
+          ]}
+        />
+        <div className="mt-3">
+          <PageHeader
+            title={`Handoff -- ${systemName}`}
+            subtitle="Generate build-ready documentation. Export schema, MCP token, or markdown spec."
+          />
+        </div>
 
-      {/* ── Page header ── */}
-      <div className="flex flex-col gap-1">
-        <Link
-          href={`/systems/${params.systemId}`}
-          className="w-fit text-sm text-default-400 hover:text-default-700 transition-colors"
-        >
-          ← System
-        </Link>
-        <h1 className="text-2xl font-bold">Handoff Packages</h1>
-        <p className="text-sm text-default-500">
-          Generate build-ready documentation for your engineering team
-        </p>
-      </div>
-
-      {/* ── Generate package ── */}
-      <Card>
-        <Card.Content className="flex flex-col gap-4 p-5">
-          <h2 className="text-base font-semibold">Create new package</h2>
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <select
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              aria-label="Handoff target"
-              className="sm:max-w-xs border border-default-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {TARGET_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <Button
-              variant="primary"
-              size="sm"
-              isDisabled={generating}
-              onPress={handleGenerate}
-            >
-              {generating ? <Spinner size="sm" /> : <Package size={15} />}
-              {generating ? "Generating…" : "Generate package"}
-            </Button>
-          </div>
-        </Card.Content>
-      </Card>
-
-      {/* ── Packages list ── */}
-      <div className="flex flex-col gap-3">
-        {packages.length === 0 ? (
-          <Card>
-            <Card.Content className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <Package className="text-default-300" size={40} />
-              <p className="font-medium text-default-500">No handoff packages yet</p>
-              <p className="text-sm text-default-400">
-                Generate a package after your system design is accepted.
-              </p>
-            </Card.Content>
-          </Card>
-        ) : (
-          packages.map((pkg) => (
-            <Card
-              key={pkg.id}
-              className="transition-shadow hover:shadow-md"
-            >
-              <Card.Content className="flex flex-col gap-3 p-5">
-
-                {/* Title row */}
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-mono text-xs text-default-400">{pkg.id}</span>
-                    <span className="text-sm font-semibold">{pkg.title}</span>
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* LEFT: summary + packages */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            {/* Summary */}
+            <CardShell>
+              <CardHeader bordered>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="t-label font-semibold text-[#111]">
+                    System summary
+                  </p>
+                  <StatusBadge tone="info">v1</StatusBadge>
+                </div>
+              </CardHeader>
+              <CardBody>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div>
+                    <dt className="t-overline text-[#8E8E93]">Name</dt>
+                    <dd className="t-label text-[#111] mt-1">{systemName}</dd>
                   </div>
-                  <span className="text-xs text-default-400 shrink-0">{formatDate(pkg.generatedAt)}</span>
-                </div>
+                  <div>
+                    <dt className="t-overline text-[#8E8E93]">System ID</dt>
+                    <dd className="mt-1">
+                      <InlineCode>{systemId}</InlineCode>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="t-overline text-[#8E8E93]">Packages</dt>
+                    <dd className="t-label text-[#111] mt-1">
+                      {packages.length}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="t-overline text-[#8E8E93]">Latest</dt>
+                    <dd className="t-label text-[#111] mt-1">
+                      {sortedPackages[0]
+                        ? formatDate(sortedPackages[0].generatedAt)
+                        : "Never"}
+                    </dd>
+                  </div>
+                </dl>
+              </CardBody>
+            </CardShell>
 
-                <Separator />
-
-                {/* Badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip color="default" size="sm" variant="soft">
-                    {TARGET_LABELS[pkg.target] ?? pkg.target}
-                  </Chip>
-                  <StatusChip status={pkg.status} />
-                  <Chip color="default" size="sm" variant="soft">
-                    v{pkg.version}
-                  </Chip>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-1">
+            {/* Generate package */}
+            <CardShell>
+              <CardHeader bordered>
+                <p className="t-label font-semibold text-[#111]">
+                  Create a new handoff package
+                </p>
+                <p className="t-caption text-[#8E8E93] mt-0.5">
+                  Pick a target audience. Pipes will tailor artifacts for it.
+                </p>
+              </CardHeader>
+              <CardBody>
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                  <div className="flex-1">
+                    <label
+                      htmlFor="target"
+                      className="t-overline text-[#8E8E93] block mb-1"
+                    >
+                      Target
+                    </label>
+                    <Select
+                      id="target"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      aria-label="Handoff target"
+                    >
+                      {TARGET_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
                   <Button
+                    variant="primary"
                     size="sm"
+                    isDisabled={generating}
+                    onPress={handleGenerate}
+                  >
+                    {generating ? <Spinner size="xs" /> : <Package size={14} />}
+                    {generating ? "Generating..." : "Generate package"}
+                  </Button>
+                </div>
+              </CardBody>
+            </CardShell>
+
+            {/* Packages list */}
+            <CardShell>
+              <Toolbar
+                left={
+                  <div>
+                    <p className="t-label font-semibold text-[#111]">
+                      Packages
+                    </p>
+                    <p className="t-caption text-[#8E8E93] mt-0.5">
+                      {packages.length} total
+                    </p>
+                  </div>
+                }
+              />
+              <CardBody className="p-0">
+                {sortedPackages.length === 0 ? (
+                  <div className="p-6">
+                    <EmptyState
+                      title="No handoff packages yet"
+                      description="Generate a package once your system design is accepted."
+                    />
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-[var(--color-line)]">
+                    {sortedPackages.map((pkg) => (
+                      <li
+                        key={pkg.id}
+                        className="px-4 py-3 hover:bg-[#FAFAFA] transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="t-label font-semibold text-[#111] truncate">
+                                {pkg.title}
+                              </p>
+                              <StatusBadge tone={statusTone(pkg.status)}>
+                                {statusLabel(pkg.status)}
+                              </StatusBadge>
+                              <Badge tone="neutral">v{pkg.version}</Badge>
+                              <Badge tone="neutral">
+                                {TARGET_LABELS[pkg.target] ?? pkg.target}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <InlineCode>{pkg.id}</InlineCode>
+                              <span className="t-caption text-[#8E8E93]">
+                                {formatDate(pkg.generatedAt)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onPress={() => void openDetail(pkg)}
+                            >
+                              <Eye size={14} />
+                              View
+                            </Button>
+                            {pkg.status === "in_review" && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onPress={async () => {
+                                  await openDetail(pkg);
+                                  await handleReview("approved");
+                                }}
+                              >
+                                <CheckCircle2 size={14} />
+                                Approve
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardBody>
+            </CardShell>
+          </div>
+
+          {/* RIGHT: export options */}
+          <div className="flex flex-col gap-4">
+            {/* Schema JSON */}
+            <CardShell>
+              <CardHeader bordered>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Code size={16} className="text-indigo-600" />
+                    <p className="t-label font-semibold text-[#111]">
+                      pipes_schema_v1 JSON
+                    </p>
+                  </div>
+                </div>
+                <p className="t-caption text-[#8E8E93] mt-1">
+                  Canonical export for any system that speaks the schema.
+                </p>
+              </CardHeader>
+              <CardBody>
+                <div className="surface-inverse rounded-[8px] p-3 overflow-hidden">
+                  <pre className="t-caption font-mono text-emerald-300 leading-relaxed overflow-x-auto whitespace-pre-wrap">
+                    {schemaPreview}
+                  </pre>
+                </div>
+              </CardBody>
+              <CardFooter>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => copyToClipboard(schemaPreview)}
+                >
+                  <Copy size={14} />
+                  Copy preview
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onPress={handleExportSchema}
+                >
+                  <Download size={14} />
+                  Download
+                </Button>
+              </CardFooter>
+            </CardShell>
+
+            {/* MCP URL */}
+            <CardShell>
+              <CardHeader bordered>
+                <div className="flex items-center gap-2">
+                  <Link2 size={16} className="text-indigo-600" />
+                  <p className="t-label font-semibold text-[#111]">
+                    MCP endpoint
+                  </p>
+                </div>
+                <p className="t-caption text-[#8E8E93] mt-1">
+                  Drop into any MCP-compatible agent.
+                </p>
+              </CardHeader>
+              <CardBody>
+                <div className="surface-muted rounded-[8px] p-3">
+                  <code className="t-caption font-mono text-[#111] break-all">
+                    {mcpUrl}
+                  </code>
+                </div>
+              </CardBody>
+              <CardFooter>
+                <HelpText>Pair with an agent token from Connect.</HelpText>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onPress={() => copyToClipboard(mcpUrl)}
+                >
+                  <Copy size={14} />
+                  Copy URL
+                </Button>
+              </CardFooter>
+            </CardShell>
+
+            {/* Markdown spec */}
+            <CardShell>
+              <CardHeader bordered>
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-indigo-600" />
+                  <p className="t-label font-semibold text-[#111]">
+                    Markdown spec
+                  </p>
+                </div>
+                <p className="t-caption text-[#8E8E93] mt-1">
+                  A human-readable bundle from an approved package.
+                </p>
+              </CardHeader>
+              <CardBody>
+                <HelpText>
+                  Approve a package first, then export from its detail view.
+                </HelpText>
+              </CardBody>
+              <CardFooter>
+                <Tooltip content="Open the latest package to export">
+                  <Button
                     variant="outline"
-                    onPress={() => void openDetail(pkg)}
+                    size="sm"
+                    onPress={() => {
+                      if (sortedPackages[0]) void openDetail(sortedPackages[0]);
+                    }}
+                    isDisabled={sortedPackages.length === 0}
                   >
                     <Eye size={14} />
-                    View details
+                    Open latest
                   </Button>
-
-                  {pkg.status === "in_review" && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onPress={async () => {
-                          await openDetail(pkg);
-                          await handleReview("approved");
-                        }}
-                      >
-                        <CheckCircle2 size={14} />
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onPress={async () => {
-                          await openDetail(pkg);
-                          await handleReview("revision_requested", "Need stricter rollout steps");
-                        }}
-                      >
-                        <MessageSquare size={14} />
-                        Request revision
-                      </Button>
-                    </>
-                  )}
-
-                  {pkg.status === "approved" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onPress={async () => {
-                        await openDetail(pkg);
-                        await handleExport();
-                      }}
-                    >
-                      <Download size={14} />
-                      Export markdown
-                    </Button>
-                  )}
-                </div>
-              </Card.Content>
-            </Card>
-          ))
-        )}
+                </Tooltip>
+              </CardFooter>
+            </CardShell>
+          </div>
+        </div>
       </div>
 
-      {/* ── Package detail modal ── */}
-      <Modal isOpen={detailOpen} onOpenChange={setDetailOpen}>
-        <Modal.Container size="lg">
-          <Modal.Dialog>
-            {/* Header */}
-            <Modal.Header className="flex flex-col gap-1 pb-2">
-              {loadingDetail || !selected ? (
-                <div className="flex items-center gap-2 text-base">
-                  <Spinner size="sm" />
-                  <span>Loading package…</span>
-                </div>
-              ) : (
+      {/* Package detail Dialog */}
+      <Dialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        size="lg"
+        title={selected?.package.title ?? "Loading package..."}
+        description={
+          selected
+            ? `${TARGET_LABELS[selected.package.target] ?? selected.package.target} -- v${selected.package.version}`
+            : undefined
+        }
+        footer={
+          loadingDetail || !selected ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={() => setDetailOpen(false)}
+            >
+              Cancel
+            </Button>
+          ) : (
+            <>
+              {isInReview && (
                 <>
-                  <span className="text-lg font-bold leading-snug">{selected.package.title}</span>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <span className="font-mono text-xs text-default-400">{selected.package.id}</span>
-                    <Chip color="default" size="sm" variant="soft">
-                      {TARGET_LABELS[selected.package.target] ?? selected.package.target}
-                    </Chip>
-                    <StatusChip status={selected.package.status} />
-                    <span className="text-xs text-default-400">
-                      {formatDate(selected.package.generatedAt)}
-                    </span>
-                  </div>
-                </>
-              )}
-            </Modal.Header>
-
-            {/* Body */}
-            <Modal.Body className="flex flex-col gap-5 pb-4">
-              {!loadingDetail && selected && (
-                <>
-                  {/* Artifacts */}
-                  {selected.artifacts.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <h3 className="text-sm font-semibold text-default-700">
-                        Artifacts ({selected.artifacts.length})
-                      </h3>
-                      <Accordion allowsMultipleExpanded={true}>
-                        {selected.artifacts.map((artifact) => (
-                          <Accordion.Item
-                            key={artifact.id}
-                            id={artifact.id}
-                          >
-                            <Accordion.Heading>
-                              <Accordion.Trigger>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm font-medium">{artifact.title}</span>
-                                  <Chip color="default" size="sm" variant="soft">
-                                    {artifact.type.replace(/_/g, " ")}
-                                  </Chip>
-                                </div>
-                              </Accordion.Trigger>
-                            </Accordion.Heading>
-                            <Accordion.Panel>
-                              <Accordion.Body>
-                                <p className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-default-600">
-                                  {artifact.content.length > 200
-                                    ? `${artifact.content.slice(0, 200)}…`
-                                    : artifact.content}
-                                </p>
-                              </Accordion.Body>
-                            </Accordion.Panel>
-                          </Accordion.Item>
-                        ))}
-                      </Accordion>
-                    </div>
-                  )}
-
-                  {/* Acceptance Criteria */}
-                  {selected.acceptanceCriteria.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-sm font-semibold text-default-700">
-                          Acceptance Criteria
-                        </h3>
-                        <div className="flex flex-col gap-2">
-                          {selected.acceptanceCriteria.map((criterion) => (
-                            <CriteriaRow key={criterion.id} criterion={criterion} />
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Sandbox Artifacts */}
-                  {sandboxArtifacts.length > 0 && (
-                    <>
-                      <Separator />
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-sm font-semibold text-default-700">
-                          Sandbox Artifacts ({sandboxArtifacts.length})
-                        </h3>
-                        <div className="flex flex-col gap-2">
-                          {sandboxArtifacts.map((a) => (
-                            <div
-                              key={a.artifactId}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-default-50 px-3 py-2"
-                            >
-                              <span className="truncate font-mono text-xs text-default-600">
-                                {a.artifactId}
-                              </span>
-                              <div className="flex shrink-0 items-center gap-2">
-                                <Chip color="default" size="sm" variant="soft">
-                                  {a.type}
-                                </Chip>
-                                <Chip
-                                  color={a.normalized ? "success" : "default"}
-                                  size="sm"
-                                  variant="soft"
-                                >
-                                  {a.normalized ? "normalized" : "raw"}
-                                </Chip>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </Modal.Body>
-
-            {/* Footer */}
-            <Modal.Footer className="flex flex-wrap gap-2 justify-end">
-              {!loadingDetail && selected && (
-                <>
-                  {isInReview && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        isDisabled={reviewLoading}
-                        onPress={() => void handleReview("approved")}
-                      >
-                        {reviewLoading ? <Spinner size="sm" /> : <CheckCircle2 size={14} />}
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        isDisabled={reviewLoading}
-                        onPress={() => void handleReview("rejected")}
-                      >
-                        {reviewLoading ? <Spinner size="sm" /> : <XCircle size={14} />}
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        isDisabled={reviewLoading}
-                        onPress={() =>
-                          void handleReview("revision_requested", "Need stricter rollout steps")
-                        }
-                      >
-                        {reviewLoading ? <Spinner size="sm" /> : <MessageSquare size={14} />}
-                        Request revision
-                      </Button>
-                    </>
-                  )}
-
-                  {isApproved && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onPress={() => void handleExport()}
-                    >
-                      <Download size={14} />
-                      Export markdown
-                    </Button>
-                  )}
-
-                  <Button size="sm" variant="ghost" onPress={() => setDetailOpen(false)}>
-                    Close
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    isDisabled={reviewLoading}
+                    onPress={() =>
+                      void handleReview(
+                        "revision_requested",
+                        "Need stricter rollout steps",
+                      )
+                    }
+                  >
+                    {reviewLoading ? <Spinner size="xs" /> : <MessageSquare size={14} />}
+                    Request revision
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    isDisabled={reviewLoading}
+                    onPress={() => void handleReview("rejected")}
+                  >
+                    {reviewLoading ? <Spinner size="xs" /> : <XCircle size={14} />}
+                    Reject
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    isDisabled={reviewLoading}
+                    onPress={() => void handleReview("approved")}
+                  >
+                    {reviewLoading ? <Spinner size="xs" /> : <CheckCircle2 size={14} />}
+                    Approve
                   </Button>
                 </>
               )}
-
-              {loadingDetail && (
-                <Button size="sm" variant="ghost" onPress={() => setDetailOpen(false)}>
-                  Cancel
+              {isApproved && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onPress={() => void handleExportMarkdown()}
+                >
+                  <Download size={14} />
+                  Export markdown
                 </Button>
               )}
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal>
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => setDetailOpen(false)}
+              >
+                Close
+              </Button>
+            </>
+          )
+        }
+      >
+        {loadingDetail || !selected ? (
+          <div className="flex items-center justify-center py-10">
+            <Spinner size="md" />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <InlineCode>{selected.package.id}</InlineCode>
+              <StatusBadge tone={statusTone(selected.package.status)}>
+                {statusLabel(selected.package.status)}
+              </StatusBadge>
+              <span className="t-caption text-[#8E8E93]">
+                Generated {formatDate(selected.package.generatedAt)}
+              </span>
+            </div>
+
+            {/* Artifacts */}
+            {selected.artifacts.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="t-label font-semibold text-[#111]">
+                  Artifacts ({selected.artifacts.length})
+                </p>
+                <div className="border border-black/[0.08] rounded-[10px] overflow-hidden">
+                  {selected.artifacts.map((artifact, i) => {
+                    const expanded = expandedArtifact === artifact.id;
+                    return (
+                      <div
+                        key={artifact.id}
+                        className={
+                          (i > 0 ? "border-t border-black/[0.06] " : "") +
+                          "bg-white"
+                        }
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedArtifact(expanded ? null : artifact.id)
+                          }
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-[#FAFAFA] transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="t-label font-semibold text-[#111] truncate">
+                              {artifact.title}
+                            </span>
+                            <Badge tone="neutral">
+                              {artifact.type.replace(/_/g, " ")}
+                            </Badge>
+                          </div>
+                          <span className="t-caption text-[#8E8E93]">
+                            {expanded ? "Hide" : "Show"}
+                          </span>
+                        </button>
+                        {expanded && (
+                          <div className="px-3 pb-3">
+                            <pre className="surface-muted rounded-[8px] p-3 t-caption font-mono text-[#3C3C43] whitespace-pre-wrap leading-relaxed max-h-64 overflow-auto">
+                              {artifact.content.length > 1200
+                                ? `${artifact.content.slice(0, 1200)}\n\n... (truncated)`
+                                : artifact.content}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Acceptance Criteria */}
+            {selected.acceptanceCriteria.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="t-label font-semibold text-[#111]">
+                  Acceptance criteria
+                </p>
+                <div className="flex flex-col gap-2">
+                  {selected.acceptanceCriteria.map((criterion) => (
+                    <CriteriaRow key={criterion.id} criterion={criterion} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sandbox Artifacts */}
+            {sandboxArtifacts.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="t-label font-semibold text-[#111]">
+                  Sandbox artifacts ({sandboxArtifacts.length})
+                </p>
+                <div className="flex flex-col gap-2">
+                  {sandboxArtifacts.map((a) => (
+                    <div
+                      key={a.artifactId}
+                      className="flex items-center justify-between gap-2 rounded-[8px] surface-muted px-3 py-2"
+                    >
+                      <span className="truncate t-caption font-mono text-[#3C3C43]">
+                        {a.artifactId}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Badge tone="neutral">{a.type}</Badge>
+                        <StatusBadge tone={a.normalized ? "success" : "neutral"}>
+                          {a.normalized ? "normalized" : "raw"}
+                        </StatusBadge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }
