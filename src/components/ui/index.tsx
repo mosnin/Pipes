@@ -81,9 +81,9 @@ export function Select({ children, className, ...props }: SelectProps) {
   return (
     <select
       className={cn(
-        "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm",
-        "text-slate-800 shadow-sm outline-none",
-        "focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200",
+        "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label",
+        "text-[#111] outline-none",
+        "focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
@@ -136,7 +136,7 @@ export type CardProps = {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <HeroCard className={cn("bg-white shadow-sm", className)}>
+    <HeroCard className={cn("bg-white border border-black/[0.08]", className)}>
       <HeroCard.Content className="p-4">{children}</HeroCard.Content>
     </HeroCard>
   );
@@ -154,9 +154,9 @@ export type PanelProps = {
 
 export function Panel({ title, children, className }: PanelProps) {
   return (
-    <HeroCard className={cn("bg-white shadow-sm", className)}>
+    <HeroCard className={cn("bg-white border border-black/[0.08]", className)}>
       <HeroCard.Header className="px-4 pt-4 pb-0">
-        <HeroCard.Title className="text-base font-semibold text-slate-800">
+        <HeroCard.Title className="t-label font-semibold text-[#111]">
           {title}
         </HeroCard.Title>
       </HeroCard.Header>
@@ -179,7 +179,7 @@ export function Sidebar({ children, className }: SidebarProps) {
     <aside
       aria-label="Sidebar"
       className={cn(
-        "w-64 bg-white border-r border-slate-200 p-4 min-h-screen flex flex-col",
+        "w-64 bg-[#F5F5F7] border-r border-black/[0.06] p-4 min-h-screen flex flex-col",
         className,
       )}
     >
@@ -202,7 +202,7 @@ export function Topbar({ left, right, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        "flex justify-between items-center border-b border-slate-200 bg-white px-4 py-3",
+        "flex justify-between items-center border-b border-black/[0.08] bg-white px-4 py-3",
         className,
       )}
     >
@@ -293,13 +293,13 @@ export function EmptyState({ title, description, action, className }: EmptyState
       role="status"
       aria-live="polite"
       className={cn(
-        "border border-dashed border-slate-300 rounded-xl p-10 text-center",
+        "border border-dashed border-black/[0.12] rounded-xl p-10 text-center",
         "flex flex-col items-center gap-3",
         className,
       )}
     >
-      <h3 className="text-base font-semibold text-slate-700">{title}</h3>
-      <p className="text-sm text-slate-500">{description}</p>
+      <h3 className="t-label font-semibold text-[#111]">{title}</h3>
+      <p className="t-caption text-[#8E8E93]">{description}</p>
       {action != null && <div className="mt-2">{action}</div>}
     </div>
   );
@@ -320,9 +320,9 @@ export function PageHeader({ title, subtitle, actions, className }: PageHeaderPr
   return (
     <div className={cn("flex items-start justify-between gap-4 mb-6", className)}>
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold text-[#111]">{title}</h1>
         {subtitle != null && (
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          <p className="mt-1 t-caption text-[#8E8E93]">{subtitle}</p>
         )}
       </div>
       {actions != null && (
@@ -345,9 +345,9 @@ export type SectionHeaderProps = {
 export function SectionHeader({ title, description, className }: SectionHeaderProps) {
   return (
     <div className={cn("mb-4", className)}>
-      <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+      <h2 className="t-title text-[#111]">{title}</h2>
       {description != null && (
-        <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+        <p className="mt-0.5 t-caption text-[#8E8E93]">{description}</p>
       )}
     </div>
   );
@@ -398,8 +398,8 @@ export function CommentBubble({ author, text, className }: CommentBubbleProps) {
         className,
       )}
     >
-      <strong className="block text-sm font-semibold text-slate-800">{author}</strong>
-      <p className="mt-0.5 text-sm text-slate-600">{text}</p>
+      <strong className="block t-label font-semibold text-[#111]">{author}</strong>
+      <p className="mt-0.5 t-label text-[#3C3C43]">{text}</p>
     </article>
   );
 }

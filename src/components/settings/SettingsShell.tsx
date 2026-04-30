@@ -70,7 +70,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
         <div key={group.heading}>
           {groupIdx > 0 && <Separator className="my-1" />}
 
-          <p className="px-2 mb-1 text-[11px] font-semibold tracking-wider text-slate-400">
+          <p className="px-2 mb-1 text-[11px] font-semibold tracking-wider text-[#8E8E93]">
             {group.heading}
           </p>
 
@@ -86,7 +86,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                       "flex items-center gap-2.5 px-2 py-2 text-sm font-medium rounded-lg transition-colors",
                       isActive
                         ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-600 hover:bg-slate-50",
+                        : "text-[#3C3C43] hover:bg-black/[0.04]",
                     ].join(" ")}
                   >
                     <Icon size={16} strokeWidth={1.75} className="shrink-0" />
@@ -112,20 +112,20 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex w-full min-h-screen">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-slate-200 bg-white px-3 py-6 flex-col gap-4">
-        <h1 className="text-xl font-bold text-slate-900 px-2">Settings</h1>
+      <aside className="hidden lg:flex w-[220px] shrink-0 border-r border-black/[0.08] bg-[#F5F5F7] px-3 py-6 flex-col gap-4">
+        <h1 className="text-[17px] font-semibold text-[#111] px-2">Settings</h1>
         <NavContent />
       </aside>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-black/[0.08] bg-white px-4">
         <div className="flex items-center gap-2">
-          <Settings size={18} className="text-slate-500" />
-          <span className="font-semibold text-slate-800">Settings</span>
+          <Settings size={18} className="text-[#8E8E93]" />
+          <span className="font-semibold text-[#111]">Settings</span>
         </div>
         <button
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg hover:bg-slate-100"
+          className="p-2 rounded-lg hover:bg-black/[0.04]"
           aria-label="Open navigation"
         >
           <Menu size={20} />
@@ -141,10 +141,10 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
           />
           <aside className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-64 bg-white px-3 py-6 flex flex-col gap-4 shadow-xl">
             <div className="flex items-center justify-between px-2 mb-2">
-              <span className="text-xl font-bold text-slate-900">Settings</span>
+              <span className="text-[17px] font-semibold text-[#111]">Settings</span>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-100"
+                className="p-2 rounded-lg hover:bg-black/[0.04]"
                 aria-label="Close navigation"
               >
                 <X size={18} />
