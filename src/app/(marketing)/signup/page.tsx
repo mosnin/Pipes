@@ -3,15 +3,14 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button, Card } from "@heroui/react";
-import { GitBranch, Check } from "lucide-react";
+import { GitBranch, Check, ShieldCheck } from "lucide-react";
 import { SignupSourceTracker } from "@/components/marketing/SignupSourceTracker";
 
 const BENEFITS = [
-  "3 systems free",
-  "AI-assisted design",
-  "Protocol-ready",
-];
+  "3 systems free, no time limit",
+  "AI-assisted system design",
+  "Connect any agent via MCP",
+] as const;
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -27,91 +26,128 @@ function SignupForm() {
   function handleContinue() {
     setSubmitted(true);
     if (!name.trim() || !workspaceName.trim()) return;
-    const base = "/api/auth/login?returnTo=/onboarding";
-    const url = `${base}&workspace=${encodeURIComponent(workspaceName)}`;
+    const url = `/api/auth/login?returnTo=/onboarding&workspace=${encodeURIComponent(workspaceName)}`;
     window.location.href = url;
   }
+
+  const inputClass = (error: string | null) => [
+    "w-full h-10 rounded-lg border px-3 t-label text-[#111] placeholder:text-[#C7C7CC]",
+    "bg-white focus:outline-none focus:ring-2 transition-shadow",
+    error
+      ? "border-red-400 bg-red-50 focus:ring-red-200 focus:border-red-400"
+      : "border-black/[0.08] focus:ring-indigo-100 focus:border-indigo-400",
+  ].join(" ");
 
   return (
     <>
       <SignupSourceTracker source={source} />
 
-      <Card className="w-full max-w-md shadow-lg">
-        <Card.Content className="flex flex-col gap-6 p-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <GitBranch className="h-6 w-6 text-black" strokeWidth={2} />
-            <span className="text-xl font-bold tracking-tight text-black">Pipes</span>
+      <div className="w-full max-w-[400px]">
+
+        {/* Brand */}
+        <div className="flex items-center justify-center gap-2.5 mb-8">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 shrink-0">
+            <GitBranch size={18} className="text-white" aria-hidden="true" />
+          </span>
+          <span className="text-[22px] font-bold text-[#111]" style={{ letterSpacing: "-0.03em" }}>
+            Pipes
+          </span>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white border border-black/[0.08] rounded-2xl px-8 py-9 space-y-6">
+
+          <div className="space-y-1">
+            <h1 className="text-[22px] font-bold text-[#111]" style={{ letterSpacing: "-0.02em" }}>
+              Create your workspace
+            </h1>
+            <p className="t-label text-[#8E8E93]">Free forever. No credit card required.</p>
           </div>
 
-          {/* Heading */}
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-bold text-gray-900">Create your workspace</h1>
-            <p className="text-sm text-gray-500">Free forever. No credit card required.</p>
-          </div>
-
-          {/* Benefits */}
-          <ul className="flex flex-col gap-2">
+          <ul className="space-y-2.5">
             {BENEFITS.map((benefit) => (
-              <li key={benefit} className="flex items-center gap-2 text-sm text-gray-700">
-                <Check className="h-4 w-4 text-green-500 shrink-0" strokeWidth={2.5} />
+              <li key={benefit} className="flex items-center gap-2.5 t-label text-[#3C3C43]">
+                <Check size={14} className="text-indigo-500 shrink-0" strokeWidth={2.5} aria-hidden="true" />
                 {benefit}
               </li>
             ))}
           </ul>
 
-          {/* Form */}
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Your name</label>
+          <div className="h-px bg-black/[0.06]" />
+
+          <div className="space-y-4">
+
+            <div className="space-y-1.5">
+              <label htmlFor="signup-name" className="t-label font-medium text-[#111]">
+                Your name
+              </label>
               <input
+                id="signup-name"
                 type="text"
                 placeholder="Alex Rivera"
+                autoComplete="name"
                 value={name}
                 onChange={(e) => { setName(e.target.value); if (submitted) setSubmitted(false); }}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${nameError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
+                className={inputClass(nameError)}
               />
-              {nameError && <p className="text-xs text-red-500">{nameError}</p>}
+              {nameError && <p className="t-caption text-red-500">{nameError}</p>}
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Workspace name</label>
+
+            <div className="space-y-1.5">
+              <label htmlFor="signup-workspace" className="t-label font-medium text-[#111]">
+                Workspace name
+              </label>
               <input
+                id="signup-workspace"
                 type="text"
                 placeholder="Acme AI"
+                autoComplete="organization"
                 value={workspaceName}
                 onChange={(e) => { setWorkspaceName(e.target.value); if (submitted) setSubmitted(false); }}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 ${workspaceError ? "border-red-400 bg-red-50 focus:ring-red-200" : "border-gray-300 bg-white focus:ring-black"}`}
+                className={inputClass(workspaceError)}
               />
-              {workspaceError && <p className="text-xs text-red-500">{workspaceError}</p>}
+              {workspaceError && <p className="t-caption text-red-500">{workspaceError}</p>}
             </div>
-            <Button
-              onPress={handleContinue}
-              className="w-full bg-black text-white font-semibold"
-              size="lg"
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full h-11 bg-[#111] hover:bg-[#222] active:bg-black text-white font-semibold rounded-xl t-label transition-colors"
             >
-              Continue with Auth0
-            </Button>
+              Continue
+            </button>
           </div>
 
-          {/* Sign-in link */}
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center t-caption text-[#8E8E93]">
             Already have an account?{" "}
-            <Link href="/login" className="text-black font-medium underline underline-offset-2 hover:opacity-70">
+            <Link
+              href="/login"
+              className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+            >
               Sign in
             </Link>
           </p>
-        </Card.Content>
-      </Card>
+        </div>
+
+        <p className="mt-6 text-center t-caption text-[#C7C7CC] flex items-center justify-center gap-1.5">
+          <ShieldCheck size={12} aria-hidden="true" />
+          Secured by Auth0 &mdash; your credentials are never stored by Pipes
+        </p>
+      </div>
     </>
   );
 }
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
-      <Suspense fallback={<div className="w-full max-w-md h-96 rounded-2xl bg-gray-100 animate-pulse" />}>
+    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center px-6 py-12">
+      <Suspense
+        fallback={
+          <div className="w-full max-w-[400px] h-[520px] rounded-2xl bg-white border border-black/[0.08] animate-pulse" />
+        }
+      >
         <SignupForm />
       </Suspense>
-    </div>
+    </main>
   );
 }
