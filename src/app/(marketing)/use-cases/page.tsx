@@ -4,9 +4,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Use cases - Pipes",
+  title: "Teams shipping multi-agent systems - Pipes",
   description:
-    "How teams ship multi-agent systems, support ops, and architecture handoffs with Pipes.",
+    "Teams shipping multi-agent systems, support ops, and architecture handoffs on Pipes.",
 };
 
 export default function UseCasesPage() {
@@ -18,9 +18,8 @@ export default function UseCasesPage() {
       {/* Hero */}
       <section className="border-b border-black/[0.06] bg-white pt-20 pb-14 px-6">
         <div className="mx-auto max-w-4xl text-center">
-          <SectionBadge label="Customers" />
           <h1
-            className="mt-6 text-[#111] mx-auto"
+            className="text-[#111] mx-auto"
             style={{
               fontSize: 52,
               lineHeight: 1.05,
@@ -28,11 +27,10 @@ export default function UseCasesPage() {
               fontWeight: 700,
             }}
           >
-            How teams ship with Pipes.
+            Teams shipping multi-agent systems on Pipes.
           </h1>
           <p className="mt-5 t-body text-[#3C3C43] mx-auto max-w-xl">
-            Real workloads from real teams. Pick a use case to see the system shape,
-            workflow, and templates that ship with it.
+            One map your team and your agents both read, in production, across these workloads.
           </p>
         </div>
       </section>

@@ -119,6 +119,10 @@ export default async function UseCaseDetailPage({
               </blockquote>
             </div>
           </div>
+
+          <p className="mt-4 t-caption text-[#8E8E93]">
+            Why this matters: one map your team and your agents both read.
+          </p>
         </div>
       </section>
 

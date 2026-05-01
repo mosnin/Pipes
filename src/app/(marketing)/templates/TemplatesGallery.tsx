@@ -66,13 +66,9 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
       <section className="surface-subtle border-b border-black/[0.06]">
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-10">
           <div className="flex flex-col gap-4 max-w-2xl">
-            <span className="inline-flex items-center gap-2 self-start rounded-full border border-black/[0.08] bg-white px-2.5 py-1 t-caption text-[#3C3C43] shadow-xs">
-              <Sparkles size={12} className="text-indigo-600" aria-hidden="true" />
-              Production-ready system blueprints
-            </span>
             <h1 className="t-h1 text-[#111]">Forkable systems your team has already shipped.</h1>
             <p className="t-body text-[#3C3C43]">
-              Pre-built, validated system designs you can fork into your workspace in seconds. Each template ships with typed nodes, pipes, and a reviewable graph.
+              Fork one into your workspace in seconds, typed nodes and pipes included.
             </p>
           </div>
 

@@ -5,7 +5,6 @@ import {
   Code2,
   FileCode,
   GitCommitVertical,
-  KeyRound,
   ListTree,
   MessageSquare,
   PackageOpen,
@@ -17,7 +16,7 @@ import { InlineCode } from "@/components/ui";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Protocol - Pipes",
+  title: "Your map, behind a Bearer token - Pipes",
   description:
     "Hand any agent a token. It reads the system the way your team does. MCP and REST over one audited service layer.",
 };
@@ -149,9 +148,8 @@ export default function ProtocolPage() {
       {/* ── 1. HERO ─────────────────────────────────────────────────────────── */}
       <section className="border-b border-black/[0.06] bg-white pt-20 pb-16 px-6">
         <div className="mx-auto max-w-4xl">
-          <SectionBadge label="Pipes Protocol" icon={<KeyRound size={11} aria-hidden="true" />} />
           <h1
-            className="mt-6 text-[#111]"
+            className="text-[#111]"
             style={{
               fontSize: 56,
               lineHeight: 1.05,
@@ -159,13 +157,10 @@ export default function ProtocolPage() {
               fontWeight: 700,
             }}
           >
-            One bounded service layer.
-            <br />
-            Two transports.{" "}
-            <span className="text-[#8E8E93]">Eleven capabilities.</span>
+            Your map, behind a Bearer token.
           </h1>
           <p className="mt-6 t-body text-[#3C3C43] max-w-2xl">
-            One map your team and your agents both read. The same service layer that powers the editor. Hand any agent a token. Re-implement nothing.
+            One map your team and your agents both read, served to any agent through one token-scoped endpoint.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">

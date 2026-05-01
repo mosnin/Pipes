@@ -3,16 +3,15 @@ import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
-  Zap,
 } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - one map your team and your agents both read",
+  title: "One map your team and your agents both read - Pipes",
   description:
-    "Draw the nodes, ports, and pipes once. Your team reviews it. Your agents read it through one token. Stop being the map.",
+    "Draw the system once. Your team reviews it. Your agents read it through one token.",
 };
 
 const TRUST_LOGOS = [
@@ -27,7 +26,7 @@ const TRUST_LOGOS = [
 const MAGIC_BEATS = [
   {
     n: "01",
-    title: "Open an empty canvas",
+    title: "Open an empty Pipes canvas",
     body: "You see one line: One map your team and your agents both read.",
   },
   {
@@ -37,13 +36,13 @@ const MAGIC_BEATS = [
   },
   {
     n: "03",
-    title: "Type one sentence",
+    title: "Type one sentence into the node",
     body: "Planner agent. Reads tickets, writes a plan, hands off to the coder.",
   },
   {
     n: "04",
     title: "Click Connect Agent",
-    body: "A panel slides in with a Bearer token and a Claude Desktop config block.",
+    body: "A panel slides in with a Bearer token and a Claude Desktop config block already filled in for this system.",
   },
   {
     n: "05",
@@ -52,8 +51,8 @@ const MAGIC_BEATS = [
   },
   {
     n: "06",
-    title: "Ask Claude what is in your system",
-    body: "Claude answers by name. The Planner agent. Your sentence. You pasted no architecture.",
+    title: "Ask Claude what is in your Pipes system",
+    body: "Claude answers by name: one Agent node titled Planner agent, with the sentence you wrote, fetched live through the MCP endpoint. You pasted no architecture.",
   },
 ] as const;
 
@@ -132,6 +131,40 @@ function ScreenshotPlaceholder({
   );
 }
 
+function HeroFrame() {
+  return (
+    <div
+      className="surface-muted relative w-full overflow-hidden rounded-[12px] border border-black/[0.08] shadow-sm"
+      role="img"
+      aria-label="Claude reads the Pipes system back by name through MCP"
+      style={{ aspectRatio: "16 / 9" }}
+    >
+      <div className="absolute left-0 right-0 top-0 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[#111] text-white t-label font-bold" style={{ fontSize: 10 }}>
+          C
+        </span>
+        <span className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>
+          Claude
+        </span>
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-black/[0.06] bg-[#F5F5F7] px-2 py-0.5 t-caption text-[#3C3C43]" style={{ fontSize: 10 }}>
+          via pipes (MCP)
+        </span>
+      </div>
+      <div className="absolute inset-0 flex flex-col gap-3 px-5 pt-12 pb-5">
+        <p className="t-caption text-[#8E8E93]">
+          You asked: what is in my Pipes system?
+        </p>
+        <p className="t-mono t-caption text-[#111] leading-relaxed" style={{ fontSize: 12.5 }}>
+          You have one system, <span className="t-num">sys_8a72</span>, with one Agent node titled
+          {" "}<span className="font-semibold">Planner agent</span>. Its description reads:
+          {" "}<span className="text-[#3C3C43]">Reads tickets, writes a plan, hands off to the coder.</span>
+          {" "}No pipes yet. I read this through the MCP endpoint with token <span className="t-num">ptk_live_92c1</span>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function complexityTone(c: string): "good" | "warn" | "neutral" {
   if (c === "simple") return "good";
   if (c === "advanced") return "warn";
@@ -159,55 +192,49 @@ export default async function HomePage() {
               "radial-gradient(ellipse 70% 50% at 50% 0%, #000 50%, transparent 100%)",
           }}
         />
-        {/* One soft glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-[-120px] h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-indigo-100/60 blur-3xl"
-        />
 
-        <div className="relative mx-auto max-w-6xl px-6 text-center">
-          <SectionBadge
-            icon={<Zap size={11} aria-hidden="true" />}
-            label="Now with MCP capability scoping"
-          />
+        <div className="relative mx-auto max-w-6xl px-6">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-14">
+            <div className="flex flex-col">
+              <SectionBadge label="Read by your team. Read by your agents." />
 
-          <h1
-            className="mt-6 text-[40px] sm:text-[56px] lg:text-[64px] font-bold text-[#111] mx-auto max-w-4xl"
-            style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
-          >
-            One map your team and your agents both read.
-          </h1>
+              <h1
+                className="mt-6 text-[40px] sm:text-[52px] lg:text-[60px] font-bold text-[#111]"
+                style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
+              >
+                One map your team and your agents both read.
+              </h1>
 
-          <p className="mt-6 mx-auto max-w-2xl t-body text-[#3C3C43]">
-            Draw the nodes, ports, and pipes once. Stop being the map.
-          </p>
+              <p className="mt-6 max-w-xl t-body text-[#3C3C43]">
+                Draw the system once. Your team reviews it. Your agents read it through one token.
+              </p>
 
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <TrackedLink
-              href={home.hero.primaryCta.href}
-              event="homepage_cta_clicked"
-              metadata={{ location: "hero_primary" }}
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-indigo-700 transition-colors">
-                Start building free
-                <ArrowRight size={14} aria-hidden="true" />
-              </span>
-            </TrackedLink>
+              <div className="mt-9 flex flex-wrap items-center gap-4">
+                <TrackedLink
+                  href={home.hero.primaryCta.href}
+                  event="homepage_cta_clicked"
+                  metadata={{ location: "hero_primary" }}
+                >
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-indigo-700 transition-colors">
+                    Start free
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </span>
+                </TrackedLink>
 
-            <TrackedLink
-              href="/protocol"
-              event="homepage_cta_clicked"
-              metadata={{ location: "hero_secondary" }}
-            >
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-black/[0.14] bg-white px-5 h-11 t-label font-semibold text-[#111] hover:border-black/[0.24] hover:bg-black/[0.02] transition-colors">
-                Read the protocol
-              </span>
-            </TrackedLink>
+                <Link
+                  href="#see-it-in-action"
+                  className="inline-flex items-center gap-1 t-label font-semibold text-[#3C3C43] hover:text-[#111] transition-colors"
+                >
+                  See the proof
+                  <ArrowRight size={13} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:pl-2">
+              <HeroFrame />
+            </div>
           </div>
-
-          <p className="mt-4 t-caption text-[#8E8E93]">
-            Free workspace - no credit card required - SOC 2 Type II
-          </p>
         </div>
       </section>
 
@@ -232,7 +259,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── 3. SEE IT IN ACTION ─────────────────────────────────────────────── */}
-      <section className="border-b border-black/[0.06] bg-white py-20">
+      <section id="see-it-in-action" className="scroll-mt-16 border-b border-black/[0.06] bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
             <SectionBadge label="See it in action" />

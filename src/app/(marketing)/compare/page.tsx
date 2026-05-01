@@ -1,4 +1,4 @@
-import { ArrowRight, Scale } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -11,7 +11,7 @@ import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 
 export const metadata = {
-  title: "Compare - Pipes",
+  title: "Pipes vs the alternatives - Pipes",
   description:
     "Pipes vs Figma, Miro, Lucidchart, and AI-generated diagrams. Honest, head-to-head.",
 };
@@ -25,13 +25,9 @@ export default function CompareIndexPage() {
       <section className="surface-subtle border-b border-black/[0.06]">
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-12">
           <div className="flex flex-col gap-4 max-w-2xl">
-            <span className="inline-flex items-center gap-2 self-start rounded-full border border-black/[0.08] bg-white px-2.5 py-1 t-caption text-[#3C3C43] shadow-xs">
-              <Scale size={12} className="text-indigo-600" aria-hidden="true" />
-              Honest comparisons
-            </span>
-            <h1 className="t-h1 text-[#111]">How Pipes stacks up</h1>
+            <h1 className="t-h1 text-[#111]">Pipes vs the alternatives.</h1>
             <p className="t-body text-[#3C3C43]">
-              We respect the alternatives. Here is where Pipes wins, where competitors lead, and how to choose between them for your team.
+              Where Pipes wins, where the others lead, and how to choose for your team.
             </p>
           </div>
         </div>

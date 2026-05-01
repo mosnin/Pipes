@@ -22,7 +22,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const entry = publicContentService.getComparison(slug);
   if (!entry) return { title: "Comparison not found" };
-  return { title: entry.title, description: entry.summary };
+  return { title: `${entry.title} - Pipes`, description: entry.summary };
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ export default async function CompareDetailPage({
               {competitorName.charAt(0).toUpperCase() || "?"}
             </span>
           </div>
-          <h1 className="t-h1 text-[#111]">Pipes vs {competitorName}</h1>
+          <h1 className="t-h1 text-[#111]">Pipes vs {competitorName}.</h1>
           <p className="t-body text-[#3C3C43]">{entry.summary}</p>
         </header>
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, GitBranch } from "lucide-react";
+import { ArrowUpRight, GitBranch } from "lucide-react";
 import { InlineCode } from "@/components/ui";
 
 export const metadata = {
-  title: "Docs - Pipes",
-  description: "Draw, validate, and ship systems with Pipes.",
+  title: "Docs for the staff engineer wiring this up - Pipes",
+  description: "Concepts, guides, and reference for the staff engineer wiring Pipes into a multi-agent system.",
 };
 
 // ─── TOC and content data ─────────────────────────────────────────────────────
@@ -98,19 +98,14 @@ export default function DocsPage() {
       <div className="border-b border-black/[0.06] bg-white">
         <div className="mx-auto max-w-7xl px-6 py-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 t-overline text-[#8E8E93]">
-              <BookOpen size={12} aria-hidden="true" />
-              Documentation
-            </div>
             <h1
-              className="mt-2 t-h1 text-[#111]"
+              className="t-h1 text-[#111]"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Build, validate, and ship systems with Pipes.
+              Docs for the staff engineer wiring this up.
             </h1>
             <p className="mt-2 t-body text-[#3C3C43] max-w-2xl">
-              Concepts, guides, and reference. Everything you need to take a system
-              from idea to production handoff.
+              Concepts, guides, and reference for taking a system from empty canvas to a token your agents can read.
             </p>
           </div>
           <Link

@@ -5,7 +5,7 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pricing - Pipes",
+  title: "Per seat. Per workspace. Decide later. - Pipes",
   description:
     "Per-workspace pricing. Start free. Pay when your team is ready to ship.",
 };
@@ -224,15 +224,14 @@ export default function PricingPage() {
 
       {/* ── 1. HEADER ───────────────────────────────────────────────────── */}
       <section className="border-b border-black/[0.06] bg-white pt-20 pb-14 px-6 text-center">
-        <SectionBadge label="Pricing" />
         <h1
-          className="mt-6 t-display text-[#111] mx-auto max-w-3xl"
+          className="t-display text-[#111] mx-auto max-w-3xl"
           style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-0.035em" }}
         >
-          Pricing built for teams, not seat counts.
+          Per seat. Per workspace. Decide later.
         </h1>
         <p className="mt-5 mx-auto max-w-xl t-body text-[#3C3C43]">
-          Per-workspace pricing. Start free. Pay only when your team is ready to ship.
+          Start free, pay when your team is ready to ship.
         </p>
       </section>
 
