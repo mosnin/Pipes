@@ -17,9 +17,9 @@ import { InlineCode } from "@/components/ui";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - Protocol",
+  title: "Protocol - Pipes",
   description:
-    "Token-authenticated MCP and REST surfaces over the Pipes bounded services. Connect any agent to your system memory.",
+    "Hand any agent a token. It reads the system the way your team does. MCP and REST over one audited service layer.",
 };
 
 // ─── Capability data ──────────────────────────────────────────────────────────
@@ -165,9 +165,7 @@ export default function ProtocolPage() {
             <span className="text-[#8E8E93]">Eleven capabilities.</span>
           </h1>
           <p className="mt-6 t-body text-[#3C3C43] max-w-2xl">
-            Token-authenticated REST and MCP surfaces over the same audited service
-            layer that powers the editor. Connect agents, CI pipelines, and
-            integrations without re-implementing access control.
+            One map your team and your agents both read. The same service layer that powers the editor. Hand any agent a token. Re-implement nothing.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -294,7 +292,7 @@ export default function ProtocolPage() {
               className="mt-4 t-h1 text-[#111]"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Three calls to a working agent integration.
+              Three calls to plug an agent into the system.
             </h2>
             <p className="mt-3 t-body text-[#3C3C43]">
               Mint a token, point your agent at the MCP endpoint, then read your

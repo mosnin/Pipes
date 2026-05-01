@@ -26,9 +26,9 @@ export const useCases = [
 ] as const;
 
 export const comparisons = [
-  { slug: "figma", title: "Pipes vs Figma", summary: "Figma excels at interface design. Pipes is built for executable system architecture.", differences: ["Pipes uses typed system graph semantics", "Built-in validation/simulation for system logic", "Protocol and schema surfaces for integrations"], bestFor: "When architecture needs to be reusable operational memory, not only visual communication." },
+  { slug: "figma", title: "Pipes vs Figma", summary: "Figma excels at interface design. Pipes is built for executable system architecture.", differences: ["Pipes types every node, port, and pipe.", "Built-in validation/simulation for system logic", "Protocol and schema surfaces for integrations"], bestFor: "When architecture needs to be reusable operational memory, not only visual communication." },
   { slug: "miro", title: "Pipes vs Miro", summary: "Miro is excellent for broad collaborative canvases. Pipes focuses on structured system specification.", differences: ["Explicit node/port contracts", "Versioned system exports", "Agent and protocol-ready outputs"], bestFor: "When teams need a governed system model that survives beyond workshops." },
-  { slug: "lucidchart", title: "Pipes vs Lucidchart", summary: "Lucidchart is strong for diagramming standards. Pipes prioritizes reusable architecture execution context.", differences: ["Schema-first exports", "Validation and simulation loops", "Product and protocol integration path"], bestFor: "When architecture artifacts are consumed by both humans and software systems." },
+  { slug: "lucidchart", title: "Pipes vs Lucidchart", summary: "Lucidchart draws diagrams. Pipes draws systems your agents can read.", differences: ["Schema-first exports", "Validation and simulation loops", "Product and protocol integration path"], bestFor: "When architecture artifacts are consumed by both humans and software systems." },
   { slug: "ai-generated-diagrams", title: "Pipes vs generic AI-generated diagrams", summary: "AI-generated diagrams are fast drafts; Pipes is ongoing system memory with governance.", differences: ["Bounded revision lifecycle", "Typed canonical schema", "Operational trust surfaces"], bestFor: "When speed must coexist with repeatability, reviewability, and long-term maintainability." }
 ] as const;
 

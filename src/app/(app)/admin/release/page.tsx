@@ -122,7 +122,7 @@ export default function AdminReleasePage() {
       id: "v0.9.4",
       version: "v0.9.4",
       released: "today",
-      author: "platform",
+      author: "core",
       status: "live",
       notes: "Editor autosave hotfix",
     },
@@ -130,7 +130,7 @@ export default function AdminReleasePage() {
       id: "v0.9.3",
       version: "v0.9.3",
       released: "2 days ago",
-      author: "platform",
+      author: "core",
       status: "live",
       notes: "MCP token rotation",
     },
@@ -138,7 +138,7 @@ export default function AdminReleasePage() {
       id: "v0.9.2",
       version: "v0.9.2",
       released: "1 week ago",
-      author: "platform",
+      author: "core",
       status: "live",
       notes: "Subsystem blueprints",
     },
@@ -202,7 +202,7 @@ export default function AdminReleasePage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Release management"
-        subtitle="Pre-launch readiness, environment health, and rollout schedule."
+        subtitle="Readiness, environment health, and rollouts."
         actions={
           <>
             <div className="w-64">
@@ -274,7 +274,7 @@ export default function AdminReleasePage() {
                 <div className="flex flex-col gap-2">
                   <span className="t-overline text-[#8E8E93]">Released by</span>
                   <span className="t-label font-medium text-[#111]">
-                    platform-team
+                    core-team
                   </span>
                   <span className="t-caption text-[#8E8E93]">
                     Mode: {data.environment.runtimeMode}

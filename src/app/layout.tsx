@@ -4,7 +4,7 @@ import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Pipes",
-  description: "Structured system authoring for humans and agents",
+  description: "One map your team and your agents both read.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

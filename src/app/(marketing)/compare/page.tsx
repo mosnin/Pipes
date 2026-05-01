@@ -11,9 +11,9 @@ import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 
 export const metadata = {
-  title: "Pipes comparisons",
+  title: "Compare - Pipes",
   description:
-    "Honest, head-to-head comparisons: Pipes vs Figma, Miro, Lucidchart, and AI-generated diagrams.",
+    "Pipes vs Figma, Miro, Lucidchart, and AI-generated diagrams. Honest, head-to-head.",
 };
 
 export default function CompareIndexPage() {

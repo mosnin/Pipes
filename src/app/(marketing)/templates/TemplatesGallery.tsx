@@ -70,7 +70,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
               <Sparkles size={12} className="text-indigo-600" aria-hidden="true" />
               Production-ready system blueprints
             </span>
-            <h1 className="t-h1 text-[#111]">Templates</h1>
+            <h1 className="t-h1 text-[#111]">Forkable systems your team has already shipped.</h1>
             <p className="t-body text-[#3C3C43]">
               Pre-built, validated system designs you can fork into your workspace in seconds. Each template ships with typed nodes, pipes, and a reviewable graph.
             </p>

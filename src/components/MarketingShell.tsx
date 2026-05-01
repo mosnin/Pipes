@@ -28,7 +28,7 @@ const FOOTER_COLUMNS = [
     ],
   },
   {
-    heading: "Solutions",
+    heading: "Use cases",
     links: [
       { href: "/use-cases",                          label: "All use cases"   },
       { href: "/use-cases/multi-agent-systems",      label: "Multi-agent"     },
@@ -265,7 +265,7 @@ function MarketingFooter() {
             </Link>
 
             <p className="t-caption text-[#8E8E93] leading-relaxed max-w-[14rem]">
-              The system memory layer for software you ship with agents.
+              One map your team and your agents both read.
             </p>
           </div>
 

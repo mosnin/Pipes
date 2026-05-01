@@ -3,7 +3,7 @@ import { GitBranch, ShieldCheck } from "lucide-react";
 import { CardShell, CardBody, CardFooter, CardHeader } from "@/components/ui";
 
 export const metadata = {
-  title: "Pipes - Sign in",
+  title: "Sign in - Pipes",
   description: "Sign in to your Pipes workspace.",
 };
 

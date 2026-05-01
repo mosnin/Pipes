@@ -10,9 +10,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - One map your team and your agents both read",
+  title: "Pipes - one map your team and your agents both read",
   description:
-    "Draw the system once. Your team reviews it. Your agents read it through one token.",
+    "Draw the nodes, ports, and pipes once. Your team reviews it. Your agents read it through one token. Stop being the map.",
 };
 
 const TRUST_LOGOS = [

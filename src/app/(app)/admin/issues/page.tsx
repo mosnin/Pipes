@@ -219,7 +219,7 @@ export default function AdminIssuesPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Issues"
-        subtitle="Beta feedback queue, severity triage, and customer-reported defects."
+        subtitle="Triage feedback and reported defects."
         actions={
           <>
             <Button

@@ -254,8 +254,7 @@ export default async function CompareDetailPage({
               </CardHeader>
               <CardBody>
                 <p className="t-label text-[#3C3C43] leading-relaxed">
-                  When visual presentation, freeform canvas, or general diagramming is the
-                  primary goal and execution context is not required.
+                  When the goal is a picture, not a system your agents will read.
                 </p>
               </CardBody>
             </CardShell>

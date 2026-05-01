@@ -165,9 +165,8 @@ export default async function TemplateDetailPage({
               <CardShell padded>
                 <p className="t-body text-[#3C3C43] leading-relaxed">
                   <span className="font-semibold text-[#111]">{template.useCase}</span>
-                  {" - "}A reliable starting point for teams building{" "}
-                  {template.category.toLowerCase()} systems. Includes the core flow plus
-                  extension points for tools, guardrails, and integrations.
+                  {". "}A starting point for teams building{" "}
+                  {template.category.toLowerCase()} systems. Fork it, edit the nodes, ship.
                 </p>
               </CardShell>
             </section>

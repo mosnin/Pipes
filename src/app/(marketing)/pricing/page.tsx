@@ -5,9 +5,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - Pricing",
+  title: "Pricing - Pipes",
   description:
-    "Transparent, per-workspace pricing. Start free. Upgrade when your team grows.",
+    "Per-workspace pricing. Start free. Pay when your team is ready to ship.",
 };
 
 // ─── Plan definitions ─────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ const PLANS: readonly Plan[] = [
     name: "Enterprise",
     price: "Custom",
     period: "talk to sales",
-    tagline: "For organizations with security, scale, and procurement needs.",
+    tagline: "For teams that need SSO, SCIM, and a signed DPA.",
     highlighted: false,
     ctaLabel: "Contact sales",
     ctaTone: "secondary",
@@ -88,7 +88,7 @@ const PLANS: readonly Plan[] = [
       "SSO, SCIM, and audit log streaming",
       "SOC 2 Type II + DPA",
       "Self-hosted Convex option",
-      "Dedicated solutions engineer",
+      "Dedicated support engineer",
       "99.9% uptime SLA",
     ],
   },

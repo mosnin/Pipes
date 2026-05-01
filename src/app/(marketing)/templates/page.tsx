@@ -2,9 +2,9 @@ import { publicContentService } from "@/domain/services/public";
 import { TemplatesGallery } from "./TemplatesGallery";
 
 export const metadata = {
-  title: "Pipes templates",
+  title: "Templates - Pipes",
   description:
-    "Production-ready system templates for multi-agent, automation, support, and architecture workflows.",
+    "Forkable systems your team has already shipped. Multi-agent, support, engineering, and ops, ready to fork.",
 };
 
 export default function TemplatesPage() {

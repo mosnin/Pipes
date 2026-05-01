@@ -283,7 +283,7 @@ export default function AdminPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Admin overview"
-        subtitle="Mission control for support, billing, and platform health."
+        subtitle="Support, billing, and workspace health."
         actions={
           <Button
             variant="secondary"
@@ -474,7 +474,7 @@ export default function AdminPage() {
                 </StatusBadge>
               </div>
               <p className="t-caption text-[#8E8E93]">
-                Released today by platform team. Hotfix for editor autosave queue.
+                Released today. Hotfix for the editor autosave queue.
               </p>
               <div className="surface-muted rounded-lg p-3 flex flex-col gap-1">
                 <span className="t-overline text-[#8E8E93]">Rollout</span>

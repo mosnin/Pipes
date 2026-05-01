@@ -371,7 +371,7 @@ export default function CollaborationSettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Members & teams"
+        title="Members and teams"
         subtitle="Manage who can view, comment on, and edit this workspace."
         actions={
           <Button

@@ -4,9 +4,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - Customers and use cases",
+  title: "Use cases - Pipes",
   description:
-    "How teams use Pipes to ship multi-agent systems, automation, support ops, and architecture handoffs.",
+    "How teams ship multi-agent systems, support ops, and architecture handoffs with Pipes.",
 };
 
 export default function UseCasesPage() {

@@ -117,9 +117,6 @@ export default async function UseCaseDetailPage({
                 &quot;Pipes turned our system diagrams into something our agents
                 actually respect. We stopped re-prompting and started shipping.&quot;
               </blockquote>
-              <div className="mt-3 t-caption text-[#8E8E93]">
-                Composite quote from teams running this workload
-              </div>
             </div>
           </div>
         </div>
@@ -145,9 +142,9 @@ export default async function UseCaseDetailPage({
               />
             </section>
 
-            {/* Solution */}
+            {/* How Pipes fits */}
             <section>
-              <SectionBadge label="The solution" />
+              <SectionBadge label="How Pipes fits" />
               <h2
                 className="mt-3 t-h2 text-[#111]"
                 style={{ letterSpacing: "-0.02em" }}

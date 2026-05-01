@@ -170,7 +170,7 @@ export default function AdminInsightsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Insights"
-        subtitle="Activation, retention, conversion, and product usage diagnostics."
+        subtitle="Activation, retention, and conversion."
         actions={
           <>
             <SegmentedControl

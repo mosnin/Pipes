@@ -265,7 +265,7 @@ export default function TokensSettingsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Developer"
-        subtitle="API tokens, audit log, and developer integrations."
+        subtitle="API tokens and integrations."
         actions={
           <Button
             variant="primary"

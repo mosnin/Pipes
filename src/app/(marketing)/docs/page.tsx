@@ -3,8 +3,8 @@ import { ArrowUpRight, BookOpen, GitBranch } from "lucide-react";
 import { InlineCode } from "@/components/ui";
 
 export const metadata = {
-  title: "Pipes - Documentation",
-  description: "Build, validate, and ship systems with Pipes.",
+  title: "Docs - Pipes",
+  description: "Draw, validate, and ship systems with Pipes.",
 };
 
 // ─── TOC and content data ─────────────────────────────────────────────────────
