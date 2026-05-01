@@ -94,7 +94,7 @@ curl http://localhost:3000/api/protocol/systems/sys_123/schema \
 
 Instantiate a template:
 ```bash
-curl -X POST http://localhost:3000/api/protocol/templates/single-agent-loop/instantiate \
+curl -X POST http://localhost:3000/api/protocol/templates/multi-agent-handoff/instantiate \
   -H 'authorization: Bearer ptk_...' \
   -H 'Idempotency-Key: tpl-001' \
   -H 'content-type: application/json' \
