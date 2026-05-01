@@ -40,7 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Billing",          href: "/settings/billing",       icon: CreditCard },
       { label: "Collaboration",    href: "/settings/collaboration", icon: Users      },
       { label: "Operations",       href: "/settings/operations",    icon: Sliders    },
-      { label: "Trust & Security", href: "/settings/trust",         icon: Shield     },
+      { label: "Trust and security", href: "/settings/trust",       icon: Shield     },
     ],
   },
   {

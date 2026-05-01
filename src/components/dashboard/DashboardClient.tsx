@@ -658,9 +658,9 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             library.rows.length === 0 && !query && filter !== "archived" ? (
               <div className="grid-bg min-h-[70vh] flex items-center justify-center rounded-[12px]">
                 <div className="flex flex-col items-center text-center gap-4 max-w-md px-6">
-                  <h2 className="t-h2 text-[#111]">Start your first system</h2>
+                  <h2 className="t-h2 text-[#111]">One map your team and your agents both read.</h2>
                   <p className="t-body text-[#3C3C43]">
-                    Pipes treats every node the same. You decide what each one is.
+                    Draw the nodes, ports, and pipes once. Stop being the map.
                   </p>
                   <div className="flex flex-col items-center gap-3 mt-2">
                     <Button variant="primary" size="md" onPress={createSystem}>

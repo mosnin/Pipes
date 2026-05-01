@@ -260,7 +260,7 @@ export function AppShellClient({
           <div className="flex items-center gap-2 shrink-0">
             <div className="hidden lg:flex">
               <StatusBadge tone="success" pulse>
-                All systems normal
+                All systems operational
               </StatusBadge>
             </div>
             <Tooltip content="Help & docs">

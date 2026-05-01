@@ -2,8 +2,8 @@ import { starterTemplates } from "@/domain/templates/catalog";
 
 export const homeSections = {
   hero: {
-    title: "Design systems your team and agents can both execute",
-    subtitle: "Pipes captures architecture as reusable, validated, machine-readable system memory.",
+    title: "One map your team and your agents both read.",
+    subtitle: "Draw the nodes, ports, and pipes once. Your team reviews it. Your agents read it.",
     primaryCta: { label: "Start free workspace", href: "/signup?source=home_hero" },
     secondaryCta: { label: "Explore templates", href: "/templates" }
   },
@@ -18,11 +18,11 @@ export const homeSections = {
 };
 
 export const useCases = [
-  { slug: "multi-agent-systems", title: "Multi-agent systems", problem: "Coordinating planners, specialists, and reviewers across one reliable contract is hard.", fit: "Pipes models multi-agent orchestration with typed interfaces and explicit dependencies.", workflow: ["Start from multi-agent template", "Add role-specific agents/tools", "Validate routing and interfaces", "Share via protocol for integrations"], templateIds: ["multi-agent-research"] },
+  { slug: "multi-agent-systems", title: "Multi-agent systems", problem: "Coordinating planners, specialists, and reviewers across one reliable contract is hard.", fit: "Pipes hands off planners, specialists, and reviewers through one typed contract.", workflow: ["Start from multi-agent template", "Add role-specific agents/tools", "Validate routing and interfaces", "Share via protocol for integrations"], templateIds: ["multi-agent-research"] },
   { slug: "automation-workflows", title: "Automation workflows", problem: "Operational automations degrade when triggers and branch logic are undocumented.", fit: "Pipes keeps automation triggers, decisions, and actions in one reusable system model.", workflow: ["Select automation starter", "Encode decision branches", "Simulate execution paths", "Version and deploy with confidence"], templateIds: ["automation-workflow"] },
   { slug: "support-operations", title: "Support and operations systems", problem: "Support flows need clear escalation and guardrails as teams scale.", fit: "Pipes captures triage, policy checks, and human approval points explicitly.", workflow: ["Use support ops template", "Add compliance guardrails", "Define escalation boundaries", "Share onboarding-ready system docs"], templateIds: ["support-ops-system"] },
-  { slug: "technical-system-design", title: "Technical system design", problem: "Architecture docs and implementation plans diverge quickly.", fit: "Pipes keeps architecture and operational interface truth in one structured source.", workflow: ["Map services and boundaries", "Validate dependencies", "Export canonical schema", "Drive implementation from system memory"], templateIds: ["single-agent-loop", "automation-workflow"] },
-  { slug: "agency-handoff", title: "Agency and consultant handoff", problem: "Client handoff often loses intent, constraints, and integration details.", fit: "Pipes provides a transferable system artifact with versions, notes, and protocol endpoints.", workflow: ["Model current + target architecture", "Attach decision rationale", "Export handoff manifest", "Enable client iteration safely"], templateIds: ["single-agent-loop", "support-ops-system"] }
+  { slug: "technical-system-design", title: "Technical system design", problem: "Architecture docs and implementation plans diverge quickly.", fit: "One map your team reads. Your agents read it too.", workflow: ["Map services and boundaries", "Validate dependencies", "Export canonical schema", "Drive implementation from system memory"], templateIds: ["automation-workflow"] },
+  { slug: "agency-handoff", title: "Agency and consultant handoff", problem: "Client handoff often loses intent, constraints, and integration details.", fit: "Pipes provides a transferable system artifact with versions, notes, and protocol endpoints.", workflow: ["Model current + target architecture", "Attach decision rationale", "Export handoff manifest", "Enable client iteration safely"], templateIds: ["support-ops-system"] }
 ] as const;
 
 export const comparisons = [

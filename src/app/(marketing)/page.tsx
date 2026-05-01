@@ -10,9 +10,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Pipes - System memory for software you ship with agents",
+  title: "Pipes - One map your team and your agents both read",
   description:
-    "Design, validate, and version the architecture your team and agents share. One source of truth, machine-readable end to end.",
+    "Draw the system once. Your team reviews it. Your agents read it through one token.",
 };
 
 const TRUST_LOGOS = [
@@ -24,21 +24,36 @@ const TRUST_LOGOS = [
   "Anthropic",
 ] as const;
 
-const HOW_STEPS = [
+const MAGIC_BEATS = [
   {
     n: "01",
-    title: "Model the system",
-    body: "Sketch nodes, ports, and pipes on a typed canvas. Promote it to a versioned blueprint in one click.",
+    title: "Open an empty canvas",
+    body: "You see one line: One map your team and your agents both read.",
   },
   {
     n: "02",
-    title: "Validate and simulate",
-    body: "Catch contract drift, broken routes, and missing handlers before they reach a runtime.",
+    title: "Press slash, pick Agent",
+    body: "A node lands on the canvas with a blinking title.",
   },
   {
     n: "03",
-    title: "Hand off to any agent",
-    body: "MCP and REST surfaces stream the full system - inputs, outputs, contracts - to Claude, GPT, or your own runtime.",
+    title: "Type one sentence",
+    body: "Planner agent. Reads tickets, writes a plan, hands off to the coder.",
+  },
+  {
+    n: "04",
+    title: "Click Connect Agent",
+    body: "A panel slides in with a Bearer token and a Claude Desktop config block.",
+  },
+  {
+    n: "05",
+    title: "Paste once into Claude",
+    body: "Copy the block. Paste it into your Claude config. Reopen Claude.",
+  },
+  {
+    n: "06",
+    title: "Ask Claude what is in your system",
+    body: "Claude answers by name. The Planner agent. Your sentence. You pasted no architecture.",
   },
 ] as const;
 
@@ -160,12 +175,11 @@ export default async function HomePage() {
             className="mt-6 text-[40px] sm:text-[56px] lg:text-[64px] font-bold text-[#111] mx-auto max-w-4xl"
             style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
           >
-            System memory for software{" "}
-            <span className="text-[#8E8E93]">you ship with agents.</span>
+            One map your team and your agents both read.
           </h1>
 
           <p className="mt-6 mx-auto max-w-2xl t-body text-[#3C3C43]">
-            One typed source of truth your team and your agents both read.
+            Draw the nodes, ports, and pipes once. Stop being the map.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -217,25 +231,24 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 3. HOW IT WORKS ─────────────────────────────────────────────────── */}
+      {/* ── 3. SEE IT IN ACTION ─────────────────────────────────────────────── */}
       <section className="border-b border-black/[0.06] bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
-            <SectionBadge label="How it works" />
+            <SectionBadge label="See it in action" />
             <h2
               className="mt-4 t-h1 text-[#111]"
               style={{ letterSpacing: "-0.025em" }}
             >
-              From sketch to shipped system in three steps.
+              It already knows my system.
             </h2>
             <p className="mt-3 t-body text-[#3C3C43]">
-              Pipes shortens the loop from architecture diagram to production handoff.
-              No re-explaining, no parallel docs, no broken contracts.
+              Thirty seconds from empty canvas to an agent reading your system by name. No pasted architecture.
             </p>
           </div>
 
           <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-[12px] border border-black/[0.08] bg-black/[0.06] md:grid-cols-3">
-            {HOW_STEPS.map(({ n, title, body }) => (
+            {MAGIC_BEATS.map(({ n, title, body }) => (
               <div key={n} className="flex flex-col gap-4 bg-white p-7">
                 <span
                   className="t-mono text-[#C7C7CC]"
