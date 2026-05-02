@@ -25,7 +25,6 @@ import type { EditorGraphAction } from "@/components/editor/editor_state";
 // just record + console.log so the developer can see the agent's intent land.
 function placeholderApplyAction(systemId: string, action: EditorGraphAction): void {
   if (typeof window === "undefined") return;
-  // eslint-disable-next-line no-console
   console.log("[Pipes agent] tool_result action (placeholder, not yet applied to canvas)", {
     systemId,
     action,

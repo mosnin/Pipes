@@ -2,7 +2,6 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
-import { useSearchParams } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
@@ -1307,11 +1306,6 @@ function RealEditorWorkspace({ systemId, initialPrompt }: { systemId: string; in
 }
 
 export function EditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
-  // Read ?prompt= from the URL when the page didn't pre-pass one (defensive).
-  const searchParams = useSearchParams();
-  const fromQuery = searchParams?.get("prompt") ?? undefined;
-  const effectivePrompt = initialPrompt ?? (fromQuery ? decodeURIComponent(fromQuery) : undefined);
-
-  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} initialPrompt={effectivePrompt} />;
-  return <MockEditorWorkspace systemId={systemId} initialPrompt={effectivePrompt} />;
+  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />;
+  return <MockEditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />;
 }
