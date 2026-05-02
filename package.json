@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.3.0",
     "@heroui/react": "^3.0.3",
     "@tailwindcss/postcss": "^4.2.4",
     "@xyflow/react": "12.8.5",

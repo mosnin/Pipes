@@ -7,15 +7,16 @@ describe("runtime env parsing", () => {
       NODE_ENV: "production",
       PIPES_USE_MOCKS: "false",
       NEXT_PUBLIC_APP_URL: "",
-      AUTH0_DOMAIN: "",
-      AUTH0_CLIENT_ID: "",
-      AUTH0_CLIENT_SECRET: "",
+      CLERK_SECRET_KEY: "",
+      CLERK_PUBLISHABLE_KEY: "",
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
       CONVEX_URL: "",
       MODAL_EXECUTOR_URL: ""
     });
 
     expect(parsed.NEXT_PUBLIC_APP_URL).toBe("http://localhost:3000");
-    expect(parsed.AUTH0_DOMAIN).toBeUndefined();
+    expect(parsed.CLERK_SECRET_KEY).toBeUndefined();
+    expect(parsed.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY).toBeUndefined();
     expect(parsed.CONVEX_URL).toBeUndefined();
     expect(parsed.MODAL_EXECUTOR_URL).toBeUndefined();
   });

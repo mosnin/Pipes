@@ -692,7 +692,7 @@ export class ReleaseReviewService {
     const signal = (event: string) => audits.filter((row) => row.action === `signal.${event}`).length;
     const runtime = resolveRuntimeMode();
     return {
-      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.AUTH0_DOMAIN, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
+      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.CLERK_SECRET_KEY, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
       checklist: {
         criticalFlows: [
           { key: "signup_onboarding", route: "/signup -> /onboarding", status: "review" },
@@ -731,7 +731,7 @@ export class ReleaseReviewService {
 type EnterpriseAuthSettings = {
   mode: "shared" | "sso_ready";
   allowedDomains: string[];
-  auth0Connection?: string;
+  ssoConnection?: string;
   enforceDomainMatch: boolean;
 };
 
@@ -783,7 +783,7 @@ export class WorkspaceGovernanceService {
   async updateEnterpriseAuth(ctx: AppContext, input: EnterpriseAuthSettings) {
     this.access.ensureCanManageMembers(ctx);
     this.validateDomains(input.allowedDomains ?? []);
-    if (input.mode === "sso_ready" && !input.auth0Connection) throw new Error("Auth0 connection is required for sso_ready mode.");
+    if (input.mode === "sso_ready" && !input.ssoConnection) throw new Error("An SSO connection is required for sso_ready mode.");
     await this.repos.audits.add({
       actorType: ctx.actorType,
       actorId: ctx.actorId,

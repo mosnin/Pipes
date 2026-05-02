@@ -1,7 +1,4 @@
-import crypto from "node:crypto";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { runtimeFlags, env } from "@/lib/env";
+import { runtimeFlags } from "@/lib/env";
 
 export type AppUser = {
   externalId: string;
@@ -16,36 +13,11 @@ export interface AuthService {
   getLogoutUrl(): string;
 }
 
-const COOKIE_NAME = "pipes_session";
-
 const mockUser: AppUser = {
   externalId: "mock|usr_1",
   email: "owner@pipes.local",
   name: "Alex Rivera"
 };
-
-function encodeSession(user: AppUser) {
-  return Buffer.from(JSON.stringify(user)).toString("base64url");
-}
-
-function decodeSession(value?: string): AppUser | null {
-  if (!value) return null;
-  try {
-    return JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as AppUser;
-  } catch {
-    return null;
-  }
-}
-
-export async function setSessionCookie(user: AppUser) {
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, encodeSession(user), { httpOnly: true, secure: false, sameSite: "lax", path: "/" });
-}
-
-export async function clearSessionCookie() {
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
-}
 
 class MockAuthService implements AuthService {
   async getCurrentUser() {
@@ -65,42 +37,43 @@ class MockAuthService implements AuthService {
   }
 }
 
-class Auth0Service implements AuthService {
-  async getCurrentUser() {
-    const cookieStore = await cookies();
-    return decodeSession(cookieStore.get(COOKIE_NAME)?.value);
+class ClerkService implements AuthService {
+  async getCurrentUser(): Promise<AppUser | null> {
+    const { currentUser } = await import("@clerk/nextjs/server");
+    const clerkUser = await currentUser();
+    if (!clerkUser) return null;
+    const email =
+      clerkUser.primaryEmailAddress?.emailAddress ??
+      clerkUser.emailAddresses[0]?.emailAddress ??
+      "";
+    return {
+      externalId: `clerk|${clerkUser.id}`,
+      email,
+      name: clerkUser.fullName ?? clerkUser.username ?? "Pipes User"
+    };
   }
 
-  async requireUser() {
+  async requireUser(): Promise<AppUser> {
+    const { auth } = await import("@clerk/nextjs/server");
+    await auth.protect();
     const user = await this.getCurrentUser();
-    if (!user) redirect("/login");
+    if (!user) {
+      // protect() should have already redirected; this is a defensive fallback.
+      throw new Error("Authentication required");
+    }
     return user;
   }
 
   getLoginUrl(returnTo = "/dashboard") {
-    const state = crypto.randomBytes(12).toString("hex");
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: env.AUTH0_CLIENT_ID ?? "",
-      redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
-      scope: "openid profile email",
-      state,
-      audience: env.AUTH0_AUDIENCE ?? "",
-      prompt: "login"
-    });
-    return `https://${env.AUTH0_DOMAIN}/authorize?${params.toString()}&returnTo=${encodeURIComponent(returnTo)}`;
+    return `/sign-in?redirect_url=${encodeURIComponent(returnTo)}`;
   }
 
   getLogoutUrl() {
-    const params = new URLSearchParams({
-      client_id: env.AUTH0_CLIENT_ID ?? "",
-      returnTo: `${env.NEXT_PUBLIC_APP_URL}/`
-    });
-    return `https://${env.AUTH0_DOMAIN}/v2/logout?${params.toString()}`;
+    return "/api/auth/logout";
   }
 }
 
 export function getAuthService(): AuthService {
-  if (runtimeFlags.useMocks || !runtimeFlags.hasAuth0) return new MockAuthService();
-  return new Auth0Service();
+  if (runtimeFlags.useMocks || !runtimeFlags.hasClerk) return new MockAuthService();
+  return new ClerkService();
 }

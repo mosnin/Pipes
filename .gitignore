@@ -9,3 +9,6 @@ test-results
 
 .pipes-db.json
 tsconfig.tsbuildinfo
+
+# clerk configuration (can include secrets)
+/.clerk/

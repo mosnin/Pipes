@@ -42,8 +42,8 @@ npm run dev
 
 The app operates in two modes controlled by `PIPES_USE_MOCKS`:
 
-- **Mock mode** (`PIPES_USE_MOCKS=true`): All repositories are in-memory stubs (`src/lib/repositories/mock.ts`). No Convex, no Auth0, no external APIs needed. All dev work happens here by default.
-- **Provider mode**: Real Convex database, Auth0 auth, OpenAI, Creem billing, Resend email. Requires all env vars set in `.env.local`.
+- **Mock mode** (`PIPES_USE_MOCKS=true`): All repositories are in-memory stubs (`src/lib/repositories/mock.ts`). No Convex, no Clerk, no external APIs needed. All dev work happens here by default.
+- **Provider mode**: Real Convex database, Clerk auth, OpenAI, Creem billing, Resend email. Requires all env vars set in `.env.local`.
 
 The switch happens in `src/lib/composition/server.ts` via `getServerApp()` — the single entry point for all server-side request handling. It provisions an `AppContext` (userId, workspaceId, role, plan) and returns typed `services` and `repositories`.
 
@@ -110,7 +110,7 @@ Both feed into `EditorWorkspaceView`. Mutations go through an optimistic local q
 | `PIPES_USE_MOCKS` | `true` = in-memory mock mode (default) |
 | `NEXT_PUBLIC_PIPES_USE_MOCKS` | Client-side mirror of above |
 | `CONVEX_URL` + `NEXT_PUBLIC_CONVEX_URL` | Convex deployment URL |
-| `AUTH0_DOMAIN` / `AUTH0_CLIENT_ID` / `AUTH0_CLIENT_SECRET` | Auth0 |
+| `CLERK_SECRET_KEY` / `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk auth |
 | `OPENAI_API_KEY` + `OPENAI_MODEL` | AI features (default `gpt-4.1-mini`) |
 | `CREEM_API_KEY` + `CREEM_WEBHOOK_SECRET` | Billing |
 | `RESEND_API_KEY` | Email (invites) |

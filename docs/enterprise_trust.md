@@ -2,11 +2,11 @@
 
 ## Enterprise auth posture (current)
 
-Pipes currently supports Auth0-based authentication with a bounded **SSO-readiness** settings model.
+Pipes currently supports Clerk-based authentication with a bounded **SSO-readiness** settings model.
 
 - `mode=shared`: standard shared auth posture.
-- `mode=sso_ready`: workspace stores validated domain allowlist and intended Auth0 connection metadata.
-- Full enterprise IdP provisioning (SAML/OIDC tenant-side setup and enterprise connection lifecycle) remains an Auth0 tenant operation and is intentionally not faked in product UI.
+- `mode=sso_ready`: workspace stores validated domain allowlist and intended SSO connection metadata.
+- Full enterprise IdP provisioning (SAML/OIDC tenant-side setup and enterprise connection lifecycle) remains a Clerk tenant operation and is intentionally not faked in product UI.
 
 ## Permission administration rules
 
@@ -53,7 +53,7 @@ These are governance metadata defaults and not a full compliance automation subs
 ## Mock vs real mode
 
 - Mock mode preserves full trust/gov flow testing locally.
-- Real mode uses the same bounded services and route contracts; Auth0/Convex remain source-of-truth providers.
+- Real mode uses the same bounded services and route contracts; Clerk/Convex remain source-of-truth providers.
 
 ## Intentional deferrals
 

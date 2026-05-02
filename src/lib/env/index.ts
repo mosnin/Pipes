@@ -13,10 +13,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PIPES_USE_MOCKS: z.string().default("true").transform((value) => value === "true"),
   NEXT_PUBLIC_APP_URL: z.preprocess(emptyToUndefined, z.string().url().default("http://localhost:3000")),
-  AUTH0_DOMAIN: optionalString,
-  AUTH0_CLIENT_ID: optionalString,
-  AUTH0_CLIENT_SECRET: optionalString,
-  AUTH0_AUDIENCE: optionalString,
+  CLERK_SECRET_KEY: optionalString,
+  CLERK_PUBLISHABLE_KEY: optionalString,
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: optionalString,
   CONVEX_DEPLOYMENT: optionalString,
   CONVEX_URL: optionalUrl,
   CREEM_API_KEY: optionalString,
@@ -37,7 +36,7 @@ export const env = buildEnv(process.env);
 
 export const runtimeFlags = {
   useMocks: env.PIPES_USE_MOCKS,
-  hasAuth0: Boolean(env.AUTH0_DOMAIN && env.AUTH0_CLIENT_ID && env.AUTH0_CLIENT_SECRET),
+  hasClerk: Boolean(env.CLERK_SECRET_KEY && (env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? env.CLERK_PUBLISHABLE_KEY)),
   hasConvex: Boolean(env.CONVEX_URL),
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
@@ -51,7 +50,7 @@ export function resolveRuntimeMode(): { mode: EffectiveRuntimeMode; warning?: st
   if (env.PIPES_USE_MOCKS) return { mode: "mock" };
   const missing: string[] = [];
   if (!env.CONVEX_URL) missing.push("CONVEX_URL");
-  if (!(env.AUTH0_DOMAIN && env.AUTH0_CLIENT_ID && env.AUTH0_CLIENT_SECRET)) missing.push("AUTH0_DOMAIN/AUTH0_CLIENT_ID/AUTH0_CLIENT_SECRET");
+  if (!(env.CLERK_SECRET_KEY && (env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? env.CLERK_PUBLISHABLE_KEY))) missing.push("CLERK_SECRET_KEY/NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
   if (missing.length > 0) {
     return { mode: "fallback_mock", warning: `Provider mode requested but incomplete configuration detected: ${missing.join(", ")}. Using mock runtime path.` };
   }
