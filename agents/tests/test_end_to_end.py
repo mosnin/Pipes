@@ -296,9 +296,7 @@ def test_plan_eval_passes_good_plan() -> None:
 @pytest.mark.asyncio
 async def test_plan_with_banned_words_emits_done_after_replan_or_error() -> None:
     """The agent re-plans once on a rejected plan. If the second plan also
-    fails, an `error` event is emitted with code `internal` (the runner uses
-    `internal` for plan_rejected since the contract's error code list is
-    fixed)."""
+    fails, an `error` event is emitted with code `plan_rejected`."""
     request = BuildRequest(systemId="sys_test", prompt="x")
     bad_plan = (
         "Build a robust seamless platform that empowers the engineer. "
@@ -319,7 +317,8 @@ async def test_plan_with_banned_words_emits_done_after_replan_or_error() -> None
     )
     parsed = _parse_frames(frames)
     assert parsed[-1]["event"] == "error"
-    assert "plan_rejected" in parsed[-1]["data"]["message"]
+    assert parsed[-1]["data"]["code"] == "plan_rejected"
+    assert parsed[-1]["data"]["retryable"] is False
 
 
 # ---- Action eval gate ----

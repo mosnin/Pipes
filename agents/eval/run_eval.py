@@ -749,7 +749,7 @@ async def _run_one(prompt: StarterPrompt, actions: List[StubAction]) -> TurnTrac
         if name == "error":
             trace.error_code = data.get("code")
             msg = data.get("message", "")
-            if "plan_rejected" in msg:
+            if data.get("code") == "plan_rejected" or "plan_rejected" in msg:
                 trace.plan_rejected = True
                 trace.plan_rejected_reason = msg
     return trace

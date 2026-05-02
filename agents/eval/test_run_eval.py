@@ -38,9 +38,9 @@ def test_all_14_prompts_produce_a_verdict(report: EvalReport) -> None:
 
 def test_negative_control_is_rejected_by_eval_gate(report: EvalReport) -> None:
     assert report.negative_control_rejected is True
-    # The rejection reason must surface that the gate fired.
+    # The rejection reason must surface concrete eval failures.
     assert report.negative_control_reason is not None
-    assert "plan_rejected" in (report.negative_control_reason or "")
+    assert "banned" in (report.negative_control_reason or "").lower()
 
 
 def test_exit_code_is_zero_when_threshold_met(report: EvalReport) -> None:

@@ -142,6 +142,7 @@ ErrorCode = Literal[
     "timeout",
     "auth_required",
     "rate_limited",
+    "plan_rejected",
     "internal",
     "model_unavailable",
 ]

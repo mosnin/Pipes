@@ -236,10 +236,9 @@ async def run_turn_stream(
                 yield sse_event(
                     "error",
                     {
-                        "code": "internal",
-                        "message": (
-                            "plan_rejected: "
-                            + "; ".join(plan_eval.reasons or rejection_reasons)
+                        "code": "plan_rejected",
+                        "message": "; ".join(
+                            plan_eval.reasons or rejection_reasons
                         ),
                         "retryable": False,
                     },
@@ -307,10 +306,8 @@ async def run_turn_stream(
                     yield sse_event(
                         "error",
                         {
-                            "code": "internal",
-                            "message": (
-                                "plan_rejected: " + "; ".join(plan_eval.reasons)
-                            ),
+                            "code": "plan_rejected",
+                            "message": "; ".join(plan_eval.reasons),
                             "retryable": False,
                         },
                     )
