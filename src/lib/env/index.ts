@@ -23,8 +23,10 @@ const envSchema = z.object({
   RESEND_API_KEY: optionalString,
   OPENAI_API_KEY: optionalString,
   OPENAI_MODEL: optionalString,
+  OPENAI_AGENTS_MODEL: optionalString,
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
+  PIPES_AGENT_ENDPOINT_URL: optionalUrl,
   PIPES_ADMIN_ALLOWLIST: optionalString
 });
 
@@ -41,7 +43,8 @@ export const runtimeFlags = {
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
-  hasModal: Boolean(env.MODAL_EXECUTOR_URL)
+  hasModal: Boolean(env.MODAL_EXECUTOR_URL),
+  hasAgentRunner: Boolean(env.PIPES_AGENT_ENDPOINT_URL)
 };
 
 export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";

@@ -674,6 +674,46 @@ export function createConvexRepositories(): RepositorySet {
       async addEscalationRecord(input) { const row = await getConvexHttpClient().mutation((api as any).app.addEscalationRecord, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never }); return { id: String(row._id), ...input }; },
       async listEscalationRecords(input) { const rows = await getConvexHttpClient().query((api as any).app.listEscalationRecords, { runId: input.runId as never }); return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, reason: row.reason, suggestedAction: row.suggestedAction, severity: row.severity, createdAt: row.createdAt })); },
     },
+    agentConversations: {
+      async createConversation(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentConversation, { systemId: input.systemId as never, userId: input.userId });
+        return { id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async getConversation(conversationId) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getAgentConversation, { conversationId: conversationId as never });
+        if (!row) return null;
+        return { id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async listConversations(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentConversations, { userId: input.userId, systemId: input.systemId as never });
+        return rows.map((row: any) => ({ id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt }));
+      },
+      async touchConversation(conversationId) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.touchAgentConversation, { conversationId: conversationId as never });
+      },
+      async createTurn(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentTurn, { conversationId: input.conversationId as never, index: input.index, prompt: input.prompt, startedAt: input.startedAt });
+        return { id: String(row._id), conversationId: String(row.conversationId), index: row.index, prompt: row.prompt, toolCalls: row.toolCalls ?? [], finalMessage: row.finalMessage, startedAt: row.startedAt, completedAt: row.completedAt, cancelled: row.cancelled };
+      },
+      async listTurns(conversationId) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentTurns, { conversationId: conversationId as never });
+        return rows.map((row: any) => ({ id: String(row._id), conversationId: String(row.conversationId), index: row.index, prompt: row.prompt, toolCalls: row.toolCalls ?? [], finalMessage: row.finalMessage, startedAt: row.startedAt, completedAt: row.completedAt, cancelled: row.cancelled }));
+      },
+      async appendToolCall(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.appendAgentTurnToolCall, { turnId: input.turnId as never, toolCall: input.toolCall });
+      },
+      async completeTurn(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.completeAgentTurn, { turnId: input.turnId as never, finalMessage: input.finalMessage, completedAt: input.completedAt, cancelled: input.cancelled });
+      }
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const client = getConvexHttpClient();

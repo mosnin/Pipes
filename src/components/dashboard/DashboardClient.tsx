@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
+import { STARTER_CHIPS } from "@/components/editor/ConversationDrawer";
 import {
   Dropdown,
   DropdownTrigger,
@@ -96,6 +98,31 @@ function initials(name: string): string {
 
 const PAGE_SIZE = 12;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Six starters for the dashboard hero. Three come from the drawer (the same
+// three a brand-new editor sees) plus three more pulled from the existing
+// 14-template catalog and rewritten as natural sentences.
+const DASHBOARD_STARTERS: Array<{ id: string; label: string; prompt: string }> = [
+  ...STARTER_CHIPS,
+  {
+    id: "multi-agent-handoff",
+    label: "Planner to coder",
+    prompt:
+      "A planner agent reads inbound tickets and writes a plan. A guard reviews the plan against policy. A coder agent runs the approved plan and opens a PR.",
+  },
+  {
+    id: "document-qa-system",
+    label: "Document QA",
+    prompt:
+      "A user asks a question. A retriever pulls matching chunks from the docs index. An answering agent writes a grounded answer. A citation formatter attaches inline citations and the response goes back to the user.",
+  },
+  {
+    id: "data-extraction-pipeline",
+    label: "Data extraction",
+    prompt:
+      "A user uploads a document. OCR runs on it. A field extractor pulls structured fields. A schema validator checks the record. Valid records land in storage; failures land in a dead-letter queue.",
+  },
+];
 
 // ---------------------------------------------------------------------------
 // System Card (grid)
@@ -295,6 +322,41 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       toast.error("Failed to create system", { id });
     }
   };
+
+  // Hero prompt state. The dashboard hero is the first half of beat 1 of the
+  // magic moment: a prompt input, no canvas, the agent has not been mentioned.
+  const [heroPrompt, setHeroPrompt] = useState("");
+  const [heroSubmitting, setHeroSubmitting] = useState(false);
+  const heroInputRef = useRef<ConversationInputHandle>(null);
+
+  const startSystemFromPrompt = useCallback(
+    async (prompt: string) => {
+      const text = prompt.trim();
+      if (!text) return;
+      if (heroSubmitting) return;
+      setHeroSubmitting(true);
+      const id = toast.loading("Creating system...");
+      try {
+        const res = await fetch("/api/systems", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: "Untitled System" }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          toast.success("Building...", { id });
+          router.push(`/systems/${data.data.systemId}?prompt=${encodeURIComponent(text)}`);
+        } else {
+          toast.error(data.error ?? "Failed to create system", { id });
+        }
+      } catch {
+        toast.error("Failed to create system", { id });
+      } finally {
+        setHeroSubmitting(false);
+      }
+    },
+    [heroSubmitting, router],
+  );
 
   const handleImport = async () => {
     if (!importText.trim()) return;
@@ -657,22 +719,53 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           ) : visibleRows.length === 0 ? (
             library.rows.length === 0 && !query && filter !== "archived" ? (
               <div className="grid-bg min-h-[70vh] flex items-center justify-center rounded-[12px]">
-                <div className="flex flex-col items-center text-center gap-4 max-w-md px-6">
+                <div className="flex flex-col items-center text-center gap-5 w-full max-w-[640px] px-6">
                   <h2 className="t-h2 text-[#111]">One map your team and your agents both read.</h2>
-                  <p className="t-body text-[#3C3C43]">
-                    Draw the nodes, ports, and pipes once. Stop being the map.
-                  </p>
-                  <div className="flex flex-col items-center gap-3 mt-2">
-                    <Button variant="primary" size="md" onPress={createSystem}>
-                      <Plus size={14} />
-                      New system
-                    </Button>
+                  <p className="t-body text-[#3C3C43]">Describe your system. Watch it build itself.</p>
+                  <div className="w-full">
+                    <ConversationInput
+                      ref={heroInputRef}
+                      value={heroPrompt}
+                      onChange={setHeroPrompt}
+                      onSend={() => void startSystemFromPrompt(heroPrompt)}
+                      onStop={() => {}}
+                      isRunning={heroSubmitting}
+                      hasError={false}
+                      placeholderHint={heroSubmitting ? "building" : "idle"}
+                      size="hero"
+                      placeholder="Describe your system."
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {DASHBOARD_STARTERS.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => {
+                          setHeroPrompt(chip.prompt);
+                          heroInputRef.current?.focus();
+                        }}
+                        className="t-label text-[#3C3C43] hover:text-[#111] bg-white border border-black/[0.08] hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3 t-caption text-[#8E8E93]">
                     <button
                       type="button"
                       onClick={() => router.push("/templates")}
-                      className="t-label text-[#3C3C43] hover:text-indigo-700 transition-colors"
+                      className="hover:text-indigo-700 transition-colors"
                     >
                       or start from a template
+                    </button>
+                    <span aria-hidden>·</span>
+                    <button
+                      type="button"
+                      onClick={createSystem}
+                      className="hover:text-indigo-700 transition-colors"
+                    >
+                      Start blank
                     </button>
                   </div>
                 </div>

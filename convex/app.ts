@@ -731,3 +731,68 @@ export const listSessionContinuationRefs = query({
     return rows.filter((row) => row.workspaceId === args.workspaceId && (!args.runId || row.toRunId === args.runId));
   }
 });
+
+export const createAgentConversation = mutation({
+  args: { systemId: v.id("systems"), userId: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_conversations", { systemId: args.systemId, userId: args.userId, createdAt: now(), updatedAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const getAgentConversation = query({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => ctx.db.get(args.conversationId)
+});
+
+export const listAgentConversations = query({
+  args: { userId: v.string(), systemId: v.id("systems") },
+  handler: async (ctx, args) => ctx.db.query("agent_conversations").withIndex("by_user_system", (q) => q.eq("userId", args.userId).eq("systemId", args.systemId)).collect()
+});
+
+export const touchAgentConversation = mutation({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => ctx.db.patch(args.conversationId, { updatedAt: now() })
+});
+
+export const createAgentTurn = mutation({
+  args: { conversationId: v.id("agent_conversations"), index: v.number(), prompt: v.string(), startedAt: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_turns", { conversationId: args.conversationId, index: args.index, prompt: args.prompt, toolCalls: [], startedAt: args.startedAt, cancelled: false });
+    return ctx.db.get(id);
+  }
+});
+
+export const listAgentTurns = query({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("agent_turns").withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId)).collect();
+    return rows.sort((a, b) => a.index - b.index);
+  }
+});
+
+export const appendAgentTurnToolCall = mutation({
+  args: {
+    turnId: v.id("agent_turns"),
+    toolCall: v.object({
+      id: v.string(),
+      toolName: v.string(),
+      arguments: v.any(),
+      ok: v.boolean(),
+      action: v.optional(v.any()),
+      error: v.optional(v.string())
+    })
+  },
+  handler: async (ctx, args) => {
+    const turn = await ctx.db.get(args.turnId);
+    if (!turn) return;
+    await ctx.db.patch(args.turnId, { toolCalls: [...turn.toolCalls, args.toolCall] });
+  }
+});
+
+export const completeAgentTurn = mutation({
+  args: { turnId: v.id("agent_turns"), finalMessage: v.optional(v.string()), completedAt: v.string(), cancelled: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.turnId, { finalMessage: args.finalMessage, completedAt: args.completedAt, cancelled: args.cancelled });
+  }
+});

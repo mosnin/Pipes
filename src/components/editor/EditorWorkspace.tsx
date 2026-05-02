@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
+import { useSearchParams } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
@@ -18,6 +19,7 @@ import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContrac
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
+import { ConversationDrawer } from "@/components/editor/ConversationDrawer";
 import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 
@@ -72,7 +74,7 @@ function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphA
   return { nodes, pipes };
 }
 
-function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; data: SystemPayload | null; reload: () => void }) {
+function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { systemId: string; data: SystemPayload | null; reload: () => void; initialPrompt?: string }) {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
@@ -724,6 +726,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             </button>
           </aside>
         )}
+        <div className="relative min-h-[60vh]">
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           {nodes.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
@@ -790,6 +793,19 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             }}
           />
         </EditorErrorBoundary>
+        <ConversationDrawer
+          systemId={systemId}
+          initialPrompt={initialPrompt}
+          onInitialPromptHandled={() => {
+            if (typeof window === "undefined") return;
+            const url = new URL(window.location.href);
+            if (url.searchParams.has("prompt")) {
+              url.searchParams.delete("prompt");
+              window.history.replaceState({}, "", url.toString());
+            }
+          }}
+        />
+        </div>
         {!inspectorOpen && !activeSystemPanel ? (
           <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
             <button
@@ -1267,7 +1283,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   );
 }
 
-function MockEditorWorkspace({ systemId }: { systemId: string }) {
+function MockEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
   const load = useCallback(async () => {
     const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
@@ -1281,16 +1297,21 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
     return () => clearInterval(interval);
   }, [load]);
 
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={load} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} reload={load} initialPrompt={initialPrompt} />;
 }
 
-function RealEditorWorkspace({ systemId }: { systemId: string }) {
+function RealEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const bundle = useQuery(api.app.getSystemBundle, { systemId: systemId as never });
   const data = bundle ? normalizeBundle(bundle) : null;
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} initialPrompt={initialPrompt} />;
 }
 
-export function EditorWorkspace({ systemId }: { systemId: string }) {
-  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} />;
-  return <MockEditorWorkspace systemId={systemId} />;
+export function EditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
+  // Read ?prompt= from the URL when the page didn't pre-pass one (defensive).
+  const searchParams = useSearchParams();
+  const fromQuery = searchParams?.get("prompt") ?? undefined;
+  const effectivePrompt = initialPrompt ?? (fromQuery ? decodeURIComponent(fromQuery) : undefined);
+
+  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} initialPrompt={effectivePrompt} />;
+  return <MockEditorWorkspace systemId={systemId} initialPrompt={effectivePrompt} />;
 }
