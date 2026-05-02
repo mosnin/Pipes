@@ -1,0 +1,5 @@
+{
+  "systemId": "sys_demo_planner_coder",
+  "prompt": "Planner agent reads tickets, writes a plan, hands off to a coder agent that opens a PR.",
+  "conversationId": null
+}
