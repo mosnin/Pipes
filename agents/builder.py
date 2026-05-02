@@ -11,6 +11,12 @@ Streaming:
   calls tools. We translate those internal events into the 6 SSE events from
   docs/agent-contract.md (tool_call, tool_result, message, status, done, error).
 
+Plan-first flow (audit add):
+  Every turn emits a plan `message` event BEFORE any tool call. The plan
+  passes a deterministic eval gate (`evaluate_plan`) before the agent is
+  permitted to execute tools. Each tool call additionally passes
+  `evaluate_action` before being forwarded.
+
 If the installed SDK shape differs from what is sketched here, fix the shim in
 `_run_streaming_with_sdk` only. The rest of the file is SDK-agnostic.
 """
@@ -23,8 +29,14 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Optional
+from typing import Any, AsyncIterator, Awaitable, Callable, Optional
 
+from .plan_evaluator import (
+    ActionEvalResult,
+    EvalResult,
+    evaluate_action,
+    evaluate_plan,
+)
 from .schemas import (
     DEFAULT_FIRST_NODE_X,
     DEFAULT_FIRST_NODE_Y,
@@ -47,9 +59,31 @@ DEFAULT_MODEL = os.environ.get("OPENAI_AGENTS_MODEL", "gpt-4o-mini")
 
 
 def load_system_prompt() -> str:
-    """Read the system prompt from disk once. Re-read every call so deploys pick
+    """Read the system prompt from disk. Re-read every call so deploys pick
     up edits without a Modal rebuild."""
     return SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
+
+
+def render_system_prompt(request: BuildRequest) -> str:
+    """Substitute the `{{...}}` placeholders with request context.
+
+    Empty values render as empty strings so the prompt reads cleanly even
+    when no context is known. We use `str.replace` rather than `str.format`
+    because the prompt contains literal curly braces in its examples.
+    """
+    template = load_system_prompt()
+    substitutions: dict[str, str] = {
+        "{{user_first_name}}": (request.user_first_name or "").strip(),
+        "{{user_team}}": (request.user_team or "").strip(),
+        "{{prior_systems_summary}}": (request.prior_systems_summary or "").strip(),
+        "{{system_name}}": (request.system_name or "").strip(),
+        "{{existing_node_count}}": str(request.existing_nodes_count),
+        "{{existing_pipe_count}}": str(request.existing_pipes_count),
+    }
+    out = template
+    for key, value in substitutions.items():
+        out = out.replace(key, value)
+    return out
 
 
 # ---- Tool dispatch ----
@@ -83,12 +117,15 @@ def _new_id(prefix: str) -> str:
 
 
 # A "step" is a normalized record we yield from the model loop.
-# kind is one of: tool_call, tool_result, message, status.
+# kind is one of: plan, tool_call, tool_result, message, status.
 # These are converted to SSE frames upstream.
 Step = dict[str, Any]
 
 
 # ---- Streaming run loop ----
+
+
+PlannerFn = Callable[[BuildRequest], Awaitable[str]]
 
 
 async def run_turn_stream(
@@ -97,6 +134,8 @@ async def run_turn_stream(
     initial_state: Optional[GraphState] = None,
     model: Optional[str] = None,
     runner: Optional[Callable[..., AsyncIterator[Step]]] = None,
+    planner: Optional[PlannerFn] = None,
+    abort_signal: Optional[asyncio.Event] = None,
 ) -> AsyncIterator[str]:
     """Run one agent turn and yield SSE-formatted strings.
 
@@ -111,7 +150,16 @@ async def run_turn_stream(
         Optional override of the OPENAI_AGENTS_MODEL env var.
     runner:
         Optional injection point used by tests. Production passes None and we
-        instantiate the real Agents SDK Runner.
+        instantiate the real Agents SDK Runner. The runner yields Step records
+        AFTER the plan has been emitted and accepted.
+    planner:
+        Optional injection point that returns the plan text. Tests use this to
+        deterministically drive the plan-first flow without a model call.
+        Production leaves this None; the plan is read off the runner's first
+        `plan` Step (the SDK shim emits one before the first tool_call).
+    abort_signal:
+        Optional asyncio.Event the caller sets to cancel the turn mid-stream.
+        When set, the loop stops emitting events and returns.
     """
     state = initial_state or GraphState(system_id=request.system_id)
     dispatch = _make_tool_dispatch(state)
@@ -120,8 +168,102 @@ async def run_turn_stream(
     turn_id = _new_id("turn")
     started_at = time.monotonic()
     tool_call_count = 0
+    validate_called = False
+    pending_node_ids: set[str] = set()
+
+    def aborted() -> bool:
+        return abort_signal is not None and abort_signal.is_set()
 
     yield sse_event("status", {"state": "thinking"})
+    if aborted():
+        return
+
+    # ---- Plan-first flow ----
+    plan_text: Optional[str] = None
+    plan_eval: Optional[EvalResult] = None
+    rejection_reasons: list[str] = []
+
+    # If a planner injection is provided, use it; otherwise the runner is
+    # expected to emit the first `plan` step before any tool_call.
+    if planner is not None:
+        # First attempt.
+        try:
+            plan_text = await planner(request)
+        except Exception as exc:  # noqa: BLE001
+            yield sse_event(
+                "error",
+                {
+                    "code": "internal",
+                    "message": f"Plan generation failed: {exc}",
+                    "retryable": True,
+                },
+            )
+            return
+        if aborted():
+            return
+        plan_eval = evaluate_plan(
+            plan_text,
+            request.existing_nodes_count,
+            request.existing_pipes_count,
+        )
+
+        # One re-plan attempt on rejection.
+        if not plan_eval.ok:
+            rejection_reasons = list(plan_eval.reasons)
+            try:
+                # Pass rejection reasons via a re-plan call. The planner
+                # interface is opaque; tests stub a planner that ignores the
+                # reminder argument or honors a sentinel.
+                plan_text = await planner(request)
+            except Exception as exc:  # noqa: BLE001
+                yield sse_event(
+                    "error",
+                    {
+                        "code": "internal",
+                        "message": f"Plan re-generation failed: {exc}",
+                        "retryable": True,
+                    },
+                )
+                return
+            if aborted():
+                return
+            plan_eval = evaluate_plan(
+                plan_text,
+                request.existing_nodes_count,
+                request.existing_pipes_count,
+            )
+            if not plan_eval.ok:
+                yield sse_event(
+                    "error",
+                    {
+                        "code": "internal",
+                        "message": (
+                            "plan_rejected: "
+                            + "; ".join(plan_eval.reasons or rejection_reasons)
+                        ),
+                        "retryable": False,
+                    },
+                )
+                return
+
+        # Emit the plan.
+        yield sse_event("status", {"state": "writing_message"})
+        yield sse_event("message", {"text": plan_text, "role": "assistant"})
+        if aborted():
+            return
+
+        # No-op plan: skip to done with no tool calls.
+        if plan_eval.is_no_op:
+            yield sse_event(
+                "done",
+                {"conversationId": conversation_id, "turnId": turn_id},
+            )
+            return
+
+        # Reset to thinking before tool calls begin.
+        yield sse_event("status", {"state": "thinking"})
+        if aborted():
+            return
 
     runner_iter = (
         runner(request=request, dispatch=dispatch, model=model or DEFAULT_MODEL)
@@ -131,10 +273,13 @@ async def run_turn_stream(
         )
     )
 
-    final_message_sent = False
+    final_message_sent = planner is not None
+    plan_received_from_runner = planner is not None
 
     try:
         async for step in runner_iter:
+            if aborted():
+                return
             elapsed = time.monotonic() - started_at
             if elapsed > MAX_WALL_CLOCK_SECONDS:
                 yield sse_event(
@@ -148,7 +293,57 @@ async def run_turn_stream(
                 return
 
             kind = step.get("kind")
+
+            if kind == "plan":
+                # When the runner emits a plan step (no injected planner),
+                # evaluate it and gate tool calls behind it.
+                plan_text = step.get("text", "")
+                plan_eval = evaluate_plan(
+                    plan_text,
+                    request.existing_nodes_count,
+                    request.existing_pipes_count,
+                )
+                if not plan_eval.ok:
+                    yield sse_event(
+                        "error",
+                        {
+                            "code": "internal",
+                            "message": (
+                                "plan_rejected: " + "; ".join(plan_eval.reasons)
+                            ),
+                            "retryable": False,
+                        },
+                    )
+                    return
+                if not final_message_sent:
+                    yield sse_event("status", {"state": "writing_message"})
+                yield sse_event(
+                    "message",
+                    {"text": plan_text, "role": "assistant"},
+                )
+                plan_received_from_runner = True
+                if plan_eval.is_no_op:
+                    yield sse_event(
+                        "done",
+                        {"conversationId": conversation_id, "turnId": turn_id},
+                    )
+                    return
+                yield sse_event("status", {"state": "thinking"})
+                continue
+
             if kind == "tool_call":
+                if not plan_received_from_runner:
+                    # Tool calls before a plan are a contract violation.
+                    yield sse_event(
+                        "error",
+                        {
+                            "code": "internal",
+                            "message": "Tool call emitted before plan message.",
+                            "retryable": False,
+                        },
+                    )
+                    return
+
                 tool_call_count += 1
                 if tool_call_count > MAX_TOOL_CALLS_PER_TURN:
                     yield sse_event(
@@ -160,6 +355,34 @@ async def run_turn_stream(
                         },
                     )
                     return
+
+                # Action eval gate.
+                eval_state = {
+                    "nodes": state.nodes,
+                    "pipes": state.pipes,
+                    "validate_called": validate_called,
+                    "pending_node_ids": pending_node_ids,
+                }
+                eval_action = evaluate_action(
+                    {
+                        "tool_name": step.get("tool_name"),
+                        "arguments": step.get("arguments", {}),
+                    },
+                    eval_state,
+                )
+                if not eval_action.ok:
+                    yield sse_event(
+                        "message",
+                        {
+                            "text": f"Skipped: {eval_action.reason}",
+                            "role": "assistant",
+                        },
+                    )
+                    continue
+
+                if step.get("tool_name") == "validate":
+                    validate_called = True
+
                 yield sse_event(
                     "status",
                     {"state": "calling_tool", "tool_name": step["tool_name"]},
@@ -172,6 +395,14 @@ async def run_turn_stream(
                         "arguments": step["arguments"],
                     },
                 )
+                # Track in-flight node-affecting calls so a delete cannot race.
+                if step.get("tool_name") in ("add_node", "update_node"):
+                    nid = step.get("arguments", {}).get("nodeId") or step.get(
+                        "arguments", {}
+                    ).get("clientNodeId")
+                    if nid:
+                        pending_node_ids.add(nid)
+
             elif kind == "tool_result":
                 payload: dict[str, Any] = {
                     "id": step["id"],
@@ -185,6 +416,33 @@ async def run_turn_stream(
                     payload["error"] = step["error"]
                     payload["ok"] = False
                 yield sse_event("tool_result", payload)
+                # Mirror the action into the in-memory GraphState so the next
+                # action eval sees up-to-date nodes and pipes. The runner's
+                # internal dispatch may have already mutated state when running
+                # against the real SDK; we no-op duplicates by checking ids.
+                action = step.get("action") or {}
+                act_kind = action.get("action") if isinstance(action, dict) else None
+                if act_kind == "addNode":
+                    nid = action.get("clientNodeId")
+                    if nid and nid not in state.nodes:
+                        state.add_node(nid, dict(action))
+                elif act_kind == "addPipe":
+                    pid = action.get("clientPipeId")
+                    if pid and pid not in state.pipes:
+                        state.add_pipe(pid, dict(action))
+                elif act_kind == "updateNode":
+                    nid = action.get("nodeId")
+                    if nid and nid in state.nodes:
+                        patch = {k: v for k, v in action.items() if k not in ("action", "nodeId")}
+                        state.update_node(nid, patch)
+                elif act_kind == "deleteNode":
+                    nid = action.get("nodeId")
+                    if nid:
+                        state.delete_node(nid)
+                # Clear from in-flight once applied.
+                nid = action.get("clientNodeId") or action.get("nodeId")
+                if nid in pending_node_ids:
+                    pending_node_ids.discard(nid)
             elif kind == "message":
                 if not final_message_sent:
                     yield sse_event("status", {"state": "writing_message"})
@@ -212,6 +470,9 @@ async def run_turn_stream(
                 "retryable": True,
             },
         )
+        return
+
+    if aborted():
         return
 
     yield sse_event(
@@ -309,7 +570,7 @@ async def _run_streaming_with_sdk(
 
     agent = Agent(
         name="Pipes Builder",
-        instructions=load_system_prompt(),
+        instructions=render_system_prompt(request),
         model=model,
         tools=[add_node, add_pipe, update_node, delete_node, validate],
     )
@@ -368,6 +629,7 @@ __all__ = [
     "DEFAULT_FIRST_NODE_Y",
     "DEFAULT_MODEL",
     "load_system_prompt",
+    "render_system_prompt",
     "run_turn_stream",
     "sse_event",
 ]

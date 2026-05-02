@@ -66,7 +66,14 @@ else:
 
 
 async def _stream_for_request(body: dict[str, Any]) -> AsyncIterator[bytes]:
-    """Translate a BuildRequest dict into a stream of SSE bytes."""
+    """Translate a BuildRequest dict into a stream of SSE bytes.
+
+    `body` may include the optional tailoring fields documented in
+    `agents/README.md` (userFirstName, userTeam, priorSystemsSummary,
+    systemName, existingNodesCount, existingPipesCount). The Pydantic model
+    accepts both camelCase aliases (from the Next.js route) and snake_case
+    field names. Unknown fields are ignored.
+    """
     # Lazy import so tests can load this module without the rest of the package
     # resolving. Modal containers will resolve once the image boots.
     from .builder import run_turn_stream

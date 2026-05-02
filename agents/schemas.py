@@ -24,6 +24,18 @@ class BuildRequest(BaseModel):
     # Optional: prior turns to seed history. The Next.js route may pass these.
     history: list[dict[str, Any]] = Field(default_factory=list)
 
+    # Optional tailoring fields. The Next.js route will populate these once
+    # Phase 3 wires user context and graph state through. The agent reads
+    # them to substitute `{{...}}` placeholders in the system prompt.
+    user_first_name: Optional[str] = Field(default=None, alias="userFirstName")
+    user_team: Optional[str] = Field(default=None, alias="userTeam")
+    prior_systems_summary: Optional[str] = Field(
+        default=None, alias="priorSystemsSummary"
+    )
+    system_name: Optional[str] = Field(default=None, alias="systemName")
+    existing_nodes_count: int = Field(default=0, alias="existingNodesCount")
+    existing_pipes_count: int = Field(default=0, alias="existingPipesCount")
+
     model_config = {"populate_by_name": True}
 
 
