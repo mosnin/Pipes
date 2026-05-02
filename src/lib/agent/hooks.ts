@@ -4,6 +4,11 @@
 // conversation surface state, and exposes send / stop. Implements the timing
 // escalations from docs/agent-contract.md (100 ms placeholder, 5 s upgrade,
 // 30 s retry) by tracking firstEventReceivedAt and a derived placeholder hint.
+//
+// Phase 5 wires the optimistic apply contract: every tool_result with an action
+// mutates the local canvas IMMEDIATELY through the editor's existing
+// localApply + queue, and the entire turn collapses to ONE composite undo
+// entry. Manual edits during a turn cancel the build (one rule, predictable).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { startAgentBuild } from "@/lib/agent/client";
@@ -19,20 +24,19 @@ import type {
   ErrorEvent,
   StatusEvent,
 } from "@/lib/agent/types";
-import type { EditorGraphAction } from "@/components/editor/editor_state";
-
-// Phase 5 will replace this with a real localApply + queue flush. For now we
-// just record + console.log so the developer can see the agent's intent land.
-function placeholderApplyAction(systemId: string, action: EditorGraphAction): void {
-  if (typeof window === "undefined") return;
-  console.log("[Pipes agent] tool_result action (placeholder, not yet applied to canvas)", {
-    systemId,
-    action,
-  });
-}
+import type {
+  EditorGraphAction,
+  GraphNode,
+  GraphPipe,
+} from "@/components/editor/editor_state";
 
 const SPINNING_UP_AFTER_MS = 5_000;
 const CONNECTION_FAILED_AFTER_MS = 30_000;
+
+// Each tool_result lands on the canvas at most once every APPLY_THROTTLE_MS.
+// The Convex queue still flushes actions as fast as they come; only the React
+// state setter is paced. This is the "80 to 120 ms per beat" of the contract.
+const APPLY_THROTTLE_MS = 100;
 
 type Timers = { spinningUp: number | null; failed: number | null };
 
@@ -43,7 +47,29 @@ function clearTimers(timers: Timers): void {
   if (timers.failed !== null) window.clearTimeout(timers.failed);
 }
 
-export function useAgentBuild(systemId: string): UseAgentBuildResult {
+// The bridge the editor passes in so the hook can drive the canvas. The editor
+// owns nodes/pipes/queue/history; the hook owns the SSE stream and the turn
+// lifecycle. They meet through this interface.
+export type AgentApplyContext = {
+  // Apply one EditorGraphAction to the local canvas + optimistic queue. Does
+  // NOT push history — the composite entry is pushed once on endTurn.
+  applyAction: (action: EditorGraphAction, turnId: string) => void;
+  // Snapshot the pre-turn state. Called once at the first reliable signal of
+  // a new turn (the first tool_call).
+  beginTurn: (turnId: string) => void;
+  // Push the composite history entry that bundles the turn. Called on `done`
+  // or terminal `error`. Idempotent — calling it twice for the same turn id
+  // is a no-op on the second call.
+  endTurn: (turnId: string) => void;
+  // Bumped by the editor on every manual canvas edit. The hook reads it to
+  // detect "user took over mid-build" and aborts the SSE stream.
+  userInteractedAt: { current: number };
+};
+
+export function useAgentBuild(
+  systemId: string,
+  ctx?: AgentApplyContext,
+): UseAgentBuildResult {
   const [state, setState] = useState<AgentBuildState>("idle");
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
@@ -59,6 +85,66 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
   const timersRef = useRef<Timers>(NO_TIMERS);
   const turnHasFirstEventRef = useRef<boolean>(false);
   const currentAssistantMessageRef = useRef<string>("");
+
+  // Per-turn state. `currentTurnIdRef` is a client-generated id used until the
+  // server returns a real turnId on `done`. `turnStartedAtRef` is the moment
+  // we called send() — anything bumped on the userInteractedAt ref AFTER this
+  // moment counts as a manual takeover.
+  const currentTurnIdRef = useRef<string | null>(null);
+  const turnStartedAtRef = useRef<number>(0);
+  const turnEndedRef = useRef<boolean>(false);
+  const toolCallsSeenRef = useRef<number>(0);
+
+  // Throttle queue for applying tool_result actions. Each tool_result enqueues
+  // one item; the scheduler drains it at one item per APPLY_THROTTLE_MS.
+  const applyQueueRef = useRef<Array<{ action: EditorGraphAction; turnId: string }>>([]);
+  const applyTimerRef = useRef<number | null>(null);
+  const lastAppliedAtRef = useRef<number>(0);
+  const ctxRef = useRef<AgentApplyContext | undefined>(ctx);
+  // Sync the ref to the latest ctx in an effect (writing during render
+  // tripped a lint rule and is also incorrect in concurrent rendering).
+  useEffect(() => { ctxRef.current = ctx; }, [ctx]);
+
+  // Forward declaration via a ref so the timer callback can reach the function
+  // without depending on it before it's declared.
+  const drainApplyQueueRef = useRef<() => void>(() => {});
+
+  const drainApplyQueue = useCallback(() => {
+    applyTimerRef.current = null;
+    const item = applyQueueRef.current.shift();
+    if (!item) return;
+    const c = ctxRef.current;
+    if (c) c.applyAction(item.action, item.turnId);
+    lastAppliedAtRef.current = Date.now();
+    if (applyQueueRef.current.length > 0) {
+      applyTimerRef.current = window.setTimeout(() => drainApplyQueueRef.current(), APPLY_THROTTLE_MS);
+    }
+  }, []);
+  useEffect(() => { drainApplyQueueRef.current = drainApplyQueue; }, [drainApplyQueue]);
+
+  const scheduleApply = useCallback((action: EditorGraphAction, turnId: string) => {
+    applyQueueRef.current.push({ action, turnId });
+    if (applyTimerRef.current !== null) return;
+    const elapsed = Date.now() - lastAppliedAtRef.current;
+    const wait = elapsed >= APPLY_THROTTLE_MS ? 0 : APPLY_THROTTLE_MS - elapsed;
+    applyTimerRef.current = window.setTimeout(() => drainApplyQueueRef.current(), wait);
+  }, []);
+
+  const flushApplyQueueImmediately = useCallback(() => {
+    // Drain everything pending without waiting for the throttle. Used on done
+    // so the final state is on screen by the time the chat says we are done.
+    if (applyTimerRef.current !== null) {
+      window.clearTimeout(applyTimerRef.current);
+      applyTimerRef.current = null;
+    }
+    while (applyQueueRef.current.length > 0) {
+      const item = applyQueueRef.current.shift();
+      if (!item) break;
+      const c = ctxRef.current;
+      if (c) c.applyAction(item.action, item.turnId);
+    }
+    lastAppliedAtRef.current = Date.now();
+  }, []);
 
   const armTimers = useCallback(() => {
     clearTimers(timersRef.current);
@@ -87,8 +173,53 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
     return () => {
       disarmTimers();
       if (abortRef.current) abortRef.current.abort();
+      if (applyTimerRef.current !== null) {
+        window.clearTimeout(applyTimerRef.current);
+        applyTimerRef.current = null;
+      }
     };
   }, [disarmTimers]);
+
+  // Manual edit during a build cancels the build. One rule. We poll the
+  // userInteractedAt ref while a turn is in flight; the moment it bumps past
+  // turnStartedAtRef we abort the SSE stream and surface a "Stopped" message.
+  // Polling is cheap (one ref read per 80 ms) and avoids forcing the editor
+  // to re-render on every interaction.
+  useEffect(() => {
+    if (state !== "running" && state !== "connecting") return;
+    if (!ctx) return;
+    const id = window.setInterval(() => {
+      if (!ctx) return;
+      if (ctx.userInteractedAt.current > turnStartedAtRef.current) {
+        // User edited the canvas mid-build. Abort cleanly.
+        const turnId = currentTurnIdRef.current;
+        if (abortRef.current) abortRef.current.abort();
+        abortRef.current = null;
+        disarmTimers();
+        flushApplyQueueImmediately();
+        if (turnId && !turnEndedRef.current) {
+          turnEndedRef.current = true;
+          ctx.endTurn(turnId);
+        }
+        setState("stopped");
+        setFinishedAt(Date.now());
+        setStatusState(undefined);
+        setActiveToolName(undefined);
+        setPlaceholderHint("idle");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `s_${Date.now()}`,
+            role: "assistant",
+            text: "Stopped because you started editing.",
+            ts: new Date().toISOString(),
+          },
+        ]);
+        window.clearInterval(id);
+      }
+    }, 80);
+    return () => window.clearInterval(id);
+  }, [ctx, disarmTimers, flushApplyQueueImmediately, state]);
 
   const handleEvent = useCallback(
     (event: AgentEvent) => {
@@ -105,6 +236,14 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
       }
 
       if (event.type === "tool_call") {
+        // First tool_call of a turn is the earliest reliable point to snapshot
+        // pre-turn state for the composite undo entry.
+        const c = ctxRef.current;
+        const turnId = currentTurnIdRef.current;
+        if (c && turnId && !turnEndedRef.current && toolCallsSeenRef.current === 0) {
+          c.beginTurn(turnId);
+        }
+        toolCallsSeenRef.current += 1;
         setToolCalls((prev) => [
           ...prev,
           {
@@ -123,8 +262,15 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
           ),
         );
         if (event.data.action) {
-          // Placeholder reducer: log + record only. Phase 5 wires localApply.
-          placeholderApplyAction(systemId, event.data.action);
+          const turnId = currentTurnIdRef.current;
+          // If a context is wired, schedule an optimistic apply through the
+          // editor. Otherwise the action is silently dropped; this is by
+          // design — the chat surface still works in environments without an
+          // editor (e.g. the agent test fixture page) and the server is the
+          // source of truth either way.
+          if (ctxRef.current && turnId) {
+            scheduleApply(event.data.action, turnId);
+          }
         }
         return;
       }
@@ -163,6 +309,15 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
         setMessages((prev) =>
           prev.map((m) => (m.streaming ? { ...m, streaming: false } : m)),
         );
+        // Drain any pending throttled applies so the final canvas matches the
+        // turn the agent declared done.
+        flushApplyQueueImmediately();
+        const c = ctxRef.current;
+        const turnId = currentTurnIdRef.current;
+        if (c && turnId && !turnEndedRef.current) {
+          turnEndedRef.current = true;
+          c.endTurn(turnId);
+        }
         disarmTimers();
         return;
       }
@@ -175,11 +330,18 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
         setStatusState(undefined);
         setActiveToolName(undefined);
         setPlaceholderHint("failed");
+        flushApplyQueueImmediately();
+        const c = ctxRef.current;
+        const turnId = currentTurnIdRef.current;
+        if (c && turnId && !turnEndedRef.current) {
+          turnEndedRef.current = true;
+          c.endTurn(turnId);
+        }
         disarmTimers();
         return;
       }
     },
-    [disarmTimers, systemId],
+    [disarmTimers, flushApplyQueueImmediately, scheduleApply],
   );
 
   const send = useCallback(
@@ -197,8 +359,16 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
       setToolCalls([]);
       currentAssistantMessageRef.current = "";
       turnHasFirstEventRef.current = false;
+      toolCallsSeenRef.current = 0;
+      turnEndedRef.current = false;
       setPlaceholderHint("building");
       setState("connecting");
+
+      // Generate a client-side turn id so we can begin/end the composite undo
+      // entry before the server returns its real turnId on `done`.
+      const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      currentTurnIdRef.current = turnId;
+      turnStartedAtRef.current = Date.now();
 
       // Append the user's prompt to the chat surface immediately.
       const userMessage: AgentChatMessage = {
@@ -231,19 +401,35 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
           setState("error");
           setPlaceholderHint("failed");
           setFinishedAt(Date.now());
+          // Close the composite undo entry even on transport failure so any
+          // tool_results that already landed are bundled into one undo step.
+          flushApplyQueueImmediately();
+          const c = ctxRef.current;
+          const tid = currentTurnIdRef.current;
+          if (c && tid && !turnEndedRef.current) {
+            turnEndedRef.current = true;
+            c.endTurn(tid);
+          }
         })
         .finally(() => {
           disarmTimers();
           if (abortRef.current === controller) abortRef.current = null;
         });
     },
-    [armTimers, conversationId, disarmTimers, handleEvent, state, systemId],
+    [armTimers, conversationId, disarmTimers, flushApplyQueueImmediately, handleEvent, state, systemId],
   );
 
   const stop = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = null;
     disarmTimers();
+    flushApplyQueueImmediately();
+    const c = ctxRef.current;
+    const turnId = currentTurnIdRef.current;
+    if (c && turnId && !turnEndedRef.current) {
+      turnEndedRef.current = true;
+      c.endTurn(turnId);
+    }
     setState("stopped");
     setFinishedAt(Date.now());
     setStatusState(undefined);
@@ -258,7 +444,7 @@ export function useAgentBuild(systemId: string): UseAgentBuildResult {
         ts: new Date().toISOString(),
       },
     ]);
-  }, [disarmTimers]);
+  }, [disarmTimers, flushApplyQueueImmediately]);
 
   const result = useMemo<UseAgentBuildResult>(
     () => ({
@@ -315,3 +501,6 @@ function summarizeArgs(tool: string, args: Record<string, unknown>): string {
   if (tool === "validate") return "system";
   return "";
 }
+
+// Re-exported types to keep editor imports tidy.
+export type { GraphNode, GraphPipe };

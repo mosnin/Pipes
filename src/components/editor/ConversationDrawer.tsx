@@ -11,13 +11,17 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, MessageSquare } from "lucide-react";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { ConversationMessages } from "@/components/editor/ConversationMessages";
-import { useAgentBuild } from "@/lib/agent/hooks";
+import { useAgentBuild, type AgentApplyContext } from "@/lib/agent/hooks";
 import { cn } from "@/lib/utils";
 
 export type ConversationDrawerProps = {
   systemId: string;
   initialPrompt?: string;
   onInitialPromptHandled?: () => void;
+  // Optional bridge to the editor canvas. When wired, every tool_result
+  // mutates the local canvas immediately and the whole turn collapses to one
+  // composite undo entry.
+  agentApplyContext?: AgentApplyContext;
 };
 
 export const STARTER_CHIPS: Array<{ id: string; label: string; prompt: string }> = [
@@ -47,13 +51,14 @@ export function ConversationDrawer({
   systemId,
   initialPrompt,
   onInitialPromptHandled,
+  agentApplyContext,
 }: ConversationDrawerProps) {
   const [text, setText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const inputRef = useRef<ConversationInputHandle>(null);
   const handledInitialRef = useRef(false);
 
-  const agent = useAgentBuild(systemId);
+  const agent = useAgentBuild(systemId, agentApplyContext);
 
   // Auto-fire the initial prompt exactly once on mount.
   useEffect(() => {

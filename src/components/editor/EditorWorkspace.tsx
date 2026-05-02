@@ -31,7 +31,7 @@ type SystemPayload = {
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
 };
 
-type QueuedAction = { action: EditorGraphAction; id: string; retries: number };
+type QueuedAction = { action: EditorGraphAction; id: string; retries: number; turnId?: string };
 type ReviewPreviewItem = { diffId: string; entityType: string; entityId: string; changeType: string; previewKind: string; emphasis: "pending_review" | "selected_preview" | "applied"; x?: number; y?: number };
 type ReviewRegion = { batchId: string; runId: string; nodeIds: string[]; pipeIds: string[]; subsystemIds: string[]; status: "pending_review" | "applied" };
 
@@ -57,6 +57,34 @@ type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourc
 type InspectorTab = "config" | "advanced";
 type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
+
+// Best-effort inverse for a composite turn. Reverses the action list and
+// emits a server-friendly inverse for each action so the optimistic queue
+// can flush a state that matches the snapshot we just restored. For undo of
+// a turn that ADDED stuff, this is mostly delete actions; for a turn that
+// DELETED stuff, the snapshot's nodes/pipes are already authoritative
+// locally and the inverse becomes a recreate.
+function computeInverseFromComposite(entry: { forward: EditorGraphAction[]; priorNodes?: GraphNode[]; priorPipes?: GraphPipe[] }): EditorGraphAction[] {
+  const out: EditorGraphAction[] = [];
+  const reversed = [...entry.forward].reverse();
+  for (const a of reversed) {
+    if (a.action === "addNode" && a.clientNodeId) {
+      out.push({ action: "deleteNode", nodeId: a.clientNodeId });
+    } else if (a.action === "addPipe" && a.clientPipeId) {
+      out.push({ action: "deletePipe", pipeId: a.clientPipeId });
+    } else if (a.action === "deleteNode") {
+      const prior = (entry.priorNodes ?? []).find((n) => n.id === a.nodeId);
+      if (prior) out.push({ action: "addNode", systemId: "", type: prior.type, title: prior.title, description: prior.description, x: prior.position.x, y: prior.position.y, clientNodeId: prior.id });
+    } else if (a.action === "deletePipe") {
+      const prior = (entry.priorPipes ?? []).find((p) => p.id === a.pipeId);
+      if (prior?.fromNodeId && prior.toNodeId) out.push({ action: "addPipe", systemId: prior.systemId, fromNodeId: prior.fromNodeId, toNodeId: prior.toNodeId, clientPipeId: prior.id });
+    } else if (a.action === "updateNode") {
+      const prior = (entry.priorNodes ?? []).find((n) => n.id === a.nodeId);
+      if (prior) out.push({ action: "updateNode", nodeId: a.nodeId, title: prior.title, description: prior.description, position: prior.position, config: prior.config });
+    }
+  }
+  return out;
+}
 
 function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphAction): { nodes: GraphNode[]; pipes: GraphPipe[] } {
   if (action.action === "addNode") {
@@ -233,7 +261,22 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     localStorage.setItem(`${PIPE_SEMANTICS_PREFIX}${systemId}`, JSON.stringify(pipeSemantics));
   }, [pipeSemantics, systemId]);
 
+  // userInteractedAtRef tracks the last manual edit timestamp. The agent hook
+  // polls it to detect "user took over mid-build" and aborts the SSE stream.
+  // Bumped on every manual `enqueue` call. Agent-driven applies use
+  // `enqueueFromAgent` which does NOT bump it.
+  const userInteractedAtRef = useRef<number>(0);
+
+  // Refs that mirror the latest committed nodes/pipes. Lets the agent path
+  // compute applies without depending on stale closures. Updated by an effect
+  // below.
+  const nodesRef = useRef<GraphNode[]>(nodes);
+  const pipesRef = useRef<GraphPipe[]>(pipes);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { pipesRef.current = pipes; }, [pipes]);
+
   const enqueue = useCallback((action: EditorGraphAction) => {
+    userInteractedAtRef.current = Date.now();
     const applied = localApply(nodes, pipes, action);
     setNodes(applied.nodes);
     setPipes(applied.pipes);
@@ -244,6 +287,59 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     enqueue(forward);
     setHistory((h) => pushHistory(h, { forward: [forward], inverse: [inverse], coalesceKey, at: Date.now() }));
   }, [enqueue]);
+
+  // Per-turn snapshot store for composite history entries. Keyed by turnId so
+  // overlapping or out-of-order begin/end calls cannot leak state.
+  const turnSnapshotsRef = useRef<Record<string, { nodes: GraphNode[]; pipes: GraphPipe[]; actions: EditorGraphAction[] }>>({});
+
+  const agentBeginTurn = useCallback((turnId: string) => {
+    // Snapshot pre-turn nodes and pipes from the freshest committed refs.
+    turnSnapshotsRef.current[turnId] = {
+      nodes: nodesRef.current,
+      pipes: pipesRef.current,
+      actions: [],
+    };
+  }, []);
+
+  // The agent path: applies the action locally and queues it for flush, but
+  // does NOT bump userInteractedAtRef and does NOT push a per-action history
+  // entry. The composite history entry is pushed once on agentEndTurn.
+  const agentApply = useCallback((action: EditorGraphAction, turnId: string) => {
+    const snap = turnSnapshotsRef.current[turnId];
+    if (snap) snap.actions.push(action);
+    const applied = localApply(nodesRef.current, pipesRef.current, action);
+    nodesRef.current = applied.nodes;
+    pipesRef.current = applied.pipes;
+    setNodes(applied.nodes);
+    setPipes(applied.pipes);
+    setQueue((prev) => [...prev, { action, id: crypto.randomUUID(), retries: 0, turnId }]);
+  }, []);
+
+  const agentEndTurn = useCallback((turnId: string) => {
+    const snap = turnSnapshotsRef.current[turnId];
+    if (!snap) return;
+    delete turnSnapshotsRef.current[turnId];
+    // Skip the composite entry if the turn produced no graph changes.
+    if (snap.actions.length === 0) return;
+    setHistory((h) => pushHistory(h, {
+      kind: "composite",
+      turnId,
+      forward: snap.actions,
+      inverse: [],
+      priorNodes: snap.nodes,
+      priorPipes: snap.pipes,
+      postNodes: nodesRef.current,
+      postPipes: pipesRef.current,
+      at: Date.now(),
+    }));
+  }, []);
+
+  const agentApplyContext = useMemo(() => ({
+    applyAction: agentApply,
+    beginTurn: agentBeginTurn,
+    endTurn: agentEndTurn,
+    userInteractedAt: userInteractedAtRef,
+  }), [agentApply, agentBeginTurn, agentEndTurn]);
 
   const deferredNodes = useDeferredValue(nodes);
   const deferredPipes = useDeferredValue(pipes);
@@ -330,6 +426,29 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     const { entry, state } = popUndo(history);
     if (!entry) return;
     setHistory(state);
+    if (entry.kind === "composite" && entry.priorNodes && entry.priorPipes) {
+      // Composite undo: restore the pre-turn snapshot in one shot. The
+      // optimistic queue is also rebuilt from the inverse — emit a delete for
+      // every node added during the turn so the server flush converges with
+      // the local snapshot. Simpler: clear the affected actions from the
+      // pending queue and let the snapshot win locally; the persisted state
+      // stays consistent because each forward action was already flushed.
+      const compositeActions = new Set((entry.forward ?? []));
+      const turnId = entry.turnId;
+      if (turnId) setQueue((q) => q.filter((item) => item.turnId !== turnId));
+      // Emit inverse server actions so persistence matches the snapshot.
+      const inverseActions = computeInverseFromComposite(entry);
+      nodesRef.current = entry.priorNodes;
+      pipesRef.current = entry.priorPipes;
+      setNodes(entry.priorNodes);
+      setPipes(entry.priorPipes);
+      setQueue((prev) => [
+        ...prev,
+        ...inverseActions.map((action) => ({ action, id: crypto.randomUUID(), retries: 0 })),
+      ]);
+      trackSignal("undo_used", { count: compositeActions.size, kind: "composite" });
+      return;
+    }
     for (const action of entry.inverse) enqueue(action);
     trackSignal("undo_used", { count: entry.inverse.length });
   }, [enqueue, history, trackSignal]);
@@ -338,6 +457,20 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     const { entry, state } = popRedo(history);
     if (!entry) return;
     setHistory(state);
+    if (entry.kind === "composite" && entry.postNodes && entry.postPipes) {
+      // Composite redo: jump back to post-turn snapshot.
+      nodesRef.current = entry.postNodes;
+      pipesRef.current = entry.postPipes;
+      setNodes(entry.postNodes);
+      setPipes(entry.postPipes);
+      const turnId = entry.turnId ?? "redo";
+      setQueue((prev) => [
+        ...prev,
+        ...entry.forward.map((action) => ({ action, id: crypto.randomUUID(), retries: 0, turnId })),
+      ]);
+      trackSignal("redo_used", { count: entry.forward.length, kind: "composite" });
+      return;
+    }
     for (const action of entry.forward) enqueue(action);
     trackSignal("redo_used", { count: entry.forward.length });
   }, [enqueue, history, trackSignal]);
@@ -795,6 +928,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
         <ConversationDrawer
           systemId={systemId}
           initialPrompt={initialPrompt}
+          agentApplyContext={agentApplyContext}
           onInitialPromptHandled={() => {
             if (typeof window === "undefined") return;
             const url = new URL(window.location.href);

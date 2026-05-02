@@ -8,18 +8,41 @@ export type EditorGraphAction =
   | { action: "addPipe"; systemId: string; fromNodeId: string; toNodeId: string; clientPipeId?: string }
   | { action: "deletePipe"; pipeId: string };
 
+// Two history entry shapes:
+//
+// - "simple" (default, preserves existing API): forward + inverse action lists.
+//   Manual edits push these. Undo replays the inverse list.
+// - "composite": one entry that bundles a whole agent turn. Contains a snapshot
+//   of nodes and pipes from BEFORE the turn started, plus the ordered list of
+//   applied actions. Undo restores the snapshot in one shot — no per-action
+//   replay — so a single Cmd-Z rewinds an entire agent turn.
+//
+// `kind` is optional on a simple entry so callers that build literal
+// `{ forward, inverse, at }` objects keep working without changes.
 export type HistoryEntry = {
+  kind?: "simple" | "composite";
   forward: EditorGraphAction[];
   inverse: EditorGraphAction[];
   coalesceKey?: string;
   at: number;
+  // Composite-only fields. Populated when kind === "composite".
+  turnId?: string;
+  priorNodes?: GraphNode[];
+  priorPipes?: GraphPipe[];
+  postNodes?: GraphNode[];
+  postPipes?: GraphPipe[];
 };
 
 export type HistoryState = { undo: HistoryEntry[]; redo: HistoryEntry[] };
 
 export function pushHistory(state: HistoryState, entry: HistoryEntry, coalesceWindowMs = 700): HistoryState {
+  // Composite entries never coalesce — each agent turn is its own atomic unit.
+  if (entry.kind === "composite") {
+    return { undo: [...state.undo, entry], redo: [] };
+  }
   const last = state.undo[state.undo.length - 1];
-  if (last && last.coalesceKey && last.coalesceKey === entry.coalesceKey && entry.at - last.at <= coalesceWindowMs) {
+  // Don't coalesce a simple entry into a composite entry either.
+  if (last && last.kind !== "composite" && last.coalesceKey && last.coalesceKey === entry.coalesceKey && entry.at - last.at <= coalesceWindowMs) {
     const merged: HistoryEntry = { ...entry, inverse: last.inverse };
     return { undo: [...state.undo.slice(0, -1), merged], redo: [] };
   }
