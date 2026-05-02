@@ -3,7 +3,10 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CommentBubble, Input, Panel, SectionHeader, Tabs, ValidationBadge, Button, Textarea, Select, Badge } from "@/components/ui";
+import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
+import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
@@ -15,6 +18,9 @@ import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContrac
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
+import { ConversationDrawer } from "@/components/editor/ConversationDrawer";
+import { getConfigSchema } from "@/domain/node_config/schema";
+import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -25,14 +31,14 @@ type SystemPayload = {
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
 };
 
-type QueuedAction = { action: EditorGraphAction; id: string; retries: number };
+type QueuedAction = { action: EditorGraphAction; id: string; retries: number; turnId?: string };
 type ReviewPreviewItem = { diffId: string; entityType: string; entityId: string; changeType: string; previewKind: string; emphasis: "pending_review" | "selected_preview" | "applied"; x?: number; y?: number };
 type ReviewRegion = { batchId: string; runId: string; nodeIds: string[]; pipeIds: string[]; subsystemIds: string[]; status: "pending_review" | "applied" };
 
 function normalizeBundle(bundle: any): SystemPayload {
   return {
     system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description },
-    nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [] })),
+    nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
@@ -48,15 +54,44 @@ const SUBSYSTEMS_PREFIX = "pipes_subsystems_v1_";
 const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
-type InspectorTab = "overview" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
+type InspectorTab = "config" | "advanced";
+type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
+
+// Best-effort inverse for a composite turn. Reverses the action list and
+// emits a server-friendly inverse for each action so the optimistic queue
+// can flush a state that matches the snapshot we just restored. For undo of
+// a turn that ADDED stuff, this is mostly delete actions; for a turn that
+// DELETED stuff, the snapshot's nodes/pipes are already authoritative
+// locally and the inverse becomes a recreate.
+function computeInverseFromComposite(entry: { forward: EditorGraphAction[]; priorNodes?: GraphNode[]; priorPipes?: GraphPipe[] }): EditorGraphAction[] {
+  const out: EditorGraphAction[] = [];
+  const reversed = [...entry.forward].reverse();
+  for (const a of reversed) {
+    if (a.action === "addNode" && a.clientNodeId) {
+      out.push({ action: "deleteNode", nodeId: a.clientNodeId });
+    } else if (a.action === "addPipe" && a.clientPipeId) {
+      out.push({ action: "deletePipe", pipeId: a.clientPipeId });
+    } else if (a.action === "deleteNode") {
+      const prior = (entry.priorNodes ?? []).find((n) => n.id === a.nodeId);
+      if (prior) out.push({ action: "addNode", systemId: "", type: prior.type, title: prior.title, description: prior.description, x: prior.position.x, y: prior.position.y, clientNodeId: prior.id });
+    } else if (a.action === "deletePipe") {
+      const prior = (entry.priorPipes ?? []).find((p) => p.id === a.pipeId);
+      if (prior?.fromNodeId && prior.toNodeId) out.push({ action: "addPipe", systemId: prior.systemId, fromNodeId: prior.fromNodeId, toNodeId: prior.toNodeId, clientPipeId: prior.id });
+    } else if (a.action === "updateNode") {
+      const prior = (entry.priorNodes ?? []).find((n) => n.id === a.nodeId);
+      if (prior) out.push({ action: "updateNode", nodeId: a.nodeId, title: prior.title, description: prior.description, position: prior.position, config: prior.config });
+    }
+  }
+  return out;
+}
 
 function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphAction): { nodes: GraphNode[]; pipes: GraphPipe[] } {
   if (action.action === "addNode") {
     const id = action.clientNodeId ?? `tmp_${Math.random().toString(36).slice(2, 9)}`;
-    return { nodes: [...nodes, { id, type: action.type, title: action.title, description: action.description, position: { x: action.x ?? 240, y: action.y ?? 180 }, portIds: [`${id}_in`, `${id}_out`] }], pipes };
+    return { nodes: [...nodes, { id, type: action.type, title: action.title, description: action.description, position: { x: action.x ?? 240, y: action.y ?? 180 }, portIds: [`${id}_in`, `${id}_out`], config: {} }], pipes };
   }
-  if (action.action === "updateNode") return { nodes: nodes.map((n) => n.id === action.nodeId ? { ...n, title: action.title ?? n.title, description: action.description ?? n.description, position: action.position ?? n.position } : n), pipes };
+  if (action.action === "updateNode") return { nodes: nodes.map((n) => n.id === action.nodeId ? { ...n, title: action.title ?? n.title, description: action.description ?? n.description, position: action.position ?? n.position, config: action.config !== undefined ? action.config : n.config } : n), pipes };
   if (action.action === "deleteNode") return { nodes: nodes.filter((n) => n.id !== action.nodeId), pipes: pipes.filter((p) => p.fromNodeId !== action.nodeId && p.toNodeId !== action.nodeId) };
   if (action.action === "addPipe") {
     const id = action.clientPipeId ?? `tmp_pipe_${Math.random().toString(36).slice(2, 9)}`;
@@ -66,7 +101,7 @@ function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphA
   return { nodes, pipes };
 }
 
-function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; data: SystemPayload | null; reload: () => void }) {
+function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { systemId: string; data: SystemPayload | null; reload: () => void; initialPrompt?: string }) {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
@@ -93,7 +128,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [recents, setRecents] = useState<string[]>([]);
   const [insertRequest, setInsertRequest] = useState<InsertRequest>({ mode: "canvas" });
   const [nodeDefinitions, setNodeDefinitions] = useState<Record<string, NodeDefinition>>({});
-  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("overview");
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("config");
   const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
   const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>("left_to_right");
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -101,6 +136,16 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [routeFocusMode, setRouteFocusMode] = useState(false);
   const [reviewPreviewItems, setReviewPreviewItems] = useState<ReviewPreviewItem[]>([]);
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [activeSystemPanel, setActiveSystemPanel] = useState<SystemPanel | null>(null);
+  const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
+  const [agentViewLoading, setAgentViewLoading] = useState(false);
+  const [showNewBanner, setShowNewBanner] = useState(false);
+  const [showAgentChat, setShowAgentChat] = useState(false);
+  const [libraryExpanded, setLibraryExpanded] = useState(false);
+  const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
+  const [leftPaneOpen, setLeftPaneOpen] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -120,6 +165,23 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     trackSignal("editor_opened", { systemId, nodeCount: nodes.length, pipeCount: pipes.length });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [systemId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+      setShowNewBanner(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSystemPanel !== "agent") return;
+    if (agentViewJson !== null) return;
+    setAgentViewLoading(true);
+    fetch(`/api/systems/${systemId}/export?format=json`)
+      .then((r) => r.json())
+      .then((body) => setAgentViewJson(JSON.stringify(body, null, 2)))
+      .catch(() => setAgentViewJson("// Failed to load"))
+      .finally(() => setAgentViewLoading(false));
+  }, [activeSystemPanel, agentViewJson, systemId]);
 
   useEffect(() => {
     fetch("/api/presence", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, selectedNodeId: selectedNodeIds[0] }) });
@@ -199,7 +261,22 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     localStorage.setItem(`${PIPE_SEMANTICS_PREFIX}${systemId}`, JSON.stringify(pipeSemantics));
   }, [pipeSemantics, systemId]);
 
+  // userInteractedAtRef tracks the last manual edit timestamp. The agent hook
+  // polls it to detect "user took over mid-build" and aborts the SSE stream.
+  // Bumped on every manual `enqueue` call. Agent-driven applies use
+  // `enqueueFromAgent` which does NOT bump it.
+  const userInteractedAtRef = useRef<number>(0);
+
+  // Refs that mirror the latest committed nodes/pipes. Lets the agent path
+  // compute applies without depending on stale closures. Updated by an effect
+  // below.
+  const nodesRef = useRef<GraphNode[]>(nodes);
+  const pipesRef = useRef<GraphPipe[]>(pipes);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { pipesRef.current = pipes; }, [pipes]);
+
   const enqueue = useCallback((action: EditorGraphAction) => {
+    userInteractedAtRef.current = Date.now();
     const applied = localApply(nodes, pipes, action);
     setNodes(applied.nodes);
     setPipes(applied.pipes);
@@ -211,12 +288,72 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     setHistory((h) => pushHistory(h, { forward: [forward], inverse: [inverse], coalesceKey, at: Date.now() }));
   }, [enqueue]);
 
+  // Per-turn snapshot store for composite history entries. Keyed by turnId so
+  // overlapping or out-of-order begin/end calls cannot leak state.
+  const turnSnapshotsRef = useRef<Record<string, { nodes: GraphNode[]; pipes: GraphPipe[]; actions: EditorGraphAction[] }>>({});
+
+  const agentBeginTurn = useCallback((turnId: string) => {
+    // Snapshot pre-turn nodes and pipes from the freshest committed refs.
+    turnSnapshotsRef.current[turnId] = {
+      nodes: nodesRef.current,
+      pipes: pipesRef.current,
+      actions: [],
+    };
+  }, []);
+
+  // The agent path: applies the action locally and queues it for flush, but
+  // does NOT bump userInteractedAtRef and does NOT push a per-action history
+  // entry. The composite history entry is pushed once on agentEndTurn.
+  const agentApply = useCallback((action: EditorGraphAction, turnId: string) => {
+    const snap = turnSnapshotsRef.current[turnId];
+    if (snap) snap.actions.push(action);
+    const applied = localApply(nodesRef.current, pipesRef.current, action);
+    nodesRef.current = applied.nodes;
+    pipesRef.current = applied.pipes;
+    setNodes(applied.nodes);
+    setPipes(applied.pipes);
+    setQueue((prev) => [...prev, { action, id: crypto.randomUUID(), retries: 0, turnId }]);
+  }, []);
+
+  const agentEndTurn = useCallback((turnId: string) => {
+    const snap = turnSnapshotsRef.current[turnId];
+    if (!snap) return;
+    delete turnSnapshotsRef.current[turnId];
+    // Skip the composite entry if the turn produced no graph changes.
+    if (snap.actions.length === 0) return;
+    setHistory((h) => pushHistory(h, {
+      kind: "composite",
+      turnId,
+      forward: snap.actions,
+      inverse: [],
+      priorNodes: snap.nodes,
+      priorPipes: snap.pipes,
+      postNodes: nodesRef.current,
+      postPipes: pipesRef.current,
+      at: Date.now(),
+    }));
+  }, []);
+
+  const agentApplyContext = useMemo(() => ({
+    applyAction: agentApply,
+    beginTurn: agentBeginTurn,
+    endTurn: agentEndTurn,
+    userInteractedAt: userInteractedAtRef,
+  }), [agentApply, agentBeginTurn, agentEndTurn]);
+
   const deferredNodes = useDeferredValue(nodes);
   const deferredPipes = useDeferredValue(pipes);
 
   const flowView = useMemo(() => collapseAwareGraph({ nodes: deferredNodes, pipes: deferredPipes, subsystems, compactMode: zoomLevel < 0.5 }), [deferredNodes, deferredPipes, subsystems, zoomLevel]);
 
   const selectedNodeId = selectedNodeIds[0];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setShowAllInspectorTabs(false); setInspectorTab("config"); }, [selectedNodeId]);
+  // Auto-open the inspector when a single node is selected; auto-close when selection clears.
+  useEffect(() => {
+    if (selectedNodeIds.length === 1) setInspectorOpen(true);
+    else if (selectedNodeIds.length === 0 && selectedEdgeIds.length === 0) setInspectorOpen(false);
+  }, [selectedNodeIds, selectedEdgeIds]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedNodeId), [nodes, selectedNodeId]);
   const selectedEdge = useMemo(() => pipes.find((pipe) => pipe.id === selectedEdgeIds[0]), [pipes, selectedEdgeIds]);
   const occupancy = useMemo(() => selectedNodeId && data ? data.presence.filter((p) => p.selectedNodeId === selectedNodeId) : [], [data, selectedNodeId]);
@@ -289,6 +426,29 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     const { entry, state } = popUndo(history);
     if (!entry) return;
     setHistory(state);
+    if (entry.kind === "composite" && entry.priorNodes && entry.priorPipes) {
+      // Composite undo: restore the pre-turn snapshot in one shot. The
+      // optimistic queue is also rebuilt from the inverse — emit a delete for
+      // every node added during the turn so the server flush converges with
+      // the local snapshot. Simpler: clear the affected actions from the
+      // pending queue and let the snapshot win locally; the persisted state
+      // stays consistent because each forward action was already flushed.
+      const compositeActions = new Set((entry.forward ?? []));
+      const turnId = entry.turnId;
+      if (turnId) setQueue((q) => q.filter((item) => item.turnId !== turnId));
+      // Emit inverse server actions so persistence matches the snapshot.
+      const inverseActions = computeInverseFromComposite(entry);
+      nodesRef.current = entry.priorNodes;
+      pipesRef.current = entry.priorPipes;
+      setNodes(entry.priorNodes);
+      setPipes(entry.priorPipes);
+      setQueue((prev) => [
+        ...prev,
+        ...inverseActions.map((action) => ({ action, id: crypto.randomUUID(), retries: 0 })),
+      ]);
+      trackSignal("undo_used", { count: compositeActions.size, kind: "composite" });
+      return;
+    }
     for (const action of entry.inverse) enqueue(action);
     trackSignal("undo_used", { count: entry.inverse.length });
   }, [enqueue, history, trackSignal]);
@@ -297,6 +457,20 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     const { entry, state } = popRedo(history);
     if (!entry) return;
     setHistory(state);
+    if (entry.kind === "composite" && entry.postNodes && entry.postPipes) {
+      // Composite redo: jump back to post-turn snapshot.
+      nodesRef.current = entry.postNodes;
+      pipesRef.current = entry.postPipes;
+      setNodes(entry.postNodes);
+      setPipes(entry.postPipes);
+      const turnId = entry.turnId ?? "redo";
+      setQueue((prev) => [
+        ...prev,
+        ...entry.forward.map((action) => ({ action, id: crypto.randomUUID(), retries: 0, turnId })),
+      ]);
+      trackSignal("redo_used", { count: entry.forward.length, kind: "composite" });
+      return;
+    }
     for (const action of entry.forward) enqueue(action);
     trackSignal("redo_used", { count: entry.forward.length });
   }, [enqueue, history, trackSignal]);
@@ -306,6 +480,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     setPaletteQuery("");
     setPaletteIndex(0);
     setPaletteOpen(true);
+  }, []);
+
+  const toggleSystemPanel = useCallback((panel: SystemPanel) => {
+    setActiveSystemPanel((prev) => prev === panel ? null : panel);
   }, []);
 
   const toggleFavorite = useCallback((nodeType: string) => {
@@ -382,6 +560,16 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
       [contract]: { ...current[contract], fields: current[contract].fields.filter((field) => field.id !== fieldId) }
     }));
   }, [selectedNode, updateNodeDefinition]);
+
+  const updateNodeConfig = useCallback((nodeId: string, key: string, value: unknown) => {
+    const node = nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    const newConfig = { ...(node.config ?? {}), [key]: value };
+    recordAction(
+      { action: "updateNode", nodeId, config: newConfig },
+      { action: "updateNode", nodeId, config: node.config ?? {} }
+    );
+  }, [nodes, recordAction]);
 
   const createSubsystem = useCallback(() => {
     if (selectedNodeIds.length < 2) return;
@@ -464,81 +652,238 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     return () => window.removeEventListener("keydown", onKey);
   }, [insertNodeFromEntry, paletteIndex, paletteOpen, paletteResults]);
 
-  if (!data) return <p>Loading system...</p>;
+  if (!data) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <Spinner size="lg" />
+    </div>
+  );
 
   return (
     <div>
-      <SectionHeader title={data.system.name} description={data.system.description} />
-      <Tabs items={["Design", "Validation", "Simulation", "Versions"]} />
-      <div className="nav-inline" style={{ marginBottom: 8, justifyContent: "space-between" }}>
-        <div>{data.presence.map((p) => <span key={p.id} className="badge">{p.name}{p.selectedNodeId ? ` · ${p.selectedNodeId}` : ""}</span>)}</div>
-        <div className="nav-inline">
-          <span className="badge">{saveLabel}</span>
-          <Button onClick={undo} disabled={history.undo.length === 0}>Undo ⌘Z</Button>
-          <Button onClick={redo} disabled={history.redo.length === 0}>Redo ⇧⌘Z</Button>
-          <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Insert ⌘K</Button>
-          <Button onClick={createSubsystem} disabled={selectedNodeIds.length < 2}>Create Subsystem</Button>
-          <Select value={layoutPreset} onChange={(e) => setLayoutPreset(e.target.value as LayoutPreset)}>
-            <option value="left_to_right">Layout: Left → Right</option>
-            <option value="top_to_bottom">Layout: Top ↓ Bottom</option>
-          </Select>
-          <Button onClick={() => arrangeNodes("selected")} disabled={selectedNodeIds.length === 0}>Arrange Selection</Button>
-          <Button onClick={() => arrangeNodes("all")}>Arrange Whole Graph</Button>
-          <Button onClick={() => setRouteFocusMode((value) => !value)}>{routeFocusMode ? "Route Focus: On" : "Route Focus: Off"}</Button>
-          <Button onClick={() => setFitRequest((n) => n + 1)}>Fit Content ⌘0</Button>
-          <Button onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}>Frame Selected ⇧F</Button>
-          <Button onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}>Duplicate ⌘D</Button>
-          <Button onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}>Delete Selection ⌫</Button>
-          {saveState === "error" ? <Button onClick={() => setFailed(0)}>Retry save</Button> : null}
-        </div>
-      </div>
-      <div className="editor-shell" style={{ marginTop: 12 }}>
-        <Panel title="Node Library">
-          <Input value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} placeholder="Search nodes, tags, category..." />
-          <div className="nav-inline" style={{ marginTop: 8 }}>
-            <span className="badge">Favorites: {favorites.length}</span>
-            <span className="badge">Recents: {recents.length}</span>
-            <Button onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Command Palette /</Button>
+      <div className="sticky top-0 z-10 bg-white border-b border-black/[0.08] px-4 pt-2.5 pb-1.5 space-y-1.5">
+
+        {/* Header: name + save state — no duplicate agent button */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="t-label font-bold text-[#111] truncate">{data.system.name}</h1>
+            {data.system.description && <p className="t-caption text-[#8E8E93] truncate">{data.system.description}</p>}
           </div>
-          {groupedLibrary.map((group) => (
-            <div key={group.category} style={{ marginTop: 12 }}>
-              <h4 style={{ marginBottom: 6 }}>{group.category}</h4>
-              <div className="validation-list">
-                {group.entries.slice(0, 8).map((entry) => (
-                  <Card key={entry.nodeType}>
-                    <div className="nav-inline" style={{ justifyContent: "space-between" }}>
-                      <strong>{entry.name}</strong>
-                      <Button onClick={() => toggleFavorite(entry.nodeType)}>{favorites.includes(entry.nodeType) ? "★" : "☆"}</Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <AvatarStack names={data.presence.map((p) => p.name)} />
+            <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
+          </div>
+        </div>
+
+        {/* Primary toolbar: only what every session needs */}
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={undo} isDisabled={history.undo.length === 0}><Undo2 size={14} /> Undo</Button>
+          <Button variant="ghost" size="sm" onClick={redo} isDisabled={history.redo.length === 0}><Redo2 size={14} /> Redo</Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}><Plus size={14} /> Insert</Button>
+          <Button variant="ghost" size="sm" onClick={() => setFitRequest((n) => n + 1)}><Maximize2 size={14} /> Fit</Button>
+          {(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) && (
+            <>
+              <Button variant="ghost" size="sm" onClick={duplicateSelection}><Copy size={14} /> Dupe</Button>
+              <Button variant="danger-soft" size="sm" onClick={deleteSelection}><Trash2 size={14} /> Delete</Button>
+            </>
+          )}
+          {selectedNodeIds.length >= 2 && (
+            <Button variant="ghost" size="sm" onClick={createSubsystem}>Group</Button>
+          )}
+          {saveState === "error" && (
+            <Button variant="ghost" size="sm" onClick={() => setFailed(0)} className="text-amber-600">Retry</Button>
+          )}
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button
+            variant={activeSystemPanel === "validation" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => toggleSystemPanel("validation")}
+            className={validationReport.issues.filter((i) => i.severity === "error").length > 0 ? "text-amber-600" : ""}
+          >
+            <Shield size={14} /> Validate{validationReport.issues.filter((i) => i.severity === "error").length > 0 ? ` (${validationReport.issues.filter((i) => i.severity === "error").length})` : ""}
+          </Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button
+            variant={activeSystemPanel === "agent" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); }}
+            className={`font-semibold ${activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}`}
+          >
+            <Bot size={14} /> Agent View
+          </Button>
+        </div>
+
+        {/* Secondary toolbar: 3 primary actions + overflow */}
+        <div className="flex items-center gap-1 border-t border-black/[0.05] pt-1">
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={13} /> Simulate</Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={13} /> AI</Button>
+          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={13} /> Chat</Button>
+          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Dropdown>
+            <DropdownTrigger>
+              <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={13} /> More</Button>
+            </DropdownTrigger>
+            <Dropdown.Popover>
+              <DropdownMenu aria-label="More actions">
+                <DropdownItem id="arrange" onAction={() => arrangeNodes("all")}>Arrange nodes</DropdownItem>
+                <DropdownItem id="comments" onAction={() => toggleSystemPanel("comments")}>
+                  {`Comments${data.comments.length > 0 ? ` (${data.comments.length})` : ""}`}
+                </DropdownItem>
+                <DropdownItem id="versions" onAction={() => toggleSystemPanel("versions")}>Versions</DropdownItem>
+                <DropdownItem id="export" onAction={() => toggleSystemPanel("import")}>Export / Import</DropdownItem>
+              </DropdownMenu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </div>
+
+      </div>
+      {showNewBanner && (
+        <div className="flex items-center justify-between gap-4 bg-indigo-600 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-indigo-200 shrink-0" />
+            <p className="t-label text-white font-medium">
+              Your system is drawn. Now connect it to an agent — any AI can read this architecture immediately.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); setShowNewBanner(false); }}
+              className="t-label font-semibold text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg transition-colors"
+            >
+              See what agents see
+            </button>
+            <button onClick={() => setShowNewBanner(false)} className="text-indigo-200 hover:text-white transition-colors ml-1">
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+      <div
+        className="editor-shell"
+        style={{
+          marginTop: 12,
+          gridTemplateColumns: `${leftPaneOpen ? "260px" : "48px"} 1fr ${inspectorOpen ? "320px" : "48px"}`,
+          transition: "grid-template-columns 200ms ease",
+        }}
+      >
+        {leftPaneOpen ? (
+          <Panel title="Nodes">
+            <div className="flex items-center justify-between mb-2">
+              <span className="t-caption text-[#8E8E93]">Library</span>
+              <Button size="sm" variant="ghost" onClick={() => setLeftPaneOpen(false)} aria-label="Collapse"><ChevronLeft size={14} /></Button>
+            </div>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                const fallback = nodeLibraryCatalog[0];
+                if (fallback) insertNodeFromEntry(fallback, { mode: "canvas" });
+              }}
+              className="w-full justify-center font-semibold"
+            >
+              <Plus size={14} /> Add node
+            </Button>
+            {(() => {
+              const recentNodes = recents
+                .map((id) => nodes.find((n) => n.id === id))
+                .filter((n): n is GraphNode => Boolean(n))
+                .slice(0, 6);
+              if (recentNodes.length === 0) return null;
+              return (
+                <div className="mt-3 border-t border-black/[0.06] pt-3">
+                  <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Recents</p>
+                  <div className="space-y-0.5">
+                    {recentNodes.map((node) => (
+                      <button
+                        key={node.id}
+                        onClick={() => { setSelectedNodeIds([node.id]); setFrameRequest((n) => n + 1); }}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                      >
+                        <span className="t-label text-[#111] flex-1 truncate">{node.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {subsystems.length > 0 && (
+              <div className="mt-4 border-t border-black/[0.06] pt-3">
+                <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Groups</p>
+                {subsystems.map((subsystem) => {
+                  const boundary = computeSubsystemBoundary(subsystem, pipes);
+                  return (
+                    <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer"
+                         onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>
+                      <span className="t-label text-[#111] flex-1 truncate">{subsystem.name}</span>
+                      <span className="t-caption text-[#8E8E93]">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
                     </div>
-                    <p>{entry.description}</p>
-                    <p className="badge">{entry.tags.join(" · ")}</p>
-                    <p>Use: {entry.typicalUse}</p>
-                    <p>In: {entry.inputTypes.join(", ")} → Out: {entry.outputTypes.join(", ")}</p>
-                    <Button onClick={() => insertNodeFromEntry(entry, { mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id })}>Add Node</Button>
-                  </Card>
-                ))}
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        ) : (
+          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Expand sidebar"
+            >
+              <ChevronRight size={16} />
+            </button>
+            <button
+              onClick={() => {
+                const fallback = nodeLibraryCatalog[0];
+                if (fallback) insertNodeFromEntry(fallback, { mode: "canvas" });
+              }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Add node"
+            >
+              <Plus size={16} />
+            </button>
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Structure"
+            >
+              <Layers size={16} />
+            </button>
+            <button
+              onClick={() => setLeftPaneOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Subsystems"
+            >
+              <Boxes size={16} />
+            </button>
+          </aside>
+        )}
+        <div className="relative min-h-[60vh]">
+        <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+          {nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
+              <div className="pointer-events-auto text-center space-y-5 max-w-xs">
+                <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
+                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
+                  <div className="w-16 h-10 rounded-lg border border-indigo-200 bg-indigo-50" />
+                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
+                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                </div>
+                <div>
+                  <p className="t-title font-bold text-[#111]">Start with a node</p>
+                  <p className="t-label text-[#8E8E93] mt-1">Add the first component of your system.</p>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => openInsertPalette({ mode: "canvas" })}
+                  className="h-10 px-6 font-semibold"
+                >
+                  <Plus size={14} /> Insert node
+                </Button>
               </div>
             </div>
-          ))}
-          <div style={{ marginTop: 14 }}>
-            <h4>Subsystems</h4>
-            {subsystems.length === 0 ? <p className="badge">No subsystems yet. Select 2+ nodes and use “Create Subsystem”.</p> : subsystems.map((subsystem) => {
-              const boundary = computeSubsystemBoundary(subsystem, pipes);
-              return (
-                <Card key={subsystem.id}>
-                  <p><strong>{subsystem.name}</strong> · {subsystem.collapsed ? "Collapsed" : "Expanded"}</p>
-                  <p>{subsystem.nodeIds.length} internal nodes · {boundary.inboundNodeIds.length} inbound · {boundary.outboundNodeIds.length} outbound</p>
-                  <div className="nav-inline">
-                    <Button onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
-                    <Button onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open In Context</Button>
-                    <Button onClick={() => detachSubsystemCopy(subsystem.id)} disabled={!subsystem.reusableSourceId}>Detach Local Copy</Button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </Panel>
-        <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+          )}
           <EditorCanvas
             initialNodes={flowView.flowNodes}
             initialEdges={presentedEdges}
@@ -580,278 +925,498 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             }}
           />
         </EditorErrorBoundary>
+        <ConversationDrawer
+          systemId={systemId}
+          initialPrompt={initialPrompt}
+          agentApplyContext={agentApplyContext}
+          onInitialPromptHandled={() => {
+            if (typeof window === "undefined") return;
+            const url = new URL(window.location.href);
+            if (url.searchParams.has("prompt")) {
+              url.searchParams.delete("prompt");
+              window.history.replaceState({}, "", url.toString());
+            }
+          }}
+        />
+        </div>
+        {!inspectorOpen && !activeSystemPanel ? (
+          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+            <button
+              onClick={() => setInspectorOpen(true)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Expand inspector"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => { setInspectorTab("config"); setInspectorOpen(true); }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Config"
+            >
+              <Settings size={16} />
+            </button>
+            <button
+              onClick={() => { setInspectorTab("advanced"); setInspectorOpen(true); }}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              aria-label="Advanced"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+          </aside>
+        ) : (
         <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <Panel title="Inspector">
-            {selectedEdge ? (
-              <Card>
-                <h4>Pipe semantics</h4>
-                <Input
-                  value={pipeSemantics[selectedEdge.id]?.label ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
-                  placeholder="Pipe label"
-                />
-                <Input
-                  value={pipeSemantics[selectedEdge.id]?.conditionLabel ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", conditionLabel: e.target.value } }))}
-                  placeholder="Condition label (e.g. score > 0.8)"
-                />
-                <Select
-                  value={pipeSemantics[selectedEdge.id]?.routeKind ?? "default"}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: e.target.value as PipeRouteKind } }))}
-                >
-                  <option value="default">default</option>
-                  <option value="success">success</option>
-                  <option value="failure">failure</option>
-                  <option value="conditional">conditional</option>
-                  <option value="loop">loop</option>
-                </Select>
-                <Textarea
-                  value={pipeSemantics[selectedEdge.id]?.notes ?? ""}
-                  onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", notes: e.target.value } }))}
-                  placeholder="Route notes / rationale"
-                />
-                <p className="badge">Hit target: expanded for easier selection and relabeling.</p>
-              </Card>
-            ) : null}
-            {selectedNode ? (
-              <Card>
-                {occupancy.length > 1 ? <p className="badge">⚠ Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
-                <div className="nav-inline" style={{ flexWrap: "wrap" }}>
-                  {(["overview", "inputs", "outputs", "config", "notes", "validation", "docs"] as InspectorTab[]).map((tab) => (
-                    <Button key={tab} onClick={() => setInspectorTab(tab)}>{tab === inspectorTab ? `• ${tab}` : tab}</Button>
-                  ))}
-                </div>
-                {inspectorTab === "overview" ? (
-                  <div className="validation-list">
-                    <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
-                    <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} />
-                    <Input value={selectedDefinition?.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
-                    <Input value={selectedDefinition?.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
-                    <Input value={selectedDefinition?.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
-                    <Input value={selectedDefinition?.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
-                  </div>
-                ) : null}
-                {inspectorTab === "inputs" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p className="badge">Schema summary: {summarizeContract(selectedDefinition.input)}</p>
-                    <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
-                      {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                    </Select>
-                    <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
-                    <Textarea value={selectedDefinition.input.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, samplePayload: e.target.value } }))} placeholder="Sample payload / shape" />
-                    <Button onClick={() => addDefinitionField("input")}>Add Input Field</Button>
-                    {selectedDefinition.input.fields.map((field) => (
-                      <Card key={field.id}>
-                        <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
-                        <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
-                        <Input value={field.sourceRef ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { sourceRef: e.target.value })} placeholder="Expected source reference" />
-                        <Input value={field.mappingExpr ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { mappingExpr: e.target.value })} placeholder="Mapping / expression placeholder" />
-                        <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
-                        <Button onClick={() => removeDefinitionField("input", field.id)}>Remove Field</Button>
-                      </Card>
-                    ))}
-                  </div>
-                ) : null}
-                {inspectorTab === "outputs" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p className="badge">Schema summary: {summarizeContract(selectedDefinition.output)}</p>
-                    <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
-                      {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                    </Select>
-                    <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
-                    <Textarea value={selectedDefinition.output.samplePayload ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, samplePayload: e.target.value } }))} placeholder="Sample output payload" />
-                    <Button onClick={() => addDefinitionField("output")}>Add Output Field</Button>
-                    {selectedDefinition.output.fields.map((field) => (
-                      <Card key={field.id}>
-                        <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
-                        <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
-                          {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                        </Select>
-                        <label><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
-                        <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
-                        <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
-                        <Button onClick={() => removeDefinitionField("output", field.id)}>Remove Field</Button>
-                      </Card>
-                    ))}
-                  </div>
-                ) : null}
-                {inspectorTab === "config" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
-                    <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
-                    <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
-                    <Textarea value={selectedDefinition.expectedSources ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expectedSources: e.target.value }))} placeholder="Expected input source references" />
-                    <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
-                  </div>
-                ) : null}
-                {inspectorTab === "notes" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
-                    <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
-                    <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
-                    <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
-                  </div>
-                ) : null}
-                {inspectorTab === "validation" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <p><strong>Contract validation</strong></p>
-                    {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
-                    <p><strong>Compatibility hints</strong></p>
-                    {compatibilityHints.length === 0 ? <p className="badge">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
-                  </div>
-                ) : null}
-                {inspectorTab === "docs" && selectedDefinition ? (
-                  <div className="validation-list">
-                    <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
-                    <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
-                    <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
-                  </div>
-                ) : null}
-                <Button onClick={() => {
-                  recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
-                  setSelectedNodeIds([]);
-                }}>Delete Node</Button>
-                <div className="nav-inline">
-                  <Button onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
-                  <Button onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
-                </div>
-              </Card>
-            ) : <p>Select a node to inspect details.</p>}
-            <h4>Validation</h4>
-            <div className="validation-list">{validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)}</div>
-            <h4>Simulation</h4>
-            <p>Status: {sim.status}</p>
-            <p>Steps: {sim.steps.length}</p>
-            <p>Traversed pipes: {tracedEdgeIds.length}</p>
-            <div className="validation-list">
-              <Card>
-                <h5>Branch decisions</h5>
-                {traceSummary.branchDecisions.length === 0 ? <p className="badge">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item}>{item}</p>)}
-              </Card>
-              <Card>
-                <h5>Loop summary</h5>
-                {traceSummary.loopSummaries.length === 0 ? <p className="badge">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item}>{item}</p>)}
-              </Card>
-              <Card>
-                <h5>Blocked/invalid routes</h5>
-                {traceSummary.blocked.length === 0 ? <p className="badge">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item}>{item}</p>)}
-                {invalidPipeIds.length > 0 ? <p className="badge">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
-              </Card>
-            </div>
-            <h4>Comments</h4>
-            <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
-            <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
-            {data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}
-            <h4>Versions</h4>
-            <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
-            <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
-            {data.versions.map((v) => <div key={v.id} className="nav-inline"><span>{v.name}</span></div>)}
-            <h4>AI Refactor</h4>
-            <Input value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} />
-            <Button onClick={async () => {
-              const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
-              const suggestion = await suggestionRes.json();
-              if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
-            }}>Suggest Edits</Button>
-            {pendingSuggestion ? <Card>
-              <p><strong>AI edit set under review</strong></p>
-              <p>{pendingSuggestion.summary}</p>
-              <p>Assumptions: {(pendingSuggestion.assumptions ?? []).join(" · ")}</p>
-              <p>Warnings: {(pendingSuggestion.warnings ?? []).join(" · ")}</p>
-              <p>Change count: {(pendingSuggestion.changes ?? []).length}</p>
-              <div className="validation-list">
-                {(pendingSuggestion.changes ?? []).map((change: any) => (
-                  <Card key={change.id}>
-                    <label><input type="checkbox" checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))} /> {change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</label>
-                    <p>{change.rationale ?? "No rationale"}</p>
-                  </Card>
-                ))}
+          <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
+            {activeSystemPanel === "validation" && (
+              <div className="space-y-2">
+                {validationReport.issues.length === 0
+                  ? <p className="t-label text-[#8E8E93] py-2">No issues found.</p>
+                  : validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)
+                }
               </div>
-              <div className="nav-inline">
-                <Button onClick={() => setAcceptedChangeIds((pendingSuggestion.changes ?? []).map((c: any) => c.id))}>Accept all</Button>
-                <Button onClick={() => setAcceptedChangeIds([])}>Reject all</Button>
+            )}
+            {activeSystemPanel === "simulation" && (
+              <div className="space-y-2">
+                <div className="t-label text-[#8E8E93] space-y-0.5 mb-2">
+                  <p>Status: {sim.status}</p>
+                  <p>Steps: {sim.steps.length}</p>
+                  <p>Traversed pipes: {tracedEdgeIds.length}</p>
+                </div>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Branch decisions</h5>
+                  {traceSummary.branchDecisions.length === 0 ? <p className="t-caption text-[#8E8E93]">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                </Card>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Loop summary</h5>
+                  {traceSummary.loopSummaries.length === 0 ? <p className="t-caption text-[#8E8E93]">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                </Card>
+                <Card>
+                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Blocked/invalid routes</h5>
+                  {traceSummary.blocked.length === 0 ? <p className="t-caption text-[#8E8E93]">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                  {invalidPipeIds.length > 0 ? <p className="t-caption text-[#8E8E93] mt-1">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
+                </Card>
+              </div>
+            )}
+            {activeSystemPanel === "comments" && (
+              <div className="space-y-2">
+                <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
+                <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
+                <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+              </div>
+            )}
+            {activeSystemPanel === "versions" && (
+              <div className="space-y-2">
+                <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
+                <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
+                <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="t-label text-[#3C3C43]">{v.name}</span></div>)}</div>
+              </div>
+            )}
+            {activeSystemPanel === "ai" && (
+              <div className="space-y-3">
+                {!pendingSuggestion ? (
+                  <>
+                    <p className="t-caption text-[#8E8E93] leading-relaxed">
+                      Describe a change and AI will draft it for you to review.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={aiEditPrompt}
+                        onChange={(e) => setAiEditPrompt(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey && aiEditPrompt.trim()) {
+                            e.preventDefault();
+                            void (async () => {
+                              const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
+                              const suggestion = await suggestionRes.json();
+                              if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
+                            })();
+                          }
+                        }}
+                        placeholder="e.g. Add a caching layer before the database"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isDisabled={!aiEditPrompt.trim()}
+                        onClick={async () => {
+                          const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
+                          const suggestion = await suggestionRes.json();
+                          if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
+                        }}
+                        className="shrink-0 h-10 px-3"
+                      >
+                        <Wand2 size={13} />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
+                      <p className="t-label font-semibold text-[#111] mb-0.5">{pendingSuggestion.summary}</p>
+                      <p className="t-caption text-[#8E8E93]">{(pendingSuggestion.changes ?? []).length} change{(pendingSuggestion.changes ?? []).length !== 1 ? "s" : ""} ready to apply</p>
+                    </div>
+
+                    {(pendingSuggestion.changes ?? []).length > 0 && (
+                      <div className="border border-black/[0.06] overflow-hidden" style={{ borderRadius: "8px" }}>
+                        {(pendingSuggestion.changes ?? []).slice(0, 5).map((change: any, i: number) => (
+                          <div key={change.id} className={`flex items-center gap-2.5 px-3 py-2 ${i > 0 ? "border-t border-black/[0.05]" : ""}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${change.action === "addNode" || change.action === "addPipe" ? "bg-emerald-500" : change.action === "deleteNode" || change.action === "deletePipe" ? "bg-red-400" : "bg-amber-400"}`} />
+                            <span className="t-caption text-[#3C3C43] flex-1 truncate">{change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</span>
+                          </div>
+                        ))}
+                        {(pendingSuggestion.changes ?? []).length > 5 && (
+                          <div className="px-3 py-2 border-t border-black/[0.05]">
+                            <p className="t-caption text-[#8E8E93]">+{(pendingSuggestion.changes ?? []).length - 5} more</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="flex-1 h-9 font-semibold"
+                        onClick={async () => {
+                          await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
+                          setPendingSuggestion(null);
+                          setAcceptedChangeIds([]);
+                          setAiEditPrompt("");
+                          reload();
+                        }}
+                      >
+                        Apply all
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 text-[#8E8E93]"
+                        onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {activeSystemPanel === "import" && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
+                  <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
+                </div>
+                <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
                 <Button onClick={async () => {
-                  await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
-                  setPendingSuggestion(null);
-                  setAcceptedChangeIds([]);
-                  reload();
-                }}>Apply Selected Changes</Button>
-                <Button onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close Review</Button>
+                  const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
+                  const resData = await res.json();
+                  if (resData.ok) setMergePlan(resData.data);
+                }}>Plan Merge</Button>
+                {mergePlan?.ok ? <Card>
+                  <p className="t-label font-semibold text-[#111]">Import review pending</p>
+                  <p className="t-caption text-[#3C3C43]">Additions: {mergePlan.summary?.additions ?? 0}</p>
+                  <p className="t-caption text-[#3C3C43]">Updates: {mergePlan.summary?.updates ?? 0}</p>
+                  <p className="t-caption text-[#3C3C43]">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
+                  <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
+                  <Button onClick={async () => {
+                    await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
+                    setMergePlan(null);
+                    reload();
+                  }}>Apply Merge (creates checkpoint)</Button>
+                </Card> : null}
               </div>
-            </Card> : null}
-            <h4>Import Merge Review</h4>
-            <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
-            <Button onClick={async () => {
-              const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
-              const resData = await res.json();
-              if (resData.ok) setMergePlan(resData.data);
-            }}>Plan Merge</Button>
-            {mergePlan?.ok ? <Card>
-              <p><strong>Import review pending</strong></p>
-              <p>Additions: {mergePlan.summary?.additions ?? 0}</p>
-              <p>Updates: {mergePlan.summary?.updates ?? 0}</p>
-              <p>Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
-              <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
-              <Button onClick={async () => {
-                await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
-                setMergePlan(null);
-                reload();
-              }}>Apply Merge (creates checkpoint)</Button>
-            </Card> : null}
-            <h4>Export</h4>
-            <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
-            <Button onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
+            )}
+            {activeSystemPanel === "agent" && (
+              <div className="space-y-3">
+                <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
+                  <p className="t-caption text-[#3C3C43] leading-relaxed">
+                    This is exactly what any AI agent receives when it queries your system via MCP. Paste this URL into Claude, GPT, or any agent to give it full architectural context.
+                  </p>
+                </div>
+                {agentViewLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Spinner size="sm" />
+                  </div>
+                ) : agentViewJson ? (
+                  <>
+                    <div className="relative">
+                      <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-4 overflow-auto max-h-80 whitespace-pre-wrap"
+                           style={{ borderRadius: "8px", lineHeight: "1.6" }}>
+                        {agentViewJson}
+                      </pre>
+                      <button
+                        onClick={() => { void navigator.clipboard.writeText(agentViewJson); }}
+                        className="absolute top-2 right-2 flex items-center gap-1 t-caption font-medium text-[#9ca3af] hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors"
+                      >
+                        <Copy size={11} /> Copy
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="t-label text-[#8E8E93] py-2">Loading…</p>
+                )}
+              </div>
+            )}
+            {!activeSystemPanel && (
+              <>
+                {selectedEdge ? (
+                  <Card>
+                    <h4 className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Pipe semantics</h4>
+                    <Input
+                      value={pipeSemantics[selectedEdge.id]?.label ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
+                      placeholder="Pipe label"
+                    />
+                    <Input
+                      value={pipeSemantics[selectedEdge.id]?.conditionLabel ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", conditionLabel: e.target.value } }))}
+                      placeholder="Condition label (e.g. score > 0.8)"
+                    />
+                    <Select
+                      value={pipeSemantics[selectedEdge.id]?.routeKind ?? "default"}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: e.target.value as PipeRouteKind } }))}
+                    >
+                      <option value="default">default</option>
+                      <option value="success">success</option>
+                      <option value="failure">failure</option>
+                      <option value="conditional">conditional</option>
+                      <option value="loop">loop</option>
+                    </Select>
+                    <Textarea
+                      value={pipeSemantics[selectedEdge.id]?.notes ?? ""}
+                      onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", notes: e.target.value } }))}
+                      placeholder="Route notes / rationale"
+                    />
+                  </Card>
+                ) : null}
+                {selectedNode ? (
+                  <Card>
+                    {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
+                    <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
+                      {(["config", "advanced"] as InspectorTab[]).map((tab) => (
+                        <button key={tab} onClick={() => setInspectorTab(tab)}
+                          className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
+                          {tab === "config" ? "Config" : "Advanced"}
+                        </button>
+                      ))}
+                    </div>
+                    {inspectorTab === "config" && selectedDefinition ? (
+                      <div className="space-y-4">
+                        {(() => {
+                          const fields = getConfigSchema(selectedNode.type as NodeType);
+                          if (fields.length === 0) return null;
+                          return (
+                            <div className="space-y-3">
+                              <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">Configuration</p>
+                              {fields.map((field) => (
+                                <div key={field.key} className="space-y-1">
+                                  <label className="t-caption font-medium text-[#3C3C43]">
+                                    {field.label}
+                                    {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                                  </label>
+                                  {field.type === "select" ? (
+                                    <Select
+                                      value={String((selectedNode.config?.[field.key] ?? field.defaultValue) ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                    >
+                                      {field.options?.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                      ))}
+                                    </Select>
+                                  ) : field.type === "boolean" ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(selectedNode.config?.[field.key] ?? field.defaultValue)}
+                                        onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.checked)}
+                                        className="rounded border-black/[0.12]"
+                                      />
+                                      <span className="t-caption text-[#8E8E93]">{field.description ?? field.label}</span>
+                                    </div>
+                                  ) : field.type === "textarea" ? (
+                                    <Textarea
+                                      value={String(selectedNode.config?.[field.key] ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.value)}
+                                      placeholder={field.placeholder}
+                                      rows={3}
+                                    />
+                                  ) : (
+                                    <Input
+                                      type={field.type === "number" ? "number" : field.type === "url" ? "url" : "text"}
+                                      value={String(selectedNode.config?.[field.key] ?? "")}
+                                      onChange={(e) => updateNodeConfig(selectedNode.id, field.key, field.type === "number" ? Number(e.target.value) : e.target.value)}
+                                      placeholder={field.placeholder}
+                                    />
+                                  )}
+                                  {field.description && field.type !== "boolean" && (
+                                    <p className="t-caption text-[#8E8E93]">{field.description}</p>
+                                  )}
+                                </div>
+                              ))}
+                              <div className="border-t border-black/[0.06] pt-3" />
+                            </div>
+                          );
+                        })()}
+                        <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
+                        <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
+                        <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
+                        <Textarea value={selectedDefinition.expectedSources ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expectedSources: e.target.value }))} placeholder="Expected input source references" />
+                        <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
+                      </div>
+                    ) : null}
+                    {inspectorTab === "advanced" && selectedDefinition ? (
+                      <div className="space-y-5">
+                        {/* Identity */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Identity</p>
+                          <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} placeholder="Title" />
+                          <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} placeholder="Description" />
+                          <Input value={selectedDefinition.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
+                          <Input value={selectedDefinition.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
+                          <Input value={selectedDefinition.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
+                          <Input value={selectedDefinition.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Ports */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Ports — Inputs</p>
+                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.input)}</p>
+                          <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
+                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                          </Select>
+                          <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
+                          <Button size="sm" onClick={() => addDefinitionField("input")}><Plus size={12} /> Add input field</Button>
+                          {selectedDefinition.input.fields.map((field) => (
+                            <Card key={field.id}>
+                              <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
+                              <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
+                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                              </Select>
+                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
+                              <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
+                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("input", field.id)}>Remove</Button>
+                            </Card>
+                          ))}
+                          <p className="t-overline text-[#8E8E93] mt-3">Ports — Outputs</p>
+                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.output)}</p>
+                          <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
+                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                          </Select>
+                          <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
+                          <Button size="sm" onClick={() => addDefinitionField("output")}><Plus size={12} /> Add output field</Button>
+                          {selectedDefinition.output.fields.map((field) => (
+                            <Card key={field.id}>
+                              <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
+                              <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
+                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
+                              </Select>
+                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
+                              <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
+                              <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
+                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("output", field.id)}>Remove</Button>
+                            </Card>
+                          ))}
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Notes */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Notes</p>
+                          <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
+                          <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
+                          <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
+                          <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Validation */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Validation</p>
+                          {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
+                          <p className="t-caption text-[#8E8E93] mt-2">Compatibility hints</p>
+                          {compatibilityHints.length === 0 ? <p className="t-caption text-[#8E8E93]">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
+                        </section>
+                        <div className="border-t border-black/[0.06]" />
+                        {/* Docs */}
+                        <section className="space-y-2">
+                          <p className="t-overline text-[#8E8E93]">Docs</p>
+                          <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
+                          <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
+                          <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
+                        </section>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center gap-2 flex-wrap mt-3">
+                      <Button variant="danger-soft" size="sm" onClick={() => {
+                        recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
+                        setSelectedNodeIds([]);
+                      }}><Trash2 size={14} /> Delete Node</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
+                    </div>
+                  </Card>
+                ) : <p className="t-label text-[#8E8E93] py-2">Select a node to inspect details.</p>}
+              </>
+            )}
           </Panel>
         </EditorErrorBoundary>
-        <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <AgentChatPanel
-            systemId={systemId}
-            systemName={data.system.name}
-            systemDescription={data.system.description}
-            onPreviewChange={(preview) => setReviewPreviewItems(preview as ReviewPreviewItem[])}
-            onRegionFocus={(region) => {
-              setReviewRegion(region as ReviewRegion | null);
-              if (region?.nodeIds?.length) {
-                setSelectedNodeIds(region.nodeIds);
-                setFrameRequest((count) => count + 1);
-              }
-            }}
-          />
-        </EditorErrorBoundary>
+        )}
+        {showAgentChat && (
+          <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
+            <AgentChatPanel
+              systemId={systemId}
+              systemName={data.system.name}
+              systemDescription={data.system.description}
+              onPreviewChange={(preview) => setReviewPreviewItems(preview as ReviewPreviewItem[])}
+              onRegionFocus={(region) => {
+                setReviewRegion(region as ReviewRegion | null);
+                if (region?.nodeIds?.length) {
+                  setSelectedNodeIds(region.nodeIds);
+                  setFrameRequest((count) => count + 1);
+                }
+              }}
+            />
+          </EditorErrorBoundary>
+        )}
       </div>
       {paletteOpen ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(10,14,24,0.45)", zIndex: 60, display: "grid", placeItems: "start center", paddingTop: 80 }} onClick={() => setPaletteOpen(false)}>
-          <div onClick={(event) => event.stopPropagation()}>
-            <Card className="panel">
-              <h3>Insert Node</h3>
-              <p className="badge">Context: {insertRequest.mode}</p>
-              <Input autoFocus value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags, or use..." />
-              <div className="validation-list" style={{ marginTop: 8, maxHeight: 360, overflow: "auto" }}>
-                {paletteResults.map((entry, idx) => (
-                  <Card key={`${entry.nodeType}_${idx}`} className={idx === paletteIndex ? "card-selected" : undefined}>
-                    <div className="nav-inline" style={{ justifyContent: "space-between" }}>
-                      <strong>{entry.name}</strong>
-                      <span className="badge">{entry.category}</span>
-                    </div>
-                    <p>{entry.description}</p>
-                    <p>In: {entry.inputTypes.join(", ")} · Out: {entry.outputTypes.join(", ")}</p>
-                    <Button onClick={() => insertNodeFromEntry(entry)}>{idx === paletteIndex ? "Insert ↵" : "Insert"}</Button>
-                  </Card>
-                ))}
-                {paletteResults.length === 0 ? <p>No node matches this query.</p> : null}
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-20" onClick={() => setPaletteOpen(false)}>
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
+            <div className="p-4 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-base font-semibold text-slate-800">Insert Node</h3>
+                <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">Context: {insertRequest.mode}</span>
               </div>
-            </Card>
+              <Input autoFocus value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags, or use..." className="w-full" />
+            </div>
+            <div className="overflow-y-auto max-h-96 divide-y divide-slate-100">
+              {paletteResults.map((entry, idx) => (
+                <div key={`${entry.nodeType}_${idx}`} className={`p-3 ${idx === paletteIndex ? "bg-indigo-50" : "hover:bg-slate-50"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-sm text-slate-800">{entry.name}</strong>
+                    <span className="text-xs text-slate-500 bg-slate-100 rounded px-2 py-0.5">{entry.category}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{entry.description}</p>
+                  <p className="text-xs text-slate-400">In: {entry.inputTypes.join(", ")} · Out: {entry.outputTypes.join(", ")}</p>
+                  <Button variant="ghost" size="sm" onClick={() => insertNodeFromEntry(entry)} className="mt-1">{idx === paletteIndex ? "Insert ↵" : "Insert"}</Button>
+                </div>
+              ))}
+              {paletteResults.length === 0 ? <p className="p-4 text-sm text-slate-400">No node matches this query.</p> : null}
+            </div>
           </div>
         </div>
       ) : null}
+
+      {showConnectModal && (
+        <ConnectAgentModal
+          systemId={systemId}
+          systemName={data.system.name}
+          onClose={() => setShowConnectModal(false)}
+        />
+      )}
     </div>
   );
 }
 
-function MockEditorWorkspace({ systemId }: { systemId: string }) {
+function MockEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
   const load = useCallback(async () => {
     const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
@@ -865,16 +1430,16 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
     return () => clearInterval(interval);
   }, [load]);
 
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={load} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} reload={load} initialPrompt={initialPrompt} />;
 }
 
-function RealEditorWorkspace({ systemId }: { systemId: string }) {
+function RealEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const bundle = useQuery(api.app.getSystemBundle, { systemId: systemId as never });
   const data = bundle ? normalizeBundle(bundle) : null;
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} initialPrompt={initialPrompt} />;
 }
 
-export function EditorWorkspace({ systemId }: { systemId: string }) {
-  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} />;
-  return <MockEditorWorkspace systemId={systemId} />;
+export function EditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
+  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />;
+  return <MockEditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />;
 }

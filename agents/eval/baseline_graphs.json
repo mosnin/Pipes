@@ -1,0 +1,249 @@
+{
+  "multi-agent-handoff": {
+    "node_titles": [
+      "Inbound request",
+      "Planner agent",
+      "Plan guard",
+      "Executor agent",
+      "Run report"
+    ],
+    "pipes": [
+      ["Inbound request", "Planner agent"],
+      ["Planner agent", "Plan guard"],
+      ["Plan guard", "Executor agent"],
+      ["Executor agent", "Run report"]
+    ]
+  },
+  "multi-agent-research": {
+    "node_titles": [
+      "Research question",
+      "Planner agent",
+      "Retriever tool",
+      "Synthesizer agent",
+      "Research brief"
+    ],
+    "pipes": [
+      ["Research question", "Planner agent"],
+      ["Research question", "Retriever tool"],
+      ["Planner agent", "Synthesizer agent"],
+      ["Retriever tool", "Synthesizer agent"],
+      ["Synthesizer agent", "Research brief"]
+    ]
+  },
+  "automation-workflow": {
+    "node_titles": [
+      "Event trigger",
+      "Rule decision",
+      "Run action",
+      "Run report"
+    ],
+    "pipes": [
+      ["Event trigger", "Rule decision"],
+      ["Rule decision", "Run action"],
+      ["Run action", "Run report"]
+    ]
+  },
+  "support-ops-system": {
+    "node_titles": [
+      "Ticket intake",
+      "Ticket classifier",
+      "Policy check",
+      "Escalation review",
+      "Final resolution"
+    ],
+    "pipes": [
+      ["Ticket intake", "Ticket classifier"],
+      ["Ticket classifier", "Policy check"],
+      ["Policy check", "Escalation review"],
+      ["Escalation review", "Final resolution"]
+    ]
+  },
+  "customer-support-triage": {
+    "node_titles": [
+      "Inbound ticket",
+      "Intent classifier",
+      "Knowledge base lookup",
+      "Confidence check",
+      "Specialist queue",
+      "Auto-resolved reply",
+      "Escalation handoff"
+    ],
+    "pipes": [
+      ["Inbound ticket", "Intent classifier"],
+      ["Intent classifier", "Knowledge base lookup"],
+      ["Knowledge base lookup", "Confidence check"],
+      ["Confidence check", "Specialist queue"],
+      ["Confidence check", "Auto-resolved reply"],
+      ["Specialist queue", "Escalation handoff"],
+      ["Auto-resolved reply", "Escalation handoff"]
+    ]
+  },
+  "sales-lead-qualifier": {
+    "node_titles": [
+      "Lead form intake",
+      "Enrichment lookup",
+      "BANT qualifier",
+      "Tier classifier",
+      "Hot lead alert",
+      "CRM record write"
+    ],
+    "pipes": [
+      ["Lead form intake", "Enrichment lookup"],
+      ["Enrichment lookup", "BANT qualifier"],
+      ["BANT qualifier", "Tier classifier"],
+      ["Tier classifier", "Hot lead alert"],
+      ["Tier classifier", "CRM record write"]
+    ]
+  },
+  "code-review-assistant": {
+    "node_titles": [
+      "PR opened webhook",
+      "Diff fetcher",
+      "Linter review",
+      "Security scan",
+      "Style critique",
+      "Review aggregator",
+      "Comment poster"
+    ],
+    "pipes": [
+      ["PR opened webhook", "Diff fetcher"],
+      ["Diff fetcher", "Linter review"],
+      ["Diff fetcher", "Security scan"],
+      ["Diff fetcher", "Style critique"],
+      ["Linter review", "Review aggregator"],
+      ["Security scan", "Review aggregator"],
+      ["Style critique", "Review aggregator"],
+      ["Review aggregator", "Comment poster"]
+    ]
+  },
+  "document-qa-system": {
+    "node_titles": [
+      "User question",
+      "Vector retriever",
+      "Context assembler",
+      "Answering agent",
+      "Citation formatter",
+      "Final response"
+    ],
+    "pipes": [
+      ["User question", "Vector retriever"],
+      ["Vector retriever", "Context assembler"],
+      ["Context assembler", "Answering agent"],
+      ["Answering agent", "Citation formatter"],
+      ["Citation formatter", "Final response"]
+    ]
+  },
+  "content-moderation-pipeline": {
+    "node_titles": [
+      "User submission",
+      "Policy classifier",
+      "Severity router",
+      "Auto-block action",
+      "Shadow flag",
+      "Human review queue",
+      "Audit log writer"
+    ],
+    "pipes": [
+      ["User submission", "Policy classifier"],
+      ["Policy classifier", "Severity router"],
+      ["Severity router", "Auto-block action"],
+      ["Severity router", "Shadow flag"],
+      ["Severity router", "Human review queue"],
+      ["Auto-block action", "Audit log writer"],
+      ["Shadow flag", "Audit log writer"],
+      ["Human review queue", "Audit log writer"]
+    ]
+  },
+  "meeting-coordinator": {
+    "node_titles": [
+      "Meeting request",
+      "Calendar reader",
+      "Conflict resolver",
+      "Proposed slot",
+      "Confirmation sender"
+    ],
+    "pipes": [
+      ["Meeting request", "Calendar reader"],
+      ["Calendar reader", "Conflict resolver"],
+      ["Conflict resolver", "Proposed slot"],
+      ["Proposed slot", "Confirmation sender"]
+    ]
+  },
+  "data-extraction-pipeline": {
+    "node_titles": [
+      "Document upload",
+      "OCR engine",
+      "Field extractor",
+      "Schema validator",
+      "Structured record",
+      "Failure dead-letter"
+    ],
+    "pipes": [
+      ["Document upload", "OCR engine"],
+      ["OCR engine", "Field extractor"],
+      ["Field extractor", "Schema validator"],
+      ["Schema validator", "Structured record"],
+      ["Schema validator", "Failure dead-letter"]
+    ]
+  },
+  "research-deep-dive": {
+    "node_titles": [
+      "Topic question",
+      "Research planner",
+      "Web search",
+      "Paper search",
+      "Database lookup",
+      "Synthesizer",
+      "Fact checker",
+      "Final brief"
+    ],
+    "pipes": [
+      ["Topic question", "Research planner"],
+      ["Research planner", "Web search"],
+      ["Research planner", "Paper search"],
+      ["Research planner", "Database lookup"],
+      ["Web search", "Synthesizer"],
+      ["Paper search", "Synthesizer"],
+      ["Database lookup", "Synthesizer"],
+      ["Synthesizer", "Fact checker"],
+      ["Fact checker", "Final brief"]
+    ]
+  },
+  "onboarding-orchestrator": {
+    "node_titles": [
+      "New hire signal",
+      "Provisioning checklist",
+      "Access request",
+      "Welcome packet",
+      "Manager handoff",
+      "Day-one summary"
+    ],
+    "pipes": [
+      ["New hire signal", "Provisioning checklist"],
+      ["Provisioning checklist", "Access request"],
+      ["Access request", "Welcome packet"],
+      ["Welcome packet", "Manager handoff"],
+      ["Manager handoff", "Day-one summary"]
+    ]
+  },
+  "incident-response-runbook": {
+    "node_titles": [
+      "Alert webhook",
+      "Severity classifier",
+      "On-call pager",
+      "Runbook lookup",
+      "Executor agent",
+      "Status updates",
+      "Post-mortem draft"
+    ],
+    "pipes": [
+      ["Alert webhook", "Severity classifier"],
+      ["Severity classifier", "On-call pager"],
+      ["Severity classifier", "Runbook lookup"],
+      ["On-call pager", "Executor agent"],
+      ["Runbook lookup", "Executor agent"],
+      ["Executor agent", "Status updates"],
+      ["Status updates", "Post-mortem draft"]
+    ]
+  }
+}

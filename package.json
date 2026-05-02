@@ -12,12 +12,19 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.3.0",
+    "@heroui/react": "^3.0.3",
+    "@tailwindcss/postcss": "^4.2.4",
     "@xyflow/react": "12.8.5",
     "clsx": "2.1.1",
     "convex": "^1.35.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.11.0",
     "next": "16.2.4",
     "react": "19.2.5",
     "react-dom": "19.2.5",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.2.4",
     "zod": "3.24.2"
   },
   "devDependencies": {

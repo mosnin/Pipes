@@ -4,6 +4,15 @@ import { v } from "convex/values";
 
 const now = () => new Date().toISOString();
 
+export const listSystemPresence = query({
+  args: { systemId: v.id("systems") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("system_presence").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
+    const cutoff = new Date(Date.now() - 120_000).toISOString();
+    return rows.filter((r) => r.lastSeenAt > cutoff);
+  }
+});
+
 export const provisionUser = mutation({
   args: { externalId: v.string(), email: v.string(), name: v.string() },
   handler: async (ctx, args) => {
@@ -67,11 +76,11 @@ export const addNode = mutation({
 });
 
 export const updateNode = mutation({
-  args: { nodeId: v.id("system_nodes"), title: v.optional(v.string()), description: v.optional(v.string()), x: v.optional(v.number()), y: v.optional(v.number()) },
+  args: { nodeId: v.id("system_nodes"), title: v.optional(v.string()), description: v.optional(v.string()), x: v.optional(v.number()), y: v.optional(v.number()), config: v.optional(v.any()) },
   handler: async (ctx, args) => {
     const node = await ctx.db.get(args.nodeId);
     if (!node) return;
-    await ctx.db.patch(args.nodeId, { title: args.title ?? node.title, description: args.description ?? node.description, position: { x: args.x ?? node.position.x, y: args.y ?? node.position.y }, updatedAt: now() });
+    await ctx.db.patch(args.nodeId, { title: args.title ?? node.title, description: args.description ?? node.description, position: { x: args.x ?? node.position.x, y: args.y ?? node.position.y }, config: args.config ?? node.config, updatedAt: now() });
   }
 });
 
@@ -720,5 +729,70 @@ export const listSessionContinuationRefs = query({
   handler: async (ctx, args) => {
     const rows = await ctx.db.query("session_continuation_refs").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
     return rows.filter((row) => row.workspaceId === args.workspaceId && (!args.runId || row.toRunId === args.runId));
+  }
+});
+
+export const createAgentConversation = mutation({
+  args: { systemId: v.id("systems"), userId: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_conversations", { systemId: args.systemId, userId: args.userId, createdAt: now(), updatedAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const getAgentConversation = query({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => ctx.db.get(args.conversationId)
+});
+
+export const listAgentConversations = query({
+  args: { userId: v.string(), systemId: v.id("systems") },
+  handler: async (ctx, args) => ctx.db.query("agent_conversations").withIndex("by_user_system", (q) => q.eq("userId", args.userId).eq("systemId", args.systemId)).collect()
+});
+
+export const touchAgentConversation = mutation({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => ctx.db.patch(args.conversationId, { updatedAt: now() })
+});
+
+export const createAgentTurn = mutation({
+  args: { conversationId: v.id("agent_conversations"), index: v.number(), prompt: v.string(), startedAt: v.string() },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("agent_turns", { conversationId: args.conversationId, index: args.index, prompt: args.prompt, toolCalls: [], startedAt: args.startedAt, cancelled: false });
+    return ctx.db.get(id);
+  }
+});
+
+export const listAgentTurns = query({
+  args: { conversationId: v.id("agent_conversations") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("agent_turns").withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId)).collect();
+    return rows.sort((a, b) => a.index - b.index);
+  }
+});
+
+export const appendAgentTurnToolCall = mutation({
+  args: {
+    turnId: v.id("agent_turns"),
+    toolCall: v.object({
+      id: v.string(),
+      toolName: v.string(),
+      arguments: v.any(),
+      ok: v.boolean(),
+      action: v.optional(v.any()),
+      error: v.optional(v.string())
+    })
+  },
+  handler: async (ctx, args) => {
+    const turn = await ctx.db.get(args.turnId);
+    if (!turn) return;
+    await ctx.db.patch(args.turnId, { toolCalls: [...turn.toolCalls, args.toolCall] });
+  }
+});
+
+export const completeAgentTurn = mutation({
+  args: { turnId: v.id("agent_turns"), finalMessage: v.optional(v.string()), completedAt: v.string(), cancelled: v.boolean() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.turnId, { finalMessage: args.finalMessage, completedAt: args.completedAt, cancelled: args.cancelled });
   }
 });

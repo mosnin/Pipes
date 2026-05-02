@@ -120,6 +120,7 @@ export function createMockRepositories(): RepositorySet {
         if (input.title !== undefined) node.title = input.title;
         if (input.description !== undefined) node.description = input.description;
         if (input.position) node.position = input.position;
+        if (input.config !== undefined) node.config = input.config;
         store.writeDb(db);
       },
       async deleteNode(nodeId) {
@@ -920,6 +921,56 @@ export function createMockRepositories(): RepositorySet {
         return row;
       },
       async listEscalationRecords(input) { return store.readDb().escalationRecords.filter((row) => row.runId === input.runId); }
+    },
+    agentConversations: {
+      async createConversation(input) {
+        const db = store.readDb();
+        const id = store.createId("ac");
+        const row = { id, systemId: input.systemId, userId: input.userId, createdAt: now(), updatedAt: now() };
+        db.agentConversations.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async getConversation(conversationId) {
+        return store.readDb().agentConversations.find((row) => row.id === conversationId) ?? null;
+      },
+      async listConversations(input) {
+        return store.readDb().agentConversations.filter((row) => row.userId === input.userId && row.systemId === input.systemId);
+      },
+      async touchConversation(conversationId) {
+        const db = store.readDb();
+        const row = db.agentConversations.find((item) => item.id === conversationId);
+        if (!row) return;
+        row.updatedAt = now();
+        store.writeDb(db);
+      },
+      async createTurn(input) {
+        const db = store.readDb();
+        const id = store.createId("at");
+        const row = { id, conversationId: input.conversationId, index: input.index, prompt: input.prompt, toolCalls: [], startedAt: input.startedAt, cancelled: false };
+        db.agentTurns.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listTurns(conversationId) {
+        return store.readDb().agentTurns.filter((row) => row.conversationId === conversationId).sort((a, b) => a.index - b.index);
+      },
+      async appendToolCall(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.toolCalls = [...row.toolCalls, input.toolCall];
+        store.writeDb(db);
+      },
+      async completeTurn(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.finalMessage = input.finalMessage;
+        row.completedAt = input.completedAt;
+        row.cancelled = input.cancelled;
+        store.writeDb(db);
+      }
     },
     agentMemory: {
       async addMemoryEntry(input) {

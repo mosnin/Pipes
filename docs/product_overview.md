@@ -44,7 +44,7 @@ This keeps Pipes a structured design platform, not a chat or orchestration engin
 
 ## Enterprise trust readiness (current)
 - `/settings/trust` centralizes auth-readiness, retention defaults, workspace export manifest, and lifecycle posture.
-- Enterprise auth posture is honest: `sso_ready` stores validated workspace metadata for future Auth0 enterprise connection usage; it does not claim full in-product IdP provisioning.
+- Enterprise auth posture is honest: `sso_ready` stores validated workspace metadata for future Clerk enterprise SSO connection usage; it does not claim full in-product IdP provisioning.
 - Member role administration now includes explicit safety constraints around owner/admin boundaries.
 
 ## Conversion and discovery posture (current)

@@ -9,7 +9,7 @@ export async function POST(request: Request, { params }: Params) {
     const { ctx, services } = await getServerApp();
     const body = await request.json().catch(() => ({}));
     const { templateId } = await params;
-    return NextResponse.json(success(await services.templates.instantiate(ctx, templateId, body.name)));
+    return NextResponse.json(success(await services.templates.instantiate(ctx, templateId, body.name, body.params)));
   } catch (error) {
     return NextResponse.json(failure((error as Error).message), { status: 400 });
   }

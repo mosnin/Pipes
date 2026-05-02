@@ -6,7 +6,7 @@ export async function GET() {
     ok: true,
     service: "pipes",
     mode: runtimeFlags.useMocks ? "mock" : "integration",
-    providers: { convex: runtimeFlags.hasConvex, auth0: runtimeFlags.hasAuth0 },
+    providers: { convex: runtimeFlags.hasConvex, clerk: runtimeFlags.hasClerk },
     timestamp: new Date().toISOString()
   });
 }

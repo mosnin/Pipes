@@ -432,5 +432,28 @@ export default defineSchema({
     strategyId: v.optional(v.id("builder_strategies")),
     summary: v.string(),
     createdAt: v.string()
-  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"])
+  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"]),
+  agent_conversations: defineTable({
+    systemId: v.id("systems"),
+    userId: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_system", ["systemId"]).index("by_user_system", ["userId", "systemId"]),
+  agent_turns: defineTable({
+    conversationId: v.id("agent_conversations"),
+    index: v.number(),
+    prompt: v.string(),
+    toolCalls: v.array(v.object({
+      id: v.string(),
+      toolName: v.string(),
+      arguments: v.any(),
+      ok: v.boolean(),
+      action: v.optional(v.any()),
+      error: v.optional(v.string())
+    })),
+    finalMessage: v.optional(v.string()),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string()),
+    cancelled: v.boolean()
+  }).index("by_conversation", ["conversationId"])
 });

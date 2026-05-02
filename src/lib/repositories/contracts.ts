@@ -73,7 +73,7 @@ export interface SystemsRepository {
 
 export interface GraphRepository {
   addNode(input: { systemId: string; type: string; title: string; description?: string; x: number; y: number }): Promise<string>;
-  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }): Promise<void>;
+  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number }; config?: Record<string, unknown> }): Promise<void>;
   deleteNode(nodeId: string): Promise<void>;
   addPipe(input: { systemId: string; fromNodeId: string; toNodeId: string }): Promise<string>;
   deletePipe(pipeId: string): Promise<void>;
@@ -145,6 +145,46 @@ export interface FeedbackRepository {
     updatedAt: string;
   }>>;
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
+}
+
+export type AgentTurnToolCallRecord = {
+  id: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  ok: boolean;
+  action?: Record<string, unknown>;
+  error?: string;
+};
+
+export type AgentConversationRecord = {
+  id: string;
+  systemId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentTurnRecord = {
+  id: string;
+  conversationId: string;
+  index: number;
+  prompt: string;
+  toolCalls: AgentTurnToolCallRecord[];
+  finalMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  cancelled: boolean;
+};
+
+export interface AgentConversationsRepository {
+  createConversation(input: { systemId: string; userId: string }): Promise<AgentConversationRecord>;
+  getConversation(conversationId: string): Promise<AgentConversationRecord | null>;
+  listConversations(input: { userId: string; systemId: string }): Promise<AgentConversationRecord[]>;
+  touchConversation(conversationId: string): Promise<void>;
+  createTurn(input: { conversationId: string; index: number; prompt: string; startedAt: string }): Promise<AgentTurnRecord>;
+  listTurns(conversationId: string): Promise<AgentTurnRecord[]>;
+  appendToolCall(input: { turnId: string; toolCall: AgentTurnToolCallRecord }): Promise<void>;
+  completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean }): Promise<void>;
 }
 
 export type RepositorySet = {
@@ -263,6 +303,7 @@ export type RepositorySet = {
     addEscalationRecord(input: Omit<EscalationRecord, "id">): Promise<EscalationRecord>;
     listEscalationRecords(input: { runId: string }): Promise<EscalationRecord[]>;
   };
+  agentConversations: AgentConversationsRepository;
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;
