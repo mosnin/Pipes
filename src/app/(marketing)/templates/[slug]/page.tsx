@@ -73,13 +73,13 @@ const SETUP_STEPS = [
   },
   {
     step: 2,
-    title: "Instantiate the template",
-    body: "Open this template from the catalog and add it to your workspace with one click.",
+    title: "Open with this prompt",
+    body: "The chat input is pre-filled. Press return. The agent draws the system on the canvas.",
   },
   {
     step: 3,
-    title: "Customize and ship",
-    body: "Edit nodes, configure each component, and validate before going live.",
+    title: "Edit and ship",
+    body: "Drag nodes, rewrite descriptions, validate, and hand any agent a token.",
   },
 ] as const;
 
@@ -94,9 +94,9 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const template = publicContentService.getTemplate(slug);
-  if (!template) return { title: "Template not found" };
+  if (!template) return { title: "Starter not found" };
   return {
-    title: `${template.title} template - Pipes`,
+    title: `${template.title} starter - Pipes`,
     description: `${template.description} ${template.preview}`,
   };
 }
@@ -130,7 +130,7 @@ export default async function TemplateDetailPage({
         <div className="max-w-6xl mx-auto px-6 py-3">
           <Breadcrumbs
             items={[
-              { label: "Templates", href: "/templates" },
+              { label: "Starters", href: "/templates" },
               { label: template.title },
             ]}
           />
@@ -165,15 +165,14 @@ export default async function TemplateDetailPage({
               <CardShell padded>
                 <p className="t-body text-[#3C3C43] leading-relaxed">
                   <span className="font-semibold text-[#111]">{template.useCase}</span>
-                  {". "}A starting point for teams building{" "}
-                  {template.category.toLowerCase()} systems. Fork it, edit the nodes, ship.
+                  {". "}This is what the agent builds when you start from this prompt. Open it, press return, edit on the canvas.
                 </p>
               </CardShell>
             </section>
 
             {/* What's included */}
             <section>
-              <h2 className="t-overline text-[#8E8E93] mb-3">What is included</h2>
+              <h2 className="t-overline text-[#8E8E93] mb-3">What the agent builds</h2>
               {catalogEntry ? (
                 <CardShell padded>
                   <ul className="flex flex-col gap-2.5">
@@ -261,7 +260,7 @@ export default async function TemplateDetailPage({
             {/* Variants / Related */}
             {related.length > 0 && (
               <section>
-                <h2 className="t-overline text-[#8E8E93] mb-3">Related templates</h2>
+                <h2 className="t-overline text-[#8E8E93] mb-3">Related starters</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {related.map((r) => (
                     <TrackedLink
@@ -293,20 +292,20 @@ export default async function TemplateDetailPage({
             <div className="lg:sticky lg:top-6">
               <CardShell>
                 <CardHeader>
-                  <h3 className="t-label font-semibold text-[#111]">Use this template</h3>
+                  <h3 className="t-label font-semibold text-[#111]">Open in Pipes</h3>
                   <p className="mt-1 t-caption text-[#8E8E93]">
-                    Add to your workspace and start customizing.
+                    Sign in. Your dashboard opens with this prompt pre-filled. Press return to build it.
                   </p>
                 </CardHeader>
                 <CardBody>
                   <TrackedLink
-                    href={`/signup?template=${template.slug}`}
+                    href={`/signup?source=template-${template.slug}`}
                     event="public_template_instantiate_clicked"
                     metadata={{ templateId: template.id, source: "template_detail" }}
                   >
                     <Button variant="primary" className="w-full">
                       <Sparkles size={14} className="mr-1.5" aria-hidden="true" />
-                      Instantiate template
+                      Start with this prompt
                     </Button>
                   </TrackedLink>
                   <HelpText className="mt-2 text-center">
@@ -332,7 +331,7 @@ export default async function TemplateDetailPage({
                     metadata={{ source: "template_detail_back" }}
                   >
                     <Button size="sm" variant="ghost">
-                      Browse all templates
+                      Browse all starters
                     </Button>
                   </TrackedLink>
                 </CardFooter>

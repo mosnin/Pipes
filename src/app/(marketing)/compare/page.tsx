@@ -27,7 +27,7 @@ export default function CompareIndexPage() {
           <div className="flex flex-col gap-4 max-w-2xl">
             <h1 className="t-h1 text-[#111]">Pipes vs the alternatives.</h1>
             <p className="t-body text-[#3C3C43]">
-              Where Pipes wins, where the others lead, and how to choose for your team.
+              Pipes is the only one where you describe the system in plain English. Here is how the rest stack up.
             </p>
           </div>
         </div>

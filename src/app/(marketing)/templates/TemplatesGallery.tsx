@@ -66,15 +66,15 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
       <section className="surface-subtle border-b border-black/[0.06]">
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-10">
           <div className="flex flex-col gap-4 max-w-2xl">
-            <h1 className="t-h1 text-[#111]">Forkable systems your team has already shipped.</h1>
+            <h1 className="t-h1 text-[#111]">Start with a sentence. Edit on the canvas.</h1>
             <p className="t-body text-[#3C3C43]">
-              Fork one into your workspace in seconds, typed nodes and pipes included.
+              Each card opens with a prompt that builds itself in seconds. Edit on the canvas after the agent draws.
             </p>
           </div>
 
           <div className="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-3">
             <MetricCard
-              label="Total templates"
+              label="Total starters"
               value={templates.length}
               icon={<Boxes size={14} aria-hidden="true" />}
               footer="Curated by the Pipes team"
@@ -83,19 +83,19 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
               label="Simple"
               value={simpleCount}
               icon={<Layers size={14} aria-hidden="true" />}
-              footer="Quickstart blueprints"
+              footer="One-prompt builds"
             />
             <MetricCard
               label="Standard"
               value={standardCount}
               icon={<GitBranch size={14} aria-hidden="true" />}
-              footer="Multi-step workflows"
+              footer="Multi-step builds"
             />
             <MetricCard
               label="Advanced"
               value={advancedCount}
               icon={<Sparkles size={14} aria-hidden="true" />}
-              footer="Multi-agent systems"
+              footer="Multi-agent builds"
             />
           </div>
         </div>
@@ -107,7 +107,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
             <SearchInput
               value={query}
               onChange={setQuery}
-              placeholder="Search templates by name, category, or use case"
+              placeholder="Search starters by name, category, or use case"
             />
           </div>
           <div className="overflow-x-auto">
@@ -119,7 +119,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
       <section className="max-w-6xl mx-auto px-6 py-12">
         {visible.length === 0 ? (
           <EmptyState
-            title="No templates match your filters"
+            title="No starters match your filters"
             description="Try a different category or clear your search."
             action={
               <Button
@@ -143,9 +143,9 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
 
         <div className="mt-16 border-t border-black/[0.06] pt-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="t-title text-[#111]">Need a custom template?</h2>
+            <h2 className="t-title text-[#111]">Want a system that is not on this list?</h2>
             <p className="mt-1 t-label text-[#3C3C43]">
-              Start from a blank canvas and let the AI assistant scaffold the system for you.
+              Open a fresh canvas. Type one sentence. The agent draws it.
             </p>
           </div>
           <TrackedLink
@@ -154,7 +154,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
             metadata={{ location: "templates_bottom_cta" }}
           >
             <Button variant="primary">
-              Build from scratch
+              Describe your own
               <ArrowRight size={14} className="ml-1.5" aria-hidden="true" />
             </Button>
           </TrackedLink>

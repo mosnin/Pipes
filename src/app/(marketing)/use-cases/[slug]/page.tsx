@@ -102,8 +102,12 @@ export default async function UseCaseDetailPage({
             {entry.fit}
           </p>
 
+          <p className="mt-10 t-overline text-[#8E8E93]">
+            Built in conversation, not on a whiteboard.
+          </p>
+
           {/* Persona quote bar */}
-          <div className="mt-10 rounded-[12px] border border-black/[0.08] bg-[#FAFAFA] p-6 flex items-start gap-4">
+          <div className="mt-3 rounded-[12px] border border-black/[0.08] bg-[#FAFAFA] p-6 flex items-start gap-4">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#111] text-white t-label font-semibold shrink-0">
               {entry.title
                 .split(" ")
@@ -114,14 +118,14 @@ export default async function UseCaseDetailPage({
             </span>
             <div>
               <blockquote className="t-body text-[#111] italic" style={{ letterSpacing: "-0.005em" }}>
-                &quot;Pipes turned our system diagrams into something our agents
-                actually respect. We stopped re-prompting and started shipping.&quot;
+                &quot;I typed a sentence and the system appeared. We stopped
+                drawing diagrams and started shipping.&quot;
               </blockquote>
             </div>
           </div>
 
           <p className="mt-4 t-caption text-[#8E8E93]">
-            Why this matters: one map your team and your agents both read.
+            Why this matters: describe your system. Watch it build itself.
           </p>
         </div>
       </section>
@@ -224,10 +228,10 @@ export default async function UseCaseDetailPage({
           <aside className="flex flex-col gap-5">
             <div className="rounded-[12px] border border-black/[0.08] bg-white p-5">
               <h3 className="t-overline text-[#8E8E93] mb-4">
-                Templates that ship with this
+                Starters that ship with this
               </h3>
               {templates.length === 0 && (
-                <p className="t-label text-[#8E8E93]">No templates yet.</p>
+                <p className="t-label text-[#8E8E93]">No starters yet.</p>
               )}
               <div className="flex flex-col gap-3">
                 {templates.map((template) => (
@@ -268,8 +272,8 @@ export default async function UseCaseDetailPage({
               />
               <h3 className="mt-3 t-title text-[#111]">Ready to ship this?</h3>
               <p className="mt-1.5 t-caption text-[#3C3C43] leading-relaxed">
-                Fork a template, validate, and hand it to your agents in under five
-                minutes.
+                Open a starter prompt, watch the agent build, and hand it to your
+                agents in under five minutes.
               </p>
               <TrackedLink
                 href={`/signup?useCase=${entry.slug}`}
@@ -288,7 +292,7 @@ export default async function UseCaseDetailPage({
                 metadata={{ source: `use_case_${entry.slug}` }}
                 className="mt-2 block text-center t-caption font-medium text-indigo-700 hover:text-indigo-800 transition-colors"
               >
-                Browse all templates
+                Browse all starters
               </TrackedLink>
             </div>
           </aside>

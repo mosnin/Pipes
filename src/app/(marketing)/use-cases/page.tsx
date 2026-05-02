@@ -30,7 +30,7 @@ export default function UseCasesPage() {
             Teams shipping multi-agent systems on Pipes.
           </h1>
           <p className="mt-5 t-body text-[#3C3C43] mx-auto max-w-xl">
-            One map your team and your agents both read, in production, across these workloads.
+            Built in conversation, not on a whiteboard. Here is how teams ship across these workloads.
           </p>
         </div>
       </section>

@@ -9,9 +9,9 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "One map your team and your agents both read - Pipes",
+  title: "Describe your system. Watch it build itself. - Pipes",
   description:
-    "Draw the system once. Your team reviews it. Your agents read it through one token.",
+    "Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.",
 };
 
 const TRUST_LOGOS = [
@@ -27,32 +27,32 @@ const MAGIC_BEATS = [
   {
     n: "01",
     title: "Open an empty Pipes canvas",
-    body: "You see one line: One map your team and your agents both read.",
+    body: "You see one prompt input: Describe your system. Watch it build itself.",
   },
   {
     n: "02",
-    title: "Press slash, pick Agent",
-    body: "A node lands on the canvas with a blinking title.",
+    title: "Type one sentence",
+    body: "Planner agent reads tickets, writes a plan, hands off to a coder agent that opens a PR.",
   },
   {
     n: "03",
-    title: "Type one sentence into the node",
-    body: "Planner agent. Reads tickets, writes a plan, hands off to the coder.",
+    title: "Press return and see the canvas come alive",
+    body: "The Planner node lands, then the Coder node, then a typed pipe between them, all in under two seconds.",
   },
   {
     n: "04",
-    title: "Click Connect Agent",
-    body: "A panel slides in with a Bearer token and a Claude Desktop config block already filled in for this system.",
+    title: "Drag the Coder node two inches",
+    body: "The agent yields and the layout holds where you put it.",
   },
   {
     n: "05",
-    title: "Paste once into Claude",
-    body: "Copy the block. Paste it into your Claude config. Reopen Claude.",
+    title: "Click Connect Agent",
+    body: "Copy the token-scoped Claude config block. Paste it into Claude.",
   },
   {
     n: "06",
     title: "Ask Claude what is in your Pipes system",
-    body: "Claude answers by name: one Agent node titled Planner agent, with the sentence you wrote, fetched live through the MCP endpoint. You pasted no architecture.",
+    body: "Claude answers by name: Planner agent, Coder agent, the pipe between them, fetched live through MCP. You pasted no architecture and you drew no boxes.",
   },
 ] as const;
 
@@ -64,16 +64,16 @@ const FEATURE_BLOCKS = [
     bullets: [
       "27 node types covering services, agents, jobs, queues, and humans",
       "Schema-aware ports prevent invalid connections",
-      "Inline validation catches drift as you draw",
+      "The agent draws first. You correct what it got wrong.",
     ],
-    cta: { label: "Browse templates", href: "/templates" },
+    cta: { label: "Browse starters", href: "/templates" },
     visual: { label: "system_canvas.tsx", caption: "Live canvas with typed ports" },
     reverse: false,
   },
   {
     eyebrow: "Protocol",
     title: "Stable surfaces for every agent",
-    body: "Hand any agent a token and it sees the system the way your team does. MCP and REST share a single bounded service layer.",
+    body: "Hand any agent a token. It reads the system the way your team does. MCP and REST share one bounded service layer.",
     bullets: [
       "11 scoped capabilities, per-token",
       "Idempotency keys on every write",
@@ -134,32 +134,49 @@ function ScreenshotPlaceholder({
 function HeroFrame() {
   return (
     <div
-      className="surface-muted relative w-full overflow-hidden rounded-[12px] border border-black/[0.08] shadow-sm"
+      className="surface-muted relative w-full overflow-hidden rounded-[12px] border border-black/[0.08] shadow-sm-token"
       role="img"
-      aria-label="Claude reads the Pipes system back by name through MCP"
+      aria-label="The agent reads a one-sentence prompt and draws the Planner and Coder nodes on the canvas"
       style={{ aspectRatio: "16 / 9" }}
     >
       <div className="absolute left-0 right-0 top-0 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
-        <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-[#111] text-white t-label font-bold" style={{ fontSize: 10 }}>
-          C
-        </span>
         <span className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>
-          Claude
+          Pipes
+        </span>
+        <span className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
+          sys_8a72
         </span>
         <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-black/[0.06] bg-[#F5F5F7] px-2 py-0.5 t-caption text-[#3C3C43]" style={{ fontSize: 10 }}>
-          via pipes (MCP)
+          Building...
         </span>
       </div>
       <div className="absolute inset-0 flex flex-col gap-3 px-5 pt-12 pb-5">
-        <p className="t-caption text-[#8E8E93]">
-          You asked: what is in my Pipes system?
-        </p>
-        <p className="t-mono t-caption text-[#111] leading-relaxed" style={{ fontSize: 12.5 }}>
-          You have one system, <span className="t-num">sys_8a72</span>, with one Agent node titled
-          {" "}<span className="font-semibold">Planner agent</span>. Its description reads:
-          {" "}<span className="text-[#3C3C43]">Reads tickets, writes a plan, hands off to the coder.</span>
-          {" "}No pipes yet. I read this through the MCP endpoint with token <span className="t-num">ptk_live_92c1</span>.
-        </p>
+        <div className="rounded-md border border-black/[0.08] bg-white px-3 py-2">
+          <p className="t-caption text-[#8E8E93]" style={{ fontSize: 10 }}>
+            You typed
+          </p>
+          <p className="mt-1 t-label text-[#111]" style={{ fontSize: 12.5 }}>
+            Planner agent reads tickets, hands off to a coder agent.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
+            add_node(&quot;Planner agent&quot;)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
+            add_node(&quot;Coder agent&quot;)
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
+          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
+            add_pipe(planner -&gt; coder)
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -178,7 +195,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── 1. HERO ─────────────────────────────────────────────────────────── */}
+      {/* HERO */}
       <section className="relative overflow-hidden border-b border-black/[0.06] pt-20 pb-20 sm:pt-24 sm:pb-24">
         {/* Subtle grid */}
         <div
@@ -196,17 +213,17 @@ export default async function HomePage() {
         <div className="relative mx-auto max-w-6xl px-6">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-14">
             <div className="flex flex-col">
-              <SectionBadge label="Read by your team. Read by your agents." />
+              <SectionBadge label="Plan first. Build second." />
 
               <h1
                 className="mt-6 text-[40px] sm:text-[52px] lg:text-[60px] font-bold text-[#111]"
                 style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
               >
-                One map your team and your agents both read.
+                Describe your system. Watch it build itself.
               </h1>
 
               <p className="mt-6 max-w-xl t-body text-[#3C3C43]">
-                Draw the system once. Your team reviews it. Your agents read it through one token.
+                Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.
               </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -238,7 +255,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 2. TRUST BAR ────────────────────────────────────────────────────── */}
+      {/* TRUST BAR */}
       <section className="border-b border-black/[0.06] bg-white py-10">
         <div className="mx-auto max-w-6xl px-6">
           <p className="text-center t-overline text-[#8E8E93] mb-6">
@@ -258,7 +275,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 3. SEE IT IN ACTION ─────────────────────────────────────────────── */}
+      {/* SEE IT IN ACTION - magic moment */}
       <section id="see-it-in-action" className="scroll-mt-16 border-b border-black/[0.06] bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="max-w-2xl">
@@ -267,10 +284,10 @@ export default async function HomePage() {
               className="mt-4 t-h1 text-[#111]"
               style={{ letterSpacing: "-0.025em" }}
             >
-              It already knows my system.
+              Type a sentence. Watch the canvas come alive.
             </h2>
             <p className="mt-3 t-body text-[#3C3C43]">
-              Thirty seconds from empty canvas to an agent reading your system by name. No pasted architecture.
+              Thirty seconds from one sentence to a graph any agent can read. No pasted architecture. No drawn boxes.
             </p>
           </div>
 
@@ -288,10 +305,14 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+
+          <p className="mt-10 t-body text-[#111] font-semibold">
+            It already knows my system.
+          </p>
         </div>
       </section>
 
-      {/* ── 4. FEATURE DEEP-DIVE BLOCKS ─────────────────────────────────────── */}
+      {/* FEATURE DEEP-DIVE BLOCKS */}
       <section className="surface-subtle border-b border-black/[0.06] py-24">
         <div className="mx-auto max-w-6xl px-6 flex flex-col gap-24">
           {FEATURE_BLOCKS.map((block, idx) => (
@@ -345,20 +366,20 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. TEMPLATES PREVIEW ────────────────────────────────────────────── */}
+      {/* STARTERS PREVIEW */}
       <section className="border-b border-black/[0.06] bg-white py-24">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
             <div className="max-w-xl">
-              <SectionBadge label="Templates" />
+              <SectionBadge label="Starters" />
               <h2
                 className="mt-4 t-h1 text-[#111]"
                 style={{ letterSpacing: "-0.025em" }}
               >
-                Start from a proven blueprint.
+                Start with a sentence.
               </h2>
               <p className="mt-3 t-body text-[#3C3C43]">
-                Battle-tested system shapes you can fork in seconds.
+                Each card opens with a prompt that builds itself in seconds.
               </p>
             </div>
             <TrackedLink
@@ -420,7 +441,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 6. CUSTOMER PROOF ───────────────────────────────────────────────── */}
+      {/* CUSTOMER PROOF */}
       <section className="border-b border-black/[0.06] bg-white py-20">
         <div className="mx-auto max-w-6xl px-6">
           <div className="rounded-[16px] border border-black/[0.08] bg-white px-8 py-12">
@@ -431,9 +452,9 @@ export default async function HomePage() {
                   className="mt-5 t-h2 text-[#111]"
                   style={{ letterSpacing: "-0.02em", fontSize: 26, lineHeight: 1.3 }}
                 >
-                  &quot;Pipes is the first tool where our architecture diagrams
-                  stop drifting from reality. Our agents read the same system our
-                  engineers do.&quot;
+                  &quot;I typed a sentence and the system appeared. My team
+                  reviewed it on the canvas. Claude reads the same graph through
+                  one token.&quot;
                 </blockquote>
                 <div className="mt-5 flex items-center gap-3">
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#111] text-white t-label font-semibold">
@@ -456,7 +477,7 @@ export default async function HomePage() {
                     87%
                   </span>
                   <span className="t-caption text-[#8E8E93]">
-                    less re-prompting
+                    less re-drawing
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -487,7 +508,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 7. FINAL CTA — flat surface-inverse ─────────────────────────────── */}
+      {/* FINAL CTA */}
       <section className="surface-inverse">
         <div className="mx-auto max-w-6xl px-6 py-24 text-center">
           <SectionBadge tone="neutral" label="Get started" />
@@ -500,11 +521,10 @@ export default async function HomePage() {
               fontWeight: 700,
             }}
           >
-            Make your architecture executable.
+            Describe your system. Watch it build itself.
           </h2>
           <p className="mt-5 mx-auto max-w-xl t-body text-[#C7C7CC]">
-            A free workspace and your first system are two clicks away. Bring your
-            team. Bring your agents.
+            A free workspace and your first prompt are two clicks away. Type a sentence. Watch it draw.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -514,7 +534,7 @@ export default async function HomePage() {
               metadata={{ location: "final_cta" }}
             >
               <span className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
-                Create free workspace
+                Start free
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
             </TrackedLink>
@@ -524,7 +544,7 @@ export default async function HomePage() {
               metadata={{ location: "final_cta_secondary" }}
             >
               <span className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-transparent px-5 h-11 t-label font-semibold text-white hover:border-white/40 hover:bg-white/[0.04] transition-colors">
-                Explore templates
+                Explore starters
               </span>
             </TrackedLink>
           </div>

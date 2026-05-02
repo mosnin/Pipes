@@ -9,7 +9,7 @@ import { Menu, X, ArrowRight } from "lucide-react";
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
-  { href: "/templates",  label: "Templates" },
+  { href: "/templates",  label: "Starters"  },
   { href: "/use-cases",  label: "Customers" },
   { href: "/protocol",   label: "Protocol"  },
   { href: "/pricing",    label: "Pricing"   },
@@ -22,7 +22,7 @@ const FOOTER_COLUMNS = [
     heading: "Product",
     links: [
       { href: "/pricing",     label: "Pricing"      },
-      { href: "/templates",   label: "Templates"    },
+      { href: "/templates",   label: "Starters"     },
       { href: "/changelog",   label: "Changelog"    },
       { href: "/protocol",    label: "Protocol"     },
     ],
@@ -265,7 +265,7 @@ function MarketingFooter() {
             </Link>
 
             <p className="t-caption text-[#8E8E93] leading-relaxed max-w-[14rem]">
-              One map your team and your agents both read.
+              Describe your system. Watch it build itself.
             </p>
           </div>
 

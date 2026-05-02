@@ -19,6 +19,16 @@ const TOC_SECTIONS = [
     ],
   },
   {
+    title: "AI builder",
+    items: [
+      { id: "ai-builder",    label: "How the AI builder works" },
+      { id: "ai-tools",      label: "The five tools" },
+      { id: "ai-evals",      label: "Eval gates" },
+      { id: "ai-context",    label: "Tailored context" },
+      { id: "ai-runtime",    label: "Where this runs" },
+    ],
+  },
+  {
     title: "Authoring",
     items: [
       { id: "canvas",        label: "The canvas" },
@@ -68,9 +78,9 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
   );
 }
 
-function H3({ children }: { children: React.ReactNode }) {
+function H3({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
-    <h3 className="t-h3 text-[#111] mt-8 mb-2" style={{ letterSpacing: "-0.01em" }}>
+    <h3 id={id} className="t-h3 text-[#111] scroll-mt-24 mt-8 mb-2" style={{ letterSpacing: "-0.01em" }}>
       {children}
     </h3>
   );
@@ -172,10 +182,11 @@ export default function DocsPage() {
               workspace. Workspaces are your collaboration boundary - billing and
               access are scoped here.
             </P>
-            <H3>2. Pick a template</H3>
+            <H3>2. Pick a starter or describe your own</H3>
             <P>
-              From the templates gallery, fork a starter system that matches your
-              workload. Templates are pre-validated and come with sensible defaults.
+              From the starters gallery, open a card. The chat input opens
+              pre-filled with a prompt. Press return and the agent draws the
+              system. Or open an empty canvas and type your own sentence.
             </P>
             <CodeBlock>{`# Or instantiate from CLI
 pipes templates instantiate multi-agent-research \\
@@ -206,6 +217,63 @@ pipes templates instantiate multi-agent-research \\
             <P>
               Pipes connect ports. A pipe carries a typed payload and may attach
               policy, retry, and observability metadata.
+            </P>
+
+            <H2 id="ai-builder">How the AI builder works</H2>
+            <P>
+              You type a sentence. The agent reads your prompt, writes a plan,
+              then draws nodes, ports, and pipes on the canvas in front of you.
+              The chat is the input. The canvas is the output. There is no
+              second window.
+            </P>
+            <P>
+              The agent is plan-first. Before any tool call, it emits a written
+              plan: it restates the system in your framing, names every node
+              and pipe, and gives one sentence on why this layout earns its
+              place. Then it builds. One plan per turn.
+            </P>
+
+            <H3 id="ai-tools">The five tools</H3>
+            <P>
+              The agent has five tools, dispatched through the same MCP layer
+              that serves your team:
+            </P>
+            <CodeBlock>{`add_node      Add one typed node to the canvas
+add_pipe      Connect two existing nodes with a typed pipe
+update_node   Rename, rewrite, or relocate a node
+delete_node   Remove a node and cascade its pipes
+validate      Run the static validator and read the report`}</CodeBlock>
+            <P>
+              That is the full surface. No browse. No search. No fork. Each
+              turn is hard-capped at 30 tool calls and 60 seconds of wall-clock
+              time.
+            </P>
+
+            <H3 id="ai-evals">Eval gates</H3>
+            <P>
+              Every action runs through deterministic checks before it lands.
+              The agent calls <InlineCode>add_node</InlineCode> before{" "}
+              <InlineCode>add_pipe</InlineCode>. It cannot connect what does
+              not exist. It calls <InlineCode>validate</InlineCode> at most
+              once per turn, at the end, before sending the final message.
+              Manual edits during a build always win: if you grab a node, the
+              agent yields.
+            </P>
+
+            <H3 id="ai-context">Tailored context</H3>
+            <P>
+              The agent's prompt is tailored per turn. It knows the engineer's
+              name, the team, prior systems in the workspace, the current
+              system name, and the current canvas state. If nodes exist, it
+              iterates. It edits only what the prompt asks. It does not redraw.
+              If the canvas is empty, it builds from scratch.
+            </P>
+
+            <H3 id="ai-runtime">Where this runs</H3>
+            <P>
+              The agent runs in a Modal sandbox using the OpenAI Agents SDK.
+              You do not pick a model and you do not see the runtime. You see
+              the canvas change.
             </P>
 
             <H2 id="canvas">The canvas</H2>

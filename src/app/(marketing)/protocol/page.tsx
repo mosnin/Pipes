@@ -47,12 +47,12 @@ const CAPABILITIES: readonly Capability[] = [
   },
   {
     cap: "templates:read",
-    desc: "List the catalog of starter templates.",
+    desc: "List the catalog of starters.",
     icon: <Boxes size={16} aria-hidden="true" />,
   },
   {
     cap: "templates:instantiate",
-    desc: "Fork a template into a new system.",
+    desc: "Open a starter prompt in a new system.",
     icon: <PackageOpen size={16} aria-hidden="true" />,
   },
   {
@@ -160,7 +160,7 @@ export default function ProtocolPage() {
             Your map, behind a Bearer token.
           </h1>
           <p className="mt-6 t-body text-[#3C3C43] max-w-2xl">
-            One map your team and your agents both read, served to any agent through one token-scoped endpoint.
+            The graph the in-product agent built is the same MCP-readable artifact a human would draw. Hand any agent a token. It reads the same map your team does.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -303,8 +303,8 @@ export default function ProtocolPage() {
                 code: QUICKSTART_LIST,
               },
               {
-                title: "Instantiate a template",
-                body: "Fork a starter blueprint into a fresh, validated system.",
+                title: "Open a starter",
+                body: "Open one of the starters as a fresh, validated system.",
                 code: QUICKSTART_INSTANTIATE,
               },
               {
@@ -348,8 +348,7 @@ export default function ProtocolPage() {
             Plug your agent into a real architecture.
           </h2>
           <p className="mt-4 t-body text-[#3C3C43]">
-            Mint a token, fork a template, and let your agents read the system the
-            way your team does.
+            Describe a system in one sentence. Mint a token. Hand it to any agent. They read the same graph your team does.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link

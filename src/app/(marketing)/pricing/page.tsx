@@ -43,9 +43,9 @@ const PLANS: readonly Plan[] = [
     ctaEvent: "pricing_cta_clicked",
     ctaMeta: { plan: "starter", source: "pricing_cards" },
     features: [
+      "50 builds per month",
       "Up to 3 systems",
-      "Single workspace",
-      "Community templates",
+      "Community support",
       "Validation and simulation",
       "Local export",
     ],
@@ -55,7 +55,7 @@ const PLANS: readonly Plan[] = [
     name: "Team",
     price: "$12",
     period: "per seat / month",
-    tagline: "For teams collaborating on shared system memory.",
+    tagline: "For teams shipping multi-agent systems together.",
     highlighted: true,
     ctaLabel: "Start 14-day trial",
     ctaTone: "primary",
@@ -63,12 +63,12 @@ const PLANS: readonly Plan[] = [
     ctaEvent: "pricing_cta_clicked",
     ctaMeta: { plan: "team", source: "pricing_cards" },
     features: [
+      "Unlimited builds per month",
       "Unlimited systems",
       "Up to 10 collaborators",
       "Priority support",
       "SSO and audit log",
       "MCP and REST protocol access",
-      "Pro template library",
     ],
   },
   {
@@ -76,7 +76,7 @@ const PLANS: readonly Plan[] = [
     name: "Enterprise",
     price: "Custom",
     period: "talk to sales",
-    tagline: "For teams that need SSO, SCIM, and a signed DPA.",
+    tagline: "For teams that need SSO, SAML, and a signed DPA.",
     highlighted: false,
     ctaLabel: "Contact sales",
     ctaTone: "secondary",
@@ -84,10 +84,10 @@ const PLANS: readonly Plan[] = [
     ctaEvent: "pricing_cta_clicked",
     ctaMeta: { plan: "enterprise", source: "pricing_cards" },
     features: [
+      "Unlimited builds per month",
       "Unlimited systems and workspaces",
-      "SSO, SCIM, and audit log streaming",
-      "SOC 2 Type II + DPA",
-      "Self-hosted Convex option",
+      "SSO, SAML, SCIM, audit log streaming",
+      "SOC 2 Type II + custom DPA",
       "Dedicated support engineer",
       "99.9% uptime SLA",
     ],
@@ -112,8 +112,9 @@ const COMPARISON: readonly ComparisonGroup[] = [
   {
     group: "Workspace",
     rows: [
-      { feature: "Systems",                starter: "3",     team: "25",   enterprise: "Unlimited" },
-      { feature: "Collaborators",          starter: "1",     team: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Agent builds / month",   starter: "50",    team: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Systems",                starter: "3",     team: "Unlimited", enterprise: "Unlimited" },
+      { feature: "Collaborators",          starter: "1",     team: "10",        enterprise: "Unlimited" },
       { feature: "Version history",        starter: false,   team: true,    enterprise: true },
       { feature: "Comments and review",    starter: false,   team: true,    enterprise: true },
     ],
@@ -158,13 +159,19 @@ const FAQS = [
     id: "faq-free",
     question: "Is the Starter plan really free?",
     answer:
-      "Yes, with no time limit. Build up to 3 systems, run validations, and export locally. Upgrade when you outgrow it.",
+      "Yes, with no time limit. Run up to 50 agent builds a month, hold up to 3 systems, validate, and export. Upgrade when you outgrow it.",
+  },
+  {
+    id: "faq-builds",
+    question: "What counts as an agent build?",
+    answer:
+      "Each prompt you send to the agent that draws nodes or pipes counts as one build. Editing the canvas by hand does not count.",
   },
   {
     id: "faq-workspace",
     question: "What counts as a workspace?",
     answer:
-      "A workspace is a shared environment where you and your collaborators design systems together. Team plans bill per active seat.",
+      "A workspace is a shared environment where you and your team describe systems together. Team plans bill per active seat.",
   },
   {
     id: "faq-upgrade",

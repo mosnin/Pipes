@@ -40,6 +40,7 @@ interface FeatureRow {
 
 const featureMatrices: Record<string, ReadonlyArray<Omit<FeatureRow, "id">>> = {
   figma: [
+    { feature: "AI builds the graph from a description", pipes: true, competitor: false },
     { feature: "Structured graph editor", pipes: true, competitor: "Frame-based" },
     { feature: "AI-native editing", pipes: true, competitor: "Plugins only" },
     { feature: "Protocol / API surface", pipes: true, competitor: false },
@@ -50,6 +51,7 @@ const featureMatrices: Record<string, ReadonlyArray<Omit<FeatureRow, "id">>> = {
     { feature: "Team collaboration", pipes: true, competitor: true },
   ],
   miro: [
+    { feature: "AI builds the graph from a description", pipes: true, competitor: false },
     { feature: "Structured graph editor", pipes: true, competitor: "Freeform canvas" },
     { feature: "AI-native editing", pipes: true, competitor: "Assist (limited)" },
     { feature: "Protocol / API surface", pipes: true, competitor: false },
@@ -60,6 +62,7 @@ const featureMatrices: Record<string, ReadonlyArray<Omit<FeatureRow, "id">>> = {
     { feature: "Team collaboration", pipes: true, competitor: true },
   ],
   lucidchart: [
+    { feature: "AI builds the graph from a description", pipes: true, competitor: false },
     { feature: "Structured graph editor", pipes: true, competitor: "Shape-based" },
     { feature: "AI-native editing", pipes: true, competitor: "Diagram generation" },
     { feature: "Protocol / API surface", pipes: true, competitor: false },
@@ -70,6 +73,7 @@ const featureMatrices: Record<string, ReadonlyArray<Omit<FeatureRow, "id">>> = {
     { feature: "Team collaboration", pipes: true, competitor: true },
   ],
   "ai-generated-diagrams": [
+    { feature: "AI builds the graph from a description", pipes: true, competitor: "One-shot picture" },
     { feature: "Structured graph editor", pipes: true, competitor: false },
     { feature: "AI-native editing", pipes: true, competitor: "Generation only" },
     { feature: "Protocol / API surface", pipes: true, competitor: false },
@@ -82,6 +86,7 @@ const featureMatrices: Record<string, ReadonlyArray<Omit<FeatureRow, "id">>> = {
 };
 
 const defaultMatrix: ReadonlyArray<Omit<FeatureRow, "id">> = [
+  { feature: "AI builds the graph from a description", pipes: true, competitor: false },
   { feature: "Structured graph editor", pipes: true, competitor: false },
   { feature: "AI-native editing", pipes: true, competitor: false },
   { feature: "Protocol / API surface", pipes: true, competitor: false },
@@ -196,7 +201,9 @@ export default async function CompareDetailPage({
             </span>
           </div>
           <h1 className="t-h1 text-[#111]">Pipes vs {competitorName}.</h1>
-          <p className="t-body text-[#3C3C43]">{entry.summary}</p>
+          <p className="t-body text-[#3C3C43]">
+            Pipes is the only one where you describe the system in plain English. {entry.summary}
+          </p>
         </header>
 
         {/* Stats */}
