@@ -462,5 +462,22 @@ export default defineSchema({
     monthKey: v.string(),
     buildsUsed: v.number(),
     updatedAt: v.string()
-  }).index("by_user_month", ["userId", "monthKey"])
+  }).index("by_user_month", ["userId", "monthKey"]),
+  feedback_entries: defineTable({
+    userId: v.string(),
+    workspaceId: v.optional(v.string()),
+    kind: v.string(),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    conversationId: v.optional(v.string()),
+    turnId: v.optional(v.string()),
+    verdict: v.optional(v.string()),
+    score: v.optional(v.number()),
+    surface: v.optional(v.string()),
+    text: v.optional(v.string()),
+    note: v.optional(v.string()),
+    createdAt: v.string()
+  })
+    .index("by_user", ["userId"])
+    .index("by_kind", ["kind"])
 });

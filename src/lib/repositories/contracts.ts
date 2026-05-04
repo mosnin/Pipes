@@ -113,6 +113,26 @@ export type FeedbackStatus = "new" | "reviewing" | "closed";
 export type FeedbackCategory = "bug" | "ux" | "feature_request" | "reliability" | "billing" | "other";
 export type FeedbackSeverity = "low" | "medium" | "high";
 
+export type FeedbackEntryKind = "thumbs" | "nps" | "free_text";
+export type FeedbackVerdict = "up" | "down";
+
+export type FeedbackEntryRecord = {
+  id: string;
+  userId: string;
+  workspaceId?: string;
+  kind: FeedbackEntryKind;
+  targetType?: string;
+  targetId?: string;
+  conversationId?: string;
+  turnId?: string;
+  verdict?: FeedbackVerdict;
+  score?: number;
+  surface?: string;
+  text?: string;
+  note?: string;
+  createdAt: string;
+};
+
 export interface FeedbackRepository {
   create(input: {
     workspaceId: string;
@@ -145,6 +165,8 @@ export interface FeedbackRepository {
     updatedAt: string;
   }>>;
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
+  record(input: Omit<FeedbackEntryRecord, "id" | "createdAt">): Promise<FeedbackEntryRecord>;
+  listEntries(opts?: { userId?: string; kind?: FeedbackEntryKind; limit?: number }): Promise<FeedbackEntryRecord[]>;
 }
 
 export type AgentTurnToolCallRecord = {

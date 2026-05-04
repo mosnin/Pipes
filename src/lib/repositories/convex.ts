@@ -221,6 +221,63 @@ export function createConvexRepositories(): RepositorySet {
           status: input.status,
           updatedBy: input.updatedBy as never
         });
+      },
+      async record(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.recordFeedback, {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          kind: input.kind,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          conversationId: input.conversationId,
+          turnId: input.turnId,
+          verdict: input.verdict,
+          score: input.score,
+          surface: input.surface,
+          text: input.text,
+          note: input.note
+        });
+        return {
+          id: String(row._id),
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          kind: row.kind,
+          targetType: row.targetType,
+          targetId: row.targetId,
+          conversationId: row.conversationId,
+          turnId: row.turnId,
+          verdict: row.verdict,
+          score: row.score,
+          surface: row.surface,
+          text: row.text,
+          note: row.note,
+          createdAt: row.createdAt
+        };
+      },
+      async listEntries(opts) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listFeedback, {
+          userId: opts?.userId,
+          kind: opts?.kind,
+          limit: opts?.limit
+        });
+        return rows.map((row: any) => ({
+          id: String(row._id),
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          kind: row.kind,
+          targetType: row.targetType,
+          targetId: row.targetId,
+          conversationId: row.conversationId,
+          turnId: row.turnId,
+          verdict: row.verdict,
+          score: row.score,
+          surface: row.surface,
+          text: row.text,
+          note: row.note,
+          createdAt: row.createdAt
+        }));
       }
     },
     presence: {

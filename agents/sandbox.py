@@ -45,6 +45,7 @@ def _build_image() -> Any:
         .pip_install(
             "openai-agents>=0.0.18",
             "openai>=1.40.0",
+            "anthropic>=0.39",
             "pydantic>=2.0",
             "httpx>=0.27",
             "sse-starlette>=2.1",
@@ -73,6 +74,10 @@ async def _stream_for_request(body: dict[str, Any]) -> AsyncIterator[bytes]:
     systemName, existingNodesCount, existingPipesCount). The Pydantic model
     accepts both camelCase aliases (from the Next.js route) and snake_case
     field names. Unknown fields are ignored.
+
+    Provider selection: the body may include `provider: "openai"` or
+    `provider: "anthropic"`. When unset, `PIPES_AGENT_PROVIDER` env var is
+    consulted; the final fallback is `openai`.
     """
     # Lazy import so tests can load this module without the rest of the package
     # resolving. Modal containers will resolve once the image boots.

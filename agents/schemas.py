@@ -36,6 +36,11 @@ class BuildRequest(BaseModel):
     existing_nodes_count: int = Field(default=0, alias="existingNodesCount")
     existing_pipes_count: int = Field(default=0, alias="existingPipesCount")
 
+    # Optional provider override. None means "use the env default" which falls
+    # back to OpenAI. Validated against the Literal at the schema level so the
+    # builder never sees a typo.
+    provider: Optional[Literal["openai", "anthropic"]] = None
+
     model_config = {"populate_by_name": True}
 
 

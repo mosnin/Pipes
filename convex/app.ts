@@ -807,6 +807,43 @@ export const getAgentRunnerMetric = query({
   }
 });
 
+export const recordFeedback = mutation({
+  args: {
+    userId: v.string(),
+    workspaceId: v.optional(v.string()),
+    kind: v.string(),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    conversationId: v.optional(v.string()),
+    turnId: v.optional(v.string()),
+    verdict: v.optional(v.string()),
+    score: v.optional(v.number()),
+    surface: v.optional(v.string()),
+    text: v.optional(v.string()),
+    note: v.optional(v.string())
+  },
+  handler: async (ctx, args) => {
+    const id = await ctx.db.insert("feedback_entries", { ...args, createdAt: now() });
+    return ctx.db.get(id);
+  }
+});
+
+export const listFeedback = query({
+  args: { userId: v.optional(v.string()), kind: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const rows = args.userId
+      ? await ctx.db.query("feedback_entries").withIndex("by_user", (q) => q.eq("userId", args.userId!)).collect()
+      : args.kind
+        ? await ctx.db.query("feedback_entries").withIndex("by_kind", (q) => q.eq("kind", args.kind!)).collect()
+        : await ctx.db.query("feedback_entries").collect();
+    const filtered = rows
+      .filter((row) => !args.kind || row.kind === args.kind)
+      .filter((row) => !args.userId || row.userId === args.userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    return filtered.slice(0, args.limit ?? 200);
+  }
+});
+
 export const incrementAgentRunnerMetric = mutation({
   args: { userId: v.string(), workspaceId: v.string(), monthKey: v.string(), delta: v.number() },
   handler: async (ctx, args) => {

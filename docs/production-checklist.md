@@ -4,7 +4,37 @@ This is the one-page deploy. Follow it top to bottom. Each step ends
 with a verification command and what you should see. If a step's
 output diverges, jump to the troubleshooting note at the bottom.
 
-## 0. Prerequisites
+## 0. Preflight
+
+Before anything else, run the preflight check:
+
+```bash
+python agents/preflight.py
+```
+
+# Expected output:
+```
+All preflight checks passed.
+```
+
+If any check fails, the script exits with a numeric code and a
+fix-this message naming the failing prerequisite. Address the failure
+and re-run. Exit codes:
+
+| Code | Meaning                                            |
+|------|----------------------------------------------------|
+| 10   | Python version too old (need 3.11+)                |
+| 11   | One or more required env vars missing              |
+| 12   | A required Python dependency cannot be imported    |
+| 13   | `modal token list` failed (CLI not authenticated)  |
+| 14   | OpenAI API rejected the key (HTTP 401)             |
+| 15   | OpenAI API check could not reach the network       |
+| 16   | The Modal secret `pipes-agent-secrets` is missing  |
+
+`bash agents/deploy.sh` runs this check as its Step 0 and refuses to
+deploy until it returns 0.
+
+## 1. Prerequisites
 
 - A Modal account (https://modal.com). Free tier covers the smoke
   test; sustained traffic needs a paid plan.
@@ -24,7 +54,7 @@ Web authentication started. Open the URL in your browser.
 Token created.
 ```
 
-## 1. Set Modal secrets
+## 2. Set Modal secrets
 
 The Modal app reads one secret named `pipes-agent-secrets`
 containing `OPENAI_API_KEY`.
@@ -40,7 +70,7 @@ Name                  Last used    Created
 pipes-agent-secrets   never        a few seconds ago
 ```
 
-## 2. Deploy the Modal endpoint
+## 3. Deploy the Modal endpoint
 
 ```bash
 bash agents/deploy.sh
@@ -53,7 +83,7 @@ Name              State    Created       Stopped
 pipes-agent       deployed a moment ago  -
 ```
 
-## 3. Capture the endpoint URL
+## 4. Capture the endpoint URL
 
 The deploy command prints the function URL. If you missed it:
 
@@ -70,11 +100,11 @@ the rest of the steps.
 serve_modal => https://<workspace>--pipes-agent-serve-modal.modal.run
 ```
 
-## 4. Set Next.js env in production
+## 5. Set Next.js env in production
 
 In Vercel (or your host), set:
 
-- `PIPES_AGENT_ENDPOINT_URL=<from step 3>`
+- `PIPES_AGENT_ENDPOINT_URL=<from step 4>`
 - `OPENAI_AGENTS_MODEL=gpt-4o-mini` (optional override)
 - `CLERK_SECRET_KEY=<from Clerk dashboard>`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<from Clerk dashboard>`
@@ -97,7 +127,7 @@ NEXT_PUBLIC_CONVEX_URL            Encrypted   Production
 PIPES_USE_MOCKS                   Encrypted   Production
 ```
 
-## 5. Run the live eval
+## 6. Run the live eval
 
 From your laptop, with `OPENAI_API_KEY` exported (the harness
 checks the var as a guardrail against a missing Modal secret):
@@ -121,7 +151,7 @@ Exit code is `0` on success. Full report at
 start < 1500 ms, p95 wall clock < 30 s) fails, the script exits 1.
 Read the table and fix the regression before continuing.
 
-## 6. Smoke test from a real client
+## 7. Smoke test from a real client
 
 A direct curl confirms the endpoint streams SSE end to end:
 
@@ -147,7 +177,7 @@ event: done
 data: {"conversationId":"...","turnId":"..."}
 ```
 
-## 7. Rollback
+## 8. Rollback
 
 If the production endpoint misbehaves, set in the host env:
 
@@ -186,11 +216,11 @@ Stopped app pipes-agent.
 
 ## Troubleshooting
 
-- `modal secret list` shows no `pipes-agent-secrets`: re-run step 1.
-- `modal app list` shows `pipes-agent` as `stopped` after step 2:
+- `modal secret list` shows no `pipes-agent-secrets`: re-run step 2.
+- `modal app list` shows `pipes-agent` as `stopped` after step 3:
   re-run with `MODAL_LOGLEVEL=DEBUG bash agents/deploy.sh` and check
   the last error.
-- `curl` in step 6 returns HTTP 500: a Modal dep is missing. Confirm
+- `curl` in step 7 returns HTTP 500: a Modal dep is missing. Confirm
   `agents/requirements.txt` lines match the `_build_image()` pip
   list in `agents/sandbox.py`, then redeploy.
 - Live eval reports cold start p95 above 1500 ms: the function is

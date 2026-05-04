@@ -37,6 +37,16 @@ from .plan_evaluator import (
     evaluate_action,
     evaluate_plan,
 )
+from .providers import (
+    AgentProvider,
+    DEFAULT_OPENAI_MODEL,
+    ProviderConfigError,
+    ProviderEvent,
+    _tool_schemas_anthropic,
+    build_provider,
+    resolve_model,
+    resolve_provider,
+)
 from .schemas import (
     DEFAULT_FIRST_NODE_X,
     DEFAULT_FIRST_NODE_Y,
@@ -55,7 +65,9 @@ from .tools import (
 
 
 SYSTEM_PROMPT_PATH = Path(__file__).parent / "system_prompt.md"
-DEFAULT_MODEL = os.environ.get("OPENAI_AGENTS_MODEL", "gpt-4o-mini")
+# Default model preserved for backwards compatibility; the provider layer now
+# owns model selection per provider via resolve_model().
+DEFAULT_MODEL = os.environ.get("OPENAI_AGENTS_MODEL", DEFAULT_OPENAI_MODEL)
 
 
 def load_system_prompt() -> str:
@@ -264,13 +276,33 @@ async def run_turn_stream(
         if aborted():
             return
 
-    runner_iter = (
-        runner(request=request, dispatch=dispatch, model=model or DEFAULT_MODEL)
-        if runner is not None
-        else _run_streaming_with_sdk(
+    # If a runner is injected (tests), use it directly. Otherwise pick a
+    # provider and drive it. The provider layer normalizes both OpenAI's
+    # Agents SDK and the Anthropic SDK into the same Step shape.
+    if runner is not None:
+        runner_iter = runner(
             request=request, dispatch=dispatch, model=model or DEFAULT_MODEL
         )
-    )
+    else:
+        provider_name = resolve_provider(request.provider)
+        chosen_model = model or resolve_model(provider_name)
+        try:
+            provider = build_provider(provider_name, model=chosen_model)
+        except ProviderConfigError as exc:
+            yield sse_event(
+                "error",
+                {
+                    "code": "model_unavailable",
+                    "message": str(exc),
+                    "retryable": False,
+                },
+            )
+            return
+        runner_iter = _run_streaming_with_provider(
+            request=request,
+            dispatch=dispatch,
+            provider=provider,
+        )
 
     final_message_sent = planner is not None
     plan_received_from_runner = planner is not None
@@ -478,38 +510,198 @@ async def run_turn_stream(
     )
 
 
-# ---- The OpenAI Agents SDK shim ----
+# ---- Provider-driven runner ----
 
 
-async def _run_streaming_with_sdk(
+async def _run_streaming_with_provider(
     *,
     request: BuildRequest,
     dispatch: dict[str, Callable[..., dict[str, Any]]],
-    model: str,
+    provider: AgentProvider,
 ) -> AsyncIterator[Step]:
-    """Drive the OpenAI Agents SDK and translate its events to Step records.
+    """Drive an AgentProvider and yield Step records.
 
-    The SDK API has shifted over the 0.x line. The minimum we need is:
-      * Define an Agent with instructions, model, and a list of tools.
-      * Call a streaming Runner that yields per-event records as the model runs.
-      * Read tool_call, tool_result, and final message from those events.
+    Provider-agnostic: works for both OpenAIProvider (which delegates tool
+    execution to the SDK's loop) and AnthropicProvider (which round-trips
+    tool results back through `submit_tool_result`).
 
-    If the local SDK exposes a different surface, replace the body of this
-    function. Everything else in this file stays put.
+    The plan-first contract requires a `plan` step before any `tool_call`;
+    we synthesize that from the model's first text output if the provider
+    doesn't emit one explicitly.
+    """
+    system_prompt = render_system_prompt(request)
+    user_prompt = request.prompt
+
+    # The OpenAI provider needs the function-tool wrappers; Anthropic needs
+    # raw schemas. Build the right one based on the provider class name.
+    tools_payload: list[Any]
+    is_openai = provider.__class__.__name__ == "OpenAIProvider"
+    if is_openai:
+        tools_payload = _build_openai_function_tools(dispatch)
+    else:
+        tools_payload = _tool_schemas_anthropic()
+
+    plan_emitted = False
+    text_buffer: list[str] = []
+
+    async for event in provider.run(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        tools=tools_payload,
+    ):
+        if event.kind == "text_delta":
+            text_buffer.append(event.text or "")
+            # Emit the plan once we have enough text to look like a plan.
+            # Heuristic: first text block before any tool call IS the plan.
+            if not plan_emitted and event.text:
+                # Defer emitting until we see the next tool call or stop, so
+                # we can ship the full text. We accumulate here.
+                pass
+            continue
+
+        if event.kind == "tool_call":
+            if not plan_emitted:
+                plan_text = "".join(text_buffer).strip()
+                text_buffer = []
+                if plan_text:
+                    yield {"kind": "plan", "text": plan_text}
+                plan_emitted = True
+            yield {
+                "kind": "tool_call",
+                "id": event.tool_id or _new_id("tc"),
+                "tool_name": event.tool_name or "unknown",
+                "arguments": event.tool_args or {},
+            }
+            # For OpenAI, the SDK dispatches the tool internally and the
+            # next event will be a separate tool_result-style event. For
+            # Anthropic, we dispatch here and submit the result back.
+            if not is_openai:
+                tool_id = event.tool_id or ""
+                args = event.tool_args or {}
+                fn = dispatch.get(event.tool_name or "")
+                if fn is None:
+                    yield {
+                        "kind": "tool_result",
+                        "id": tool_id,
+                        "ok": False,
+                        "error": f"Unknown tool {event.tool_name}",
+                    }
+                    await provider.submit_tool_result(
+                        tool_id, {"error": f"Unknown tool {event.tool_name}"}
+                    )
+                    continue
+                try:
+                    result = fn(**_camel_to_snake_args(event.tool_name or "", args))
+                except Exception as exc:  # noqa: BLE001
+                    err_payload = {"error": str(exc)}
+                    yield {
+                        "kind": "tool_result",
+                        "id": tool_id,
+                        "ok": False,
+                        "error": str(exc),
+                    }
+                    await provider.submit_tool_result(tool_id, err_payload)
+                    continue
+                step: Step = {
+                    "kind": "tool_result",
+                    "id": tool_id,
+                    "ok": True,
+                }
+                if isinstance(result, dict):
+                    if "action" in result:
+                        step["action"] = result
+                    elif "ok" in result and "errors" in result:
+                        step["data"] = result
+                    else:
+                        step["data"] = result
+                yield step
+            continue
+
+        if event.kind == "tool_result_request":
+            # Anthropic signals that it is awaiting a tool result. The
+            # builder already called submit_tool_result above; nothing else
+            # to emit here.
+            continue
+
+        if event.kind == "stop":
+            text = "".join(text_buffer).strip()
+            text_buffer = []
+            if text:
+                if not plan_emitted:
+                    yield {"kind": "plan", "text": text}
+                    plan_emitted = True
+                else:
+                    yield {"kind": "message", "text": text}
+            if event.usage:
+                # v1 logs usage; later phases will persist it.
+                import logging
+                logging.getLogger(__name__).info(
+                    "agent_turn_usage",
+                    extra={"usage": event.usage, "model": provider.model},
+                )
+            return
+
+    # Provider exhausted without a stop event - flush any pending text.
+    text = "".join(text_buffer).strip()
+    if text:
+        if not plan_emitted:
+            yield {"kind": "plan", "text": text}
+        else:
+            yield {"kind": "message", "text": text}
+
+
+def _camel_to_snake_args(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+    """Translate Anthropic's camelCase tool args to the snake_case kwargs the
+    Python tool dispatch expects. Each tool has a fixed mapping; unknown keys
+    pass through unchanged.
+    """
+    mapping_by_tool = {
+        "add_node": {
+            "systemId": "system_id",
+            "type": "type",
+            "title": "title",
+            "description": "description",
+            "x": "x",
+            "y": "y",
+        },
+        "add_pipe": {
+            "systemId": "system_id",
+            "fromNodeId": "from_node_id",
+            "toNodeId": "to_node_id",
+        },
+        "update_node": {
+            "nodeId": "node_id",
+            "title": "title",
+            "description": "description",
+            "position": "position",
+            "config": "config",
+        },
+        "delete_node": {"nodeId": "node_id"},
+        "validate": {"systemId": "system_id"},
+    }
+    rules = mapping_by_tool.get(tool_name, {})
+    out: dict[str, Any] = {}
+    for k, v in args.items():
+        out[rules.get(k, k)] = v
+    return out
+
+
+def _build_openai_function_tools(
+    dispatch: dict[str, Callable[..., dict[str, Any]]],
+) -> list[Any]:
+    """Build the function_tool wrappers the OpenAI Agents SDK expects.
+
+    Lazy imports `agents.tool.function_tool` so unit tests that swap in a
+    stub runner do not need the SDK installed.
     """
     try:
-        # Lazy import: keeps unit tests usable without the SDK installed.
-        from agents import Agent, Runner  # type: ignore[import-not-found]
         from agents.tool import function_tool  # type: ignore[import-not-found]
     except Exception as import_error:  # noqa: BLE001
-        # Surface a helpful error rather than a stack trace.
         raise RuntimeError(
             "openai-agents SDK not installed. Add `openai-agents` to "
             "requirements.txt or run with a stub runner."
         ) from import_error
 
-    # Wrap each Python tool as an SDK tool. The decorator generates the JSON
-    # schema from the function's signature.
     @function_tool
     def add_node(
         systemId: str,
@@ -565,59 +757,7 @@ async def _run_streaming_with_sdk(
         """Run lightweight graph invariants. Read-only."""
         return dispatch["validate"](system_id=systemId)
 
-    agent = Agent(
-        name="Pipes Builder",
-        instructions=render_system_prompt(request),
-        model=model,
-        tools=[add_node, add_pipe, update_node, delete_node, validate],
-    )
-
-    # The Agents SDK Runner.run_streamed (or stream()) returns an awaitable that
-    # yields events. We normalize each event into a Step dict.
-    stream = Runner.run_streamed(agent, request.prompt)
-
-    async for raw_event in stream.stream_events():
-        step = _translate_sdk_event(raw_event)
-        if step is not None:
-            yield step
-        await asyncio.sleep(0)  # yield to the event loop so SSE flushes promptly
-
-
-def _translate_sdk_event(raw_event: Any) -> Optional[Step]:
-    """Map an SDK event to our Step shape. Tolerant of SDK version drift.
-
-    Returns None for events we ignore.
-    """
-    name = getattr(raw_event, "type", None) or getattr(raw_event, "event", None)
-    if name == "tool_called" or name == "tool_call" or name == "function_call":
-        return {
-            "kind": "tool_call",
-            "id": getattr(raw_event, "id", None) or getattr(raw_event, "call_id", _new_id("tc")),
-            "tool_name": getattr(raw_event, "name", None) or getattr(raw_event, "tool_name", "unknown"),
-            "arguments": getattr(raw_event, "arguments", None) or getattr(raw_event, "args", {}),
-        }
-    if name == "tool_result" or name == "function_result":
-        result = getattr(raw_event, "result", None) or getattr(raw_event, "output", None)
-        # The result is whatever the tool returned. If it has an "action" key
-        # we surface it as the editor action; if it has "ok"/"errors" we surface
-        # it as `data` (validate result).
-        step: Step = {
-            "kind": "tool_result",
-            "id": getattr(raw_event, "id", None) or getattr(raw_event, "call_id", _new_id("tr")),
-            "ok": True,
-        }
-        if isinstance(result, dict):
-            if "action" in result:
-                step["action"] = result
-            elif "ok" in result and "errors" in result:
-                step["data"] = result
-            else:
-                step["data"] = result
-        return step
-    if name == "message" or name == "assistant_message" or name == "text":
-        text = getattr(raw_event, "text", None) or getattr(raw_event, "content", "")
-        return {"kind": "message", "text": text}
-    return None
+    return [add_node, add_pipe, update_node, delete_node, validate]
 
 
 # Constants exported for the system prompt and unit tests.

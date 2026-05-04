@@ -7,11 +7,13 @@
 // This is the front door of Pipes. The chat IS the input; it is not a panel.
 // See docs/agent-product.md and docs/magic-moment.md.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MessageSquare } from "lucide-react";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { ConversationMessages } from "@/components/editor/ConversationMessages";
+import { NpsPrompt } from "@/components/editor/NpsPrompt";
 import { useAgentBuild, type AgentApplyContext } from "@/lib/agent/hooks";
+import { getNpsSeen, incrementBuildCount } from "@/lib/feedback/storage";
 import { cn } from "@/lib/utils";
 
 export type ConversationDrawerProps = {
@@ -25,6 +27,13 @@ export type ConversationDrawerProps = {
   // Forwarded to the canvas so it can pulse a 1 px ring on the node the
   // agent's most recent tool_call references. null when nothing is active.
   onCurrentTargetNodeIdChange?: (nodeId: string | null) => void;
+  // Editor exposes this so a Revert click on the build summary line can pop
+  // the most recent composite history entry. The drawer also returns focus
+  // to the prompt input after the revert lands.
+  onRevertCurrentTurn?: () => void;
+  // Fired the first time the user starts typing in the input. EditorWorkspace
+  // uses this to dismiss the first tutorial pill.
+  onPromptStarted?: () => void;
 };
 
 export const STARTER_CHIPS: Array<{ id: string; label: string; prompt: string }> = [
@@ -56,13 +65,41 @@ export function ConversationDrawer({
   onInitialPromptHandled,
   agentApplyContext,
   onCurrentTargetNodeIdChange,
+  onRevertCurrentTurn,
+  onPromptStarted,
 }: ConversationDrawerProps) {
   const [text, setText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const inputRef = useRef<ConversationInputHandle>(null);
   const handledInitialRef = useRef(false);
+  const promptStartedRef = useRef(false);
 
-  const agent = useAgentBuild(systemId, agentApplyContext);
+  // Track the active turn's id by intercepting beginTurn / endTurn on the
+  // editor's agent apply context. This is the same id the editor uses to
+  // build its composite undo entry, so a Revert click at the summary line
+  // can ask the editor to pop that exact entry.
+  const [lastTurnId, setLastTurnId] = useState<string | undefined>();
+  // Toggled true the moment the user starts typing the next prompt after a
+  // turn lands. Hides the Revert link.
+  const [nextPromptStarted, setNextPromptStarted] = useState<boolean>(false);
+  // NPS prompt mounting flag. Set once on the third successful build, and
+  // never again for this user.
+  const [showNps, setShowNps] = useState<boolean>(false);
+
+  const wrappedApplyContext = useMemo<AgentApplyContext | undefined>(() => {
+    if (!agentApplyContext) return undefined;
+    return {
+      ...agentApplyContext,
+      beginTurn: (turnId: string) => {
+        setLastTurnId(turnId);
+        // A new turn starting always re-arms the Revert link for that turn.
+        setNextPromptStarted(false);
+        agentApplyContext.beginTurn(turnId);
+      },
+    };
+  }, [agentApplyContext]);
+
+  const agent = useAgentBuild(systemId, wrappedApplyContext);
 
   // Forward the live target node id to the parent so the canvas can pulse it.
   // Only fires when the value actually changes; the parent treats null as
@@ -94,6 +131,24 @@ export function ConversationDrawer({
   const hasMessages = agent.messages.length > 0 || agent.toolCalls.length > 0;
   const showActive = !collapsed && (hasMessages || isRunning);
 
+  // Detect successful turn completion: state transitions from running to
+  // idle (not error, not stopped) and at least one tool result landed. Bump
+  // the build counter and conditionally mount the NPS prompt.
+  const prevStateRef = useRef<typeof agent.state>("idle");
+  useEffect(() => {
+    const prev = prevStateRef.current;
+    prevStateRef.current = agent.state;
+    if (prev !== "running" && prev !== "connecting") return;
+    if (agent.state !== "idle") return;
+    // Treat "no tool calls landed" as a soft success — still increment the
+    // counter, since the user did get a reply, but the spec mainly cares
+    // about builds that produced graph changes.
+    const count = incrementBuildCount();
+    if (count >= 3 && !getNpsSeen() && !showNps) {
+      setShowNps(true);
+    }
+  }, [agent.state, showNps]);
+
   const handleSend = () => {
     const value = text.trim();
     if (!value) return;
@@ -116,6 +171,30 @@ export function ConversationDrawer({
     setText(prompt);
     inputRef.current?.focus();
   };
+
+  const handleTextChange = useCallback(
+    (next: string) => {
+      setText(next);
+      if (next.length > 0 && !promptStartedRef.current) {
+        promptStartedRef.current = true;
+        if (onPromptStarted) onPromptStarted();
+      }
+      if (next.length > 0 && !nextPromptStarted) {
+        setNextPromptStarted(true);
+      }
+    },
+    [nextPromptStarted, onPromptStarted],
+  );
+
+  const handleRevertTurn = useCallback(
+    (_turnId: string) => {
+      if (!onRevertCurrentTurn) return;
+      onRevertCurrentTurn();
+      // Return focus to the prompt input so the user can immediately rephrase.
+      inputRef.current?.focus();
+    },
+    [onRevertCurrentTurn],
+  );
 
   const activeToolLabel = agent.activeToolName
     ? `${agent.activeToolName}(${agent.toolCalls[agent.toolCalls.length - 1]?.argsLabel ?? ""})`
@@ -163,6 +242,10 @@ export function ConversationDrawer({
               isRunning={isRunning}
               startedAt={agent.startedAt}
               finishedAt={agent.finishedAt}
+              conversationId={agent.conversationId}
+              lastTurnId={lastTurnId}
+              onRevertTurn={onRevertCurrentTurn ? handleRevertTurn : undefined}
+              nextPromptStarted={nextPromptStarted}
             />
           </div>
         ) : !hasMessages ? (
@@ -174,7 +257,7 @@ export function ConversationDrawer({
         <ConversationInput
           ref={inputRef}
           value={text}
-          onChange={setText}
+          onChange={handleTextChange}
           onSend={handleSend}
           onStop={handleStop}
           onRetry={hasError ? handleRetry : undefined}
@@ -185,6 +268,7 @@ export function ConversationDrawer({
           placeholder={DEFAULT_HEADLINE}
         />
       </div>
+      {showNps ? <NpsPrompt onDismiss={() => setShowNps(false)} /> : null}
     </DrawerShell>
   );
 }
@@ -229,3 +313,4 @@ function EmptyStarters({
     </div>
   );
 }
+

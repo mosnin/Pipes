@@ -7,6 +7,8 @@ import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
 import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
+import { EditorTutorial } from "@/components/editor/EditorTutorial";
+import { getTutorialSeen } from "@/lib/feedback/storage";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
@@ -149,6 +151,14 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
   const [leftPaneOpen, setLeftPaneOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  // Tutorial-related state. `tutorialSeen` is hydrated from localStorage on
+  // first mount; `tutorialPromptStarted` flips the moment the user types in
+  // the conversation input; `tutorialAgentViewSeen` flips when the user opens
+  // the Agent View panel.
+  const [tutorialSeen, setTutorialSeenState] = useState<boolean>(true);
+  const [tutorialPromptStarted, setTutorialPromptStarted] = useState<boolean>(false);
+  const [tutorialLeftPaneOpened, setTutorialLeftPaneOpened] = useState<boolean>(false);
+  const [tutorialAgentViewSeen, setTutorialAgentViewSeen] = useState<boolean>(false);
   const hydratedRef = useRef(false);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
@@ -174,6 +184,25 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
       setShowNewBanner(true);
     }
   }, []);
+
+  // Hydrate the tutorial seen flag once on the client. Default of `true`
+  // keeps the tutorial hidden during SSR and the first render so we never
+  // flash a tutorial overlay for returning users.
+  useEffect(() => {
+    setTutorialSeenState(getTutorialSeen());
+  }, []);
+
+  // Track left-pane opens so the third tutorial pill auto-dismisses when the
+  // user expands the rail.
+  useEffect(() => {
+    if (leftPaneOpen) setTutorialLeftPaneOpened(true);
+  }, [leftPaneOpen]);
+
+  // Track Agent View opens so the second tutorial pill auto-dismisses when
+  // the user reaches that surface.
+  useEffect(() => {
+    if (activeSystemPanel === "agent") setTutorialAgentViewSeen(true);
+  }, [activeSystemPanel]);
 
   useEffect(() => {
     if (activeSystemPanel !== "agent") return;
@@ -934,6 +963,8 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           initialPrompt={initialPrompt}
           agentApplyContext={agentApplyContext}
           onCurrentTargetNodeIdChange={setAgentTargetNodeId}
+          onRevertCurrentTurn={undo}
+          onPromptStarted={() => setTutorialPromptStarted(true)}
           onInitialPromptHandled={() => {
             if (typeof window === "undefined") return;
             const url = new URL(window.location.href);
@@ -943,6 +974,13 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             }
           }}
         />
+        {nodes.length === 0 && pipes.length === 0 && !tutorialSeen ? (
+          <EditorTutorial
+            promptStarted={tutorialPromptStarted}
+            leftPaneOpened={tutorialLeftPaneOpened}
+            agentViewSeen={tutorialAgentViewSeen}
+          />
+        ) : null}
         </div>
         {!inspectorOpen && !activeSystemPanel ? (
           <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">

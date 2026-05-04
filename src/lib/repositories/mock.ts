@@ -285,6 +285,39 @@ export function createMockRepositories(): RepositorySet {
         row.status = input.status;
         row.updatedAt = now();
         store.writeDb(db);
+      },
+      async record(input) {
+        const db = store.readDb();
+        db.feedbackEntries = db.feedbackEntries ?? [];
+        const id = store.createId("fbe");
+        const row = {
+          id,
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          kind: input.kind,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          conversationId: input.conversationId,
+          turnId: input.turnId,
+          verdict: input.verdict,
+          score: input.score,
+          surface: input.surface,
+          text: input.text,
+          note: input.note,
+          createdAt: now()
+        };
+        db.feedbackEntries.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listEntries(opts) {
+        const db = store.readDb();
+        const entries = db.feedbackEntries ?? [];
+        let rows = entries.slice();
+        if (opts?.userId) rows = rows.filter((row) => row.userId === opts.userId);
+        if (opts?.kind) rows = rows.filter((row) => row.kind === opts.kind);
+        rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        return rows.slice(0, opts?.limit ?? 200);
       }
     },
     agentTokens: {

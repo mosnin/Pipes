@@ -5,7 +5,7 @@ The Modal-sandboxed runner that turns one sentence into a Pipes graph. The Next.
 ## What this is
 
 - A FastAPI app, exposed by Modal at one HTTPS endpoint, that streams `text/event-stream` per `docs/agent-contract.md`.
-- An OpenAI Agents SDK agent with exactly 5 tools: `add_node`, `add_pipe`, `update_node`, `delete_node`, `validate`.
+- A model-agnostic agent with exactly 5 tools: `add_node`, `add_pipe`, `update_node`, `delete_node`, `validate`. The default provider is OpenAI's Agents SDK; Anthropic is a flag-flip away (see "Multi-provider" below).
 - A 30-tool-call hard cap and a 60-second wall-clock cap per turn.
 - A plan-first turn shape: every turn emits a `message` event with the agent's plan paragraph BEFORE any tool call.
 - Two deterministic eval gates: `evaluate_plan` runs on the plan paragraph; `evaluate_action` runs on every tool call. Both live in `plan_evaluator.py`.
@@ -34,6 +34,7 @@ Python 3.11 or newer is required. Modal recommends 3.11 for current images and t
 | `modal` | 0.66 | Stable ASGI streaming. |
 | `openai-agents` | 0.0.18 | Function-tool decorator and streaming Runner. The 0.x line is API-volatile; pin a minimum and re-test on each bump. |
 | `openai` | 1.40.0 | Required by `openai-agents` for tool-call streaming. |
+| `anthropic` | 0.39 | Optional second provider. Used only when `provider=anthropic`. |
 | `pydantic` | 2.0 | Strict argument validation. |
 | `httpx` | 0.27 | Streaming HTTP for the Modal endpoint. |
 | `sse-starlette` | 2.1 | Imported defensively; the active framing is hand-rolled. |
@@ -43,13 +44,48 @@ No new external deps were added in the audit. The eval gates are pure Python.
 
 ## Configure secrets
 
-Modal pulls a single secret named `pipes-agent-secrets` containing `OPENAI_API_KEY`:
+Modal pulls a single secret named `pipes-agent-secrets` containing `OPENAI_API_KEY` and, optionally, `ANTHROPIC_API_KEY`:
 
 ```bash
-modal secret create pipes-agent-secrets OPENAI_API_KEY=sk-...
+modal secret create pipes-agent-secrets \
+  OPENAI_API_KEY=sk-... \
+  ANTHROPIC_API_KEY=sk-ant-...
 ```
 
+`ANTHROPIC_API_KEY` is only required when the provider is Anthropic. Leaving it unset still ships a working OpenAI deploy.
+
 See https://modal.com/docs/guide/secrets for the latest CLI surface.
+
+## Multi-provider
+
+The runner supports two providers behind a single env var. The default is OpenAI; existing callers see no behavior change.
+
+| Env var | Purpose |
+| --- | --- |
+| `PIPES_AGENT_PROVIDER` | Deploy-wide default. `openai` (default) or `anthropic`. |
+| `OPENAI_AGENTS_MODEL` | OpenAI model id. Default `gpt-4o-mini`. |
+| `ANTHROPIC_AGENTS_MODEL` | Anthropic model id. Default `claude-haiku-4-5-20251001`. Set to `claude-sonnet-4-6` for stronger reasoning. |
+| `OPENAI_API_KEY` | Required when provider is OpenAI. |
+| `ANTHROPIC_API_KEY` | Required when provider is Anthropic. |
+
+Per-request override: the `BuildRequest` body accepts `provider: "openai" | "anthropic"`. When set, it wins over the env var. Order of precedence:
+
+1. `BuildRequest.provider` (per-request).
+2. `PIPES_AGENT_PROVIDER` (deploy-wide default).
+3. Hardcoded default `openai`.
+
+If the relevant API key is missing, the runner emits an SSE `error` event with `code: "model_unavailable"` and a human-readable message; the editor surfaces it as a soft failure.
+
+To swap to Anthropic deploy-wide:
+
+```bash
+modal secret create pipes-agent-secrets \
+  OPENAI_API_KEY=sk-... \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  PIPES_AGENT_PROVIDER=anthropic
+```
+
+Or override per-request from the Next.js side by including `provider: "anthropic"` in the body forwarded to the runner.
 
 ## Deploy
 
@@ -61,9 +97,32 @@ bash agents/deploy.sh
 
 ## Going to production
 
-The full production walk-through lives in [`docs/production-checklist.md`](../docs/production-checklist.md). It is the one-page deploy: secrets, deploy, env wiring, the live eval, a curl smoke test, and the rollback switch. Each step has a verification command and an expected output.
+The full production walk-through lives in [`docs/production-checklist.md`](../docs/production-checklist.md). It is the one-page deploy: preflight, secrets, deploy, env wiring, the live eval, a curl smoke test, and the rollback switch. Each step has a verification command and an expected output.
 
-The live eval is `agents/eval/run_live_eval.py`. It runs the same 14 starter prompts as the stub-driven eval against a real Modal endpoint, captures cold-start and wall-clock latency, and writes `docs/builder-live-eval.md`. Exit 0 requires 12 of 14 PASS plus p95 cold start under 1500 ms plus p95 wall clock under 30 s. The pytest at `agents/eval/test_live_eval_smoke.py` runs three of the prompts when `PIPES_AGENT_ENDPOINT_URL` is set in the test environment and skips otherwise.
+### Preflight
+
+`agents/preflight.py` runs as Step 0 of `bash agents/deploy.sh`. It exits 0 only when every prerequisite is satisfied:
+
+- Python 3.11 or newer.
+- `OPENAI_API_KEY`, `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` env vars set.
+- The runtime deps (`modal`, `openai`, the `openai-agents` SDK, `pydantic`, `httpx`, `fastapi`, `sse-starlette`) importable.
+- `modal token list` succeeds (the CLI is authenticated).
+- `OPENAI_API_KEY` is accepted by `api.openai.com` (HTTP 200 from `/v1/models`).
+- The Modal secret `pipes-agent-secrets` exists.
+
+Failed checks return numeric exit codes 10 through 16 with an actionable message. Run by hand any time:
+
+```bash
+python agents/preflight.py
+```
+
+### CI live eval
+
+A GitHub Actions workflow at `.github/workflows/live-eval.yml` runs `agents/eval/run_live_eval.py` against the production endpoint after every push to `main`. The job is gated on two repo secrets, `PIPES_AGENT_ENDPOINT_URL` and `OPENAI_API_KEY`. When either secret is absent, the gate step prints a skip notice and the job still finishes green so a fresh fork or a pre-deploy branch never sees a red check. When the secrets are present, the job installs `agents/requirements.txt`, runs the eval, and uploads `docs/builder-live-eval.md` as a build artifact.
+
+### The live eval
+
+`agents/eval/run_live_eval.py` runs the same 14 starter prompts as the stub-driven eval against a real Modal endpoint, captures cold-start and wall-clock latency, and writes `docs/builder-live-eval.md`. Exit 0 requires 12 of 14 PASS plus p95 cold start under 1500 ms plus p95 wall clock under 30 s. The pytest at `agents/eval/test_live_eval_smoke.py` runs three of the prompts when `PIPES_AGENT_ENDPOINT_URL` is set in the test environment and skips otherwise.
 
 ## Run locally without Modal
 
