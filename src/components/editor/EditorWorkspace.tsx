@@ -127,6 +127,9 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
   const [insertRequest, setInsertRequest] = useState<InsertRequest>({ mode: "canvas" });
+  // The node id the agent's most recent tool_call references. Threaded into
+  // the canvas so the matching node renders with a pulsing indigo ring.
+  const [agentTargetNodeId, setAgentTargetNodeId] = useState<string | null>(null);
   const [nodeDefinitions, setNodeDefinitions] = useState<Record<string, NodeDefinition>>({});
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("config");
   const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
@@ -893,6 +896,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             highlightedNodeIds={reviewRegion?.nodeIds ?? []}
             highlightedEdgeIds={reviewRegion?.pipeIds ?? []}
             regionStatus={reviewRegion?.status}
+            pulsingNodeId={agentTargetNodeId}
             onSelectNode={(id) => {
               if (!id) { setSelectedNodeIds([]); return; }
               const subsystem = subsystems.find((item) => item.id === id);
@@ -929,6 +933,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           systemId={systemId}
           initialPrompt={initialPrompt}
           agentApplyContext={agentApplyContext}
+          onCurrentTargetNodeIdChange={setAgentTargetNodeId}
           onInitialPromptHandled={() => {
             if (typeof window === "undefined") return;
             const url = new URL(window.location.href);

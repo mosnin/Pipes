@@ -22,6 +22,9 @@ export type ConversationDrawerProps = {
   // mutates the local canvas immediately and the whole turn collapses to one
   // composite undo entry.
   agentApplyContext?: AgentApplyContext;
+  // Forwarded to the canvas so it can pulse a 1 px ring on the node the
+  // agent's most recent tool_call references. null when nothing is active.
+  onCurrentTargetNodeIdChange?: (nodeId: string | null) => void;
 };
 
 export const STARTER_CHIPS: Array<{ id: string; label: string; prompt: string }> = [
@@ -52,6 +55,7 @@ export function ConversationDrawer({
   initialPrompt,
   onInitialPromptHandled,
   agentApplyContext,
+  onCurrentTargetNodeIdChange,
 }: ConversationDrawerProps) {
   const [text, setText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -59,6 +63,14 @@ export function ConversationDrawer({
   const handledInitialRef = useRef(false);
 
   const agent = useAgentBuild(systemId, agentApplyContext);
+
+  // Forward the live target node id to the parent so the canvas can pulse it.
+  // Only fires when the value actually changes; the parent treats null as
+  // "stop pulsing".
+  useEffect(() => {
+    if (!onCurrentTargetNodeIdChange) return;
+    onCurrentTargetNodeIdChange(agent.currentTargetNodeId);
+  }, [agent.currentTargetNodeId, onCurrentTargetNodeIdChange]);
 
   // Auto-fire the initial prompt exactly once on mount.
   useEffect(() => {

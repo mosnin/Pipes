@@ -455,5 +455,12 @@ export default defineSchema({
     startedAt: v.string(),
     completedAt: v.optional(v.string()),
     cancelled: v.boolean()
-  }).index("by_conversation", ["conversationId"])
+  }).index("by_conversation", ["conversationId"]),
+  agent_runner_metrics: defineTable({
+    userId: v.string(),
+    workspaceId: v.string(),
+    monthKey: v.string(),
+    buildsUsed: v.number(),
+    updatedAt: v.string()
+  }).index("by_user_month", ["userId", "monthKey"])
 });

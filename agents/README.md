@@ -59,6 +59,12 @@ bash agents/deploy.sh
 
 `deploy.sh` is idempotent. Re-run on every change. Modal prints the HTTPS URL of the function. Copy that URL into `PIPES_AGENT_ENDPOINT_URL` in `.env.local` for the Next.js route to consume.
 
+## Going to production
+
+The full production walk-through lives in [`docs/production-checklist.md`](../docs/production-checklist.md). It is the one-page deploy: secrets, deploy, env wiring, the live eval, a curl smoke test, and the rollback switch. Each step has a verification command and an expected output.
+
+The live eval is `agents/eval/run_live_eval.py`. It runs the same 14 starter prompts as the stub-driven eval against a real Modal endpoint, captures cold-start and wall-clock latency, and writes `docs/builder-live-eval.md`. Exit 0 requires 12 of 14 PASS plus p95 cold start under 1500 ms plus p95 wall clock under 30 s. The pytest at `agents/eval/test_live_eval_smoke.py` runs three of the prompts when `PIPES_AGENT_ENDPOINT_URL` is set in the test environment and skips otherwise.
+
 ## Run locally without Modal
 
 ```bash

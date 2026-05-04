@@ -47,16 +47,37 @@ async function readSse(response: Response): Promise<Frame[]> {
   return frames;
 }
 
-function buildBaseApp() {
+let userCounter = 0;
+function nextUserId(): string {
+  userCounter += 1;
+  return `usr_test_${userCounter}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+type SystemRow = { id: string; workspaceId: string; name: string; description: string; createdBy: string; createdAt: string; updatedAt: string };
+
+function buildBaseApp(opts?: { userId?: string; plan?: string; systems?: SystemRow[]; metricBuildsUsed?: number }) {
   const conversationStore: Array<{ id: string; systemId: string; userId: string }> = [];
   const turnStore: Array<{ id: string; conversationId: string; index: number; toolCalls: unknown[]; finalMessage?: string; cancelled: boolean; completedAt?: string }> = [];
   let convCounter = 0;
   let turnCounter = 0;
 
+  const userId = opts?.userId ?? nextUserId();
+  const plan = opts?.plan ?? "Pro";
+  const defaultSystems: SystemRow[] = [
+    { id: "sys_test", workspaceId: "wks_1", name: "Test System", description: "", createdBy: userId, createdAt: "2026-04-01T00:00:00.000Z", updatedAt: "2026-04-01T00:00:00.000Z" }
+  ];
+  const initialSystems = opts?.systems ?? defaultSystems;
+
   const ensureCanEdit = vi.fn();
-  const systemsList = vi.fn().mockResolvedValue([
-    { id: "sys_test", workspaceId: "wks_1", name: "Test", description: "", createdBy: "usr_1", createdAt: "", updatedAt: "" }
-  ]);
+  const systemsList = vi.fn().mockResolvedValue(initialSystems);
+  const systemsGetBundle = vi.fn(async (systemId: string) => ({
+    system: initialSystems.find((s) => s.id === systemId) ?? initialSystems[0],
+    nodes: [],
+    pipes: [],
+    comments: [],
+    versions: [],
+    presence: []
+  }));
 
   const agentConversations = {
     createConversation: vi.fn(async (input: { systemId: string; userId: string }) => {
@@ -87,19 +108,31 @@ function buildBaseApp() {
     })
   };
 
+  let metricBuildsUsed = opts?.metricBuildsUsed ?? 0;
+  const agentRunnerMetrics = {
+    getMonthly: vi.fn(async () => (metricBuildsUsed > 0 || opts?.metricBuildsUsed !== undefined
+      ? { userId, workspaceId: "wks_1", monthKey: "2026-05", buildsUsed: metricBuildsUsed, updatedAt: "" }
+      : null)),
+    incrementMonthly: vi.fn(async (input: { delta: number }) => {
+      metricBuildsUsed += input.delta;
+      return { userId, workspaceId: "wks_1", monthKey: "2026-05", buildsUsed: metricBuildsUsed, updatedAt: "" };
+    })
+  };
+
   const app = {
-    identity: { email: "owner@pipes.local", externalId: "mock|usr_1", name: "Alex" },
-    ctx: { workspaceId: "wks_1", userId: "usr_1", actorType: "user", actorId: "usr_1", role: "Owner", plan: "Pro" },
+    identity: { email: "owner@pipes.local", externalId: `mock|${userId}`, name: "Alex Rivera" },
+    ctx: { workspaceId: "wks_1", userId, actorType: "user", actorId: userId, role: "Owner", plan },
     services: { access: { ensureCanEdit, ensureCanView: vi.fn(), ensureCanComment: vi.fn(), ensureCanManageMembers: vi.fn(), ensureInternalOperator: vi.fn() } },
     repositories: {
-      systems: { list: systemsList },
-      agentConversations
+      systems: { list: systemsList, getBundle: systemsGetBundle },
+      agentConversations,
+      agentRunnerMetrics
     },
     runtimeMode: "mock",
     runtimeWarning: undefined
   };
 
-  return { app, agentConversations, turnStore, conversationStore };
+  return { app, agentConversations, agentRunnerMetrics, turnStore, conversationStore, userId };
 }
 
 afterEach(async () => {
@@ -109,6 +142,10 @@ afterEach(async () => {
   FIXTURE_OVERRIDES.length = 0;
   mockedEnv.runtimeFlags.useMocks = true;
   mockedEnv.runtimeFlags.hasAgentRunner = false;
+  // Reset rate-limit + concurrency global state between tests.
+  const { resetRateLimit, resetInFlight } = await import("@/lib/agent/rate-limit");
+  resetRateLimit();
+  resetInFlight();
 });
 
 beforeEach(() => {
@@ -134,7 +171,10 @@ describe("/api/agent/build route", () => {
     expect(frames.length).toBeGreaterThan(0);
 
     const eventTypes = frames.map((f) => f.event);
-    expect(eventTypes[0]).toBe("status");
+    // Personalization meta is the first frame; the contract's content stream
+    // (status -> ... -> done) follows after.
+    expect(eventTypes[0]).toBe("meta");
+    expect(eventTypes[1]).toBe("status");
     expect(eventTypes.at(-1)).toBe("done");
     const toolCalls = frames.filter((f) => f.event === "tool_call");
     const toolResults = frames.filter((f) => f.event === "tool_result");
@@ -298,5 +338,149 @@ describe("/api/agent/build route", () => {
       body: JSON.stringify({ systemId: "sys_test", prompt: "hi", conversationId: "ac_other" })
     }));
     expect(res.status).toBe(403);
+  });
+
+  it("returns 429 after the 31st request inside the 60s rate-limit window", async () => {
+    const userId = nextUserId();
+    const { POST } = await import("@/app/api/agent/build/route");
+
+    let lastRes: Response | null = null;
+    for (let i = 0; i < 31; i += 1) {
+      const { app } = buildBaseApp({ userId });
+      mockedServer.mockResolvedValue(app);
+      lastRes = await POST(new Request("http://localhost/api/agent/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ systemId: "sys_test", prompt: `p${i}` })
+      }));
+      // Drain the body (or it's a JSON error already).
+      if (lastRes.body && lastRes.headers.get("Content-Type")?.includes("text/event-stream")) {
+        await readSse(lastRes);
+      }
+    }
+    expect(lastRes!.status).toBe(429);
+    const body = await lastRes!.json();
+    expect(body.error).toBe("rate_limited");
+    expect(typeof body.retry_after_ms).toBe("number");
+    expect(body.retry_after_ms).toBeGreaterThan(0);
+  });
+
+  it("returns 413 when the request body exceeds 16 KB", async () => {
+    const { app } = buildBaseApp();
+    mockedServer.mockResolvedValue(app);
+
+    const fillerSize = 17 * 1024;
+    const filler = "x".repeat(fillerSize);
+    const body = JSON.stringify({ systemId: "sys_test", prompt: filler });
+
+    const { POST } = await import("@/app/api/agent/build/route");
+    const res = await POST(new Request("http://localhost/api/agent/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body
+    }));
+    expect(res.status).toBe(413);
+    const data = await res.json();
+    expect(data.error).toBe("payload_too_large");
+  });
+
+  it("returns 409 when a concurrent turn is already in flight for the user", async () => {
+    const userId = nextUserId();
+
+    // Build a fixture with a long initial delay so the first turn is mid-flight
+    // when we issue the second request.
+    const prompt = "concurrency test";
+    const { createHash } = await import("node:crypto");
+    const hash = createHash("sha256").update(prompt).digest("hex").slice(0, 12);
+    const fixturePath = path.join(FIXTURES_DIR, `${hash}.json`);
+    const frames = [
+      { delay_ms: 0, event: "status", data: { state: "thinking" } },
+      { delay_ms: 250, event: "message", data: { role: "assistant", text: "stalling" } },
+      { delay_ms: 0, event: "done", data: { conversationId: "<runtime>", turnId: "<runtime>" } }
+    ];
+    await fs.writeFile(fixturePath, JSON.stringify(frames), "utf8");
+    FIXTURE_OVERRIDES.push(fixturePath);
+
+    const { POST } = await import("@/app/api/agent/build/route");
+
+    // Kick off the first request but do not drain its body yet (so the
+    // concurrency slot stays held).
+    const { app: app1 } = buildBaseApp({ userId });
+    mockedServer.mockResolvedValueOnce(app1);
+    const firstResPromise = POST(new Request("http://localhost/api/agent/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemId: "sys_test", prompt })
+    }));
+    // Yield once so the route progresses past acquireSlot.
+    const firstRes = await firstResPromise;
+
+    // Second request from the same user should be rejected with 409.
+    const { app: app2 } = buildBaseApp({ userId });
+    mockedServer.mockResolvedValueOnce(app2);
+    const secondRes = await POST(new Request("http://localhost/api/agent/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemId: "sys_test", prompt: "second" })
+    }));
+    expect(secondRes.status).toBe(409);
+    const errBody = await secondRes.json();
+    expect(errBody.error).toBe("concurrent_turn_in_flight");
+
+    // Drain the first response to release its concurrency slot for cleanup.
+    await readSse(firstRes);
+  });
+
+  it("returns 402 when a Free plan user has used their monthly build budget", async () => {
+    const { app } = buildBaseApp({ plan: "Free", metricBuildsUsed: 50 });
+    mockedServer.mockResolvedValue(app);
+
+    const { POST } = await import("@/app/api/agent/build/route");
+    const res = await POST(new Request("http://localhost/api/agent/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemId: "sys_test", prompt: "build me a thing" })
+    }));
+    expect(res.status).toBe(402);
+    const body = await res.json();
+    expect(body.error).toBe("monthly_build_limit_exceeded");
+    expect(body.limit).toBe(50);
+    expect(body.used).toBe(50);
+    expect(body.plan).toBe("Free");
+  });
+
+  it("forwards the personalization payload via the meta event and the persisted turn", async () => {
+    const { app, turnStore, agentRunnerMetrics } = buildBaseApp({
+      systems: [
+        { id: "sys_test", workspaceId: "wks_1", name: "Customer Onboarding", description: "", createdBy: "u", createdAt: "2026-04-30T00:00:00.000Z", updatedAt: "2026-04-30T00:00:00.000Z" },
+        { id: "sys_other_a", workspaceId: "wks_1", name: "Billing Pipeline", description: "", createdBy: "u", createdAt: "2026-04-15T00:00:00.000Z", updatedAt: "2026-04-15T00:00:00.000Z" },
+        { id: "sys_other_b", workspaceId: "wks_1", name: "Support Triage", description: "", createdBy: "u", createdAt: "2026-04-10T00:00:00.000Z", updatedAt: "2026-04-10T00:00:00.000Z" }
+      ]
+    });
+    mockedServer.mockResolvedValue(app);
+
+    const { POST } = await import("@/app/api/agent/build/route");
+    const res = await POST(new Request("http://localhost/api/agent/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ systemId: "sys_test", prompt: "Two nodes please" })
+    }));
+    expect(res.status).toBe(200);
+
+    const frames = await readSse(res);
+    const meta = frames.find((f) => f.event === "meta");
+    expect(meta).toBeDefined();
+    const personalization = meta!.data.personalization as Record<string, unknown>;
+    expect(personalization.userFirstName).toBe("Alex");
+    expect(personalization.systemName).toBe("Customer Onboarding");
+    expect((personalization.priorSystemsSummary as string).startsWith("Has shipped:")).toBe(true);
+    expect(personalization.existingNodesCount).toBe(0);
+    expect(personalization.existingPipesCount).toBe(0);
+
+    // Budget metric incremented.
+    expect(agentRunnerMetrics.incrementMonthly).toHaveBeenCalled();
+
+    // Turn was completed.
+    expect(turnStore[0].completedAt).toBeDefined();
   });
 });

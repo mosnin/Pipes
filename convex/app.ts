@@ -796,3 +796,37 @@ export const completeAgentTurn = mutation({
     await ctx.db.patch(args.turnId, { finalMessage: args.finalMessage, completedAt: args.completedAt, cancelled: args.cancelled });
   }
 });
+
+export const getAgentRunnerMetric = query({
+  args: { userId: v.string(), monthKey: v.string() },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query("agent_runner_metrics")
+      .withIndex("by_user_month", (q) => q.eq("userId", args.userId).eq("monthKey", args.monthKey))
+      .first();
+  }
+});
+
+export const incrementAgentRunnerMetric = mutation({
+  args: { userId: v.string(), workspaceId: v.string(), monthKey: v.string(), delta: v.number() },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("agent_runner_metrics")
+      .withIndex("by_user_month", (q) => q.eq("userId", args.userId).eq("monthKey", args.monthKey))
+      .first();
+    if (existing) {
+      const buildsUsed = Math.max(0, (existing.buildsUsed ?? 0) + args.delta);
+      await ctx.db.patch(existing._id, { buildsUsed, workspaceId: args.workspaceId, updatedAt: now() });
+      return { ...existing, buildsUsed, workspaceId: args.workspaceId, updatedAt: now() };
+    }
+    const buildsUsed = Math.max(0, args.delta);
+    const id = await ctx.db.insert("agent_runner_metrics", {
+      userId: args.userId,
+      workspaceId: args.workspaceId,
+      monthKey: args.monthKey,
+      buildsUsed,
+      updatedAt: now()
+    });
+    return ctx.db.get(id);
+  }
+});

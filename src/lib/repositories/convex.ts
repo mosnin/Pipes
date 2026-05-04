@@ -714,6 +714,36 @@ export function createConvexRepositories(): RepositorySet {
         await client.mutation((api as any).app.completeAgentTurn, { turnId: input.turnId as never, finalMessage: input.finalMessage, completedAt: input.completedAt, cancelled: input.cancelled });
       }
     },
+    agentRunnerMetrics: {
+      async getMonthly(input) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getAgentRunnerMetric, { userId: input.userId, monthKey: input.monthKey });
+        if (!row) return null;
+        return {
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          monthKey: row.monthKey,
+          buildsUsed: row.buildsUsed,
+          updatedAt: row.updatedAt
+        };
+      },
+      async incrementMonthly(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.incrementAgentRunnerMetric, {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          monthKey: input.monthKey,
+          delta: input.delta
+        });
+        return {
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          monthKey: row.monthKey,
+          buildsUsed: row.buildsUsed,
+          updatedAt: row.updatedAt
+        };
+      }
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const client = getConvexHttpClient();

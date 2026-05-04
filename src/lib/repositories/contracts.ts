@@ -187,6 +187,19 @@ export interface AgentConversationsRepository {
   completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean }): Promise<void>;
 }
 
+export type AgentRunnerMetricRecord = {
+  userId: string;
+  workspaceId: string;
+  monthKey: string;
+  buildsUsed: number;
+  updatedAt: string;
+};
+
+export interface AgentRunnerMetricsRepository {
+  getMonthly(input: { userId: string; monthKey: string }): Promise<AgentRunnerMetricRecord | null>;
+  incrementMonthly(input: { userId: string; workspaceId: string; monthKey: string; delta: number }): Promise<AgentRunnerMetricRecord>;
+}
+
 export type RepositorySet = {
   users: UsersRepository;
   workspaces: WorkspacesRepository;
@@ -304,6 +317,7 @@ export type RepositorySet = {
     listEscalationRecords(input: { runId: string }): Promise<EscalationRecord[]>;
   };
   agentConversations: AgentConversationsRepository;
+  agentRunnerMetrics: AgentRunnerMetricsRepository;
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;

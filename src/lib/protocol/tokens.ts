@@ -8,6 +8,7 @@ export const AGENT_CAPABILITIES = [
   "templates:instantiate",
   "versions:read",
   "versions:write",
+  "graph:read",
   "graph:write",
   "comments:write",
   "import:write",

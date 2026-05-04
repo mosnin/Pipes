@@ -972,6 +972,33 @@ export function createMockRepositories(): RepositorySet {
         store.writeDb(db);
       }
     },
+    agentRunnerMetrics: {
+      async getMonthly(input) {
+        const db = store.readDb();
+        const row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        return row ? { ...row } : null;
+      },
+      async incrementMonthly(input) {
+        const db = store.readDb();
+        let row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        if (!row) {
+          row = {
+            userId: input.userId,
+            workspaceId: input.workspaceId,
+            monthKey: input.monthKey,
+            buildsUsed: Math.max(0, input.delta),
+            updatedAt: now()
+          };
+          db.agentRunnerMetrics.push(row);
+        } else {
+          row.buildsUsed = Math.max(0, (row.buildsUsed ?? 0) + input.delta);
+          row.workspaceId = input.workspaceId;
+          row.updatedAt = now();
+        }
+        store.writeDb(db);
+        return { ...row };
+      }
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const db = store.readDb();

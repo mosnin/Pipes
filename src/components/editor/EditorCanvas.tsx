@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   addEdge,
   Background,
@@ -23,7 +23,25 @@ import {
 import "@xyflow/react/dist/style.css";
 import { NodeTypeBadge } from "@/components/ui";
 
-type EditorNodeData = { title: string; type: string; subtitle?: string; compact?: boolean };
+type EditorNodeData = {
+  title: string;
+  type: string;
+  subtitle?: string;
+  compact?: boolean;
+  // Animation flags. Driven by the parent canvas via the node `data` channel
+  // so the inner PipesNode component can apply CSS-only animations without
+  // any cross-cutting state.
+  arrived?: boolean;
+  pulsing?: boolean;
+};
+
+// How long an "arrived" flag stays on a node id before we drop it. Slightly
+// longer than the 300 ms keyframe so the animation fully completes before the
+// class is removed.
+const ARRIVAL_LIFETIME_MS = 350;
+// How long an "arrived" flag stays on an edge id. Matches the 180 ms keyframe
+// plus a small buffer.
+const EDGE_STREAM_LIFETIME_MS = 220;
 
 const ALIGN_THRESHOLD = 8;
 const TOKEN_INK_LINE = "rgba(0,0,0,0.14)";
@@ -35,8 +53,13 @@ const TOKEN_INK_3 = "#8E8E93";
 const TOKEN_INK_2 = "#3C3C43";
 
 const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
+  const classes: string[] = [];
+  if (data.arrived) classes.push("pipes-node-arrival");
+  if (data.pulsing) classes.push("pipes-node-pulsing");
+  const className = classes.length > 0 ? classes.join(" ") : undefined;
   return (
     <div
+      className={className}
       style={{
         border: `1px solid ${TOKEN_INK_LINE_LIGHT}`,
         borderRadius: 8,
@@ -107,6 +130,7 @@ export function EditorCanvas({
   highlightedNodeIds,
   highlightedEdgeIds,
   regionStatus,
+  pulsingNodeId,
   onSelectNode,
   onSelectionChange,
   onConnect,
@@ -125,6 +149,9 @@ export function EditorCanvas({
   highlightedNodeIds?: string[];
   highlightedEdgeIds?: string[];
   regionStatus?: "pending_review" | "applied";
+  // The id of the node the agent's most recent tool_call references. Renders
+  // a pulsing 1 px indigo ring while non-null. Null means no pulse.
+  pulsingNodeId?: string | null;
   onSelectNode: (id?: string) => void;
   onSelectionChange: (nodeIds: string[], edgeIds: string[]) => void;
   onConnect: (source: string, target: string) => void;
@@ -143,8 +170,70 @@ export function EditorCanvas({
   const [guide, setGuide] = useState<{ x?: number; y?: number }>({});
   const [connectingValid, setConnectingValid] = useState<boolean | null>(null);
 
+  // Track which node + edge ids have just appeared so we can apply the
+  // arrival / stream class for one animation cycle. The Sets store ids; the
+  // ref below remembers which ids we have already seen across renders.
+  const [freshNodeIds, setFreshNodeIds] = useState<Set<string>>(() => new Set());
+  const [freshEdgeIds, setFreshEdgeIds] = useState<Set<string>>(() => new Set());
+  const seenNodeIdsRef = useRef<Set<string>>(new Set(initialNodes.map((n) => n.id)));
+  const seenEdgeIdsRef = useRef<Set<string>>(new Set(initialEdges.map((e) => e.id)));
+
   useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
   useEffect(() => setEdges(initialEdges), [initialEdges, setEdges]);
+
+  // Detect newly-arrived node ids on every initialNodes update. Each new id
+  // joins the fresh set and is removed after ARRIVAL_LIFETIME_MS, which is
+  // long enough for the keyframe animation to play in full.
+  useEffect(() => {
+    const arrivals: string[] = [];
+    for (const node of initialNodes) {
+      if (!seenNodeIdsRef.current.has(node.id)) {
+        seenNodeIdsRef.current.add(node.id);
+        arrivals.push(node.id);
+      }
+    }
+    if (arrivals.length === 0) return;
+    setFreshNodeIds((prev) => {
+      const next = new Set(prev);
+      for (const id of arrivals) next.add(id);
+      return next;
+    });
+    const timer = window.setTimeout(() => {
+      setFreshNodeIds((prev) => {
+        if (prev.size === 0) return prev;
+        const next = new Set(prev);
+        for (const id of arrivals) next.delete(id);
+        return next.size === prev.size ? prev : next;
+      });
+    }, ARRIVAL_LIFETIME_MS);
+    return () => window.clearTimeout(timer);
+  }, [initialNodes]);
+
+  // Same as above for edges.
+  useEffect(() => {
+    const arrivals: string[] = [];
+    for (const edge of initialEdges) {
+      if (!seenEdgeIdsRef.current.has(edge.id)) {
+        seenEdgeIdsRef.current.add(edge.id);
+        arrivals.push(edge.id);
+      }
+    }
+    if (arrivals.length === 0) return;
+    setFreshEdgeIds((prev) => {
+      const next = new Set(prev);
+      for (const id of arrivals) next.add(id);
+      return next;
+    });
+    const timer = window.setTimeout(() => {
+      setFreshEdgeIds((prev) => {
+        if (prev.size === 0) return prev;
+        const next = new Set(prev);
+        for (const id of arrivals) next.delete(id);
+        return next.size === prev.size ? prev : next;
+      });
+    }, EDGE_STREAM_LIFETIME_MS);
+    return () => window.clearTimeout(timer);
+  }, [initialEdges]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
     onNodesChangeBase(changes);
@@ -245,6 +334,8 @@ export function EditorCanvas({
           const preview = previewLookup.get(node.id);
           const highlighted = highlightedNodeSet.has(node.id);
           const isSelected = selection.nodeIds.includes(node.id);
+          const isArrived = freshNodeIds.has(node.id);
+          const isPulsing = pulsingNodeId === node.id;
           const previewBorder =
             preview?.previewKind === "deletion"
               ? `2px dashed ${TOKEN_DANGER}`
@@ -253,8 +344,17 @@ export function EditorCanvas({
                 : preview?.previewKind === "connection"
                   ? `2px solid ${TOKEN_INDIGO_600}`
                   : undefined;
+          // The arrival glow is owned by the keyframe; while it is playing we
+          // skip the static selection box-shadow so the two do not fight. The
+          // pulsing ring also drives box-shadow on its own.
+          const animatingShadow = isArrived || isPulsing;
           return {
             ...node,
+            data: {
+              ...(node.data as EditorNodeData),
+              arrived: isArrived,
+              pulsing: isPulsing,
+            },
             style: {
               ...(node.style ?? {}),
               border:
@@ -264,11 +364,13 @@ export function EditorCanvas({
                   : isSelected
                     ? `2px solid ${TOKEN_INDIGO_600}`
                     : undefined),
-              boxShadow: isSelected
-                ? `0 0 0 4px rgba(99,102,241,0.18), 0 4px 14px rgba(0,0,0,0.10)`
-                : highlighted
-                  ? "0 0 0 4px rgba(99,102,241,0.15)"
-                  : undefined,
+              boxShadow: animatingShadow
+                ? undefined
+                : isSelected
+                  ? `0 0 0 4px rgba(99,102,241,0.18), 0 4px 14px rgba(0,0,0,0.10)`
+                  : highlighted
+                    ? "0 0 0 4px rgba(99,102,241,0.15)"
+                    : undefined,
               opacity: preview?.previewKind === "deletion" ? 0.68 : 1,
             },
           };
@@ -277,8 +379,10 @@ export function EditorCanvas({
           const highlighted = highlightedEdgeSet.has(edge.id);
           const isSelected = selection.edgeIds.includes(edge.id);
           const isError = edge.style?.stroke === TOKEN_DANGER;
+          const isFresh = freshEdgeIds.has(edge.id);
           return {
             ...edge,
+            className: [edge.className, isFresh ? "pipes-edge-stream" : null].filter(Boolean).join(" ") || undefined,
             style: {
               stroke: highlighted
                 ? regionStatus === "applied"

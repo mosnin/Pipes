@@ -23,12 +23,15 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
+import { OpenInClaudeButton } from "@/components/editor/OpenInClaudeButton";
 
 export type EditorTopBarSaveTone = "success" | "warning" | "info" | "neutral" | "danger";
 
 export type EditorTopBarProps = {
+  systemId: string;
   systemName: string;
   systemDescription?: string;
+  hasNodes: boolean;
   presenceNames: string[];
   saveLabel: string;
   saveTone: EditorTopBarSaveTone;
@@ -42,14 +45,17 @@ export type EditorTopBarProps = {
   onOpenComments: () => void;
   onOpenImport: () => void;
   onArrange: () => void;
+  onOpenConnectAgent?: () => void;
   isSimulationActive: boolean;
   isAgentActive: boolean;
   rightExtra?: ReactNode;
 };
 
 export function EditorTopBar({
+  systemId,
   systemName,
   systemDescription,
+  hasNodes,
   presenceNames,
   saveLabel,
   saveTone,
@@ -63,6 +69,7 @@ export function EditorTopBar({
   onOpenComments,
   onOpenImport,
   onArrange,
+  onOpenConnectAgent,
   isSimulationActive,
   isAgentActive,
   rightExtra,
@@ -103,6 +110,11 @@ export function EditorTopBar({
             <AvatarStack names={presenceNames} />
           </Tooltip>
         )}
+        <OpenInClaudeButton
+          systemId={systemId}
+          hasNodes={hasNodes}
+          onOpenLegacy={onOpenConnectAgent}
+        />
         <Tooltip content="Share or copy MCP endpoint">
           <Button variant="outline" size="sm" onPress={onShare}>
             <Share2 size={14} />
@@ -158,6 +170,11 @@ export function EditorTopBar({
               <DropdownItem id="import" onAction={onOpenImport}>
                 Import / Export
               </DropdownItem>
+              {onOpenConnectAgent ? (
+                <DropdownItem id="connect-agent" onAction={onOpenConnectAgent}>
+                  Connect agent (custom token)
+                </DropdownItem>
+              ) : null}
             </DropdownMenu>
           </Dropdown.Popover>
         </Dropdown>

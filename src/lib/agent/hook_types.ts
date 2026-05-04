@@ -40,4 +40,8 @@ export type UseAgentBuildResult = {
   statusState?: AgentStatusState;
   activeToolName?: string;
   placeholderHint: PlaceholderHint;
+  // Node id the agent's most recent tool_call references, if any. Live while
+  // a turn is running; clears on done / error / stop. Used by the canvas to
+  // pulse a 1 px indigo ring on the node currently being touched.
+  currentTargetNodeId: string | null;
 };

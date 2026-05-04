@@ -183,6 +183,12 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
       }
     >
       <div className="space-y-5">
+        <div className="rounded-[10px] border border-indigo-100 bg-indigo-50/60 px-3 py-2">
+          <p className="t-caption text-[#3C3C43]">
+            Most users want <strong className="font-semibold text-[#111]">Open in Claude</strong>.
+            This dialog is for custom token scopes.
+          </p>
+        </div>
         <SegmentedControl
           size="sm"
           value={step}

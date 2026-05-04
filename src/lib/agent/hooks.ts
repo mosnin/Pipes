@@ -80,6 +80,9 @@ export function useAgentBuild(
   const [startedAt, setStartedAt] = useState<number | undefined>();
   const [finishedAt, setFinishedAt] = useState<number | undefined>();
   const [placeholderHint, setPlaceholderHint] = useState<PlaceholderHint>("idle");
+  // The node id referenced by the most recent tool_call's arguments, if any.
+  // Cleared on done / error / stop.
+  const [currentTargetNodeId, setCurrentTargetNodeId] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const timersRef = useRef<Timers>(NO_TIMERS);
@@ -205,6 +208,7 @@ export function useAgentBuild(
         setFinishedAt(Date.now());
         setStatusState(undefined);
         setActiveToolName(undefined);
+        setCurrentTargetNodeId(null);
         setPlaceholderHint("idle");
         setMessages((prev) => [
           ...prev,
@@ -244,6 +248,10 @@ export function useAgentBuild(
           c.beginTurn(turnId);
         }
         toolCallsSeenRef.current += 1;
+        // Track the node id this tool_call references so the canvas can pulse
+        // it. add_node has no pre-existing node, so skip — the canvas will
+        // pick it up on the arrival animation instead.
+        setCurrentTargetNodeId(extractTargetNodeId(event.data.tool_name, event.data.arguments));
         setToolCalls((prev) => [
           ...prev,
           {
@@ -256,6 +264,8 @@ export function useAgentBuild(
       }
 
       if (event.type === "tool_result") {
+        // The active call resolved; the pulse stops until the next tool_call.
+        setCurrentTargetNodeId(null);
         setToolCalls((prev) =>
           prev.map((entry) =>
             entry.id === event.data.id ? { ...entry, ok: event.data.ok } : entry,
@@ -303,6 +313,7 @@ export function useAgentBuild(
         setFinishedAt(Date.now());
         setStatusState(undefined);
         setActiveToolName(undefined);
+        setCurrentTargetNodeId(null);
         setPlaceholderHint("idle");
         currentAssistantMessageRef.current = "";
         // Mark any streaming assistant message as finalized.
@@ -329,6 +340,7 @@ export function useAgentBuild(
         setFinishedAt(Date.now());
         setStatusState(undefined);
         setActiveToolName(undefined);
+        setCurrentTargetNodeId(null);
         setPlaceholderHint("failed");
         flushApplyQueueImmediately();
         const c = ctxRef.current;
@@ -356,6 +368,7 @@ export function useAgentBuild(
       setStartedAt(Date.now());
       setActiveToolName(undefined);
       setStatusState(undefined);
+      setCurrentTargetNodeId(null);
       setToolCalls([]);
       currentAssistantMessageRef.current = "";
       turnHasFirstEventRef.current = false;
@@ -434,6 +447,7 @@ export function useAgentBuild(
     setFinishedAt(Date.now());
     setStatusState(undefined);
     setActiveToolName(undefined);
+    setCurrentTargetNodeId(null);
     setPlaceholderHint("idle");
     setMessages((prev) => [
       ...prev,
@@ -460,10 +474,12 @@ export function useAgentBuild(
       statusState,
       activeToolName,
       placeholderHint,
+      currentTargetNodeId,
     }),
     [
       activeToolName,
       conversationId,
+      currentTargetNodeId,
       error,
       finishedAt,
       messages,
@@ -478,6 +494,21 @@ export function useAgentBuild(
   );
 
   return result;
+}
+
+// Pulls the node id this tool_call references, if any. add_node has no
+// pre-existing target; add_pipe references two nodes — we pick the source so
+// the pulse marks the node the agent is wiring outward from.
+function extractTargetNodeId(tool: string, args: Record<string, unknown>): string | null {
+  if (tool === "update_node" || tool === "delete_node") {
+    return typeof args.nodeId === "string" ? args.nodeId : null;
+  }
+  if (tool === "add_pipe") {
+    if (typeof args.fromNodeId === "string") return args.fromNodeId;
+    if (typeof args.toNodeId === "string") return args.toNodeId;
+    return null;
+  }
+  return null;
 }
 
 function summarizeArgs(tool: string, args: Record<string, unknown>): string {
