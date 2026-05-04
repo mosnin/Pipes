@@ -22,7 +22,7 @@ import pytest
 
 from agents.builder import render_system_prompt, run_turn_stream
 from agents.plan_evaluator import evaluate_action, evaluate_plan
-from agents.schemas import BuildRequest
+from agents.schemas import BuildRequest, ProviderUsage
 
 
 GOOD_PLAN = (
@@ -591,3 +591,87 @@ def test_render_system_prompt_with_full_context_substitutes_values() -> None:
     assert "4 nodes" in rendered
     assert "3 pipes" in rendered
     assert "{{" not in rendered
+
+
+# ---- Cost telemetry: stream ends with meta then done ----
+
+
+@pytest.mark.asyncio
+async def test_stream_ends_with_meta_then_done_when_usage_available() -> None:
+    """The end of a successful turn ships `meta` (cost telemetry) right
+    before `done`. This locks the wire order: messages and tool_results
+    arrive first, then telemetry, then the terminal frame.
+    """
+    request = BuildRequest(
+        systemId="sys_test",
+        prompt="planner feeds coder",
+        conversationId="conv_meta_done",
+    )
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": GOOD_PLAN}
+        yield {
+            "kind": "tool_call",
+            "id": "tc_1",
+            "tool_name": "add_node",
+            "arguments": {
+                "systemId": "sys_test",
+                "type": "Agent",
+                "title": "Planner",
+                "description": "Reads the prompt and emits a plan that the Coder consumes.",
+            },
+        }
+        yield {
+            "kind": "tool_result",
+            "id": "tc_1",
+            "ok": True,
+            "action": {
+                "action": "addNode",
+                "systemId": "sys_test",
+                "title": "Planner",
+                "clientNodeId": "tmp_p1",
+            },
+        }
+        yield {"kind": "message", "text": "Planner ready."}
+        yield {
+            "kind": "usage",
+            "provider_usage": ProviderUsage(
+                input_tokens=200,
+                output_tokens=80,
+                model="gpt-4o-mini",
+                provider="openai",
+            ),
+        }
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+
+    # The stream ends with meta then done, in that order.
+    assert names[-2:] == ["meta", "done"]
+
+    meta = parsed[-2]["data"]
+    assert meta["cost"]["tokens_in"] == 200
+    assert meta["cost"]["tokens_out"] == 80
+    assert meta["cost"]["provider"] == "openai"
+    assert meta["cost"]["model"] == "gpt-4o-mini"
+    assert meta["tool_call_count"] == 1
+
+    # done payload still round-trips conversationId.
+    assert parsed[-1]["data"]["conversationId"] == "conv_meta_done"
+
+
+@pytest.mark.asyncio
+async def test_stream_ends_with_done_only_when_usage_missing() -> None:
+    """No `meta` event is emitted if the provider never surfaces usage data.
+    The route persists `costSnapshot=None` rather than $0."""
+    request = BuildRequest(systemId="sys_test", prompt="x")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": "Nothing to build."}
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+    assert names[-1] == "done"
+    assert "meta" not in names

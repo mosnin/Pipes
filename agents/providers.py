@@ -41,6 +41,8 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Callable, Literal, Optional
 
+from .schemas import ProviderUsage
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +91,14 @@ class ProviderEvent:
     tool_args: Optional[dict[str, Any]] = None
     tool_id: Optional[str] = None
     stop_reason: Optional[str] = None
+    # Raw token-counter dict from the SDK. Kept for backwards-compat callers
+    # (logging) and for any tests that pin to the old shape.
     usage: Optional[dict[str, Any]] = None
+    # Normalized usage record carrying `model` and `provider` next to the
+    # input/output token counts. Populated only on terminal `stop` events
+    # when the SDK actually surfaced numbers. None means "skip cost emission"
+    # to the builder; never invent zeros here.
+    provider_usage: Optional[ProviderUsage] = None
 
 
 # ---- Tool schemas (provider-agnostic) ----
@@ -333,13 +342,47 @@ class OpenAIProvider(AgentProvider):
                 if isinstance(value, dict):
                     usage = value
                     break
-        yield ProviderEvent(kind="stop", stop_reason="end_turn", usage=usage)
+        provider_usage = _build_openai_provider_usage(usage, self.model)
+        yield ProviderEvent(
+            kind="stop",
+            stop_reason="end_turn",
+            usage=usage,
+            provider_usage=provider_usage,
+        )
 
     async def submit_tool_result(self, tool_id: str, result: Any) -> None:
         # The OpenAI Agents SDK runs the loop and dispatches tools itself.
         # Tool results are returned synchronously from our wrappers; this
         # method is a no-op for parity with the abstract interface.
         return None
+
+
+def _build_openai_provider_usage(
+    usage: dict[str, Any], model: str
+) -> Optional[ProviderUsage]:
+    """Normalize an OpenAI usage dict into a `ProviderUsage`.
+
+    The SDK exposes either `prompt_tokens`/`completion_tokens` or newer
+    `input_tokens`/`output_tokens` keys depending on version. We accept both.
+    Returns `None` when neither is present (mocked clients, very old SDK)
+    so the builder skips the cost meta event rather than emit zeros.
+    """
+    if not isinstance(usage, dict) or not usage:
+        return None
+    in_tokens = usage.get("input_tokens")
+    if in_tokens is None:
+        in_tokens = usage.get("prompt_tokens")
+    out_tokens = usage.get("output_tokens")
+    if out_tokens is None:
+        out_tokens = usage.get("completion_tokens")
+    if not isinstance(in_tokens, int) or not isinstance(out_tokens, int):
+        return None
+    return ProviderUsage(
+        input_tokens=in_tokens,
+        output_tokens=out_tokens,
+        model=model,
+        provider="openai",
+    )
 
 
 def _translate_openai_event(raw_event: Any) -> Optional[ProviderEvent]:
@@ -540,10 +583,14 @@ class AnthropicProvider(AgentProvider):
 
             if not tool_uses:
                 # End of conversation - no more tool calls requested.
+                final_usage = dict(self._usage)
                 yield ProviderEvent(
                     kind="stop",
                     stop_reason=stop_reason or "end_turn",
-                    usage=dict(self._usage),
+                    usage=final_usage,
+                    provider_usage=_build_anthropic_provider_usage(
+                        final_usage, self.model
+                    ),
                 )
                 return
 
@@ -581,16 +628,47 @@ class AnthropicProvider(AgentProvider):
             self._messages.append({"role": "user", "content": tool_result_blocks})
 
         # Fell off the loop - too many turns.
+        final_usage = dict(self._usage)
         yield ProviderEvent(
             kind="stop",
             stop_reason="max_turns",
-            usage=dict(self._usage),
+            usage=final_usage,
+            provider_usage=_build_anthropic_provider_usage(
+                final_usage, self.model
+            ),
         )
 
     async def submit_tool_result(self, tool_id: str, result: Any) -> None:
         """Builder calls this after dispatching a tool. We wake the run loop."""
         self._pending_results[tool_id] = result
         self._tool_result_event.set()
+
+
+def _build_anthropic_provider_usage(
+    usage: dict[str, Any], model: str
+) -> Optional[ProviderUsage]:
+    """Normalize the Anthropic usage dict into a `ProviderUsage`.
+
+    Anthropic's stream surfaces input tokens on `message_start.usage` and
+    output tokens incrementally via `message_delta.usage`. Both land on the
+    builder's `self._usage` dict before we hit the stop event. If neither
+    number was ever observed (purely mocked stream), we return None so the
+    builder skips the cost meta event rather than emit zeros.
+    """
+    if not isinstance(usage, dict):
+        return None
+    in_tokens = usage.get("input_tokens")
+    out_tokens = usage.get("output_tokens")
+    if not isinstance(in_tokens, int) or not isinstance(out_tokens, int):
+        return None
+    if in_tokens == 0 and out_tokens == 0:
+        return None
+    return ProviderUsage(
+        input_tokens=in_tokens,
+        output_tokens=out_tokens,
+        model=model,
+        provider="anthropic",
+    )
 
 
 def _serialize_tool_result(result: Any) -> str:

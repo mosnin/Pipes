@@ -3,9 +3,15 @@
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 
 @theme {
-  /* System font stack — zero network cost, native on every platform */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  /* Font stack: Inter is loaded via next/font/google in app/layout.tsx and
+     injected as `--font-sans-runtime`. Falls back to the system stack so
+     pre-hydration paints stay readable. JetBrains Mono carries the mono. */
+  --font-sans: var(--font-sans-runtime), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-mono-runtime), ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+
+  /* Subtle brand pattern: a 24 px indigo-tinted grid as a CSS data URL.
+     Used as a wash on hero surfaces and OG-style cards. */
+  --brand-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M24 0 L0 0 0 24' fill='none' stroke='rgba(79,70,229,0.06)' stroke-width='1'/></svg>");
 
   /* Surface — Apple's #F5F5F7, warmer and optically neutral vs slate-50 */
   --color-surface: #F5F5F7;
@@ -80,6 +86,7 @@ body {
   color: var(--color-ink-1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
 }
 
 /* Headlines: tight tracking is the single biggest typography upgrade */
@@ -117,6 +124,7 @@ a { color: inherit; text-decoration: none; }
 .hover-lift { transition: transform 140ms ease, box-shadow 140ms ease; }
 .hover-lift:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .grid-bg { background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px); background-size: 24px 24px; }
+.brand-pattern-bg { background-image: var(--brand-pattern); background-size: 24px 24px; }
 .shadow-xs       { box-shadow: var(--shadow-xs); }
 .shadow-sm-token { box-shadow: var(--shadow-sm); }
 .shadow-md-token { box-shadow: var(--shadow-md); }

@@ -311,7 +311,8 @@ export async function POST(request: Request): Promise<Response> {
         priorSystemsSummary: "",
         systemName: system.name ?? "",
         existingNodesCount: 0,
-        existingPipesCount: 0
+        existingPipesCount: 0,
+        feedbackHint: ""
       };
     }
 

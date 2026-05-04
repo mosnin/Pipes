@@ -993,6 +993,7 @@ export function createMockRepositories(): RepositorySet {
         const row = db.agentTurns.find((item) => item.id === input.turnId);
         if (!row) return;
         row.toolCalls = [...row.toolCalls, input.toolCall];
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
         store.writeDb(db);
       },
       async completeTurn(input) {
@@ -1002,7 +1003,36 @@ export function createMockRepositories(): RepositorySet {
         row.finalMessage = input.finalMessage;
         row.completedAt = input.completedAt;
         row.cancelled = input.cancelled;
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
         store.writeDb(db);
+      }
+    },
+    metrics: {
+      async recordSample(input) {
+        const db = store.readDb();
+        db.metricsSamples = db.metricsSamples ?? [];
+        db.metricsSamples.push({
+          id: store.createId("met"),
+          kind: input.kind,
+          label: input.label,
+          value: input.value,
+          tags: input.tags,
+          ts: input.ts
+        });
+        if (db.metricsSamples.length > 5000) {
+          db.metricsSamples = db.metricsSamples.slice(-5000);
+        }
+        store.writeDb(db);
+      },
+      async listSamples(opts) {
+        const db = store.readDb();
+        const rows = (db.metricsSamples ?? []).slice();
+        const filtered = rows
+          .filter((row) => !opts?.kind || row.kind === opts.kind)
+          .filter((row) => !opts?.label || row.label === opts.label)
+          .filter((row) => !opts?.sinceTs || row.ts >= opts.sinceTs)
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1));
+        return filtered.slice(0, opts?.limit ?? 500);
       }
     },
     agentRunnerMetrics: {

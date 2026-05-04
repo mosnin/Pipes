@@ -1,7 +1,26 @@
 import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers } from "@/components/Providers";
+import { SoundProvider } from "@/lib/sound/SoundProvider";
 import { ClerkProvider } from "@clerk/nextjs";
+
+// Geist binaries are not checked into the repo. Per the brand-polish spec,
+// fall back to Inter (variable, weights 400-700) + JetBrains Mono. Both are
+// open-source and CDN-served by next/font/google.
+const sans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans-runtime",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-runtime",
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
 
 export const metadata: Metadata = {
   title: "Pipes",
@@ -10,7 +29,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-color-scheme="light">
+    <html
+      lang="en"
+      data-color-scheme="light"
+      className={`${sans.variable} ${mono.variable}`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -26,7 +49,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <ClerkProvider>
         <body className="min-h-screen bg-white antialiased">
-          <Providers>{children}</Providers>
+          <SoundProvider>
+            <Providers>{children}</Providers>
+          </SoundProvider>
         </body>
       </ClerkProvider>
     </html>

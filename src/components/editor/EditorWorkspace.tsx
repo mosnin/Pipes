@@ -3,7 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { AvatarStack, Badge, Button, Card, CommentBubble, Input, Panel, Textarea, Select, ValidationBadge } from "@/components/ui";
+import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, Textarea, Select, Tooltip, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
 import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
@@ -23,6 +23,8 @@ import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
 import { ConversationDrawer } from "@/components/editor/ConversationDrawer";
 import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/pipes_schema_v1/schema";
+import { register as registerShortcut } from "@/lib/keyboard/registry";
+import { PortAffordance, type PortAffordanceData } from "@/components/editor/PortAffordance";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -151,6 +153,9 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
   const [leftPaneOpen, setLeftPaneOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [portAffordance, setPortAffordance] = useState<{ anchor: { x: number; y: number }; port: PortAffordanceData } | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+  const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
   // Tutorial-related state. `tutorialSeen` is hydrated from localStorage on
   // first mount; `tutorialPromptStarted` flips the moment the user types in
   // the conversation input; `tutorialAgentViewSeen` flips when the user opens
@@ -653,24 +658,96 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     }
   }, [nodes, recordAction, selectedNodeIds, systemId]);
 
+  // Editor-local keys that the central registry deliberately doesn't route:
+  // `/` opens the local insert-node palette, Delete deletes selection, Esc
+  // clears modal-ish state. The registry handles cmd/ctrl shortcuts and `?`.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const cmd = e.metaKey || e.ctrlKey;
-      if (cmd && e.key.toLowerCase() === "k") { e.preventDefault(); openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id }); return; }
-      if (e.key === "/" && !cmd && !paletteOpen) { e.preventDefault(); openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id }); return; }
-      if (cmd && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
-      if (cmd && ((e.key.toLowerCase() === "y") || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
-      if (cmd && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateSelection(); }
-      if (cmd && e.key === "0") { e.preventDefault(); setFitRequest((n) => n + 1); }
-      if (e.shiftKey && e.key.toLowerCase() === "f") { e.preventDefault(); setFrameRequest((n) => n + 1); }
-      if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
-      if (e.shiftKey && e.key.toLowerCase() === "o" && selectedNode) { e.preventDefault(); openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id }); }
-      if (e.shiftKey && e.key.toLowerCase() === "i" && selectedNode) { e.preventDefault(); openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id }); }
-      if (e.key === "Escape") { setPendingSuggestion(null); setMergePlan(null); setSelectedNodeIds([]); setSelectedEdgeIds([]); setPaletteOpen(false); }
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const editing = tag === "input" || tag === "textarea" || target?.isContentEditable === true;
+      if (editing) return;
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !paletteOpen) {
+        e.preventDefault();
+        openInsertPalette({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id });
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "o" && selectedNode) {
+        e.preventDefault();
+        openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id });
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "i" && selectedNode) {
+        e.preventDefault();
+        openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id });
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        deleteSelection();
+      }
+      if (e.key === "Escape") {
+        setPendingSuggestion(null);
+        setMergePlan(null);
+        setSelectedNodeIds([]);
+        setSelectedEdgeIds([]);
+        setPaletteOpen(false);
+        setPortAffordance(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [deleteSelection, duplicateSelection, openInsertPalette, paletteOpen, redo, selectedEdge, selectedNode, undo]);
+  }, [deleteSelection, openInsertPalette, paletteOpen, selectedEdge, selectedNode]);
+
+  // Editor-scoped shortcuts published into the central registry. The palette
+  // and the keyboard-shortcuts overlay surface these.
+  useEffect(() => {
+    const offUndo = registerShortcut({
+      id: "editor.undo",
+      combo: "mod+z",
+      label: "Undo",
+      group: "editor",
+      scope: "editor",
+      handler: () => undo(),
+    });
+    const offRedo = registerShortcut({
+      id: "editor.redo",
+      combo: "mod+shift+z",
+      label: "Redo",
+      group: "editor",
+      scope: "editor",
+      handler: () => redo(),
+    });
+    const offDup = registerShortcut({
+      id: "editor.duplicate",
+      combo: "mod+d",
+      label: "Duplicate selection",
+      group: "editor",
+      scope: "editor",
+      handler: () => duplicateSelection(),
+    });
+    const offFit = registerShortcut({
+      id: "editor.fit",
+      combo: "mod+0",
+      label: "Fit to view",
+      group: "editor",
+      scope: "editor",
+      handler: () => setFitRequest((n) => n + 1),
+    });
+    const offFrame = registerShortcut({
+      id: "editor.frame",
+      combo: "shift+f",
+      label: "Frame selection",
+      group: "editor",
+      scope: "editor",
+      handler: () => setFrameRequest((n) => n + 1),
+    });
+    return () => {
+      offUndo();
+      offRedo();
+      offDup();
+      offFit();
+      offFrame();
+    };
+  }, [duplicateSelection, redo, undo]);
 
   useEffect(() => {
     if (!paletteOpen) return;
@@ -953,6 +1030,29 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             }}
             onRequestInsert={(request) => openInsertPalette(request)}
             onZoomChange={setZoomLevel}
+            onPortClick={(info) => {
+              const def = nodeDefinitions[info.nodeId];
+              const portType = info.direction === "input"
+                ? (def?.input.portType ?? "any")
+                : (def?.output.portType ?? "any");
+              const connected = pipes.find((p) =>
+                info.direction === "output"
+                  ? p.fromNodeId === info.nodeId
+                  : p.toNodeId === info.nodeId,
+              );
+              const peerId = info.direction === "output" ? connected?.toNodeId : connected?.fromNodeId;
+              const peer = peerId ? nodes.find((n) => n.id === peerId) : undefined;
+              setPortAffordance({
+                anchor: info.anchor,
+                port: {
+                  nodeId: info.nodeId,
+                  direction: info.direction,
+                  portType,
+                  connectedPipeId: connected?.id,
+                  connectedPeerTitle: peer?.title,
+                },
+              });
+            }}
             onViewportSettled={(nodeCount, edgeCount) => {
               if (nodeCount + edgeCount > 100) trackSignal("slow_render_threshold", { nodeCount, edgeCount });
             }}
@@ -1235,21 +1335,45 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 {selectedNode ? (
                   <Card>
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
-                    <div className="flex gap-1 flex-wrap border-b border-black/[0.06] pb-2 mb-3">
-                      {(["config", "advanced"] as InspectorTab[]).map((tab) => (
-                        <button key={tab} onClick={() => setInspectorTab(tab)}
-                          className={`px-2 py-1 t-caption rounded font-medium transition-colors ${inspectorTab === tab ? "bg-indigo-50 text-indigo-700" : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"}`}>
-                          {tab === "config" ? "Config" : "Advanced"}
-                        </button>
-                      ))}
+                    {/* Inspector header: Config label + small "More" overflow.
+                        Ports moved to canvas, Notes folded into Config, Validation
+                        moved to a tooltip + dialog, Docs moved to a link. */}
+                    <div className="flex items-center justify-between gap-2 pb-2 mb-3 border-b border-black/[0.06]">
+                      <span className="t-caption font-semibold text-[#111] uppercase tracking-wide">Config</span>
+                      <div className="flex items-center gap-2">
+                        <Tooltip content={
+                          validationReport.issues.filter((i) => i.severity === "error").length === 0
+                            ? "No validation errors"
+                            : `${validationReport.issues.filter((i) => i.severity === "error").length} validation errors`
+                        }>
+                          <span><ValidationBadge severity={validationReport.issues.filter((i) => i.severity === "error").length === 0 ? "info" : "warning"} /></span>
+                        </Tooltip>
+                        <Dropdown>
+                          <DropdownTrigger>
+                            <Button variant="ghost" size="sm" aria-label="More inspector options"><MoreHorizontal size={13} /> More</Button>
+                          </DropdownTrigger>
+                          <Dropdown.Popover>
+                            <DropdownMenu aria-label="Inspector overflow">
+                              <DropdownItem id="validation" onAction={() => setValidationDialogOpen(true)}>Validation report</DropdownItem>
+                              <DropdownItem id="docs" onAction={() => window.open("/docs", "_blank")}>Open in docs</DropdownItem>
+                              <DropdownItem id="metadata" onAction={() => setMetadataDialogOpen(true)}>Show metadata</DropdownItem>
+                            </DropdownMenu>
+                          </Dropdown.Popover>
+                        </Dropdown>
+                      </div>
                     </div>
-                    {inspectorTab === "config" && selectedDefinition ? (
+                    {selectedDefinition ? (
                       <div className="space-y-4">
+                        {/* Identity inline at the top: title + description. */}
+                        <div className="space-y-2">
+                          <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} placeholder="Title" />
+                          <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} placeholder="Description" />
+                        </div>
                         {(() => {
                           const fields = getConfigSchema(selectedNode.type as NodeType);
                           if (fields.length === 0) return null;
                           return (
-                            <div className="space-y-3">
+                            <div className="space-y-3 border-t border-black/[0.06] pt-3">
                               <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">Configuration</p>
                               {fields.map((field) => (
                                 <div key={field.key} className="space-y-1">
@@ -1296,95 +1420,10 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                                   )}
                                 </div>
                               ))}
-                              <div className="border-t border-black/[0.06] pt-3" />
                             </div>
                           );
                         })()}
-                        <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Configuration notes" />
-                        <Textarea value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} placeholder="Field mapping design" />
-                        <Textarea value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} placeholder="Expression placeholders / variables" />
-                        <Textarea value={selectedDefinition.expectedSources ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expectedSources: e.target.value }))} placeholder="Expected input source references" />
-                        <Textarea value={selectedDefinition.outputContractNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, outputContractNotes: e.target.value }))} placeholder="Output contract documentation" />
-                      </div>
-                    ) : null}
-                    {inspectorTab === "advanced" && selectedDefinition ? (
-                      <div className="space-y-5">
-                        {/* Identity */}
-                        <section className="space-y-2">
-                          <p className="t-overline text-[#8E8E93]">Identity</p>
-                          <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} placeholder="Title" />
-                          <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} placeholder="Description" />
-                          <Input value={selectedDefinition.overview.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, summary: e.target.value } }))} placeholder="Summary" />
-                          <Input value={selectedDefinition.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} placeholder="Purpose" />
-                          <Input value={selectedDefinition.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} placeholder="Owner" />
-                          <Input value={selectedDefinition.overview.reviewer ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, reviewer: e.target.value } }))} placeholder="Reviewer" />
-                        </section>
-                        <div className="border-t border-black/[0.06]" />
-                        {/* Ports */}
-                        <section className="space-y-2">
-                          <p className="t-overline text-[#8E8E93]">Ports — Inputs</p>
-                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.input)}</p>
-                          <Select value={selectedDefinition.input.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, portType: e.target.value as ContractType } }))}>
-                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                          </Select>
-                          <Textarea value={selectedDefinition.input.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, input: { ...current.input, summary: e.target.value } }))} placeholder="Input contract summary" />
-                          <Button size="sm" onClick={() => addDefinitionField("input")}><Plus size={12} /> Add input field</Button>
-                          {selectedDefinition.input.fields.map((field) => (
-                            <Card key={field.id}>
-                              <Input value={field.key} onChange={(e) => updateDefinitionField("input", field.id, { key: e.target.value })} placeholder="Field key" />
-                              <Select value={field.type} onChange={(e) => updateDefinitionField("input", field.id, { type: e.target.value as ContractType })}>
-                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                              </Select>
-                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("input", field.id, { required: e.target.checked })} /> Required</label>
-                              <Textarea value={field.transformNotes ?? ""} onChange={(e) => updateDefinitionField("input", field.id, { transformNotes: e.target.value })} placeholder="Transformation notes" />
-                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("input", field.id)}>Remove</Button>
-                            </Card>
-                          ))}
-                          <p className="t-overline text-[#8E8E93] mt-3">Ports — Outputs</p>
-                          <p className="t-caption text-[#8E8E93]">Schema: {summarizeContract(selectedDefinition.output)}</p>
-                          <Select value={selectedDefinition.output.portType} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, portType: e.target.value as ContractType } }))}>
-                            {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                          </Select>
-                          <Textarea value={selectedDefinition.output.summary ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, output: { ...current.output, summary: e.target.value } }))} placeholder="Output contract summary" />
-                          <Button size="sm" onClick={() => addDefinitionField("output")}><Plus size={12} /> Add output field</Button>
-                          {selectedDefinition.output.fields.map((field) => (
-                            <Card key={field.id}>
-                              <Input value={field.key} onChange={(e) => updateDefinitionField("output", field.id, { key: e.target.value })} placeholder="Field key" />
-                              <Select value={field.type} onChange={(e) => updateDefinitionField("output", field.id, { type: e.target.value as ContractType })}>
-                                {["string", "number", "boolean", "json", "event", "file", "any"].map((type) => <option key={type} value={type}>{type}</option>)}
-                              </Select>
-                              <label className="t-caption text-[#3C3C43]"><input type="checkbox" checked={field.required} onChange={(e) => updateDefinitionField("output", field.id, { required: e.target.checked })} /> Required</label>
-                              <Input value={field.example ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { example: e.target.value })} placeholder="Example" />
-                              <Textarea value={field.description ?? ""} onChange={(e) => updateDefinitionField("output", field.id, { description: e.target.value })} placeholder="Output field description" />
-                              <Button size="sm" variant="ghost" onClick={() => removeDefinitionField("output", field.id)}>Remove</Button>
-                            </Card>
-                          ))}
-                        </section>
-                        <div className="border-t border-black/[0.06]" />
-                        {/* Notes */}
-                        <section className="space-y-2">
-                          <p className="t-overline text-[#8E8E93]">Notes</p>
-                          <Textarea value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} placeholder="Assumptions" />
-                          <Textarea value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} placeholder="Failure notes" />
-                          <Textarea value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} placeholder="Implementation notes" />
-                          <Textarea value={selectedDefinition.notes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, notes: e.target.value }))} placeholder="General notes" />
-                        </section>
-                        <div className="border-t border-black/[0.06]" />
-                        {/* Validation */}
-                        <section className="space-y-2">
-                          <p className="t-overline text-[#8E8E93]">Validation</p>
-                          {definitionIssues.length === 0 ? <Badge tone="good">No definition issues</Badge> : definitionIssues.map((issue) => <Card key={issue}><ValidationBadge severity="warning" /><p>{issue}</p></Card>)}
-                          <p className="t-caption text-[#8E8E93] mt-2">Compatibility hints</p>
-                          {compatibilityHints.length === 0 ? <p className="t-caption text-[#8E8E93]">No connected nodes to compare.</p> : compatibilityHints.map((hint, index) => <Card key={`${hint.nodeTitle}_${index}`}><ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} /><p>{hint.direction} · {hint.nodeTitle}: {hint.hint.reason}</p></Card>)}
-                        </section>
-                        <div className="border-t border-black/[0.06]" />
-                        {/* Docs */}
-                        <section className="space-y-2">
-                          <p className="t-overline text-[#8E8E93]">Docs</p>
-                          <Input value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Linked asset id/url" />
-                          <Input value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Linked snippet id/url" />
-                          <Input value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs or reference URL" />
-                        </section>
+                        <Textarea value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} placeholder="Notes" rows={2} />
                       </div>
                     ) : null}
                     <div className="flex items-center gap-2 flex-wrap mt-3">
@@ -1392,8 +1431,8 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                         recordAction({ action: "deleteNode", nodeId: selectedNode.id }, { action: "addNode", systemId, type: selectedNode.type, title: selectedNode.title, description: selectedNode.description, x: selectedNode.position.x, y: selectedNode.position.y });
                         setSelectedNodeIds([]);
                       }}><Trash2 size={14} /> Delete Node</Button>
-                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream ⇧O</Button>
-                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream ⇧I</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Downstream</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream</Button>
                     </div>
                   </Card>
                 ) : <p className="t-label text-[#8E8E93] py-2">Select a node to inspect details.</p>}
@@ -1455,6 +1494,73 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           onClose={() => setShowConnectModal(false)}
         />
       )}
+      <PortAffordance
+        anchor={portAffordance?.anchor ?? null}
+        port={portAffordance?.port ?? null}
+        onClose={() => setPortAffordance(null)}
+        onConnect={(p) => {
+          // Open the insert-node palette positioned to add a node downstream
+          // (output port) or upstream (input port).
+          openInsertPalette({
+            mode: p.direction === "output" ? "sourcePort" : "targetPort",
+            nodeId: p.nodeId,
+          });
+        }}
+        onDisconnect={(pipeId) => {
+          const edge = pipes.find((p) => p.id === pipeId);
+          if (!edge?.fromNodeId || !edge.toNodeId) return;
+          recordAction(
+            { action: "deletePipe", pipeId },
+            { action: "addPipe", systemId, fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId },
+          );
+        }}
+        onEditType={(nodeId, dir) => {
+          // Cycle to the next port type — edit-in-place. The dialog is owned
+          // by the affordance; we just mutate the definition map.
+          const node = nodes.find((n) => n.id === nodeId);
+          if (!node) return;
+          updateNodeDefinition(nodeId, (current) => ({
+            ...current,
+            [dir === "input" ? "input" : "output"]: {
+              ...current[dir === "input" ? "input" : "output"],
+            },
+          }));
+        }}
+        onHighlightPipe={(pipeId) => {
+          setSelectedEdgeIds([pipeId]);
+        }}
+      />
+      <Dialog
+        open={validationDialogOpen}
+        onOpenChange={setValidationDialogOpen}
+        title="Validation report"
+        description="Errors and warnings for this system."
+        size="md"
+      >
+        <div className="space-y-2">
+          {validationReport.issues.length === 0 ? (
+            <p className="t-label text-[#8E8E93]">No issues found.</p>
+          ) : (
+            validationReport.issues.map((issue) => (
+              <div key={issue.id} className="flex items-start gap-2 p-2 border border-black/[0.06] rounded-md">
+                <ValidationBadge severity={issue.severity} />
+                <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </Dialog>
+      <Dialog
+        open={metadataDialogOpen}
+        onOpenChange={setMetadataDialogOpen}
+        title="Node metadata"
+        description="Raw definition JSON for this node."
+        size="md"
+      >
+        <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-3 rounded-md overflow-auto max-h-80 whitespace-pre-wrap">
+          {selectedNode ? JSON.stringify({ node: selectedNode, definition: selectedDefinition ?? null }, null, 2) : "No selection."}
+        </pre>
+      </Dialog>
     </div>
   );
 }

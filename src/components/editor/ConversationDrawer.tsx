@@ -14,6 +14,7 @@ import { ConversationMessages } from "@/components/editor/ConversationMessages";
 import { NpsPrompt } from "@/components/editor/NpsPrompt";
 import { useAgentBuild, type AgentApplyContext } from "@/lib/agent/hooks";
 import { getNpsSeen, incrementBuildCount } from "@/lib/feedback/storage";
+import { useSound } from "@/lib/sound/SoundProvider";
 import { cn } from "@/lib/utils";
 
 export type ConversationDrawerProps = {
@@ -131,23 +132,33 @@ export function ConversationDrawer({
   const hasMessages = agent.messages.length > 0 || agent.toolCalls.length > 0;
   const showActive = !collapsed && (hasMessages || isRunning);
 
+  const sound = useSound();
+
   // Detect successful turn completion: state transitions from running to
   // idle (not error, not stopped) and at least one tool result landed. Bump
-  // the build counter and conditionally mount the NPS prompt.
+  // the build counter and conditionally mount the NPS prompt. Also chime a
+  // subtle build-complete confirmation if the user has opted in to sound.
+  // Errors get a short two-note descending alert instead. Streaming text
+  // never makes a sound.
   const prevStateRef = useRef<typeof agent.state>("idle");
   useEffect(() => {
     const prev = prevStateRef.current;
     prevStateRef.current = agent.state;
     if (prev !== "running" && prev !== "connecting") return;
+    if (agent.state === "error") {
+      sound.play("error");
+      return;
+    }
     if (agent.state !== "idle") return;
-    // Treat "no tool calls landed" as a soft success — still increment the
+    sound.play("buildComplete");
+    // Treat "no tool calls landed" as a soft success: still increment the
     // counter, since the user did get a reply, but the spec mainly cares
     // about builds that produced graph changes.
     const count = incrementBuildCount();
     if (count >= 3 && !getNpsSeen() && !showNps) {
       setShowNps(true);
     }
-  }, [agent.state, showNps]);
+  }, [agent.state, showNps, sound]);
 
   const handleSend = () => {
     const value = text.trim();

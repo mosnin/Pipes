@@ -102,11 +102,18 @@ function MarketingNavbar() {
           {/* Brand */}
           <Link
             href="/"
-            className="flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+            className="group flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
             aria-label="Pipes home"
           >
-            <span className="t-h3 font-bold tracking-[-0.04em] text-[#111]">
+            <span
+              className="relative t-h3 font-bold text-[#111]"
+              style={{ letterSpacing: "-0.04em", fontWeight: 700 }}
+            >
               Pipes
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] origin-left scale-x-0 bg-indigo-600 transition-transform duration-150 group-hover:scale-x-100"
+              />
             </span>
           </Link>
 
@@ -256,11 +263,18 @@ function MarketingFooter() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col gap-4">
             <Link
               href="/"
-              className="flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+              className="group flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
               aria-label="Pipes home"
             >
-              <span className="t-h3 font-bold tracking-[-0.04em] text-[#111]">
+              <span
+                className="relative t-h3 font-bold text-[#111]"
+                style={{ letterSpacing: "-0.04em", fontWeight: 700 }}
+              >
                 Pipes
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] origin-left scale-x-0 bg-indigo-600 transition-transform duration-150 group-hover:scale-x-100"
+                />
               </span>
             </Link>
 

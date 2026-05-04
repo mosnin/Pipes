@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronsLeft,
   ChevronsRight,
@@ -18,6 +19,12 @@ import {
 } from "@/components/ui";
 import { ThemeToggle } from "./ThemeToggle";
 import { PrimaryNavLinks, BottomNavLinks, usePageLabel } from "./NavLinks";
+import {
+  CommandPalette,
+  type CommandItem,
+} from "@/components/editor/CommandPalette";
+import { KeyboardShortcutsOverlay } from "@/components/editor/KeyboardShortcutsOverlay";
+import { register } from "@/lib/keyboard/registry";
 
 const COLLAPSE_KEY = "pipes-sidebar-collapsed";
 
@@ -45,7 +52,10 @@ export function AppShellClient({
 }: AppShellClientProps) {
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
+  const [paletteOpen, setPaletteOpen] = useState<boolean>(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
   const pageLabel = usePageLabel();
+  const router = useRouter();
 
   useEffect(() => {
     try {
@@ -64,18 +74,30 @@ export function AppShellClient({
     }
   }, [collapsed]);
 
-  // Cmd/Ctrl-K focuses the search input
+  // Register the global Cmd/Ctrl-K shortcut. The keyboard registry mounts a
+  // single keydown listener on window; this component just publishes the
+  // shortcut entry. Same for `?` to open the shortcuts overlay.
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const isK = e.key === "k" || e.key === "K";
-      if (isK && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        const el = document.getElementById("global-search-input");
-        if (el != null) (el as HTMLInputElement).focus();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const offPalette = register({
+      id: "global.command-palette",
+      combo: "mod+k",
+      label: "Open command palette",
+      group: "global",
+      scope: "global",
+      handler: () => setPaletteOpen(true),
+    });
+    const offShortcuts = register({
+      id: "global.shortcuts",
+      combo: "?",
+      label: "Show keyboard shortcuts",
+      group: "global",
+      scope: "global",
+      handler: () => setShortcutsOpen((v) => !v),
+    });
+    return () => {
+      offPalette();
+      offShortcuts();
+    };
   }, []);
 
   const sidebarWidth = collapsed ? "w-[56px]" : "w-[248px]";
@@ -247,12 +269,20 @@ export function AppShellClient({
             />
           </div>
 
-          {/* Center: search */}
-          <div className="hidden md:flex items-center w-full max-w-[420px] shrink">
+          {/* Center: search input acts as a trigger for the command palette. */}
+          <div
+            className="hidden md:flex items-center w-full max-w-[420px] shrink"
+            onClickCapture={(e) => {
+              e.preventDefault();
+              setPaletteOpen(true);
+            }}
+            role="button"
+            aria-label="Open command palette"
+          >
             <SearchInputWithId
               value={search}
               onChange={setSearch}
-              placeholder="Search systems, templates, docs..."
+              placeholder="Search or run commands..."
             />
           </div>
 
@@ -300,8 +330,123 @@ export function AppShellClient({
         {/* Scrollable content */}
         <main className="flex-1 overflow-y-auto bg-white">{children}</main>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        items={useGlobalPaletteItems({
+          showAdmin,
+          go: (href) => router.push(href),
+          openShortcuts: () => setShortcutsOpen(true),
+          toggleTheme: () => {
+            // Reuse ThemeToggle behavior inline so we don't depend on its
+            // internal state. The single source of truth is the data attr +
+            // localStorage key.
+            const root = document.documentElement;
+            const cur = root.getAttribute("data-color-scheme") ?? "light";
+            const next = cur === "dark" ? "light" : "dark";
+            root.setAttribute("data-color-scheme", next);
+            try {
+              localStorage.setItem("pipes-theme", next);
+            } catch {
+              // ignore
+            }
+          },
+        })}
+      />
+      <KeyboardShortcutsOverlay
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
+      />
     </div>
   );
+}
+
+function useGlobalPaletteItems(opts: {
+  showAdmin: boolean;
+  go: (href: string) => void;
+  openShortcuts: () => void;
+  toggleTheme: () => void;
+}): CommandItem[] {
+  const { showAdmin, go, openShortcuts, toggleTheme } = opts;
+  return useMemo(() => {
+    const items: CommandItem[] = [
+      {
+        id: "act.new-system",
+        label: "New system",
+        section: "actions",
+        aliases: ["create", "blank"],
+        run: () => go("/systems/new"),
+      },
+      {
+        id: "act.run-validation",
+        label: "Run validation",
+        section: "actions",
+        aliases: ["check", "verify"],
+        run: () => go("/systems"),
+      },
+      {
+        id: "act.toggle-theme",
+        label: "Toggle theme",
+        section: "actions",
+        aliases: ["dark", "light"],
+        run: toggleTheme,
+      },
+      {
+        id: "act.sign-out",
+        label: "Sign out",
+        section: "actions",
+        aliases: ["log out", "logout"],
+        run: () => go("/api/auth/logout"),
+      },
+      {
+        id: "nav.systems",
+        label: "Systems",
+        section: "navigation",
+        run: () => go("/systems"),
+      },
+      {
+        id: "nav.templates",
+        label: "Templates",
+        section: "navigation",
+        run: () => go("/templates"),
+      },
+      {
+        id: "nav.docs",
+        label: "Documentation",
+        section: "navigation",
+        run: () => go("/docs"),
+      },
+      {
+        id: "nav.settings",
+        label: "Settings",
+        section: "navigation",
+        run: () => go("/settings"),
+      },
+      {
+        id: "help.shortcuts",
+        label: "Keyboard shortcuts",
+        section: "help",
+        combo: "?",
+        run: openShortcuts,
+      },
+      {
+        id: "help.docs",
+        label: "Documentation",
+        section: "help",
+        run: () => go("/docs"),
+      },
+    ];
+    if (showAdmin) {
+      items.push({
+        id: "nav.admin",
+        label: "Admin",
+        section: "navigation",
+        run: () => go("/admin"),
+      });
+    }
+    return items;
+  }, [showAdmin, go, openShortcuts, toggleTheme]);
 }
 
 // Local wrapper around SearchInput to attach a fixed id for the global Cmd-K shortcut.

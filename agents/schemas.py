@@ -7,9 +7,29 @@ contract specifies (see `to_event_dict` helpers below).
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
+
+
+# ---- Provider usage (carried on the final stop event) ----
+
+
+@dataclass
+class ProviderUsage:
+    """Token counts plus the model+provider that produced them.
+
+    Both providers populate this on their terminal `stop` event when the SDK
+    surfaces usage data. When usage is absent (older SDK shape, mocked clients,
+    or non-stream errors), `None` rides through and the builder skips the cost
+    meta event entirely - we never emit a cost event with zero tokens.
+    """
+
+    input_tokens: int
+    output_tokens: int
+    model: str
+    provider: Literal["openai", "anthropic"]
 
 
 # ---- Request ----
@@ -40,6 +60,12 @@ class BuildRequest(BaseModel):
     # back to OpenAI. Validated against the Literal at the schema level so the
     # builder never sees a typo.
     provider: Optional[Literal["openai", "anthropic"]] = None
+
+    # Optional learning-loop hint. Summarized last-7-day feedback from the
+    # caller's repository (see src/lib/agent/feedback-summary.ts). Capped at
+    # 160 chars on the producing side. The builder leaves substitution to a
+    # future patch; for now the field rides through so wiring lands first.
+    user_feedback_hint: Optional[str] = Field(default=None, alias="userFeedbackHint")
 
     model_config = {"populate_by_name": True}
 
@@ -192,6 +218,59 @@ class ErrorEvent(BaseModel):
     code: ErrorCode
     message: str
     retryable: bool
+
+
+# ---- Meta event (cost telemetry) ----
+
+
+class CostSnapshot(BaseModel):
+    """Cost snapshot for one turn. Mirrors the route-side `CostSnapshot` shape
+    so observability layers can persist tokens, dollars, model, and provider
+    without re-deriving anything.
+    """
+
+    tokens_in: int = Field(..., alias="tokensIn")
+    tokens_out: int = Field(..., alias="tokensOut")
+    dollars: float
+    model: str
+    provider: Literal["openai", "anthropic"]
+
+    model_config = {"populate_by_name": True}
+
+    def to_dict(self) -> dict[str, Any]:
+        # The route reads both snake_case and camelCase keys; we emit
+        # snake_case here because that matches the existing wire convention
+        # for the `meta.cost` payload.
+        return {
+            "tokens_in": self.tokens_in,
+            "tokens_out": self.tokens_out,
+            "dollars": self.dollars,
+            "model": self.model,
+            "provider": self.provider,
+        }
+
+
+class MetaEvent(BaseModel):
+    """Optional non-terminal event carrying out-of-band telemetry.
+
+    The builder emits one `meta` event right before `done` whenever provider
+    usage data was available. Payload always includes `cost`, `tool_call_count`,
+    and `duration_seconds`; the route forwards it verbatim. The event arrives
+    AFTER all messages and tool_results and BEFORE `done`.
+    """
+
+    cost: CostSnapshot
+    tool_call_count: int = Field(..., alias="toolCallCount")
+    duration_seconds: float = Field(..., alias="durationSeconds")
+
+    model_config = {"populate_by_name": True}
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cost": self.cost.to_dict(),
+            "tool_call_count": self.tool_call_count,
+            "duration_seconds": self.duration_seconds,
+        }
 
 
 # ---- Limits ----

@@ -18,7 +18,7 @@ from typing import Any, AsyncIterator
 import pytest
 
 from agents.builder import run_turn_stream
-from agents.schemas import BuildRequest
+from agents.schemas import BuildRequest, ProviderUsage
 
 
 # A plan paragraph that satisfies `evaluate_plan` for a 2-3 node fresh canvas.
@@ -249,3 +249,141 @@ async def test_runner_exception_emits_internal_error() -> None:
     assert parsed[-1]["event"] == "error"
     assert parsed[-1]["data"]["code"] == "internal"
     assert parsed[-1]["data"]["retryable"] is True
+
+
+@pytest.mark.asyncio
+async def test_meta_event_lands_before_done_with_cost_payload() -> None:
+    """When a runner emits a `usage` step, the builder emits one final `meta`
+    SSE event carrying cost telemetry right before `done`. This is the
+    learning-loop hook: every turn ships measurable cost down the wire."""
+    request = BuildRequest(systemId="sys_test", prompt="planner+coder")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": SAMPLE_PLAN_2NODE}
+        yield {"kind": "message", "text": "Planner feeds Coder."}
+        # Provider usage forwarded by `_run_streaming_with_provider`. Tests
+        # mimic that by yielding a `usage` step directly.
+        yield {
+            "kind": "usage",
+            "provider_usage": ProviderUsage(
+                input_tokens=1000,
+                output_tokens=400,
+                model="gpt-4o-mini",
+                provider="openai",
+            ),
+        }
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+
+    # Order invariant: meta is the LAST event before done.
+    assert names[-1] == "done"
+    assert names[-2] == "meta"
+
+    meta = parsed[-2]["data"]
+    assert meta["cost"]["tokens_in"] == 1000
+    assert meta["cost"]["tokens_out"] == 400
+    assert meta["cost"]["model"] == "gpt-4o-mini"
+    assert meta["cost"]["provider"] == "openai"
+    # Cost: 1000/1M * 0.15 + 400/1M * 0.60 = 0.00015 + 0.00024 = 0.00039
+    assert meta["cost"]["dollars"] == pytest.approx(0.00039, rel=1e-3)
+    assert meta["tool_call_count"] == 0
+    assert isinstance(meta["duration_seconds"], (int, float))
+    assert meta["duration_seconds"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_meta_event_skipped_when_no_usage_available() -> None:
+    """If the runner never emits a `usage` step, no `meta` event is emitted.
+    The route persists `costSnapshot=None` rather than $0, which would lie."""
+    request = BuildRequest(systemId="sys_test", prompt="planner+coder")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": SAMPLE_PLAN_2NODE}
+        yield {"kind": "message", "text": "Planner feeds Coder."}
+        # No usage step.
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+
+    assert names[-1] == "done"
+    assert "meta" not in names
+
+
+@pytest.mark.asyncio
+async def test_meta_event_accepts_dict_provider_usage() -> None:
+    """Tests / older runners may yield a plain dict for provider_usage; the
+    builder accepts either shape and produces the same meta event."""
+    request = BuildRequest(systemId="sys_test", prompt="planner+coder")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": SAMPLE_PLAN_2NODE}
+        yield {"kind": "message", "text": "ok"}
+        yield {
+            "kind": "usage",
+            "provider_usage": {
+                "input_tokens": 50,
+                "output_tokens": 25,
+                "model": "claude-haiku-4-5-20251001",
+                "provider": "anthropic",
+            },
+        }
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+    assert names[-2] == "meta"
+    meta = parsed[-2]["data"]
+    assert meta["cost"]["provider"] == "anthropic"
+    assert meta["cost"]["model"] == "claude-haiku-4-5-20251001"
+    # 50/1M * 1.00 + 25/1M * 5.00 = 0.00005 + 0.000125 = 0.000175
+    assert meta["cost"]["dollars"] == pytest.approx(0.000175, rel=1e-3)
+
+
+@pytest.mark.asyncio
+async def test_meta_event_counts_tool_calls() -> None:
+    """`tool_call_count` on the meta event reflects how many tool calls fired."""
+    request = BuildRequest(systemId="sys_test", prompt="planner+coder")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": SAMPLE_PLAN_2NODE}
+        yield {
+            "kind": "tool_call",
+            "id": "tc_1",
+            "tool_name": "add_node",
+            "arguments": {
+                "systemId": "sys_test",
+                "type": "Agent",
+                "title": "Planner",
+                "description": "Reads the prompt and emits a plan for Coder.",
+            },
+        }
+        yield {
+            "kind": "tool_result",
+            "id": "tc_1",
+            "ok": True,
+            "action": {
+                "action": "addNode",
+                "systemId": "sys_test",
+                "type": "Agent",
+                "title": "Planner",
+                "clientNodeId": "tmp_aaaaaaaa",
+            },
+        }
+        yield {"kind": "message", "text": "Done."}
+        yield {
+            "kind": "usage",
+            "provider_usage": ProviderUsage(
+                input_tokens=10,
+                output_tokens=5,
+                model="gpt-4o-mini",
+                provider="openai",
+            ),
+        }
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    meta = next(p for p in parsed if p["event"] == "meta")
+    assert meta["data"]["tool_call_count"] == 1

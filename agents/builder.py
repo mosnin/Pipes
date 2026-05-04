@@ -31,6 +31,7 @@ import uuid
 from pathlib import Path
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional
 
+from .cost_table import estimate_cost_dollars
 from .plan_evaluator import (
     ActionEvalResult,
     EvalResult,
@@ -53,6 +54,7 @@ from .schemas import (
     MAX_TOOL_CALLS_PER_TURN,
     MAX_WALL_CLOCK_SECONDS,
     BuildRequest,
+    ProviderUsage,
 )
 from .tools import (
     GraphState,
@@ -306,6 +308,7 @@ async def run_turn_stream(
 
     final_message_sent = planner is not None
     plan_received_from_runner = planner is not None
+    captured_usage: Optional[ProviderUsage] = None
 
     try:
         async for step in runner_iter:
@@ -487,6 +490,22 @@ async def run_turn_stream(
                 if step.get("tool_name"):
                     payload["tool_name"] = step["tool_name"]
                 yield sse_event("status", payload)
+            elif kind == "usage":
+                # Provider usage. Capture for the final `meta` SSE event.
+                # Tests may inject either a ProviderUsage or a plain dict.
+                raw = step.get("provider_usage")
+                if isinstance(raw, ProviderUsage):
+                    captured_usage = raw
+                elif isinstance(raw, dict):
+                    try:
+                        captured_usage = ProviderUsage(
+                            input_tokens=int(raw["input_tokens"]),
+                            output_tokens=int(raw["output_tokens"]),
+                            model=str(raw["model"]),
+                            provider=raw["provider"],
+                        )
+                    except (KeyError, TypeError, ValueError):
+                        captured_usage = None
             else:
                 # Unknown step kinds are silently dropped to keep the wire clean.
                 continue
@@ -503,6 +522,31 @@ async def run_turn_stream(
 
     if aborted():
         return
+
+    # Emit one `meta` event carrying cost telemetry before the terminal
+    # `done`. Skipped entirely when the provider didn't surface usage numbers
+    # so the route persists None rather than a misleading $0 record.
+    if captured_usage is not None:
+        cost_dollars = estimate_cost_dollars(
+            captured_usage.provider,
+            captured_usage.model,
+            captured_usage.input_tokens,
+            captured_usage.output_tokens,
+        )
+        yield sse_event(
+            "meta",
+            {
+                "cost": {
+                    "tokens_in": captured_usage.input_tokens,
+                    "tokens_out": captured_usage.output_tokens,
+                    "dollars": round(cost_dollars, 6),
+                    "model": captured_usage.model,
+                    "provider": captured_usage.provider,
+                },
+                "tool_call_count": tool_call_count,
+                "duration_seconds": round(time.monotonic() - started_at, 2),
+            },
+        )
 
     yield sse_event(
         "done",
@@ -639,6 +683,11 @@ async def _run_streaming_with_provider(
                     "agent_turn_usage",
                     extra={"usage": event.usage, "model": provider.model},
                 )
+            # Forward normalized usage to the outer loop so it can emit a
+            # `meta` SSE event with cost. Skipped when the SDK didn't surface
+            # numbers; emitting zeros here would lie about cost.
+            if event.provider_usage is not None:
+                yield {"kind": "usage", "provider_usage": event.provider_usage}
             return
 
     # Provider exhausted without a stop event - flush any pending text.

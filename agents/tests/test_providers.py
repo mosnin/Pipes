@@ -29,6 +29,7 @@ from agents.providers import (
     resolve_model,
     resolve_provider,
 )
+from agents.schemas import ProviderUsage
 
 
 # ---- resolve_provider / resolve_model ----
@@ -228,6 +229,14 @@ async def test_openai_provider_emits_text_tool_call_and_stop(
     }
     assert events[2].stop_reason == "end_turn"
     assert events[2].usage == {"prompt_tokens": 12, "completion_tokens": 7}
+    # Normalized usage is populated for cost telemetry. Token keys map from
+    # `prompt_tokens` / `completion_tokens` on this SDK shape.
+    assert events[2].provider_usage is not None
+    assert isinstance(events[2].provider_usage, ProviderUsage)
+    assert events[2].provider_usage.input_tokens == 12
+    assert events[2].provider_usage.output_tokens == 7
+    assert events[2].provider_usage.model == "gpt-4o-mini"
+    assert events[2].provider_usage.provider == "openai"
 
 
 @pytest.mark.asyncio
@@ -240,6 +249,46 @@ async def test_openai_provider_submit_tool_result_is_noop(
     provider = OpenAIProvider(model="gpt-4o-mini", api_key="sk-test")
     # No assertion on return value; the call must not raise.
     await provider.submit_tool_result("tc_1", {"action": "addNode"})
+
+
+@pytest.mark.asyncio
+async def test_openai_provider_skips_provider_usage_when_sdk_omits_it(
+    openai_sdk_stub: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the SDK does not expose a usage dict, `provider_usage` is None on
+    stop. This is the signal the builder uses to skip the cost meta event
+    rather than ship a misleading $0 record."""
+    # Replace the stream's final_output so usage extraction returns nothing.
+    real_run_streamed = openai_sdk_stub.run_streamed
+
+    class _NoUsageStream:
+        def __init__(self, events: list[Any]) -> None:
+            self._events = events
+            self.final_output = None
+
+        async def stream_events(self) -> AsyncIterator[Any]:
+            for e in self._events:
+                yield e
+
+    def patched(agent: Any, prompt: str) -> Any:
+        return _NoUsageStream(openai_sdk_stub._events)
+
+    monkeypatch.setattr(openai_sdk_stub, "run_streamed", patched)
+    openai_sdk_stub.queue([_StubOpenAIEvent("message", text="ok")])
+
+    provider = OpenAIProvider(model="gpt-4o-mini", api_key="sk-test")
+    events: list[ProviderEvent] = []
+    async for evt in provider.run(
+        system_prompt="x", user_prompt="y", tools=[]
+    ):
+        events.append(evt)
+
+    stop = events[-1]
+    assert stop.kind == "stop"
+    assert stop.provider_usage is None
+    # Restore is automatic via monkeypatch teardown but be explicit for clarity.
+    monkeypatch.setattr(openai_sdk_stub, "run_streamed", real_run_streamed)
 
 
 # ---- Anthropic provider with stubbed SDK ----
@@ -443,6 +492,15 @@ async def test_anthropic_provider_emits_normalized_events(
     # Usage was accumulated across turns.
     assert events[4].usage is not None
     assert events[4].usage["input_tokens"] == 11
+    # Normalized usage is populated and carries model + provider for cost.
+    assert events[4].provider_usage is not None
+    assert isinstance(events[4].provider_usage, ProviderUsage)
+    assert events[4].provider_usage.input_tokens == 11
+    # `output_tokens` is overwritten per `message_delta`, not summed; the
+    # second turn ended at 2 so that's the surfaced value.
+    assert events[4].provider_usage.output_tokens == 2
+    assert events[4].provider_usage.model == "claude-haiku-4-5-20251001"
+    assert events[4].provider_usage.provider == "anthropic"
 
     # Two API calls happened (turn 1 + turn 2). The second call's messages
     # contain a tool_result block referring to toolu_1.

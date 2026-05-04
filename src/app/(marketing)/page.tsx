@@ -7,11 +7,36 @@ import {
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
+import { HeroFrameAnimated } from "@/components/marketing/HeroFrameAnimated";
+import { SoundFooterToggle } from "@/components/marketing/SoundFooterToggle";
+
+const HOMEPAGE_TITLE = "Describe your system. Watch it build itself.";
+const HOMEPAGE_SUBTITLE =
+  "Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.";
+const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {
   title: "Describe your system. Watch it build itself. - Pipes",
-  description:
-    "Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.",
+  description: HOMEPAGE_SUBTITLE,
+  openGraph: {
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_SUBTITLE,
+    type: "website" as const,
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: HOMEPAGE_TITLE,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image" as const,
+    title: HOMEPAGE_TITLE,
+    description: HOMEPAGE_SUBTITLE,
+    images: [OG_IMAGE_URL],
+  },
 };
 
 const TRUST_LOGOS = [
@@ -131,57 +156,6 @@ function ScreenshotPlaceholder({
   );
 }
 
-function HeroFrame() {
-  return (
-    <div
-      className="surface-muted relative w-full overflow-hidden rounded-[12px] border border-black/[0.08] shadow-sm-token"
-      role="img"
-      aria-label="The agent reads a one-sentence prompt and draws the Planner and Coder nodes on the canvas"
-      style={{ aspectRatio: "16 / 9" }}
-    >
-      <div className="absolute left-0 right-0 top-0 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
-        <span className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>
-          Pipes
-        </span>
-        <span className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-          sys_8a72
-        </span>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-black/[0.06] bg-[#F5F5F7] px-2 py-0.5 t-caption text-[#3C3C43]" style={{ fontSize: 10 }}>
-          Building...
-        </span>
-      </div>
-      <div className="absolute inset-0 flex flex-col gap-3 px-5 pt-12 pb-5">
-        <div className="rounded-md border border-black/[0.08] bg-white px-3 py-2">
-          <p className="t-caption text-[#8E8E93]" style={{ fontSize: 10 }}>
-            You typed
-          </p>
-          <p className="mt-1 t-label text-[#111]" style={{ fontSize: 12.5 }}>
-            Planner agent reads tickets, hands off to a coder agent.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
-            add_node(&quot;Planner agent&quot;)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
-            add_node(&quot;Coder agent&quot;)
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-indigo-500 animate-pulse" aria-hidden="true" />
-          <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
-            add_pipe(planner -&gt; coder)
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function complexityTone(c: string): "good" | "warn" | "neutral" {
   if (c === "simple") return "good";
   if (c === "advanced") return "warn";
@@ -249,7 +223,7 @@ export default async function HomePage() {
             </div>
 
             <div className="lg:pl-2">
-              <HeroFrame />
+              <HeroFrameAnimated />
             </div>
           </div>
         </div>
@@ -552,6 +526,10 @@ export default async function HomePage() {
           <p className="mt-5 t-caption text-[#8E8E93]">
             Free forever - SOC 2 Type II - SSO available on Enterprise
           </p>
+
+          <div className="mt-10 flex items-center justify-center">
+            <SoundFooterToggle />
+          </div>
         </div>
       </section>
 

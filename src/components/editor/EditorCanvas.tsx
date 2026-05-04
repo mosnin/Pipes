@@ -140,6 +140,7 @@ export function EditorCanvas({
   onRequestInsert,
   onZoomChange,
   onViewportSettled,
+  onPortClick,
 }: {
   initialNodes: Node[];
   initialEdges: Edge[];
@@ -161,6 +162,7 @@ export function EditorCanvas({
   onRequestInsert: (context: { mode: "canvas" | "selectedNode" | "selectedEdge"; at: { x: number; y: number }; nodeId?: string; edgeId?: string }) => void;
   onZoomChange?: (zoom: number) => void;
   onViewportSettled?: (nodeCount: number, edgeCount: number) => void;
+  onPortClick?: (info: { nodeId: string; direction: "input" | "output"; anchor: { x: number; y: number } }) => void;
 }) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -276,8 +278,44 @@ export function EditorCanvas({
   const highlightedNodeSet = useMemo(() => new Set(highlightedNodeIds ?? []), [highlightedNodeIds]);
   const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeIds ?? []), [highlightedEdgeIds]);
 
+  // Delegated handler for port clicks. xyflow renders <div class="react-flow__handle">
+  // children of <div class="react-flow__node" data-id="...">. We listen on the
+  // canvas wrapper, not the document, so the listener tears down with the
+  // canvas. xyflow uses a plain pointerdown on a handle to start a drag-to-
+  // connect; we listen for SHIFT-click to open the affordance instead so the
+  // two gestures don't fight.
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!onPortClick) return;
+    const node = wrapRef.current;
+    if (!node) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (!e.shiftKey) return;
+      const handle = target.closest?.(".react-flow__handle") as HTMLElement | null;
+      if (!handle) return;
+      const nodeEl = handle.closest?.(".react-flow__node") as HTMLElement | null;
+      const nodeId = nodeEl?.getAttribute("data-id");
+      if (!nodeId) return;
+      const direction: "input" | "output" = handle.classList.contains("source")
+        ? "output"
+        : "input";
+      const rect = handle.getBoundingClientRect();
+      e.preventDefault();
+      e.stopPropagation();
+      onPortClick({
+        nodeId,
+        direction,
+        anchor: { x: rect.right + 6, y: rect.top },
+      });
+    };
+    node.addEventListener("pointerdown", onPointerDown, true);
+    return () => node.removeEventListener("pointerdown", onPointerDown, true);
+  }, [onPortClick]);
+
   return (
-    <div className="editor-canvas relative w-full h-full" style={{ position: "relative" }}>
+    <div ref={wrapRef} className="editor-canvas relative w-full h-full" style={{ position: "relative" }}>
       {previewItems
         ?.filter((item) => item.previewKind === "addition" && item.x !== undefined && item.y !== undefined)
         .map((item) => (

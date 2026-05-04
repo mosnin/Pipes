@@ -71,13 +71,18 @@ async def _stream_for_request(body: dict[str, Any]) -> AsyncIterator[bytes]:
 
     `body` may include the optional tailoring fields documented in
     `agents/README.md` (userFirstName, userTeam, priorSystemsSummary,
-    systemName, existingNodesCount, existingPipesCount). The Pydantic model
-    accepts both camelCase aliases (from the Next.js route) and snake_case
-    field names. Unknown fields are ignored.
+    systemName, existingNodesCount, existingPipesCount, userFeedbackHint).
+    The Pydantic model accepts both camelCase aliases (from the Next.js
+    route) and snake_case field names. Unknown fields are ignored.
 
     Provider selection: the body may include `provider: "openai"` or
     `provider: "anthropic"`. When unset, `PIPES_AGENT_PROVIDER` env var is
     consulted; the final fallback is `openai`.
+
+    Cost telemetry: the builder emits a `meta` SSE event carrying a `cost`
+    payload right before `done`. We pass those bytes through unchanged; the
+    Next.js route reads them, persists the snapshot on `agent_turns`, and
+    forwards the same frame to the client. No proxy-side rewriting here.
     """
     # Lazy import so tests can load this module without the rest of the package
     # resolving. Modal containers will resolve once the image boots.

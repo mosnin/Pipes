@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildPersonalizationPayload,
   deriveFirstName,
-  summarizePriorSystems
+  mergeFeedbackIntoPrior,
+  summarizePriorSystems,
+  type PersonalizationPayload
 } from "@/lib/agent/personalization";
-import type { AppContext, RepositorySet, SystemRecord } from "@/lib/repositories/contracts";
+import type { AppContext, FeedbackEntryRecord, RepositorySet, SystemRecord } from "@/lib/repositories/contracts";
 
 const ctx: AppContext = {
   userId: "usr_1",
@@ -28,9 +30,14 @@ function makeSystem(id: string, name: string, updatedAt: string, archived = fals
   };
 }
 
-function makeRepos(systems: SystemRecord[], bundleNodes = 0, bundlePipes = 0): RepositorySet {
-  // We only need the systems repo for personalization. The other entries get
-  // cast as never so we can build a stand-in.
+function makeRepos(
+  systems: SystemRecord[],
+  bundleNodes = 0,
+  bundlePipes = 0,
+  feedback: FeedbackEntryRecord[] = []
+): RepositorySet {
+  // We only need the systems and feedback repos for personalization. The
+  // other entries get cast as never so we can build a stand-in.
   return {
     systems: {
       list: async () => systems,
@@ -45,8 +52,21 @@ function makeRepos(systems: SystemRecord[], bundleNodes = 0, bundlePipes = 0): R
       }),
       archive: async () => undefined,
       restore: async () => undefined
+    },
+    feedback: {
+      listEntries: async () => feedback
     }
   } as unknown as RepositorySet;
+}
+
+function thumbsEntry(verdict: "up" | "down", isoOffsetMs: number): FeedbackEntryRecord {
+  return {
+    id: `fbk_${Math.random().toString(36).slice(2, 10)}`,
+    userId: "usr_1",
+    kind: "thumbs",
+    verdict,
+    createdAt: new Date(Date.now() - isoOffsetMs).toISOString()
+  };
 }
 
 describe("deriveFirstName", () => {
@@ -179,5 +199,77 @@ describe("buildPersonalizationPayload", () => {
     const repos = makeRepos([makeSystem("sys", "X", "2026-04-01T00:00:00.000Z")]);
     const payload = await buildPersonalizationPayload(ctx, "sys", repos, { name: "Alex", email: "" });
     expect(payload.userTeam).toBe("");
+  });
+
+  it("populates feedbackHint from the user's last 7 days of feedback", async () => {
+    const systems = [makeSystem("sys", "X", "2026-04-01T00:00:00.000Z")];
+    const oneDay = 24 * 60 * 60 * 1000;
+    const repos = makeRepos(systems, 0, 0, [
+      thumbsEntry("up", oneDay),
+      thumbsEntry("up", 2 * oneDay),
+      thumbsEntry("down", 3 * oneDay)
+    ]);
+    const payload = await buildPersonalizationPayload(ctx, "sys", repos, { name: "Alex", email: "" });
+    expect(payload.feedbackHint).toBe("Last 7d: 2 up, 1 down.");
+  });
+
+  it("returns empty feedbackHint when no feedback exists", async () => {
+    const repos = makeRepos([makeSystem("sys", "X", "2026-04-01T00:00:00.000Z")]);
+    const payload = await buildPersonalizationPayload(ctx, "sys", repos, { name: "Alex", email: "" });
+    expect(payload.feedbackHint).toBe("");
+  });
+
+  it("survives a failing feedback.listEntries call without throwing", async () => {
+    const repos = {
+      systems: {
+        list: async () => [] as SystemRecord[],
+        create: async () => "",
+        getBundle: async () => { throw new Error("boom"); },
+        archive: async () => undefined,
+        restore: async () => undefined
+      },
+      feedback: {
+        listEntries: async () => { throw new Error("boom"); }
+      }
+    } as unknown as RepositorySet;
+    const payload = await buildPersonalizationPayload(ctx, "sys_x", repos, { name: "Sam", email: "" });
+    expect(payload.feedbackHint).toBe("");
+  });
+});
+
+describe("mergeFeedbackIntoPrior", () => {
+  const base: PersonalizationPayload = {
+    userFirstName: "Alex",
+    userTeam: "",
+    priorSystemsSummary: "Has shipped: Alpha, Beta",
+    systemName: "Customer Onboarding",
+    existingNodesCount: 4,
+    existingPipesCount: 3,
+    feedbackHint: ""
+  };
+
+  it("returns the same payload when feedbackHint is empty", () => {
+    const out = mergeFeedbackIntoPrior(base);
+    expect(out.priorSystemsSummary).toBe("Has shipped: Alpha, Beta");
+  });
+
+  it("appends feedbackHint to priorSystemsSummary when both are present", () => {
+    const out = mergeFeedbackIntoPrior({ ...base, feedbackHint: "Last 7d: 5 up, 1 down." });
+    expect(out.priorSystemsSummary).toBe("Has shipped: Alpha, Beta Last 7d: 5 up, 1 down.");
+  });
+
+  it("uses feedbackHint alone when priorSystemsSummary is empty", () => {
+    const out = mergeFeedbackIntoPrior({
+      ...base,
+      priorSystemsSummary: "",
+      feedbackHint: "Last 7d: 2 up, 0 down."
+    });
+    expect(out.priorSystemsSummary).toBe("Last 7d: 2 up, 0 down.");
+  });
+
+  it("does not mutate the input payload", () => {
+    const input: PersonalizationPayload = { ...base, feedbackHint: "Last 7d: 1 up." };
+    mergeFeedbackIntoPrior(input);
+    expect(input.priorSystemsSummary).toBe("Has shipped: Alpha, Beta");
   });
 });

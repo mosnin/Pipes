@@ -11,7 +11,7 @@ import type { BuilderStrategy, DecisionRecord, MemoryEntry, PatternArtifact, Reu
 import type { EvaluationRecord, LearningArtifact, PatternDemotionRecord, PatternPromotionRecord, SkillPerformanceRecord, StrategyPerformanceRecord } from "@/domain/agent_builder/evaluation";
 import type { ApprovalParticipantRecord, HandoffRecord, ReviewComment, ReviewDecisionRecord, ReviewThread, RevisionRequest, RunReviewer, SharedRunVisibilityState } from "@/domain/agent_builder/collaboration";
 import type { AgentPolicy, EscalationRecord, PolicyDecisionRecord, RunPolicySnapshot, RuntimeUsageRecord } from "@/domain/agent_builder/policy";
-import type { AgentConversationRecord, AgentRunnerMetricRecord, AgentTurnRecord, FeedbackEntryRecord } from "@/lib/repositories/contracts";
+import type { AgentConversationRecord, AgentRunnerMetricRecord, AgentTurnRecord, FeedbackEntryRecord, MetricsSampleRecord } from "@/lib/repositories/contracts";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -126,6 +126,7 @@ type DbShape = {
   agentTurns: AgentTurnRecord[];
   agentRunnerMetrics: AgentRunnerMetricRecord[];
   feedbackEntries: FeedbackEntryRecord[];
+  metricsSamples: MetricsSampleRecord[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
@@ -203,7 +204,8 @@ function seed(): DbShape {
     agentConversations: [],
     agentTurns: [],
     agentRunnerMetrics: [],
-    feedbackEntries: []
+    feedbackEntries: [],
+    metricsSamples: []
   };
 }
 
@@ -263,7 +265,8 @@ function readDb(): DbShape {
     agentConversations: parsed.agentConversations ?? [],
     agentTurns: parsed.agentTurns ?? [],
     agentRunnerMetrics: parsed.agentRunnerMetrics ?? [],
-    feedbackEntries: parsed.feedbackEntries ?? []
+    feedbackEntries: parsed.feedbackEntries ?? [],
+    metricsSamples: parsed.metricsSamples ?? []
   };
 }
 

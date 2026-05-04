@@ -1,4 +1,11 @@
-import type { AppContext, RepositorySet, SystemBundle, SystemRecord } from "@/lib/repositories/contracts";
+import type {
+  AppContext,
+  FeedbackEntryRecord,
+  RepositorySet,
+  SystemBundle,
+  SystemRecord
+} from "@/lib/repositories/contracts";
+import { summarizeFeedback } from "@/lib/agent/feedback-summary";
 
 export type PersonalizationPayload = {
   userFirstName: string;
@@ -7,6 +14,14 @@ export type PersonalizationPayload = {
   systemName: string;
   existingNodesCount: number;
   existingPipesCount: number;
+  /**
+   * Short hint summarizing the user's last 7 days of feedback. Empty string
+   * when there is nothing to report. Capped at 160 chars by
+   * `summarizeFeedback`. The orchestrator may merge this into
+   * `priorSystemsSummary` via `mergeFeedbackIntoPrior` before forwarding to
+   * the agent runner; the field is otherwise unused at the wire level today.
+   */
+  feedbackHint: string;
 };
 
 export type PersonalizationIdentity = {
@@ -86,12 +101,39 @@ export async function buildPersonalizationPayload(
     existingPipesCount = 0;
   }
 
+  let feedbackEntries: FeedbackEntryRecord[] = [];
+  try {
+    feedbackEntries = await repos.feedback.listEntries({ userId: ctx.userId, limit: 50 });
+  } catch {
+    feedbackEntries = [];
+  }
+  const feedbackHint = summarizeFeedback(feedbackEntries);
+
   return {
     userFirstName,
     userTeam,
     priorSystemsSummary,
     systemName,
     existingNodesCount,
-    existingPipesCount
+    existingPipesCount,
+    feedbackHint
   };
+}
+
+/**
+ * Merge the feedback hint into the prior-systems summary. The agent runner
+ * reads `priorSystemsSummary` via the `{{prior_systems_summary}}` placeholder
+ * in the system prompt; appending the hint reuses that surface without
+ * touching the prompt template. Returns a new payload; never mutates input.
+ *
+ * Empty `feedbackHint` is a no-op. The combined string is not re-capped here
+ * because each component carries its own cap (80 + 160 + a separator fits
+ * comfortably under the prompt's overall context budget).
+ */
+export function mergeFeedbackIntoPrior(payload: PersonalizationPayload): PersonalizationPayload {
+  const hint = payload.feedbackHint.trim();
+  if (!hint) return payload;
+  const prior = payload.priorSystemsSummary.trim();
+  const combined = prior ? `${prior} ${hint}` : hint;
+  return { ...payload, priorSystemsSummary: combined };
 }

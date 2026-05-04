@@ -186,6 +186,14 @@ export type AgentConversationRecord = {
   updatedAt: string;
 };
 
+export type CostSnapshot = {
+  tokensIn?: number;
+  tokensOut?: number;
+  dollars?: number;
+  model?: string;
+  provider?: string;
+};
+
 export type AgentTurnRecord = {
   id: string;
   conversationId: string;
@@ -196,6 +204,7 @@ export type AgentTurnRecord = {
   startedAt: string;
   completedAt?: string;
   cancelled: boolean;
+  costSnapshot?: CostSnapshot;
 };
 
 export interface AgentConversationsRepository {
@@ -205,8 +214,22 @@ export interface AgentConversationsRepository {
   touchConversation(conversationId: string): Promise<void>;
   createTurn(input: { conversationId: string; index: number; prompt: string; startedAt: string }): Promise<AgentTurnRecord>;
   listTurns(conversationId: string): Promise<AgentTurnRecord[]>;
-  appendToolCall(input: { turnId: string; toolCall: AgentTurnToolCallRecord }): Promise<void>;
-  completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean }): Promise<void>;
+  appendToolCall(input: { turnId: string; toolCall: AgentTurnToolCallRecord; costSnapshot?: CostSnapshot }): Promise<void>;
+  completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean; costSnapshot?: CostSnapshot }): Promise<void>;
+}
+
+export type MetricsSampleRecord = {
+  id: string;
+  kind: "latency" | "counter" | "error";
+  label: string;
+  value: number;
+  tags?: Record<string, string>;
+  ts: string;
+};
+
+export interface MetricsRepository {
+  recordSample(input: { kind: "latency" | "counter" | "error"; label: string; value: number; tags?: Record<string, string>; ts: string }): Promise<void>;
+  listSamples(input?: { kind?: "latency" | "counter" | "error"; label?: string; sinceTs?: string; limit?: number }): Promise<MetricsSampleRecord[]>;
 }
 
 export type AgentRunnerMetricRecord = {
@@ -340,6 +363,7 @@ export type RepositorySet = {
   };
   agentConversations: AgentConversationsRepository;
   agentRunnerMetrics: AgentRunnerMetricsRepository;
+  metrics: MetricsRepository;
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;

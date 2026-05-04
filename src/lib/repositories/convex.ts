@@ -764,11 +764,40 @@ export function createConvexRepositories(): RepositorySet {
       },
       async appendToolCall(input) {
         const client = getConvexHttpClient();
-        await client.mutation((api as any).app.appendAgentTurnToolCall, { turnId: input.turnId as never, toolCall: input.toolCall });
+        await client.mutation((api as any).app.appendAgentTurnToolCall, { turnId: input.turnId as never, toolCall: input.toolCall, costSnapshot: input.costSnapshot });
       },
       async completeTurn(input) {
         const client = getConvexHttpClient();
-        await client.mutation((api as any).app.completeAgentTurn, { turnId: input.turnId as never, finalMessage: input.finalMessage, completedAt: input.completedAt, cancelled: input.cancelled });
+        await client.mutation((api as any).app.completeAgentTurn, { turnId: input.turnId as never, finalMessage: input.finalMessage, completedAt: input.completedAt, cancelled: input.cancelled, costSnapshot: input.costSnapshot });
+      }
+    },
+    metrics: {
+      async recordSample(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.recordMetricSample, {
+          kind: input.kind,
+          label: input.label,
+          value: input.value,
+          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
+          ts: input.ts
+        });
+      },
+      async listSamples(opts) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listMetricSamples, {
+          kind: opts?.kind,
+          label: opts?.label,
+          sinceTs: opts?.sinceTs,
+          limit: opts?.limit
+        });
+        return (rows ?? []).map((row: any) => ({
+          id: String(row._id),
+          kind: row.kind,
+          label: row.label,
+          value: row.value,
+          tags: row.tagsJson ? (JSON.parse(row.tagsJson) as Record<string, string>) : undefined,
+          ts: row.ts
+        }));
       }
     },
     agentRunnerMetrics: {
