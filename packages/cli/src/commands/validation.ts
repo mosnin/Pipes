@@ -25,10 +25,8 @@ interface GlobalOpts {
 }
 
 export function registerValidation(program: Command): void {
-  const validation = program.command("validation").description("Validate system graphs");
-
-  validation
-    .command("get <systemId>")
+  program
+    .command("validate <systemId>")
     .description("Get validation report for a system")
     .action(async (systemId: string) => {
       const global = program.optsWithGlobals<GlobalOpts>();

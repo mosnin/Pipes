@@ -13,11 +13,6 @@ interface GlobalOpts {
   token?: string;
 }
 
-interface McpServerOpts {
-  api?: string;
-  token?: string;
-}
-
 const TOOLS = [
   {
     name: "list_systems",
@@ -200,7 +195,7 @@ export function registerMcpServer(program: Command): void {
     )
     .option("--api <url>", "Pipes API base URL")
     .option("--token <token>", "Agent token")
-    .action(async (opts: McpServerOpts) => {
+    .action(async (opts: GlobalOpts) => {
       const global = program.optsWithGlobals<GlobalOpts>();
       const api = opts.api ?? global.api;
       const token = opts.token ?? global.token;

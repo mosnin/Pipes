@@ -72,23 +72,6 @@ export class PipesClient {
     return res.json() as Promise<ApiResponse<T>>;
   }
 
-  async post<T>(
-    path: string,
-    body: unknown,
-    opts: { idempotencyKey?: string } = {}
-  ): Promise<T> {
-    assertToken(this.cfg.token);
-    const extra: Record<string, string> = {};
-    if (opts.idempotencyKey) extra["idempotency-key"] = opts.idempotencyKey;
-    const res = await fetch(`${this.cfg.api}${path}`, {
-      method: "POST",
-      headers: this.headers(extra),
-      body: JSON.stringify(body),
-    });
-    const json = (await res.json()) as ApiResponse<T>;
-    return this.unwrap(json);
-  }
-
   async postRaw<T>(
     path: string,
     body: unknown,
@@ -105,23 +88,6 @@ export class PipesClient {
     return res.json() as Promise<ApiResponse<T>>;
   }
 
-  async streamGet(path: string): Promise<void> {
-    assertToken(this.cfg.token);
-    const res = await fetch(`${this.cfg.api}${path}`, {
-      headers: this.headers(),
-    });
-    if (!res.body) {
-      process.stdout.write(await res.text());
-      return;
-    }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      process.stdout.write(decoder.decode(value, { stream: true }));
-    }
-  }
 }
 
 export function makeClient(overrides: Partial<PipesConfig> = {}): PipesClient {
