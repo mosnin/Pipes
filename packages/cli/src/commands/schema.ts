@@ -3,11 +3,12 @@ import { readFileSync, createWriteStream } from "node:fs";
 import ora from "ora";
 import { makeClient, ApiError } from "../client.js";
 import { loadConfig } from "../config.js";
-import { printError, printSuccess, printReplayed } from "../output.js";
+import { printError, printJson, printSuccess, printReplayed } from "../output.js";
 
 interface GlobalOpts {
   api?: string;
   token?: string;
+  json?: boolean;
 }
 
 export function registerSchema(program: Command): void {
@@ -99,9 +100,8 @@ export function registerSchema(program: Command): void {
         if (!res.ok || !res.data) {
           throw new Error(res.error?.message ?? "Import failed");
         }
-        const isJson = (program.optsWithGlobals() as { json?: boolean }).json;
-        if (isJson) {
-          console.log(JSON.stringify({ systemId: res.data.systemId, replayed: res.replayed }, null, 2));
+        if (global.json) {
+          printJson({ systemId: res.data.systemId, replayed: res.replayed });
           return;
         }
         if (res.replayed) printReplayed();

@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { randomUUID } from "node:crypto";
 import ora from "ora";
 import { makeClient } from "../client.js";
 import { printJson, printTable, printError, printSuccess, printReplayed } from "../output.js";
@@ -87,7 +88,7 @@ export function registerSystems(program: Command): void {
         const res = await client.postRaw<{ systemId: string }>(
           "/api/protocol/systems",
           { name, description: opts.description },
-          { idempotencyKey: opts.idempotencyKey }
+          { idempotencyKey: opts.idempotencyKey ?? randomUUID() }
         );
         spinner.stop();
         if (!res.ok || !res.data) {
