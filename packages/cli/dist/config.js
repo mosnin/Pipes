@@ -32,6 +32,7 @@ export function loadConfig(overrides = {}) {
     return {
         api: overrides.api ?? process.env["PIPES_API"] ?? fileConfig.api ?? DEFAULT_API,
         token: overrides.token ?? process.env["PIPES_TOKEN"] ?? fileConfig.token ?? "",
+        memory_system_id: overrides.memory_system_id ?? process.env["PIPES_MEMORY_SYSTEM"] ?? fileConfig.memory_system_id,
     };
 }
 export function configFilePath() {

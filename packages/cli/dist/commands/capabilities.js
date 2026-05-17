@@ -159,6 +159,60 @@ const MANIFEST = {
             ],
         },
         {
+            command: "memory add <content>",
+            description: "Store content as a structured memory record (extracts metadata via OpenAI)",
+            required_capability: "graph:write",
+            options: [
+                { flag: "--system <id>", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM)" },
+                { flag: "--type <type>", description: "Content type hint: note, decision, fact, task, summary, reference, code, conversation" },
+                { flag: "--topic <topic>", description: "Topic hint for extraction" },
+                { flag: "--no-extract", description: "Skip LLM extraction, store with minimal metadata" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
+            command: "memory search <query>",
+            description: "Search memory records by keyword relevance, filtered by type/status, ranked by score",
+            required_capability: "schema:read",
+            options: [
+                { flag: "--system <id>", description: "Memory system ID" },
+                { flag: "--type <type>", description: "Filter by content type" },
+                { flag: "--status <status>", description: "Filter by status (default: excludes archived)" },
+                { flag: "--limit <n>", description: "Max results (default: 5)" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
+            command: "memory list",
+            description: "List all memory records in a system, optionally filtered",
+            required_capability: "schema:read",
+            options: [
+                { flag: "--system <id>", description: "Memory system ID" },
+                { flag: "--type <type>", description: "Filter by content type" },
+                { flag: "--status <status>", description: "Filter by status" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
+            command: "memory get <nodeId>",
+            description: "Get a specific memory record by its node ID",
+            required_capability: "schema:read",
+            options: [
+                { flag: "--system <id>", description: "Memory system ID" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
+            command: "memory link <fromId> <toId>",
+            description: "Link two memory records with a typed relation (supports, contradicts, derives-from, supersedes, references)",
+            required_capability: "graph:write",
+            options: [
+                { flag: "--system <id>", description: "Memory system ID" },
+                { flag: "--rel <relation>", description: "Relation type (required)" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
             command: "comments add <systemId>",
             description: "Add a comment to a system or node",
             required_capability: "comments:write",

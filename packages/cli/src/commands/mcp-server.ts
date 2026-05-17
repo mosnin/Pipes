@@ -7,6 +7,8 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { makeClient } from "../client.js";
+import { extractMetadata, scoreRecord, compressForContext } from "../memory/extract.js";
+import type { MemoryRecord } from "../memory/types.js";
 
 interface GlobalOpts {
   api?: string;
@@ -147,6 +149,49 @@ const TOOLS = [
       required: ["systemId", "body"],
     },
   },
+  {
+    name: "memory_store",
+    description: "Store a piece of content as a structured memory record. Calls OpenAI to extract metadata (title, type, topic, tags, summary, confidence, importance) then saves it as a Memory node in the specified Pipes system. Requires OPENAI_API_KEY env var.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        content: { type: "string", description: "The content to store" },
+        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        content_type: { type: "string", description: "Optional type hint: note, decision, fact, task, summary, reference, code, conversation" },
+        topic: { type: "string", description: "Optional topic hint" },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "memory_search",
+    description: "Search memory records using keyword matching and metadata filters. Returns scored results ranked by relevance, confidence, importance, and freshness.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Search query — split into keywords for matching" },
+        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        content_type: { type: "string", description: "Filter by content type" },
+        status: { type: "string", description: "Filter by status (default: excludes archived)" },
+        limit: { type: "number", description: "Max results to return (default: 5)" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "memory_get_context",
+    description: "Retrieve the most relevant memory records for a context and return them compressed for prompt injection. Use this to inject relevant memory into an agent prompt efficiently.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        context: { type: "string", description: "Current context, question, or task to retrieve memory for" },
+        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        max_chars: { type: "number", description: "Approximate character budget for the returned context (default: 4000)" },
+        limit: { type: "number", description: "Max records to consider before compressing (default: 10)" },
+      },
+      required: ["context"],
+    },
+  },
 ];
 
 function errorResult(err: unknown) {
@@ -189,6 +234,7 @@ export function registerMcpServer(program: Command): void {
       server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { name, arguments: args = {} } = request.params;
         const a = args as Record<string, unknown>;
+        const memorySystemId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
 
         try {
           switch (name) {
@@ -300,6 +346,98 @@ export function registerMcpServer(program: Command): void {
                 { idempotencyKey: randomUUID() }
               );
               return okResult(res.data);
+            }
+
+            case "memory_store": {
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              if (!sysId) {
+                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+              }
+              const content = a["content"] as string;
+              const record = await extractMetadata(content, {
+                content_type: a["content_type"] as string | undefined,
+                topic: a["topic"] as string | undefined,
+              });
+              const res = await client.postRaw(
+                "/api/protocol/graph",
+                {
+                  action: "addNode",
+                  systemId: sysId,
+                  type: "Memory",
+                  title: record.title,
+                  description: JSON.stringify(record),
+                  x: 0,
+                  y: 0,
+                },
+                { idempotencyKey: record.content_id }
+              );
+              const d = res.data as { result?: string } | undefined;
+              return okResult({ nodeId: d?.result, contentId: record.content_id, title: record.title, content_type: record.content_type, topic: record.topic });
+            }
+
+            case "memory_search": {
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              if (!sysId) {
+                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+              }
+              const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
+              const schemaData = schemaRes.data as { nodes?: Array<{ id: string; type: string; description?: string }> } | undefined;
+              const nodes = (schemaData?.nodes ?? []).filter((n) => n.type === "Memory");
+              const records: Array<{ nodeId: string; record: MemoryRecord }> = [];
+              for (const node of nodes) {
+                try {
+                  if (!node.description) continue;
+                  const r = JSON.parse(node.description) as MemoryRecord;
+                  if (!r.content_id) r.content_id = node.id;
+                  const filterType = a["content_type"] as string | undefined;
+                  const filterStatus = a["status"] as string | undefined;
+                  if (filterType && r.content_type !== filterType) continue;
+                  if (filterStatus ? r.status !== filterStatus : r.status === "archived") continue;
+                  records.push({ nodeId: node.id, record: r });
+                } catch { continue; }
+              }
+              const query = a["query"] as string;
+              const keywords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+              const limit = (a["limit"] as number | undefined) ?? 5;
+              const scored = records
+                .map(({ nodeId, record }) => ({ nodeId, record, score: scoreRecord(record, keywords) }))
+                .sort((x, y) => y.score - x.score)
+                .slice(0, limit);
+              return okResult(scored.map(({ nodeId, record, score }) => ({
+                nodeId, score: Math.round(score * 100) / 100,
+                title: record.title, content_type: record.content_type,
+                topic: record.topic, status: record.status, summary: record.summary,
+              })));
+            }
+
+            case "memory_get_context": {
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              if (!sysId) {
+                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+              }
+              const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
+              const schemaData = schemaRes.data as { nodes?: Array<{ id: string; type: string; description?: string }> } | undefined;
+              const nodes = (schemaData?.nodes ?? []).filter((n) => n.type === "Memory");
+              const records: MemoryRecord[] = [];
+              for (const node of nodes) {
+                try {
+                  if (!node.description) continue;
+                  const r = JSON.parse(node.description) as MemoryRecord;
+                  if (r.status === "archived") continue;
+                  records.push(r);
+                } catch { continue; }
+              }
+              const context = a["context"] as string;
+              const keywords = context.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+              const limit = (a["limit"] as number | undefined) ?? 10;
+              const maxChars = (a["max_chars"] as number | undefined) ?? 4000;
+              const topRecords = records
+                .map((r) => ({ record: r, score: scoreRecord(r, keywords) }))
+                .sort((x, y) => y.score - x.score)
+                .slice(0, limit)
+                .map(({ record }) => record);
+              const compressed = compressForContext(topRecords, maxChars);
+              return okResult({ context: compressed, record_count: topRecords.length });
             }
 
             default:

@@ -3,6 +3,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { makeClient } from "../client.js";
+import { extractMetadata, scoreRecord, compressForContext } from "../memory/extract.js";
 const TOOLS = [
     {
         name: "list_systems",
@@ -135,6 +136,49 @@ const TOOLS = [
             required: ["systemId", "body"],
         },
     },
+    {
+        name: "memory_store",
+        description: "Store a piece of content as a structured memory record. Calls OpenAI to extract metadata (title, type, topic, tags, summary, confidence, importance) then saves it as a Memory node in the specified Pipes system. Requires OPENAI_API_KEY env var.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                content: { type: "string", description: "The content to store" },
+                systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+                content_type: { type: "string", description: "Optional type hint: note, decision, fact, task, summary, reference, code, conversation" },
+                topic: { type: "string", description: "Optional topic hint" },
+            },
+            required: ["content"],
+        },
+    },
+    {
+        name: "memory_search",
+        description: "Search memory records using keyword matching and metadata filters. Returns scored results ranked by relevance, confidence, importance, and freshness.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "Search query — split into keywords for matching" },
+                systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+                content_type: { type: "string", description: "Filter by content type" },
+                status: { type: "string", description: "Filter by status (default: excludes archived)" },
+                limit: { type: "number", description: "Max results to return (default: 5)" },
+            },
+            required: ["query"],
+        },
+    },
+    {
+        name: "memory_get_context",
+        description: "Retrieve the most relevant memory records for a context and return them compressed for prompt injection. Use this to inject relevant memory into an agent prompt efficiently.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                context: { type: "string", description: "Current context, question, or task to retrieve memory for" },
+                systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+                max_chars: { type: "number", description: "Approximate character budget for the returned context (default: 4000)" },
+                limit: { type: "number", description: "Max records to consider before compressing (default: 10)" },
+            },
+            required: ["context"],
+        },
+    },
 ];
 function errorResult(err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -166,6 +210,7 @@ export function registerMcpServer(program) {
         server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const { name, arguments: args = {} } = request.params;
             const a = args;
+            const memorySystemId = a["systemId"] ?? process.env["PIPES_MEMORY_SYSTEM"];
             try {
                 switch (name) {
                     case "list_systems": {
@@ -226,6 +271,103 @@ export function registerMcpServer(program) {
                             nodeId: a["nodeId"],
                         }, { idempotencyKey: randomUUID() });
                         return okResult(res.data);
+                    }
+                    case "memory_store": {
+                        const sysId = a["systemId"] ?? process.env["PIPES_MEMORY_SYSTEM"];
+                        if (!sysId) {
+                            return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                        }
+                        const content = a["content"];
+                        const record = await extractMetadata(content, {
+                            content_type: a["content_type"],
+                            topic: a["topic"],
+                        });
+                        const res = await client.postRaw("/api/protocol/graph", {
+                            action: "addNode",
+                            systemId: sysId,
+                            type: "Memory",
+                            title: record.title,
+                            description: JSON.stringify(record),
+                            x: 0,
+                            y: 0,
+                        }, { idempotencyKey: record.content_id });
+                        const d = res.data;
+                        return okResult({ nodeId: d?.result, contentId: record.content_id, title: record.title, content_type: record.content_type, topic: record.topic });
+                    }
+                    case "memory_search": {
+                        const sysId = a["systemId"] ?? process.env["PIPES_MEMORY_SYSTEM"];
+                        if (!sysId) {
+                            return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                        }
+                        const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
+                        const schemaData = schemaRes.data;
+                        const nodes = (schemaData?.nodes ?? []).filter((n) => n.type === "Memory");
+                        const records = [];
+                        for (const node of nodes) {
+                            try {
+                                if (!node.description)
+                                    continue;
+                                const r = JSON.parse(node.description);
+                                if (!r.content_id)
+                                    r.content_id = node.id;
+                                const filterType = a["content_type"];
+                                const filterStatus = a["status"];
+                                if (filterType && r.content_type !== filterType)
+                                    continue;
+                                if (filterStatus ? r.status !== filterStatus : r.status === "archived")
+                                    continue;
+                                records.push({ nodeId: node.id, record: r });
+                            }
+                            catch {
+                                continue;
+                            }
+                        }
+                        const query = a["query"];
+                        const keywords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+                        const limit = a["limit"] ?? 5;
+                        const scored = records
+                            .map(({ nodeId, record }) => ({ nodeId, record, score: scoreRecord(record, keywords) }))
+                            .sort((x, y) => y.score - x.score)
+                            .slice(0, limit);
+                        return okResult(scored.map(({ nodeId, record, score }) => ({
+                            nodeId, score: Math.round(score * 100) / 100,
+                            title: record.title, content_type: record.content_type,
+                            topic: record.topic, status: record.status, summary: record.summary,
+                        })));
+                    }
+                    case "memory_get_context": {
+                        const sysId = a["systemId"] ?? process.env["PIPES_MEMORY_SYSTEM"];
+                        if (!sysId) {
+                            return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                        }
+                        const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
+                        const schemaData = schemaRes.data;
+                        const nodes = (schemaData?.nodes ?? []).filter((n) => n.type === "Memory");
+                        const records = [];
+                        for (const node of nodes) {
+                            try {
+                                if (!node.description)
+                                    continue;
+                                const r = JSON.parse(node.description);
+                                if (r.status === "archived")
+                                    continue;
+                                records.push(r);
+                            }
+                            catch {
+                                continue;
+                            }
+                        }
+                        const context = a["context"];
+                        const keywords = context.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+                        const limit = a["limit"] ?? 10;
+                        const maxChars = a["max_chars"] ?? 4000;
+                        const topRecords = records
+                            .map((r) => ({ record: r, score: scoreRecord(r, keywords) }))
+                            .sort((x, y) => y.score - x.score)
+                            .slice(0, limit)
+                            .map(({ record }) => record);
+                        const compressed = compressForContext(topRecords, maxChars);
+                        return okResult({ context: compressed, record_count: topRecords.length });
                     }
                     default:
                         return errorResult(`Unknown tool: ${name}`);

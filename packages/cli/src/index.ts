@@ -9,6 +9,7 @@ import { registerGraph } from "./commands/graph.js";
 import { registerValidation } from "./commands/validation.js";
 import { registerTemplates } from "./commands/templates.js";
 import { registerComments } from "./commands/comments.js";
+import { registerMemory } from "./commands/memory.js";
 import { registerMcpServer } from "./commands/mcp-server.js";
 
 const program = new Command("pipes")
@@ -49,6 +50,7 @@ registerGraph(program);
 registerValidation(program);
 registerTemplates(program);
 registerComments(program);
+registerMemory(program);
 registerMcpServer(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
