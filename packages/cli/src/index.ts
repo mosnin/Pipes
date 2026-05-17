@@ -9,6 +9,7 @@ import { registerGraph } from "./commands/graph.js";
 import { registerValidation } from "./commands/validation.js";
 import { registerTemplates } from "./commands/templates.js";
 import { registerComments } from "./commands/comments.js";
+import { registerMcpServer } from "./commands/mcp-server.js";
 
 const program = new Command("pipes")
   .description("CLI for Pipes — build and manage agent systems from your terminal")
@@ -45,6 +46,7 @@ registerGraph(program);
 registerValidation(program);
 registerTemplates(program);
 registerComments(program);
+registerMcpServer(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   console.error(err instanceof Error ? err.message : String(err));
