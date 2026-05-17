@@ -16,69 +16,56 @@ interface GlobalOpts {
 const TOOLS = [
   {
     name: "list_systems",
-    description: "List all systems in the workspace. Requires systems:read capability.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {},
-      required: [],
-    },
+    description: "List all systems in the workspace.",
+    inputSchema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "get_system",
-    description: "Get metadata for a system. Requires systems:read capability.",
+    description: "Get name, description, node count, and pipe count for a system.",
     inputSchema: {
       type: "object" as const,
-      properties: {
-        systemId: { type: "string" },
-      },
+      properties: { systemId: { type: "string", description: "System ID" } },
       required: ["systemId"],
     },
   },
   {
     name: "create_system",
-    description: "Create a new system. Requires systems:write capability.",
+    description: "Create a new empty system and return its ID.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        name: { type: "string" },
-        description: { type: "string" },
+        name: { type: "string", description: "System name" },
+        description: { type: "string", description: "Optional description" },
       },
       required: ["name"],
     },
   },
   {
     name: "get_graph",
-    description:
-      "Get the current nodes and pipes in a system. Requires schema:read capability.",
+    description: "Get the current nodes and pipes in a system.",
     inputSchema: {
       type: "object" as const,
-      properties: {
-        systemId: { type: "string" },
-      },
+      properties: { systemId: { type: "string", description: "System ID" } },
       required: ["systemId"],
     },
   },
   {
     name: "export_schema",
-    description:
-      "Export a system as full pipes_schema_v1 JSON. Requires schema:read capability.",
+    description: "Export a system as full pipes_schema_v1 JSON.",
     inputSchema: {
       type: "object" as const,
-      properties: {
-        systemId: { type: "string" },
-      },
+      properties: { systemId: { type: "string", description: "System ID" } },
       required: ["systemId"],
     },
   },
   {
     name: "import_schema",
-    description:
-      "Import a pipes_schema_v1 JSON object as a new system. Requires import:write capability.",
+    description: "Import a pipes_schema_v1 JSON object as a new system and return its ID.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        schema: { type: "object" },
-        name: { type: "string" },
+        schema: { type: "object", description: "pipes_schema_v1 JSON object" },
+        name: { type: "string", description: "Override system name from schema" },
       },
       required: ["schema"],
     },
@@ -86,13 +73,14 @@ const TOOLS = [
   {
     name: "apply_graph_actions",
     description:
-      "Apply one or more graph mutations (addNode, addPipe, deleteNode, deletePipe, updateNode). Requires graph:write capability. Pass an array of action objects.",
+      'Apply one or more graph mutations in a single atomic batch. Each action is an object with an "action" key. Supported actions: addNode (fields: systemId, type, title, x, y), addPipe (fields: systemId, fromNodeId, toNodeId), updateNode (fields: nodeId, title?, description?), deleteNode (fields: nodeId), deletePipe (fields: pipeId). Valid node types: Agent, Tool, Model, Prompt, Memory, Input, Output, Action, Decision, Condition, Router, Loop, Queue, Datastore, ExternalApi, HumanApproval, Guardrail, Monitor, Trigger, Schedule, Environment, Subsystem, Reference, Annotation.',
     inputSchema: {
       type: "object" as const,
       properties: {
         actions: {
           type: "array",
           items: { type: "object" },
+          description: "Array of action objects",
         },
       },
       required: ["actions"],
@@ -100,25 +88,21 @@ const TOOLS = [
   },
   {
     name: "list_versions",
-    description:
-      "List all version snapshots of a system. Requires versions:read capability.",
+    description: "List all named version snapshots of a system.",
     inputSchema: {
       type: "object" as const,
-      properties: {
-        systemId: { type: "string" },
-      },
+      properties: { systemId: { type: "string", description: "System ID" } },
       required: ["systemId"],
     },
   },
   {
     name: "create_version",
-    description:
-      "Create a named version snapshot of a system. Requires versions:write capability.",
+    description: "Create a named snapshot of a system's current graph state.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        systemId: { type: "string" },
-        name: { type: "string" },
+        systemId: { type: "string", description: "System ID" },
+        name: { type: "string", description: "Version name" },
       },
       required: ["systemId"],
     },
@@ -126,47 +110,39 @@ const TOOLS = [
   {
     name: "get_validation_report",
     description:
-      "Get validation report for a system (errors, warnings, node/pipe counts). Requires validation:read capability.",
+      "Get a validation report for a system, including node/pipe counts, errors, and warnings.",
     inputSchema: {
       type: "object" as const,
-      properties: {
-        systemId: { type: "string" },
-      },
+      properties: { systemId: { type: "string", description: "System ID" } },
       required: ["systemId"],
     },
   },
   {
     name: "list_templates",
-    description: "List available starter templates. Requires templates:read capability.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {},
-      required: [],
-    },
+    description: "List available starter templates for creating pre-built systems.",
+    inputSchema: { type: "object" as const, properties: {}, required: [] },
   },
   {
     name: "instantiate_template",
-    description:
-      "Create a new system from a template. Requires templates:instantiate capability.",
+    description: "Create a new system pre-populated from a starter template.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        templateId: { type: "string" },
-        name: { type: "string" },
+        templateId: { type: "string", description: "Template ID (from list_templates)" },
+        name: { type: "string", description: "System name" },
       },
       required: ["templateId"],
     },
   },
   {
     name: "add_comment",
-    description:
-      "Add a comment to a system or node. Requires comments:write capability.",
+    description: "Add a comment to a system or to a specific node within a system.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        systemId: { type: "string" },
-        body: { type: "string" },
-        nodeId: { type: "string" },
+        systemId: { type: "string", description: "System ID" },
+        body: { type: "string", description: "Comment text" },
+        nodeId: { type: "string", description: "Node ID to attach the comment to (optional)" },
       },
       required: ["systemId", "body"],
     },

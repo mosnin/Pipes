@@ -150,6 +150,15 @@ const MANIFEST = {
             ],
         },
         {
+            command: "mcp-server",
+            description: "Start a stdio MCP server exposing all Pipes operations as MCP tools",
+            required_capability: null,
+            options: [
+                { flag: "--api <url>", description: "Pipes API base URL" },
+                { flag: "--token <token>", description: "Agent token" },
+            ],
+        },
+        {
             command: "comments add <systemId>",
             description: "Add a comment to a system or node",
             required_capability: "comments:write",

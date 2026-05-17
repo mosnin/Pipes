@@ -30,7 +30,10 @@ Examples:
   pipes systems create "My Agent System"
   pipes schema export sys_abc123 --out schema.json
   pipes graph add-node sys_abc123 --type Agent --title "Planner"
+  pipes graph apply actions.json
+  pipes validate sys_abc123
   pipes capabilities
+  pipes mcp-server
 `);
 registerInit(program);
 registerCapabilities(program);

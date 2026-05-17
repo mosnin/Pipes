@@ -56,7 +56,7 @@ export function registerGraph(program: Command): void {
   graph
     .command("add-node <systemId>")
     .description("Add a node to a system graph")
-    .option("--type <type>", "Node type (e.g. Agent, Tool, Memory, Trigger)", "Agent")
+    .option("--type <type>", "Node type — one of: Agent, Tool, Model, Prompt, Memory, Input, Output, Action, Decision, Condition, Router, Loop, Queue, Datastore, ExternalApi, HumanApproval, Guardrail, Monitor, Trigger, Schedule, Environment, Subsystem, Reference, Annotation (default: Agent)", "Agent")
     .option("--title <title>", "Node title", "New Node")
     .option("--description <desc>", "Node description")
     .option("--x <x>", "X position", "0")
@@ -271,6 +271,26 @@ export function registerGraph(program: Command): void {
   graph
     .command("apply [file]")
     .description("Apply a batch of graph actions from a JSON file or stdin")
+    .addHelpText(
+      "after",
+      `
+Format:
+  Pass a JSON file (or pipe to stdin) as either an array or an object:
+    [ { "action": "addNode", ... }, { "action": "addPipe", ... } ]
+    { "actions": [ ... ] }
+
+Actions:
+  addNode    { "action": "addNode",    "systemId": "sys_…", "type": "Agent", "title": "…", "x": 0, "y": 0 }
+  addPipe    { "action": "addPipe",    "systemId": "sys_…", "fromNodeId": "n_…", "toNodeId": "n_…" }
+  updateNode { "action": "updateNode", "nodeId": "n_…",     "title": "…", "description": "…" }
+  deleteNode { "action": "deleteNode", "nodeId": "n_…" }
+  deletePipe { "action": "deletePipe", "pipeId": "p_…" }
+
+Examples:
+  pipes graph apply actions.json
+  echo '[{"action":"addNode","systemId":"sys_…","type":"Agent","title":"Planner","x":0,"y":0}]' | pipes graph apply
+`
+    )
     .option("--idempotency-key <key>", "Idempotency key for safe retries")
     .action(async (file: string | undefined, opts: { idempotencyKey?: string }) => {
       const global = program.optsWithGlobals<GlobalOpts>();
