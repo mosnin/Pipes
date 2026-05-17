@@ -47,19 +47,6 @@ export class PipesClient {
         });
         return res.json();
     }
-    async post(path, body, opts = {}) {
-        assertToken(this.cfg.token);
-        const extra = {};
-        if (opts.idempotencyKey)
-            extra["idempotency-key"] = opts.idempotencyKey;
-        const res = await fetch(`${this.cfg.api}${path}`, {
-            method: "POST",
-            headers: this.headers(extra),
-            body: JSON.stringify(body),
-        });
-        const json = (await res.json());
-        return this.unwrap(json);
-    }
     async postRaw(path, body, opts = {}) {
         assertToken(this.cfg.token);
         const extra = {};
@@ -71,24 +58,6 @@ export class PipesClient {
             body: JSON.stringify(body),
         });
         return res.json();
-    }
-    async streamGet(path) {
-        assertToken(this.cfg.token);
-        const res = await fetch(`${this.cfg.api}${path}`, {
-            headers: this.headers(),
-        });
-        if (!res.body) {
-            process.stdout.write(await res.text());
-            return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done)
-                break;
-            process.stdout.write(decoder.decode(value, { stream: true }));
-        }
     }
 }
 export function makeClient(overrides = {}) {

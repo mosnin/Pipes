@@ -2,7 +2,7 @@ import { readFileSync, createWriteStream } from "node:fs";
 import ora from "ora";
 import { makeClient, ApiError } from "../client.js";
 import { loadConfig } from "../config.js";
-import { printError, printSuccess, printReplayed } from "../output.js";
+import { printError, printJson, printSuccess, printReplayed } from "../output.js";
 export function registerSchema(program) {
     const schema = program.command("schema").description("Import and export system schemas");
     schema
@@ -76,9 +76,8 @@ export function registerSchema(program) {
             if (!res.ok || !res.data) {
                 throw new Error(res.error?.message ?? "Import failed");
             }
-            const isJson = program.optsWithGlobals().json;
-            if (isJson) {
-                console.log(JSON.stringify({ systemId: res.data.systemId, replayed: res.replayed }, null, 2));
+            if (global.json) {
+                printJson({ systemId: res.data.systemId, replayed: res.replayed });
                 return;
             }
             if (res.replayed)

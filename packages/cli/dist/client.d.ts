@@ -23,12 +23,8 @@ export declare class PipesClient {
     private unwrap;
     get<T>(path: string): Promise<T>;
     getRaw<T>(path: string): Promise<ApiResponse<T>>;
-    post<T>(path: string, body: unknown, opts?: {
-        idempotencyKey?: string;
-    }): Promise<T>;
     postRaw<T>(path: string, body: unknown, opts?: {
         idempotencyKey?: string;
     }): Promise<ApiResponse<T>>;
-    streamGet(path: string): Promise<void>;
 }
 export declare function makeClient(overrides?: Partial<PipesConfig>): PipesClient;

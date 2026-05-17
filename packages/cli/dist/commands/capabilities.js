@@ -101,6 +101,12 @@ const MANIFEST = {
             ],
         },
         {
+            command: "graph get <systemId>",
+            description: "Display nodes and pipes for a system graph",
+            required_capability: "schema:read",
+            options: [{ flag: "--json", description: "Output raw JSON" }],
+        },
+        {
             command: "graph delete-node <nodeId>",
             description: "Delete a node from a system graph",
             required_capability: "graph:write",
@@ -113,7 +119,16 @@ const MANIFEST = {
             options: [{ flag: "--json", description: "Output raw JSON" }],
         },
         {
-            command: "validation get <systemId>",
+            command: "graph apply [file]",
+            description: "Apply a batch of graph actions from a JSON file or stdin",
+            required_capability: "graph:write",
+            options: [
+                { flag: "--idempotency-key <key>", description: "Idempotency key for safe retries" },
+                { flag: "--json", description: "Output raw JSON" },
+            ],
+        },
+        {
+            command: "validate <systemId>",
             description: "Get validation report for a system",
             required_capability: "validation:read",
             options: [{ flag: "--json", description: "Output raw JSON" }],

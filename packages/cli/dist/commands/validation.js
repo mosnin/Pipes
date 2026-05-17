@@ -3,9 +3,8 @@ import chalk from "chalk";
 import { makeClient } from "../client.js";
 import { printJson, printError } from "../output.js";
 export function registerValidation(program) {
-    const validation = program.command("validation").description("Validate system graphs");
-    validation
-        .command("get <systemId>")
+    program
+        .command("validate <systemId>")
         .description("Get validation report for a system")
         .action(async (systemId) => {
         const global = program.optsWithGlobals();

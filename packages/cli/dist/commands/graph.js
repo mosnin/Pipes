@@ -3,8 +3,16 @@ import { readFileSync } from "node:fs";
 import ora from "ora";
 import { makeClient } from "../client.js";
 import { printJson, printError, printSuccess, printTable } from "../output.js";
+async function readStdin() {
+    process.stderr.write("Reading from stdin...\n");
+    const chunks = [];
+    for await (const chunk of process.stdin) {
+        chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks).toString("utf-8");
+}
 export function registerGraph(program) {
-    const graph = program.command("graph").description("Mutate system graphs");
+    const graph = program.command("graph").description("Read and mutate system graphs");
     graph
         .command("add-node <systemId>")
         .description("Add a node to a system graph")
@@ -133,11 +141,14 @@ export function registerGraph(program) {
         .action(async (systemId) => {
         const global = program.optsWithGlobals();
         const client = makeClient({ api: global.api, token: global.token });
+        const spinner = ora("Fetching graph...").start();
         try {
             const res = await client.getRaw(`/api/protocol/systems/${systemId}/schema`);
             if (!res.ok || !res.data) {
+                spinner.stop();
                 throw new Error(res.error?.message ?? "Failed to fetch graph");
             }
+            spinner.stop();
             const nodes = res.data.nodes ?? [];
             const pipes = res.data.pipes ?? [];
             if (global.json) {
@@ -172,6 +183,7 @@ export function registerGraph(program) {
             ]);
         }
         catch (err) {
+            spinner.stop();
             printError(err);
         }
     });
@@ -187,7 +199,7 @@ export function registerGraph(program) {
             raw = readFileSync(file, "utf-8");
         }
         else {
-            raw = readFileSync("/dev/stdin", "utf-8");
+            raw = await readStdin();
         }
         let parsed;
         try {

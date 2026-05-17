@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import ora from "ora";
 import { makeClient } from "../client.js";
 import { printJson, printTable, printError, printSuccess, printReplayed } from "../output.js";
@@ -67,7 +68,7 @@ export function registerSystems(program) {
         const client = makeClient({ api: global.api, token: global.token });
         const spinner = ora("Creating system...").start();
         try {
-            const res = await client.postRaw("/api/protocol/systems", { name, description: opts.description }, { idempotencyKey: opts.idempotencyKey });
+            const res = await client.postRaw("/api/protocol/systems", { name, description: opts.description }, { idempotencyKey: opts.idempotencyKey ?? randomUUID() });
             spinner.stop();
             if (!res.ok || !res.data) {
                 throw new Error(res.error?.message ?? "Failed to create system");
