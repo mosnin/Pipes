@@ -10,4 +10,4 @@ test-results
 .pipes-db.json
 tsconfig.tsbuildinfo
 .claude/
-packages/cli/dist/pipes-*
+packages/cli/dist/
