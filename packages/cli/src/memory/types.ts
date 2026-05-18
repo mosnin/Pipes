@@ -23,3 +23,13 @@ export interface MemoryRecord {
   updated_at: string;
   raw_content: string;
 }
+
+export interface MemoryEdge {
+  pipe_id: string;
+  from_id: string;
+  to_id: string;
+  relation: string;
+  created_at: string;
+  supersedes_at?: string;
+  weight: number;
+}

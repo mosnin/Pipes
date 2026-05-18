@@ -193,6 +193,19 @@ const TOOLS = [
       required: ["context"],
     },
   },
+  {
+    name: "memory_traverse",
+    description: "Traverse the memory graph from a starting node, following typed relations up to N hops. Returns related memory records with their depth and path from the starting node.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        nodeId: { type: "string", description: "Starting node ID" },
+        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        depth: { type: "number", description: "Max hops to traverse (default: 2)" },
+      },
+      required: ["nodeId"],
+    },
+  },
 ];
 
 function errorResult(err: unknown) {
@@ -459,6 +472,68 @@ export function registerMcpServer(program: Command): void {
                 .map(({ record }) => record);
               const compressed = compressForContext(topRecords, maxChars);
               return okResult({ context: compressed, record_count: topRecords.length });
+            }
+
+            case "memory_traverse": {
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              if (!sysId) {
+                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+              }
+              const startNodeId = a["nodeId"] as string;
+              const maxDepth = (a["depth"] as number | undefined) ?? 2;
+
+              const schemaRes = await client.getRaw<{
+                nodes?: Array<{ id: string; type: string; description?: string }>;
+                pipes?: Array<{ id: string; fromNodeId: string; toNodeId: string }>;
+              }>(`/api/protocol/systems/${sysId}/schema`);
+              const data = schemaRes.data;
+              const nodes = data?.nodes ?? [];
+              const pipes = data?.pipes ?? [];
+
+              // Build bidirectional adjacency
+              const adjacency = new Map<string, string[]>();
+              for (const pipe of pipes) {
+                if (!adjacency.has(pipe.fromNodeId)) adjacency.set(pipe.fromNodeId, []);
+                adjacency.get(pipe.fromNodeId)!.push(pipe.toNodeId);
+                if (!adjacency.has(pipe.toNodeId)) adjacency.set(pipe.toNodeId, []);
+                adjacency.get(pipe.toNodeId)!.push(pipe.fromNodeId);
+              }
+
+              const nodeMap = new Map(nodes.map(n => [n.id, n]));
+
+              // BFS traversal
+              const visited = new Set<string>([startNodeId]);
+              const queue: Array<{ id: string; depth: number }> = [{ id: startNodeId, depth: 0 }];
+              const results: Array<{ nodeId: string; depth: number; title: string; content_type?: string; topic?: string; summary?: string }> = [];
+
+              while (queue.length > 0) {
+                const current = queue.shift()!;
+                if (current.depth > 0) {
+                  const node = nodeMap.get(current.id);
+                  if (node?.type === "Memory") {
+                    try {
+                      const r = JSON.parse(node.description ?? "{}") as Partial<MemoryRecord>;
+                      results.push({
+                        nodeId: current.id,
+                        depth: current.depth,
+                        title: r.title ?? current.id,
+                        content_type: r.content_type,
+                        topic: r.topic,
+                        summary: r.summary?.slice(0, 200),
+                      });
+                    } catch { /* skip */ }
+                  }
+                }
+                if (current.depth >= maxDepth) continue;
+                for (const neighborId of adjacency.get(current.id) ?? []) {
+                  if (!visited.has(neighborId)) {
+                    visited.add(neighborId);
+                    queue.push({ id: neighborId, depth: current.depth + 1 });
+                  }
+                }
+              }
+
+              return okResult({ start: startNodeId, depth: maxDepth, results });
             }
 
             default:

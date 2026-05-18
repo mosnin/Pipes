@@ -215,6 +215,17 @@ const MANIFEST = {
       ],
     },
     {
+      command: "memory traverse <nodeId>",
+      description: "Traverse the memory graph from a node, following typed relations up to N hops",
+      required_capability: "schema:read",
+      options: [
+        { flag: "--system <id>", description: "Memory system ID" },
+        { flag: "--depth <n>", description: "Max hops (default: 2)" },
+        { flag: "--rel <relation>", description: "Filter by relation type" },
+        { flag: "--json", description: "Output raw JSON" },
+      ],
+    },
+    {
       command: "comments add <systemId>",
       description: "Add a comment to a system or node",
       required_capability: "comments:write",

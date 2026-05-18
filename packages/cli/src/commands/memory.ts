@@ -5,7 +5,7 @@ import { makeClient } from "../client.js";
 import { printJson, printTable, printError, printSuccess } from "../output.js";
 import { extractMetadata, scoreRecord, embedQuery } from "../memory/extract.js";
 import { searchEmbeddings, embeddingsEnabled } from "../memory/vector-store.js";
-import type { MemoryRecord } from "../memory/types.js";
+import type { MemoryRecord, MemoryEdge } from "../memory/types.js";
 
 interface GlobalOpts {
   api?: string;
@@ -404,11 +404,13 @@ export function registerMemory(program: Command): void {
     )
     .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
     .requiredOption("--rel <relation>", "Relation type (supports, contradicts, derives-from, supersedes, references)")
+    .option("--weight <weight>", "Relation strength 0.0-1.0 (default: 0.5)")
+    .option("--supersedes", "Mark the source record as stale and record supersession timestamp")
     .action(
       async (
         fromId: string,
         toId: string,
-        opts: { system?: string; rel: string }
+        opts: { system?: string; rel: string; weight?: string; supersedes?: boolean; json?: boolean }
       ) => {
         const global = program.optsWithGlobals<GlobalOpts>();
         const client = makeClient({ api: global.api, token: global.token });
@@ -420,14 +422,15 @@ export function registerMemory(program: Command): void {
           printError(err);
         }
 
+        const sysId = systemId!;
         const spinner = ora("Linking memory records...").start();
 
         try {
-          const res = await client.postRaw<{ result: string }>(
+          const res = await client.postRaw<{ result: string; pipeId?: string }>(
             "/api/protocol/graph",
             {
               action: "addPipe",
-              systemId: systemId!,
+              systemId: sysId,
               fromNodeId: fromId,
               toNodeId: toId,
             },
@@ -437,15 +440,161 @@ export function registerMemory(program: Command): void {
           if (!res.ok || !res.data) {
             throw new Error(res.error?.message ?? "Failed to link memory records");
           }
+
+          const now = new Date().toISOString();
+          const edge: MemoryEdge = {
+            pipe_id: res.data.pipeId ?? res.data.result ?? "",
+            from_id: fromId,
+            to_id: toId,
+            relation: opts.rel ?? "references",
+            created_at: now,
+            supersedes_at: opts.supersedes ? now : undefined,
+            weight: opts.weight ? parseFloat(opts.weight) : 0.5,
+          };
+
+          // Store edge metadata as a comment — failure must not fail the link command
+          try {
+            await client.postRaw(
+              "/api/protocol/comments",
+              { systemId: sysId, body: JSON.stringify(edge), nodeId: fromId },
+              { idempotencyKey: randomUUID() }
+            );
+          } catch {
+            // comment failure is non-fatal
+          }
+
+          // --supersedes: mark fromId node as stale
+          if (opts.supersedes) {
+            try {
+              const schemaRes = await client.getRaw<SchemaData>(
+                `/api/protocol/systems/${sysId}/schema`
+              );
+              if (schemaRes.ok && schemaRes.data) {
+                const fromNode = schemaRes.data.nodes.find((n) => n.id === fromId);
+                if (fromNode) {
+                  const fromRecord = parseNodeAsRecord(fromNode);
+                  if (fromRecord) {
+                    fromRecord.status = "stale";
+                    await client.postRaw(
+                      "/api/protocol/graph",
+                      {
+                        action: "updateNode",
+                        nodeId: fromId,
+                        description: JSON.stringify(fromRecord),
+                      },
+                      { idempotencyKey: randomUUID() }
+                    );
+                  }
+                }
+              }
+            } catch {
+              // supersedes update failure is non-fatal
+            }
+          }
+
           if (global.json) {
-            printJson({ pipeId: res.data.result, fromId, toId, rel: opts.rel });
+            printJson({ pipeId: res.data.result, fromId, toId, rel: opts.rel, weight: edge.weight, supersedes: opts.supersedes ?? false });
             return;
           }
           printSuccess(`Linked: ${fromId} --[${opts.rel}]--> ${toId}`);
+          if (opts.supersedes) {
+            console.log(`  Source node marked as stale.`);
+          }
         } catch (err) {
           spinner.stop();
           printError(err);
         }
       }
     );
+
+  // pipes memory traverse <nodeId>
+  memory
+    .command("traverse <nodeId>")
+    .description("Traverse the memory graph from a node, following typed relations up to N hops")
+    .option("--system <id>", "Memory system ID")
+    .option("--depth <n>", "Max hops (default: 2)")
+    .option("--rel <relation>", "Filter edges by relation type")
+    .option("--json", "Output raw JSON")
+    .action(async (nodeId: string, opts: { system?: string; depth?: string; rel?: string; json?: boolean }) => {
+      const sysId = getMemorySystemId(opts.system);
+      const global = program.optsWithGlobals<GlobalOpts>();
+      const client = makeClient({ api: global.api, token: global.token });
+      const spinner = ora("Traversing memory graph...").start();
+
+      try {
+        const schemaRes = await client.getRaw<{ nodes?: Array<{ id: string; type: string; title?: string; description?: string }>; pipes?: Array<{ id: string; fromNodeId: string; toNodeId: string }> }>(
+          `/api/protocol/systems/${sysId}/schema`
+        );
+        const data = schemaRes.data;
+        const nodes = data?.nodes ?? [];
+        const pipes = data?.pipes ?? [];
+
+        const maxDepth = parseInt(opts.depth ?? "2", 10);
+
+        // Build adjacency list: nodeId -> array of { neighborId, pipeId }
+        const adjacency = new Map<string, Array<{ neighborId: string; pipeId: string }>>();
+        for (const pipe of pipes) {
+          if (!adjacency.has(pipe.fromNodeId)) adjacency.set(pipe.fromNodeId, []);
+          adjacency.get(pipe.fromNodeId)!.push({ neighborId: pipe.toNodeId, pipeId: pipe.id });
+          // also traverse backwards
+          if (!adjacency.has(pipe.toNodeId)) adjacency.set(pipe.toNodeId, []);
+          adjacency.get(pipe.toNodeId)!.push({ neighborId: pipe.fromNodeId, pipeId: pipe.id });
+        }
+
+        // nodeId -> node lookup
+        const nodeMap = new Map(nodes.map(n => [n.id, n]));
+
+        // BFS
+        interface TraversalEntry {
+          nodeId: string;
+          depth: number;
+          path: string[];
+          relation?: string;
+        }
+
+        const visited = new Set<string>([nodeId]);
+        const queue: TraversalEntry[] = [{ nodeId, depth: 0, path: [nodeId] }];
+        const results: Array<{ nodeId: string; depth: number; path: string[]; relation?: string; record?: MemoryRecord }> = [];
+
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          if (current.depth > 0) {
+            const node = nodeMap.get(current.nodeId);
+            if (node?.type === "Memory") {
+              const record = parseNodeAsRecord(node as { id: string; type: string; description?: string });
+              results.push({ nodeId: current.nodeId, depth: current.depth, path: current.path, relation: current.relation, record: record ?? undefined });
+            }
+          }
+          if (current.depth >= maxDepth) continue;
+          for (const { neighborId } of adjacency.get(current.nodeId) ?? []) {
+            if (!visited.has(neighborId)) {
+              visited.add(neighborId);
+              queue.push({ nodeId: neighborId, depth: current.depth + 1, path: [...current.path, neighborId] });
+            }
+          }
+        }
+
+        spinner.stop();
+
+        if (opts.json || global.json) {
+          printJson(results);
+          return;
+        }
+
+        if (results.length === 0) {
+          console.log("No connected memory records found.");
+          return;
+        }
+
+        for (const entry of results) {
+          const indent = "  ".repeat(entry.depth);
+          console.log(`${indent}[depth ${entry.depth}] ${entry.record?.title ?? entry.nodeId}`);
+          if (entry.record?.content_type) console.log(`${indent}  type: ${entry.record.content_type}  topic: ${entry.record.topic ?? "-"}`);
+          if (entry.record?.summary) console.log(`${indent}  ${entry.record.summary.slice(0, 120)}`);
+        }
+      } catch (err) {
+        spinner.stop();
+        printError(err);
+      }
+    });
 }
