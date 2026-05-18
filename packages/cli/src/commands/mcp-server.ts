@@ -9,6 +9,7 @@ import {
 import { makeClient } from "../client.js";
 import { extractMetadata, scoreRecord, compressForContext, embedQuery } from "../memory/extract.js";
 import { searchEmbeddings } from "../memory/vector-store.js";
+import { sanitizeContent, detectInjection } from "../memory/sanitize.js";
 import type { MemoryRecord } from "../memory/types.js";
 
 interface GlobalOpts {
@@ -386,7 +387,18 @@ export function registerMcpServer(program: Command): void {
                 return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
               }
               const content = a["content"] as string;
-              const record = await extractMetadata(content, {
+              let safeContent: string;
+              try {
+                safeContent = sanitizeContent(content);
+              } catch (err) {
+                return errorResult(err);
+              }
+              const injectionMatch = detectInjection(safeContent);
+              if (injectionMatch) {
+                // In MCP context, log to stderr and continue (don't block agents)
+                process.stderr.write(`[pipes/mcp] Injection pattern detected in memory_store content: "${injectionMatch}"\n`);
+              }
+              const record = await extractMetadata(safeContent, {
                 content_type: a["content_type"] as string | undefined,
                 topic: a["topic"] as string | undefined,
               });

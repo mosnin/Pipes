@@ -12,6 +12,10 @@ import { registerComments } from "./commands/comments.js";
 import { registerMemory } from "./commands/memory.js";
 import { registerMcpServer } from "./commands/mcp-server.js";
 import { registerCompletion } from "./commands/completion.js";
+import { initTelemetry } from "./telemetry.js";
+import { initAuditLog } from "./audit.js";
+
+initTelemetry();
 
 const program = new Command("pipes")
   .description("CLI for Pipes — build and manage agent systems from your terminal")
@@ -19,6 +23,8 @@ const program = new Command("pipes")
   .option("--api <url>", "Pipes API base URL (overrides PIPES_API and .pipes.yml)")
   .option("--token <token>", "Agent token (overrides PIPES_TOKEN and .pipes.yml)")
   .option("--json", "Output raw JSON (machine-readable)")
+  .option("--strict", "Reject content with detected prompt injection patterns (default: warn only)")
+  .option("--audit-log <file>", "Append NDJSON audit entries to a file")
   .addHelpText(
     "after",
     `
@@ -46,6 +52,12 @@ Enable tab completion:
   pipes completion --shell fish > ~/.config/fish/completions/pipes.fish
 `
   );
+
+program.hook("preAction", (_thisCommand, _actionCommand) => {
+  const opts = program.opts<{ auditLog?: string }>();
+  const auditPath = opts.auditLog ?? process.env["PIPES_AUDIT_LOG"];
+  if (auditPath) initAuditLog(auditPath);
+});
 
 registerInit(program);
 registerCapabilities(program);

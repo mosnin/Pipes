@@ -3,6 +3,13 @@ import { z } from "zod";
 import type { MemoryRecord } from "./types.js";
 import { embed, storeEmbedding, embeddingsEnabled } from "./vector-store.js";
 import { MemoryRecordSchema } from "./schema.js";
+import { withSpan } from "../telemetry.js";
+
+let _sessionTokensUsed = 0;
+
+export function getSessionTokensUsed(): number {
+  return _sessionTokensUsed;
+}
 
 const SYSTEM_PROMPT = `You are a metadata extraction system. Given content, return ONLY a JSON object with these exact fields:
 {
@@ -28,6 +35,11 @@ export async function extractMetadata(
   content: string,
   hints: { content_type?: string; topic?: string } = {}
 ): Promise<MemoryRecord> {
+  const budget = process.env["PIPES_TOKEN_BUDGET"] ? parseInt(process.env["PIPES_TOKEN_BUDGET"], 10) : null;
+  if (budget !== null && _sessionTokensUsed >= budget) {
+    throw new Error(`Token budget exceeded: used ${_sessionTokensUsed} of ${budget} tokens this session. Set PIPES_TOKEN_BUDGET to increase.`);
+  }
+
   const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is required for memory extraction. Set it in your environment.");
@@ -44,23 +56,31 @@ export async function extractMetadata(
 
   process.stderr.write("  Extracting metadata");
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
+  const res = await withSpan(
+    "pipes.memory.extract",
+    {
+      "gen_ai.system": "openai",
+      "gen_ai.request.model": process.env["OPENAI_MODEL"] ?? "gpt-4.1-mini",
+      "gen_ai.operation.name": "extract_metadata",
     },
-    body: JSON.stringify({
-      model: process.env["OPENAI_MODEL"] ?? "gpt-4.1-mini",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userContent },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0,
-      stream: true,
-    }),
-  });
+    () => fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: process.env["OPENAI_MODEL"] ?? "gpt-4.1-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userContent },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0,
+        stream: true,
+      }),
+    })
+  );
 
   if (!res.ok) {
     const errText = await res.text();
@@ -152,6 +172,8 @@ export async function extractMetadata(
     updated_at: now,
     raw_content: content,
   };
+
+  _sessionTokensUsed += Math.ceil(content.length / 4);
 
   process.stderr.write(`  title: ${record.title ?? "(untitled)"}\n`);
   process.stderr.write(`  type: ${record.content_type ?? "note"}  topic: ${record.topic ?? "-"}\n`);

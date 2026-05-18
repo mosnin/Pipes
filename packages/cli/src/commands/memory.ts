@@ -1,16 +1,19 @@
 import { Command } from "commander";
 import { randomUUID } from "node:crypto";
 import ora from "ora";
+import chalk from "chalk";
 import { makeClient } from "../client.js";
 import { printJson, printTable, printError, printSuccess } from "../output.js";
 import { extractMetadata, scoreRecord, embedQuery } from "../memory/extract.js";
 import { searchEmbeddings, embeddingsEnabled } from "../memory/vector-store.js";
+import { sanitizeContent, detectInjection } from "../memory/sanitize.js";
 import type { MemoryRecord, MemoryEdge } from "../memory/types.js";
 
 interface GlobalOpts {
   api?: string;
   token?: string;
   json?: boolean;
+  strict?: boolean;
 }
 
 interface SchemaData {
@@ -52,10 +55,11 @@ export function registerMemory(program: Command): void {
     .option("--type <content_type>", "Content type (note, decision, fact, task, summary, reference, code, conversation)")
     .option("--topic <topic>", "Topic to associate with the memory")
     .option("--no-extract", "Skip LLM extraction and store raw content with minimal metadata")
+    .option("--dry-run", "Extract and preview metadata without saving to the graph")
     .action(
       async (
         content: string,
-        opts: { system?: string; type?: string; topic?: string; extract: boolean }
+        opts: { system?: string; type?: string; topic?: string; extract: boolean; dryRun?: boolean }
       ) => {
         const global = program.optsWithGlobals<GlobalOpts>();
         const client = makeClient({ api: global.api, token: global.token });
@@ -67,6 +71,21 @@ export function registerMemory(program: Command): void {
           printError(err);
         }
 
+        let safeContent: string;
+        try {
+          safeContent = sanitizeContent(content);
+        } catch (err) {
+          printError(err);
+        }
+
+        const injectionMatch = detectInjection(safeContent!);
+        if (injectionMatch) {
+          if (global.strict) {
+            printError(new Error(`Potential prompt injection detected: "${injectionMatch}". Use --no-strict to override.`));
+          }
+          process.stderr.write(`  Warning: possible injection pattern detected: "${injectionMatch}"\n`);
+        }
+
         let record: MemoryRecord;
 
         if (!opts.extract) {
@@ -74,10 +93,10 @@ export function registerMemory(program: Command): void {
           const now = new Date().toISOString();
           record = {
             content_id: randomUUID(),
-            title: content.slice(0, 60),
+            title: safeContent!.slice(0, 60),
             content_type: (opts.type as MemoryRecord["content_type"]) ?? "note",
             topic: opts.topic ?? "",
-            summary: content.slice(0, 200),
+            summary: safeContent!.slice(0, 200),
             tags: [],
             entities: [],
             keywords: [],
@@ -91,12 +110,12 @@ export function registerMemory(program: Command): void {
             citations: [],
             created_at: now,
             updated_at: now,
-            raw_content: content,
+            raw_content: safeContent!,
           };
         } else {
           const spinner = ora("Extracting metadata...").start();
           try {
-            record = await extractMetadata(content, {
+            record = await extractMetadata(safeContent!, {
               content_type: opts.type as MemoryRecord["content_type"] | undefined,
               topic: opts.topic,
             });
@@ -105,6 +124,16 @@ export function registerMemory(program: Command): void {
             spinner.stop();
             printError(err);
           }
+        }
+
+        if (opts.dryRun) {
+          console.log(chalk.dim("Dry run -- nothing saved"));
+          console.log(`  title:   ${record!.title}`);
+          console.log(`  type:    ${record!.content_type}`);
+          console.log(`  topic:   ${record!.topic}`);
+          console.log(`  summary: ${record!.summary.slice(0, 120)}`);
+          console.log(`  tags:    ${record!.tags.join(", ") || "(none)"}`);
+          return;
         }
 
         const storeSpinner = ora("Storing...").start();

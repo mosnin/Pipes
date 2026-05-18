@@ -1,4 +1,5 @@
 import { loadConfig, type PipesConfig } from "./config.js";
+import { withSpan } from "./telemetry.js";
 
 export interface ApiResponse<T = unknown> {
   ok: boolean;
@@ -56,20 +57,24 @@ export class PipesClient {
   }
 
   async get<T>(path: string): Promise<T> {
-    assertToken(this.cfg.token);
-    const res = await fetch(`${this.cfg.api}${path}`, {
-      headers: this.headers(),
+    return withSpan("pipes.api.get", { "http.method": "GET", "http.path": path }, async () => {
+      assertToken(this.cfg.token);
+      const res = await fetch(`${this.cfg.api}${path}`, {
+        headers: this.headers(),
+      });
+      const body = (await res.json()) as ApiResponse<T>;
+      return this.unwrap(body);
     });
-    const body = (await res.json()) as ApiResponse<T>;
-    return this.unwrap(body);
   }
 
   async getRaw<T>(path: string): Promise<ApiResponse<T>> {
-    assertToken(this.cfg.token);
-    const res = await fetch(`${this.cfg.api}${path}`, {
-      headers: this.headers(),
+    return withSpan("pipes.api.get_raw", { "http.method": "GET", "http.path": path }, async () => {
+      assertToken(this.cfg.token);
+      const res = await fetch(`${this.cfg.api}${path}`, {
+        headers: this.headers(),
+      });
+      return res.json() as Promise<ApiResponse<T>>;
     });
-    return res.json() as Promise<ApiResponse<T>>;
   }
 
   async postRaw<T>(
@@ -77,15 +82,17 @@ export class PipesClient {
     body: unknown,
     opts: { idempotencyKey?: string } = {}
   ): Promise<ApiResponse<T>> {
-    assertToken(this.cfg.token);
-    const extra: Record<string, string> = {};
-    if (opts.idempotencyKey) extra["idempotency-key"] = opts.idempotencyKey;
-    const res = await fetch(`${this.cfg.api}${path}`, {
-      method: "POST",
-      headers: this.headers(extra),
-      body: JSON.stringify(body),
+    return withSpan("pipes.api.post", { "http.method": "POST", "http.path": path }, async () => {
+      assertToken(this.cfg.token);
+      const extra: Record<string, string> = {};
+      if (opts.idempotencyKey) extra["idempotency-key"] = opts.idempotencyKey;
+      const res = await fetch(`${this.cfg.api}${path}`, {
+        method: "POST",
+        headers: this.headers(extra),
+        body: JSON.stringify(body),
+      });
+      return res.json() as Promise<ApiResponse<T>>;
     });
-    return res.json() as Promise<ApiResponse<T>>;
   }
 
 }

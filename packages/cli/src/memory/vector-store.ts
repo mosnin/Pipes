@@ -3,6 +3,7 @@ import * as sqliteVec from "sqlite-vec";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { mkdirSync } from "node:fs";
+import { withSpan } from "../telemetry.js";
 
 const EMBEDDING_DIM = 1536; // text-embedding-3-small
 
@@ -28,11 +29,19 @@ export async function embed(text: string): Promise<number[]> {
   const apiKey = process.env["OPENAI_API_KEY"];
   if (!apiKey) throw new Error("OPENAI_API_KEY required for embeddings");
 
-  const res = await fetch("https://api.openai.com/v1/embeddings", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
-  });
+  const res = await withSpan(
+    "pipes.memory.embed",
+    {
+      "gen_ai.system": "openai",
+      "gen_ai.request.model": "text-embedding-3-small",
+      "gen_ai.operation.name": "embed",
+    },
+    () => fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: "text-embedding-3-small", input: text }),
+    })
+  );
 
   if (!res.ok) {
     const err = await res.text();

@@ -172,6 +172,7 @@ const MANIFEST = {
         { flag: "--type <type>", description: "Content type hint: note, decision, fact, task, summary, reference, code, conversation" },
         { flag: "--topic <topic>", description: "Topic hint for extraction" },
         { flag: "--no-extract", description: "Skip LLM extraction, store with minimal metadata" },
+        { flag: "--dry-run", description: "Preview extracted metadata without saving to the graph" },
         { flag: "--json", description: "Output raw JSON" },
       ],
     },
