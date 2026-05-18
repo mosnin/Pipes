@@ -42,24 +42,26 @@ export function registerSchema(program: Command): void {
           },
         });
 
-        const dest = opts.out ? createWriteStream(opts.out, "utf8") : process.stdout;
+        const fileStream = opts.out ? createWriteStream(opts.out, "utf8") : null;
+        const write = (chunk: string) => {
+          if (fileStream) fileStream.write(chunk);
+          else process.stdout.write(chunk);
+        };
 
         if (!res.body) {
-          dest.write(await res.text());
+          write(await res.text());
         } else {
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            dest.write(decoder.decode(value, { stream: true }));
+            write(decoder.decode(value, { stream: true }));
           }
         }
 
-        if (opts.out) {
-          await new Promise<void>((resolve) =>
-            (dest as ReturnType<typeof createWriteStream>).end(resolve)
-          );
+        if (opts.out && fileStream) {
+          await new Promise<void>((resolve) => fileStream.end(resolve));
           spinner?.stop();
           printSuccess(`Schema exported to ${opts.out}`);
         } else {

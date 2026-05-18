@@ -9,3 +9,4 @@ test-results
 
 .pipes-db.json
 tsconfig.tsbuildinfo
+.claude/

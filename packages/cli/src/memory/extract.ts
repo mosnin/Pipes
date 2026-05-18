@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { MemoryRecord } from "./types.js";
+import { embed, storeEmbedding, embeddingsEnabled } from "./vector-store.js";
 
 const SYSTEM_PROMPT = `You are a metadata extraction system. Given content, return ONLY a JSON object with these exact fields:
 {
@@ -70,7 +71,7 @@ export async function extractMetadata(
   const extracted = JSON.parse(raw) as Partial<MemoryRecord>;
   const now = new Date().toISOString();
 
-  return {
+  const record: MemoryRecord = {
     content_id: randomUUID(),
     title: extracted.title ?? content.slice(0, 60).replace(/\n/g, " "),
     content_type: extracted.content_type ?? "note",
@@ -95,6 +96,28 @@ export async function extractMetadata(
     updated_at: now,
     raw_content: content,
   };
+
+  // Generate and store embedding if API key is available
+  if (embeddingsEnabled()) {
+    try {
+      const vector = await embed(content);
+      record.embedding_vector = vector;
+      storeEmbedding(record.content_id, vector);
+    } catch {
+      // embedding failure is non-fatal — keyword search still works
+    }
+  }
+
+  return record;
+}
+
+export async function embedQuery(text: string): Promise<number[] | null> {
+  if (!embeddingsEnabled()) return null;
+  try {
+    return await embed(text);
+  } catch {
+    return null;
+  }
 }
 
 export function scoreRecord(record: MemoryRecord, queryKeywords: string[]): number {
