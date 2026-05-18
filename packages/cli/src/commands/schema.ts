@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { randomUUID } from "node:crypto";
 import { readFileSync, createWriteStream } from "node:fs";
 import ora from "ora";
 import { makeClient, ApiError } from "../client.js";
@@ -94,7 +95,7 @@ export function registerSchema(program: Command): void {
         const res = await client.postRaw<{ systemId: string }>(
           "/api/protocol/import/system",
           body,
-          { idempotencyKey: opts.idempotencyKey }
+          { idempotencyKey: opts.idempotencyKey ?? randomUUID() }
         );
         spinner.stop();
         if (!res.ok || !res.data) {

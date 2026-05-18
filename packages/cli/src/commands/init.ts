@@ -5,6 +5,13 @@ import chalk from "chalk";
 import yaml from "js-yaml";
 import { configFilePath } from "../config.js";
 
+const DEFAULT_API = "https://app.pipes.sh";
+
+interface GlobalOpts {
+  api?: string;
+  token?: string;
+}
+
 async function prompt(question: string, defaultValue = ""): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
@@ -20,9 +27,10 @@ export function registerInit(program: Command): void {
   program
     .command("init")
     .description("Create a .pipes.yml config file in the current directory")
-    .option("--api <url>", "Pipes API URL", "https://app.pipes.sh")
+    .option("--api <url>", "Pipes API URL")
     .option("--token <token>", "Agent token (from Settings -> API Tokens)")
-    .action(async (opts: { api: string; token?: string }) => {
+    .action(async (opts: { api?: string; token?: string }) => {
+      const global = program.optsWithGlobals<GlobalOpts>();
       const configPath = configFilePath();
 
       if (existsSync(configPath)) {
@@ -33,8 +41,8 @@ export function registerInit(program: Command): void {
 
       console.log(chalk.bold("Pipes project setup\n"));
 
-      const api = await prompt("API URL", opts.api);
-      const token = opts.token ?? (await prompt("Token (from Settings -> API Tokens)"));
+      const api = await prompt("API URL", opts.api ?? global.api ?? DEFAULT_API);
+      const token = opts.token ?? global.token ?? (await prompt("Token (from Settings -> API Tokens)"));
 
       if (!token) {
         console.error(chalk.red("\nToken is required. Create one at Settings -> API Tokens."));

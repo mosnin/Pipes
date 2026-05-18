@@ -32,8 +32,8 @@ export function loadConfig(overrides: Partial<PipesConfig> = {}): PipesConfig {
       if (parsed && typeof parsed === "object") {
         fileConfig = parsed as Partial<PipesConfig>;
       }
-    } catch {
-      // silently ignore malformed config
+    } catch (err) {
+      process.stderr.write(`Warning: malformed .pipes.yml at ${configPath} — using defaults. (${err instanceof Error ? err.message : String(err)})\n`);
     }
   }
 
