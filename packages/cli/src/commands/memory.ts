@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import ora from "ora";
 import { makeClient } from "../client.js";
 import { printJson, printTable, printError, printSuccess } from "../output.js";
-import { extractMetadata, scoreRecord } from "../memory/extract.js";
+import { extractMetadata, scoreRecord, embedQuery } from "../memory/extract.js";
+import { searchEmbeddings, embeddingsEnabled } from "../memory/vector-store.js";
 import type { MemoryRecord } from "../memory/types.js";
 
 interface GlobalOpts {
@@ -202,8 +203,20 @@ export function registerMemory(program: Command): void {
             .split(/\s+/)
             .filter((w) => w.length > 2);
 
+          // Build vector score map from semantic search
+          const vectorScores = new Map<string, number>();
+          const queryVector = await embedQuery(query);
+          if (queryVector) {
+            const matches = searchEmbeddings(queryVector, limit * 3);
+            const maxDist = Math.max(...matches.map(m => m.distance), 1);
+            for (const m of matches) {
+              // convert distance to similarity score (0=far, 1=identical)
+              vectorScores.set(m.content_id, 1 - m.distance / maxDist);
+            }
+          }
+
           const scored = records
-            .map((r) => ({ ...r, score: scoreRecord(r.record, keywords) }))
+            .map((r) => ({ ...r, score: scoreRecord(r.record, keywords, vectorScores.get(r.record.content_id) ?? 0) }))
             .sort((a, b) => b.score - a.score)
             .slice(0, limit);
 

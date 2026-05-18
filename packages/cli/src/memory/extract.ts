@@ -120,7 +120,7 @@ export async function embedQuery(text: string): Promise<number[] | null> {
   }
 }
 
-export function scoreRecord(record: MemoryRecord, queryKeywords: string[]): number {
+export function scoreRecord(record: MemoryRecord, queryKeywords: string[], vectorScore = 0): number {
   const searchable = [
     record.title,
     record.summary,
@@ -136,13 +136,13 @@ export function scoreRecord(record: MemoryRecord, queryKeywords: string[]): numb
   const hits = queryKeywords.filter((kw) =>
     searchable.includes(kw.toLowerCase())
   ).length;
-  const keywordScore = queryKeywords.length > 0 ? hits / queryKeywords.length : 0;
+  const kwScore = queryKeywords.length > 0 ? hits / queryKeywords.length : 0;
 
   return (
-    keywordScore * 0.5 +
-    record.confidence_score * 0.2 +
-    record.importance_score * 0.2 +
-    record.freshness_score * 0.1
+    0.4 * kwScore +
+    0.4 * vectorScore +
+    0.1 * record.importance_score +
+    0.1 * record.freshness_score
   );
 }
 

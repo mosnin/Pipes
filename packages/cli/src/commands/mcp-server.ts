@@ -7,7 +7,8 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { makeClient } from "../client.js";
-import { extractMetadata, scoreRecord, compressForContext } from "../memory/extract.js";
+import { extractMetadata, scoreRecord, compressForContext, embedQuery } from "../memory/extract.js";
+import { searchEmbeddings } from "../memory/vector-store.js";
 import type { MemoryRecord } from "../memory/types.js";
 
 interface GlobalOpts {
@@ -399,8 +400,18 @@ export function registerMcpServer(program: Command): void {
               const query = a["query"] as string;
               const keywords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
               const limit = (a["limit"] as number | undefined) ?? 5;
+              // Build vector score map from semantic search
+              const vectorScores = new Map<string, number>();
+              const queryVector = await embedQuery(query);
+              if (queryVector) {
+                const matches = searchEmbeddings(queryVector, limit * 3);
+                const maxDist = Math.max(...matches.map(m => m.distance), 1);
+                for (const m of matches) {
+                  vectorScores.set(m.content_id, 1 - m.distance / maxDist);
+                }
+              }
               const scored = records
-                .map(({ nodeId, record }) => ({ nodeId, record, score: scoreRecord(record, keywords) }))
+                .map(({ nodeId, record }) => ({ nodeId, record, score: scoreRecord(record, keywords, vectorScores.get(record.content_id) ?? 0) }))
                 .sort((x, y) => y.score - x.score)
                 .slice(0, limit);
               return okResult(scored.map(({ nodeId, record, score }) => ({
@@ -431,8 +442,18 @@ export function registerMcpServer(program: Command): void {
               const keywords = context.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
               const limit = (a["limit"] as number | undefined) ?? 10;
               const maxChars = (a["max_chars"] as number | undefined) ?? 4000;
+              // Build vector score map from semantic search
+              const ctxVectorScores = new Map<string, number>();
+              const ctxQueryVector = await embedQuery(context);
+              if (ctxQueryVector) {
+                const matches = searchEmbeddings(ctxQueryVector, limit * 3);
+                const maxDist = Math.max(...matches.map(m => m.distance), 1);
+                for (const m of matches) {
+                  ctxVectorScores.set(m.content_id, 1 - m.distance / maxDist);
+                }
+              }
               const topRecords = records
-                .map((r) => ({ record: r, score: scoreRecord(r, keywords) }))
+                .map((r) => ({ record: r, score: scoreRecord(r, keywords, ctxVectorScores.get(r.content_id) ?? 0) }))
                 .sort((x, y) => y.score - x.score)
                 .slice(0, limit)
                 .map(({ record }) => record);
