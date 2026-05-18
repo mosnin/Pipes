@@ -1,3 +1,13 @@
+export type TemplateParameter = {
+  key: string;
+  label: string;
+  description: string;
+  defaultValue?: string;
+  required?: boolean;
+  appliesTo?: string[]; // node IDs that this param applies to
+  field?: "title" | "description"; // which node field to substitute
+};
+
 export type StarterTemplate = {
   id: string;
   title: string;
@@ -5,7 +15,8 @@ export type StarterTemplate = {
   category: string;
   useCase: string;
   complexity: "simple" | "standard" | "advanced";
-  nodes: Array<{ id: string; type: string; title: string; x: number; y: number }>;
+  parameters?: TemplateParameter[];
+  nodes: Array<{ id: string; type: string; title: string; description?: string; x: number; y: number }>;
   pipes: Array<{ fromNodeId: string; toNodeId: string }>;
 };
 
@@ -17,9 +28,13 @@ export const starterTemplates: StarterTemplate[] = [
     category: "Core",
     useCase: "Assistant baseline",
     complexity: "simple",
+    parameters: [
+      { key: "agent_role", label: "Agent role", description: "What role should the agent play?", defaultValue: "helpful assistant", field: "description", appliesTo: ["agent"] },
+      { key: "system_name", label: "System name", description: "Name for this system", defaultValue: "Single Agent Loop" },
+    ],
     nodes: [
       { id: "input", type: "Input", title: "User Input", x: 120, y: 120 },
-      { id: "agent", type: "Agent", title: "Reasoning Agent", x: 360, y: 120 },
+      { id: "agent", type: "Agent", title: "Reasoning Agent", description: "Role: {{agent_role}}", x: 360, y: 120 },
       { id: "output", type: "Output", title: "Response", x: 620, y: 120 }
     ],
     pipes: [{ fromNodeId: "input", toNodeId: "agent" }, { fromNodeId: "agent", toNodeId: "output" }]
@@ -31,6 +46,9 @@ export const starterTemplates: StarterTemplate[] = [
     category: "Research",
     useCase: "RAG research orchestration",
     complexity: "advanced",
+    parameters: [
+      { key: "research_domain", label: "Research domain", description: "What domain does this research system specialize in?", defaultValue: "general", appliesTo: ["plan", "synth"] },
+    ],
     nodes: [
       { id: "in", type: "Input", title: "Research Question", x: 100, y: 160 },
       { id: "plan", type: "Agent", title: "Planner", x: 320, y: 100 },
@@ -47,6 +65,10 @@ export const starterTemplates: StarterTemplate[] = [
     category: "Automation",
     useCase: "Ops automation",
     complexity: "standard",
+    parameters: [
+      { key: "trigger_event", label: "Trigger event name", description: "Name of the event that triggers this workflow", defaultValue: "user.action", appliesTo: ["trigger"] },
+      { key: "action_name", label: "Action label", description: "What action is executed?", defaultValue: "Execute Action", appliesTo: ["action"], field: "title" },
+    ],
     nodes: [
       { id: "trigger", type: "Trigger", title: "Event Trigger", x: 100, y: 160 },
       { id: "decision", type: "Decision", title: "Rule Decision", x: 350, y: 160 },
@@ -62,6 +84,9 @@ export const starterTemplates: StarterTemplate[] = [
     category: "Operations",
     useCase: "Support triage",
     complexity: "standard",
+    parameters: [
+      { key: "team_name", label: "Team name", description: "The support team name for escalations", defaultValue: "Support Team", appliesTo: ["approval"] },
+    ],
     nodes: [
       { id: "input", type: "Input", title: "Ticket Intake", x: 100, y: 160 },
       { id: "classifier", type: "Agent", title: "Classifier", x: 320, y: 160 },

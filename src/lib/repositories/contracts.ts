@@ -73,7 +73,7 @@ export interface SystemsRepository {
 
 export interface GraphRepository {
   addNode(input: { systemId: string; type: string; title: string; description?: string; x: number; y: number }): Promise<string>;
-  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }): Promise<void>;
+  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number }; config?: Record<string, unknown> }): Promise<void>;
   deleteNode(nodeId: string): Promise<void>;
   addPipe(input: { systemId: string; fromNodeId: string; toNodeId: string }): Promise<string>;
   deletePipe(pipeId: string): Promise<void>;

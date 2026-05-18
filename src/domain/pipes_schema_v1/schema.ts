@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+export const PIPES_SCHEMA_VERSION = 1 as const;
+export type PipesSchemaVersion = typeof PIPES_SCHEMA_VERSION;
+
 export const nodeTypeValues = [
   "Agent",
   "Tool",
