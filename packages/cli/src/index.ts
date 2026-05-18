@@ -11,6 +11,7 @@ import { registerTemplates } from "./commands/templates.js";
 import { registerComments } from "./commands/comments.js";
 import { registerMemory } from "./commands/memory.js";
 import { registerMcpServer } from "./commands/mcp-server.js";
+import { registerCompletion } from "./commands/completion.js";
 
 const program = new Command("pipes")
   .description("CLI for Pipes — build and manage agent systems from your terminal")
@@ -38,6 +39,11 @@ Examples:
   pipes validate sys_abc123
   pipes capabilities
   pipes mcp-server
+
+Enable tab completion:
+  eval "$(pipes completion --shell bash)"  # bash
+  eval "$(pipes completion --shell zsh)"   # zsh
+  pipes completion --shell fish > ~/.config/fish/completions/pipes.fish
 `
   );
 
@@ -52,6 +58,7 @@ registerTemplates(program);
 registerComments(program);
 registerMemory(program);
 registerMcpServer(program);
+registerCompletion(program);
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   console.error(err instanceof Error ? err.message : String(err));

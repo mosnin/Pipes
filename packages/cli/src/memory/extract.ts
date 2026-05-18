@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import type { MemoryRecord } from "./types.js";
 import { embed, storeEmbedding, embeddingsEnabled } from "./vector-store.js";
+import { MemoryRecordSchema } from "./schema.js";
 
 const SYSTEM_PROMPT = `You are a metadata extraction system. Given content, return ONLY a JSON object with these exact fields:
 {
@@ -40,6 +42,8 @@ export async function extractMetadata(
     ? `Hints: ${hintLines}\n\nContent:\n${content}`
     : content;
 
+  process.stderr.write("  Extracting metadata");
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -54,6 +58,7 @@ export async function extractMetadata(
       ],
       response_format: { type: "json_object" },
       temperature: 0,
+      stream: true,
     }),
   });
 
@@ -62,40 +67,94 @@ export async function extractMetadata(
     throw new Error(`OpenAI extraction failed (${res.status}): ${errText}`);
   }
 
-  const data = (await res.json()) as {
-    choices: Array<{ message: { content: string } }>;
-  };
-  const raw = data.choices[0]?.message.content;
+  let raw: string;
+
+  if (res.body == null) {
+    // Non-streaming fallback
+    const data = (await res.json()) as {
+      choices: Array<{ message: { content: string } }>;
+    };
+    raw = data.choices[0]?.message.content ?? "";
+    process.stderr.write("\n");
+  } else {
+    let fullContent = "";
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        const data = trimmed.slice(6);
+        if (data === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(data) as { choices: Array<{ delta?: { content?: string } }> };
+          const delta = parsed.choices[0]?.delta?.content;
+          if (delta) {
+            fullContent += delta;
+            // Write progress dots to stderr (every ~20 chars)
+            if (fullContent.length % 20 < delta.length) {
+              process.stderr.write(".");
+            }
+          }
+        } catch { /* skip malformed SSE line */ }
+      }
+    }
+    process.stderr.write("\n");
+    raw = fullContent;
+  }
+
   if (!raw) throw new Error("OpenAI returned an empty response");
 
-  const extracted = JSON.parse(raw) as Partial<MemoryRecord>;
+  // Validate with up to 3 attempts if schema parse fails
+  let extracted: z.infer<typeof MemoryRecordSchema> | null = null;
+  let lastParseError: unknown = null;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const rawObj = JSON.parse(raw);
+      const result = MemoryRecordSchema.safeParse(rawObj);
+      if (result.success) {
+        extracted = result.data;
+        break;
+      }
+      lastParseError = result.error;
+      // On validation failure (not parse failure), use partial data with defaults
+      extracted = MemoryRecordSchema.parse({ ...rawObj }); // will throw with defaults filled
+      break;
+    } catch (err) {
+      lastParseError = err;
+      if (attempt === 2) break; // give up after 3 attempts
+      // Small delay before retry
+      await new Promise(r => setTimeout(r, 200 * (attempt + 1)));
+    }
+  }
+
+  if (!extracted) {
+    // Fallback: use defaults only
+    extracted = MemoryRecordSchema.parse({});
+    process.stderr.write(`  Warning: metadata extraction failed validation, using defaults. (${lastParseError instanceof Error ? lastParseError.message : String(lastParseError)})\n`);
+  }
+
   const now = new Date().toISOString();
 
   const record: MemoryRecord = {
     content_id: randomUUID(),
-    title: extracted.title ?? content.slice(0, 60).replace(/\n/g, " "),
-    content_type: extracted.content_type ?? "note",
-    topic: extracted.topic ?? "general",
-    summary: extracted.summary ?? content.slice(0, 200),
-    tags: extracted.tags ?? [],
-    entities: extracted.entities ?? [],
-    keywords: extracted.keywords ?? [],
-    audience: extracted.audience,
-    intent: extracted.intent,
-    confidence_score: extracted.confidence_score ?? 0.7,
-    freshness_score: extracted.freshness_score ?? 1.0,
-    importance_score: extracted.importance_score ?? 0.5,
-    status: extracted.status ?? "active",
+    ...extracted,
     version: 1,
     parent_id: undefined,
     related_ids: [],
-    contradictions: extracted.contradictions ?? [],
-    citations: extracted.citations ?? [],
     embedding_vector: undefined,
     created_at: now,
     updated_at: now,
     raw_content: content,
   };
+
+  process.stderr.write(`  title: ${record.title ?? "(untitled)"}\n`);
+  process.stderr.write(`  type: ${record.content_type ?? "note"}  topic: ${record.topic ?? "-"}\n`);
 
   // Generate and store embedding if API key is available
   if (embeddingsEnabled()) {
