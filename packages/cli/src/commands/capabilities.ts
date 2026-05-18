@@ -158,6 +158,9 @@ const MANIFEST = {
       options: [
         { flag: "--api <url>", description: "Pipes API base URL" },
         { flag: "--token <token>", description: "Agent token" },
+        { flag: "--http", description: "Start in HTTP mode instead of stdio" },
+        { flag: "--port <port>", description: "HTTP port (default: 3456)" },
+        { flag: "--host <host>", description: "Bind host (default: 127.0.0.1)" },
       ],
     },
     {

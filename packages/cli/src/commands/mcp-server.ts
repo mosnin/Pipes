@@ -222,6 +222,21 @@ function okResult(data: unknown) {
   };
 }
 
+interface McpOpts extends GlobalOpts {
+  http?: boolean;
+  port?: string;
+  host?: string;
+}
+
+async function readBody(req: import("node:http").IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
+    req.on("end", () => resolve(body));
+    req.on("error", reject);
+  });
+}
+
 export function registerMcpServer(program: Command): void {
   program
     .command("mcp-server")
@@ -230,8 +245,11 @@ export function registerMcpServer(program: Command): void {
     )
     .option("--api <url>", "Pipes API base URL")
     .option("--token <token>", "Agent token")
-    .action(async (opts: GlobalOpts) => {
-      const global = program.optsWithGlobals<GlobalOpts>();
+    .option("--http", "Start in HTTP mode instead of stdio")
+    .option("--port <port>", "HTTP port (default: 3456)")
+    .option("--host <host>", "Bind host (default: 127.0.0.1)")
+    .action(async (opts: McpOpts) => {
+      const global = program.optsWithGlobals<McpOpts>();
       const api = opts.api ?? global.api;
       const token = opts.token ?? global.token;
       const client = makeClient({ api, token });
@@ -544,8 +562,35 @@ export function registerMcpServer(program: Command): void {
         }
       });
 
-      const transport = new StdioServerTransport();
-      process.stderr.write("Pipes MCP server running (stdio)\n");
-      await server.connect(transport);
+      if (opts.http) {
+        const { StreamableHTTPServerTransport } = await import("@modelcontextprotocol/sdk/server/streamableHttp.js");
+        const { createServer } = await import("node:http");
+        const { randomUUID: newUUID } = await import("node:crypto");
+
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => newUUID(),
+        });
+
+        const httpServer = createServer(async (req, res) => {
+          if (req.url === "/mcp") {
+            await transport.handleRequest(req, res, await readBody(req));
+          } else {
+            res.writeHead(404).end();
+          }
+        });
+
+        const port = parseInt(opts.port ?? "3456", 10);
+        const host = opts.host ?? "127.0.0.1";
+
+        httpServer.listen(port, host, () => {
+          process.stderr.write(`Pipes MCP server running (HTTP) on ${host}:${port}/mcp\n`);
+        });
+
+        await server.connect(transport);
+      } else {
+        const transport = new StdioServerTransport();
+        process.stderr.write("Pipes MCP server running (stdio)\n");
+        await server.connect(transport);
+      }
     });
 }
