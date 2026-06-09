@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Activity,
-  AlertCircle,
-  BarChart2,
-  RefreshCw,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -212,28 +205,24 @@ export default function AdminInsightsPage() {
           value={dau}
           delta="+8% vs prev"
           deltaTone="up"
-          icon={<Users size={14} />}
         />
         <MetricCard
           label="WAU"
           value={wau}
           delta="+3% vs prev"
           deltaTone="up"
-          icon={<Activity size={14} />}
         />
         <MetricCard
           label="Conversion"
           value={conversion}
           delta="signup -> activated"
           deltaTone="up"
-          icon={<TrendingUp size={14} />}
         />
         <MetricCard
           label="Churn"
           value={churn}
           delta="dropoff before activation"
           deltaTone="down"
-          icon={<BarChart2 size={14} />}
         />
       </div>
 

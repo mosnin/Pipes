@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { GitBranch } from "lucide-react";
 import { SignUp } from "@clerk/nextjs";
 import { SignupSourceTracker } from "@/components/marketing/SignupSourceTracker";
 
@@ -17,10 +16,7 @@ function SignupForm() {
 
       <div className="w-full max-w-md">
         {/* Brand */}
-        <div className="flex items-center justify-center gap-2.5 mb-7">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 shrink-0">
-            <GitBranch size={18} className="text-white" aria-hidden="true" />
-          </span>
+        <div className="flex items-center justify-center mb-7">
           <span
             className="text-[22px] font-bold text-[#111]"
             style={{ letterSpacing: "-0.03em" }}

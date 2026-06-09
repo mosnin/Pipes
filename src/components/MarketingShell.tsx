@@ -345,8 +345,15 @@ function MarketingFooter() {
 export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {/* Skip-to-content link for keyboard / AT users (WCAG 2.4.1). */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-[#111] focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-indigo-500"
+      >
+        Skip to content
+      </a>
       <MarketingNavbar />
-      <main className="flex-1">{children}</main>
+      <main id="main" className="flex-1">{children}</main>
       <MarketingFooter />
     </div>
   );

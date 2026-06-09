@@ -5,8 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
-  GitBranch,
-  Mail,
   Users,
   XCircle,
 } from "lucide-react";
@@ -136,12 +134,7 @@ export default function InviteAcceptPage() {
     <Shell>
       <CardShell className="w-full max-w-md shadow-sm-token">
         <CardHeader className="text-center">
-          <div className="flex flex-col items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100">
-              <Mail className="w-5 h-5 text-indigo-600" aria-hidden="true" />
-            </span>
-            <h1 className="t-h3 text-[#111]">You have been invited</h1>
-          </div>
+          <h1 className="t-h3 text-[#111]">You have been invited</h1>
         </CardHeader>
 
         <CardBody>
@@ -154,10 +147,7 @@ export default function InviteAcceptPage() {
                 <span className="font-semibold text-[#111]">{PLACEHOLDER_INVITER}</span>{" "}
                 invited you to join
               </p>
-              <div className="mt-0.5 flex items-center gap-1.5">
-                <GitBranch size={12} className="text-[#8E8E93]" aria-hidden="true" />
-                <span className="t-caption text-[#3C3C43]">/invites</span>
-              </div>
+              <p className="mt-0.5 t-caption text-[#3C3C43]">/invites</p>
             </div>
           </div>
 
@@ -167,7 +157,6 @@ export default function InviteAcceptPage() {
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="t-caption text-[#8E8E93]">Role</span>
               <StatusBadge tone="info">
-                <Users className="w-3 h-3" aria-hidden="true" />
                 <span className="capitalize">{PLACEHOLDER_ROLE}</span>
               </StatusBadge>
             </div>

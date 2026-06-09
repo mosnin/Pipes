@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Copy, Key, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Copy, Plus, Trash2 } from "lucide-react";
 import { AGENT_CAPABILITIES, type AgentCapability } from "@/lib/protocol/tokens";
 import {
   Button,
@@ -367,7 +367,7 @@ export default function TokensSettingsPage() {
               onPress={() => void handleCreate()}
               className="flex items-center gap-1.5"
             >
-              {creating ? <Spinner size="sm" /> : <Key size={14} />}
+              {creating && <Spinner size="sm" />}
               Generate
             </Button>
           </>

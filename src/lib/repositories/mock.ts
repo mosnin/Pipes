@@ -1,8 +1,49 @@
 import { store } from "@/lib/convex/store";
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import { aggregateAll, seedMockSamples } from "@/lib/observability/metrics-aggregation";
 
 const now = () => new Date().toISOString();
+
+let mockMetricsSeeded = false;
+
+function ensureMockMetricsSeeded(): void {
+  if (mockMetricsSeeded) return;
+  // Avoid seeding during Next.js production build prerendering. Multiple
+  // worker processes share the on-disk mock DB file; concurrent writes from
+  // a fat seed can corrupt the JSON. The admin dashboard runs at request
+  // time, not at build time, so build-phase seeding is unnecessary anyway.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const db = store.readDb();
+  db.metricsSamples = db.metricsSamples ?? [];
+  if (db.metricsSamples.length > 0) {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const seeded = seedMockSamples(Date.now());
+  for (const sample of seeded) {
+    db.metricsSamples.push({
+      id: store.createId("met"),
+      kind: sample.kind,
+      label: sample.label,
+      value: sample.value,
+      tags: sample.tags,
+      ts: sample.ts
+    });
+  }
+  if (db.metricsSamples.length > 10_000) {
+    db.metricsSamples = db.metricsSamples.slice(-10_000);
+  }
+  store.writeDb(db);
+  mockMetricsSeeded = true;
+}
+
+export function resetMockMetricsSeedForTests(): void {
+  mockMetricsSeeded = false;
+}
 
 async function provision(identity: { externalId: string; email: string; name: string }): Promise<AppContext> {
   const db = store.readDb();
@@ -1025,6 +1066,7 @@ export function createMockRepositories(): RepositorySet {
         store.writeDb(db);
       },
       async listSamples(opts) {
+        ensureMockMetricsSeeded();
         const db = store.readDb();
         const rows = (db.metricsSamples ?? []).slice();
         const filtered = rows
@@ -1033,6 +1075,23 @@ export function createMockRepositories(): RepositorySet {
           .filter((row) => !opts?.sinceTs || row.ts >= opts.sinceTs)
           .sort((a, b) => (a.ts < b.ts ? 1 : -1));
         return filtered.slice(0, opts?.limit ?? 500);
+      },
+      async listAggregated(opts) {
+        ensureMockMetricsSeeded();
+        const db = store.readDb();
+        const nowMs = opts?.nowMs ?? Date.now();
+        const cap = Math.max(1, opts?.sampleCap ?? 10_000);
+        // Pull the most recent `cap` samples (already capped to 10k in store).
+        const rows = (db.metricsSamples ?? [])
+          .slice()
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1))
+          .slice(0, cap);
+        return aggregateAll(rows, nowMs, {
+          latencyHours: opts?.latencyHours,
+          buildDays: opts?.buildDays,
+          errorHours: opts?.errorHours,
+          costDays: opts?.costDays
+        });
       }
     },
     agentRunnerMetrics: {

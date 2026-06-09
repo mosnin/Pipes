@@ -19,14 +19,7 @@ import {
   Download,
   Edit,
   RotateCcw,
-  Layers,
-  Activity,
-  MessageSquare,
-  AlertTriangle,
-  Grid3x3,
-  List,
   Upload,
-  ArrowUpRight,
 } from "lucide-react";
 import {
   Button,
@@ -44,6 +37,7 @@ import {
   Badge,
 } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
+import { EmptyCanvas } from "@/components/illustrations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -608,25 +602,21 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         <MetricCard
           label="Total systems"
           value={stats.total}
-          icon={<Layers size={16} />}
           footer={`${stats.active} active`}
         />
         <MetricCard
           label="Active this week"
           value={stats.activeThisWeek}
-          icon={<Activity size={16} />}
           footer="Updated in last 7 days"
         />
         <MetricCard
           label="Favorites"
           value={stats.favorites}
-          icon={<Star size={16} />}
           footer="Pinned for quick access"
         />
         <MetricCard
           label="Archived"
           value={stats.archived}
-          icon={<AlertTriangle size={16} />}
           footer="Hidden from default view"
         />
       </div>
@@ -772,6 +762,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               </div>
             ) : (
               <EmptyState
+                illustration={<EmptyCanvas size={96} />}
                 title={
                   query
                     ? `No systems match "${query}"`
@@ -788,7 +779,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                       ? "Archived systems live here. They are hidden from the default view."
                       : filter === "favorites"
                         ? "Favorite systems for quick access from the toolbar."
-                        : "Start fresh, import a schema, or grab a template."
+                        : "Describe your system. Watch it build itself."
                 }
                 action={
                   query ? (
@@ -842,7 +833,6 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onPress={() => setPage((p) => p + 1)}
                   >
                     Load more
-                    <ArrowUpRight size={14} />
                   </Button>
                 </div>
               )}
@@ -863,7 +853,6 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onPress={() => setPage((p) => p + 1)}
                   >
                     Load more
-                    <ArrowUpRight size={14} />
                   </Button>
                 </div>
               )}
@@ -912,8 +901,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           onChange={(e) => setImportText(e.target.value)}
           className="font-mono"
         />
-        <p className="t-caption text-[#8E8E93] mt-2 inline-flex items-center gap-1.5">
-          <MessageSquare size={12} />
+        <p className="t-caption text-[#8E8E93] mt-2">
           Validation runs after import. Errors will be shown in the editor.
         </p>
       </Dialog>

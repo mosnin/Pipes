@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, GitBranch } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { InlineCode } from "@/components/ui";
 
 export const metadata = {
@@ -124,7 +124,6 @@ export default function DocsPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-black/[0.14] bg-white px-3 h-9 t-label font-semibold text-[#111] hover:border-black/[0.24] hover:bg-black/[0.02] transition-colors w-fit"
           >
-            <GitBranch size={14} aria-hidden="true" />
             View on GitHub
             <ArrowUpRight size={12} aria-hidden="true" />
           </Link>

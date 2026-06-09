@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, Minus, Quote, X } from "lucide-react";
+import { ArrowRight, Check, Minus, X } from "lucide-react";
 import {
   Breadcrumbs,
   Button,
@@ -274,11 +274,6 @@ export default async function CompareDetailPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {entry.differences.map((diff) => (
               <CardShell key={diff} padded>
-                <Quote
-                  size={16}
-                  className="text-indigo-600 shrink-0 mb-2"
-                  aria-hidden="true"
-                />
                 <p className="t-label text-[#111] leading-relaxed">{diff}</p>
               </CardShell>
             ))}

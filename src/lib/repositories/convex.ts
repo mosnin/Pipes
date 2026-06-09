@@ -15,7 +15,8 @@ import {
   convexUpdateNode,
   convexUpsertPresence
 } from "@/lib/convex/modeApi";
-import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
+import type { AppContext, MetricsSampleRecord, RepositorySet } from "@/lib/repositories/contracts";
+import { aggregateAll } from "@/lib/observability/metrics-aggregation";
 
 export function createConvexRepositories(): RepositorySet {
   return {
@@ -798,6 +799,38 @@ export function createConvexRepositories(): RepositorySet {
           tags: row.tagsJson ? (JSON.parse(row.tagsJson) as Record<string, string>) : undefined,
           ts: row.ts
         }));
+      },
+      async listAggregated(opts) {
+        // Convex queries don't aggregate natively; pull the most recent
+        // samples within the widest window we need, then bucket in-process.
+        const nowMs = opts?.nowMs ?? Date.now();
+        const cap = Math.max(1, opts?.sampleCap ?? 10_000);
+        const widestDays = Math.max(
+          opts?.buildDays ?? 14,
+          opts?.costDays ?? 7,
+          Math.ceil((opts?.latencyHours ?? 24) / 24),
+          Math.ceil((opts?.errorHours ?? 24) / 24)
+        );
+        const sinceTs = new Date(nowMs - widestDays * 24 * 60 * 60 * 1000).toISOString();
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listMetricSamples, {
+          sinceTs,
+          limit: cap
+        });
+        const samples: MetricsSampleRecord[] = (rows ?? []).map((row: any) => ({
+          id: String(row._id),
+          kind: row.kind,
+          label: row.label,
+          value: row.value,
+          tags: row.tagsJson ? (JSON.parse(row.tagsJson) as Record<string, string>) : undefined,
+          ts: row.ts
+        }));
+        return aggregateAll(samples, nowMs, {
+          latencyHours: opts?.latencyHours,
+          buildDays: opts?.buildDays,
+          errorHours: opts?.errorHours,
+          costDays: opts?.costDays
+        });
       }
     },
     agentRunnerMetrics: {

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { Breadcrumbs, MetricCard } from "@/components/ui";
@@ -265,12 +265,7 @@ export default async function UseCaseDetailPage({
             </div>
 
             <div className="rounded-[12px] border border-indigo-100 bg-indigo-50 p-5">
-              <CheckCircle2
-                size={18}
-                className="text-indigo-600"
-                aria-hidden="true"
-              />
-              <h3 className="mt-3 t-title text-[#111]">Ready to ship this?</h3>
+              <h3 className="t-title text-[#111]">Ready to ship this?</h3>
               <p className="mt-1.5 t-caption text-[#3C3C43] leading-relaxed">
                 Open a starter prompt, watch the agent build, and hand it to your
                 agents in under five minutes.

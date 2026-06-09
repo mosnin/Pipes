@@ -2,14 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Activity,
-  AlertTriangle,
-  Clock,
-  Heart,
-  RefreshCw,
-  TrendingUp,
-} from "lucide-react";
-import {
   Button,
   CardShell,
   CardHeader,
@@ -23,6 +15,7 @@ import {
   Spinner,
   type DataTableColumn,
 } from "@/components/ui";
+import { MetricsCharts } from "@/components/admin/MetricsCharts";
 
 type ErrorRow = {
   id: string;
@@ -38,6 +31,11 @@ type SlowRow = {
   tags: Record<string, string>;
 };
 
+type LatencyHourlyPoint = { ts: string; p50: number; p95: number };
+type BuildsDailyPoint = { date: string; count: number };
+type ErrorsHourlyPoint = { ts: string; count: number };
+type CostWeeklyPoint = { date: string; tokensIn: number; tokensOut: number };
+
 type MetricsData = {
   kpis: {
     p50: number;
@@ -45,9 +43,11 @@ type MetricsData = {
     errorRate24: number;
     feedbackRate7: number;
   };
-  timelines: {
-    latencyHourly: number[];
-    buildsDaily: number[];
+  series: {
+    latencyHourly: LatencyHourlyPoint[];
+    buildsDaily: BuildsDailyPoint[];
+    errorsHourly: ErrorsHourlyPoint[];
+    costWeekly: CostWeeklyPoint[];
   };
   recentErrors: ErrorRow[];
   slowestBuilds: SlowRow[];
@@ -68,45 +68,6 @@ function formatTime(ts: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function Sparkline({ data, label }: { data: number[]; label: string }) {
-  const max = Math.max(...data, 1);
-  const points = data
-    .map((v, i) => {
-      const x = (i / Math.max(data.length - 1, 1)) * 100;
-      const y = 100 - (v / max) * 90 - 5;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-
-  return (
-    <div className="surface-muted rounded-lg p-4 h-[200px] flex flex-col">
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="w-full flex-1"
-        aria-label={label}
-      >
-        <polyline
-          fill="none"
-          stroke="#4F46E5"
-          strokeWidth="1.5"
-          vectorEffect="non-scaling-stroke"
-          points={points}
-        />
-        <polyline
-          fill="rgba(79,70,229,0.08)"
-          stroke="none"
-          points={`0,100 ${points} 100,100`}
-        />
-      </svg>
-      <div className="flex items-center justify-between mt-2">
-        <span className="t-caption text-[#8E8E93]">start</span>
-        <span className="t-caption text-[#8E8E93]">now</span>
-      </div>
-    </div>
-  );
 }
 
 export default function AdminMetricsPage() {
@@ -192,7 +153,7 @@ export default function AdminMetricsPage() {
             onClick={() => void load()}
             isDisabled={loading}
           >
-            {loading ? <Spinner size="xs" /> : <RefreshCw size={14} />}
+            {loading ? <Spinner size="xs" /> : null}
             <span className="ml-1.5">Refresh</span>
           </Button>
         }
@@ -204,28 +165,24 @@ export default function AdminMetricsPage() {
           value={formatMs(data?.kpis.p50 ?? 0)}
           delta="last 24h"
           deltaTone="flat"
-          icon={<Clock size={14} />}
         />
         <MetricCard
           label="Build p95"
           value={formatMs(data?.kpis.p95 ?? 0)}
           delta="last 24h"
           deltaTone="flat"
-          icon={<Activity size={14} />}
         />
         <MetricCard
           label="Error rate"
           value={`${((data?.kpis.errorRate24 ?? 0) * 100).toFixed(2)}%`}
           delta="last 24h"
           deltaTone={(data?.kpis.errorRate24 ?? 0) > 0.05 ? "down" : "flat"}
-          icon={<AlertTriangle size={14} />}
         />
         <MetricCard
           label="Feedback (7d)"
           value={data?.kpis.feedbackRate7 ?? 0}
           delta="thumbs + nps"
           deltaTone="up"
-          icon={<Heart size={14} />}
         />
       </div>
 
@@ -241,38 +198,17 @@ export default function AdminMetricsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <SkeletonCard />
           <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
-      ) : null}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <CardShell>
-          <CardHeader bordered>
-            <div className="flex items-center justify-between">
-              <span className="t-label font-semibold text-[#111]">
-                Latency over time
-              </span>
-              <HelpText>Hourly average, last 24h</HelpText>
-            </div>
-          </CardHeader>
-          <CardBody>
-            <Sparkline data={data?.timelines.latencyHourly ?? new Array(24).fill(0)} label="Latency last 24h" />
-          </CardBody>
-        </CardShell>
-
-        <CardShell>
-          <CardHeader bordered>
-            <div className="flex items-center justify-between">
-              <span className="t-label font-semibold text-[#111]">
-                Builds by day
-              </span>
-              <HelpText>Last 7 days</HelpText>
-            </div>
-          </CardHeader>
-          <CardBody>
-            <Sparkline data={data?.timelines.buildsDaily ?? new Array(7).fill(0)} label="Builds by day" />
-          </CardBody>
-        </CardShell>
-      </div>
+      ) : (
+        <MetricsCharts
+          latencyHourly={data?.series.latencyHourly ?? []}
+          buildsDaily={data?.series.buildsDaily ?? []}
+          errorsHourly={data?.series.errorsHourly ?? []}
+          costWeekly={data?.series.costWeekly ?? []}
+        />
+      )}
 
       <CardShell>
         <CardHeader bordered>
@@ -318,10 +254,7 @@ export default function AdminMetricsPage() {
         </CardBody>
       </CardShell>
 
-      <div className="flex items-center gap-2 text-[#8E8E93]">
-        <TrendingUp size={12} />
-        <HelpText>Samples are persisted in the metrics_samples table; cap is the last 24h for KPIs.</HelpText>
-      </div>
+      <HelpText>Samples are persisted in the metrics_samples table; cap is the last 24h for KPIs.</HelpText>
     </div>
   );
 }

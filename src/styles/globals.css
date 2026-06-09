@@ -3,11 +3,11 @@
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 
 @theme {
-  /* Font stack: Inter is loaded via next/font/google in app/layout.tsx and
-     injected as `--font-sans-runtime`. Falls back to the system stack so
-     pre-hydration paints stay readable. JetBrains Mono carries the mono. */
-  --font-sans: var(--font-sans-runtime), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: var(--font-mono-runtime), ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  /* Font stack: Geist Sans + Geist Mono are loaded via the `geist` package in
+     app/layout.tsx and injected as `--font-geist-sans` / `--font-geist-mono`.
+     Falls back to the system stack so pre-hydration paints stay readable. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
 
   /* Subtle brand pattern: a 24 px indigo-tinted grid as a CSS data URL.
      Used as a wash on hero surfaces and OG-style cards. */

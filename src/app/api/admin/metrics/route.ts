@@ -18,11 +18,18 @@ export async function GET(_request: Request) {
     const sinceDay = new Date(Date.now() - DAY_MS).toISOString();
     const sinceWeek = new Date(Date.now() - 7 * DAY_MS).toISOString();
 
-    const [latency24, errors24, counters24, feedback7] = await Promise.all([
+    const [latency24, errors24, counters24, feedback7, aggregated] = await Promise.all([
       repositories.metrics.listSamples({ kind: "latency", sinceTs: sinceDay, limit: 5000 }),
       repositories.metrics.listSamples({ kind: "error", sinceTs: sinceDay, limit: 1000 }),
       repositories.metrics.listSamples({ kind: "counter", sinceTs: sinceDay, limit: 5000 }),
-      repositories.metrics.listSamples({ kind: "counter", sinceTs: sinceWeek, limit: 5000 })
+      repositories.metrics.listSamples({ kind: "counter", sinceTs: sinceWeek, limit: 5000 }),
+      repositories.metrics.listAggregated({
+        latencyHours: 24,
+        buildDays: 14,
+        errorHours: 24,
+        costDays: 7,
+        sampleCap: 10_000
+      })
     ]);
 
     const buildLatencies = latency24
@@ -36,7 +43,7 @@ export async function GET(_request: Request) {
     const feedbackUp7 = feedback7.filter((s) => s.label === "feedback.kind.thumbs" && s.tags?.verdict !== "down").length
       + feedback7.filter((s) => s.label === "feedback.kind.nps").length;
 
-    // Latency timeline: bucket into 24 hourly buckets.
+    // Legacy hourly average sparkline kept for compatibility with any cached client.
     const hourlyBuckets = new Array(24).fill(0).map(() => ({ count: 0, sum: 0 }));
     const sinceMs = Date.now() - DAY_MS;
     for (const s of latency24) {
@@ -48,7 +55,7 @@ export async function GET(_request: Request) {
     }
     const latencyTimeline = hourlyBuckets.map((b) => (b.count > 0 ? Math.round(b.sum / b.count) : 0));
 
-    // Build count by day (last 7 days).
+    // Legacy daily counter.
     const dailyBuckets = new Array(7).fill(0);
     const weekStart = Date.now() - 7 * DAY_MS;
     const requestsCounters = feedback7.filter((s) => s.label === "agent_build.request");
@@ -79,6 +86,12 @@ export async function GET(_request: Request) {
       timelines: {
         latencyHourly: latencyTimeline,
         buildsDaily: dailyBuckets
+      },
+      series: {
+        latencyHourly: aggregated.latencyHourly,
+        buildsDaily: aggregated.buildsDaily,
+        errorsHourly: aggregated.errorsHourly,
+        costWeekly: aggregated.costWeekly
       },
       recentErrors,
       slowestBuilds

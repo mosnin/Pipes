@@ -2,13 +2,11 @@ import { notFound } from "next/navigation";
 import {
   ArrowRight,
   Box,
-  CheckCircle2,
   Cpu,
   GitBranch,
   LogIn,
   LogOut,
   ShieldCheck,
-  Sparkles,
   UserCheck,
   Wrench,
   Zap,
@@ -185,11 +183,6 @@ export default async function TemplateDetailPage({
                           <div className="t-label font-medium text-[#111]">{node.title}</div>
                           <div className="t-caption text-[#8E8E93]">{node.type}</div>
                         </div>
-                        <CheckCircle2
-                          size={14}
-                          className="text-[#059669] shrink-0"
-                          aria-hidden="true"
-                        />
                       </li>
                     ))}
                   </ul>
@@ -304,7 +297,6 @@ export default async function TemplateDetailPage({
                     metadata={{ templateId: template.id, source: "template_detail" }}
                   >
                     <Button variant="primary" className="w-full">
-                      <Sparkles size={14} className="mr-1.5" aria-hidden="true" />
                       Start with this prompt
                     </Button>
                   </TrackedLink>

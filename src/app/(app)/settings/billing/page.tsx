@@ -3,13 +3,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  AlertTriangle,
   CheckCircle2,
-  CreditCard,
   ExternalLink,
-  FileText,
-  Sparkles,
-  Users,
   XCircle,
 } from "lucide-react";
 import {
@@ -217,9 +212,8 @@ export default function BillingSettingsPage() {
             href={row.pdfUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 t-label text-indigo-600 hover:text-indigo-700"
+            className="t-label text-indigo-600 hover:text-indigo-700"
           >
-            <FileText size={13} />
             PDF
           </a>
         ) : (
@@ -263,7 +257,6 @@ export default function BillingSettingsPage() {
             <MetricCard
               label="Plan"
               value={summary.plan}
-              icon={<Sparkles size={14} />}
               footer={
                 <div className="mt-1">
                   <StatusBadge tone={statusTone(summary.status)} pulse={summary.status === "active"}>
@@ -275,19 +268,16 @@ export default function BillingSettingsPage() {
             <MetricCard
               label="Seats"
               value={`${seatsUsed} / ${seatsTotal}`}
-              icon={<Users size={14} />}
               footer={`${Math.max(0, seatsTotal - seatsUsed)} available`}
             />
             <MetricCard
               label="Systems limit"
               value={summary.entitlements.maxSystems}
-              icon={<FileText size={14} />}
               footer="Per workspace cap"
             />
             <MetricCard
               label="Next bill"
               value={formatDate(summary.nextBillingDate)}
-              icon={<CreditCard size={14} />}
               footer={summary.upcomingInvoice ? formatUsd(summary.upcomingInvoice.amountUsd) : "No upcoming charge"}
             />
           </div>
@@ -413,10 +403,7 @@ export default function BillingSettingsPage() {
           {/* ── Danger zone ── */}
           <CardShell className="border-[#FCA5A5]">
             <CardHeader bordered className="border-b-[#FCA5A5]/40">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={16} className="text-[#DC2626]" />
-                <h2 className="t-title text-[#991B1B]">Danger zone</h2>
-              </div>
+              <h2 className="t-title text-[#991B1B]">Danger zone</h2>
               <p className="mt-1 t-caption text-[#8E8E93]">
                 Cancelling stops billing at the end of the current period and downgrades the workspace.
               </p>
@@ -461,8 +448,7 @@ export default function BillingSettingsPage() {
                 </div>
                 <ul className="space-y-1.5">
                   {details.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 t-label text-[#3C3C43]">
-                      <CheckCircle2 size={14} className="text-[#059669] shrink-0" />
+                    <li key={f} className="t-label text-[#3C3C43]">
                       {f}
                     </li>
                   ))}

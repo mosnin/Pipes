@@ -227,9 +227,17 @@ export type MetricsSampleRecord = {
   ts: string;
 };
 
+export type AggregatedMetricsResult = {
+  latencyHourly: Array<{ ts: string; p50: number; p95: number }>;
+  buildsDaily: Array<{ date: string; count: number }>;
+  errorsHourly: Array<{ ts: string; count: number }>;
+  costWeekly: Array<{ date: string; tokensIn: number; tokensOut: number }>;
+};
+
 export interface MetricsRepository {
   recordSample(input: { kind: "latency" | "counter" | "error"; label: string; value: number; tags?: Record<string, string>; ts: string }): Promise<void>;
   listSamples(input?: { kind?: "latency" | "counter" | "error"; label?: string; sinceTs?: string; limit?: number }): Promise<MetricsSampleRecord[]>;
+  listAggregated(opts?: { nowMs?: number; latencyHours?: number; buildDays?: number; errorHours?: number; costDays?: number; sampleCap?: number }): Promise<AggregatedMetricsResult>;
 }
 
 export type AgentRunnerMetricRecord = {

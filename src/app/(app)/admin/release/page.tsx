@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  CalendarPlus,
-  CheckCircle2,
-  RefreshCw,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, CalendarPlus, RefreshCw } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -186,14 +180,7 @@ export default function AdminReleasePage() {
       header: "Status",
       align: "right",
       render: (r) => (
-        <span className="inline-flex items-center gap-2">
-          {flowTone(r.status) === "success" ? (
-            <CheckCircle2 size={14} style={{ color: "#059669" }} />
-          ) : (
-            <XCircle size={14} style={{ color: "#DC2626" }} />
-          )}
-          <StatusBadge tone={flowTone(r.status)}>{r.status}</StatusBadge>
-        </span>
+        <StatusBadge tone={flowTone(r.status)}>{r.status}</StatusBadge>
       ),
     },
   ];
@@ -330,7 +317,6 @@ export default function AdminReleasePage() {
               (data.environment.configurationWarnings != null &&
                 data.environment.configurationWarnings.length > 0) ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <AlertTriangle size={14} style={{ color: "#D97706" }} />
                   <span className="t-overline text-[#8E8E93]">Warnings</span>
                   {data.environment.configurationWarning != null ? (
                     <StatusBadge tone="warning">

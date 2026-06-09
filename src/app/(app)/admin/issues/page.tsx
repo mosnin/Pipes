@@ -24,6 +24,7 @@ import {
   type DataTableColumn,
   type StatusBadgeTone,
 } from "@/components/ui";
+import { EmptyIssues } from "@/components/illustrations";
 
 type IssueRow = {
   id: string;
@@ -336,8 +337,9 @@ export default function AdminIssuesPage() {
               onRowClick={(r) => setSelected(r)}
               emptyState={
                 <EmptyState
-                  title="No feedback in this view"
-                  description="Adjust filters above or wait for new reports."
+                  illustration={<EmptyIssues size={96} />}
+                  title="No open issues"
+                  description="Quiet day for the operator."
                 />
               }
             />

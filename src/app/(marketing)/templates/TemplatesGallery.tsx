@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Boxes, GitBranch, Layers, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -15,6 +15,7 @@ import {
   type StatusBadgeTone,
 } from "@/components/ui";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { EmptyTemplates } from "@/components/illustrations";
 
 type TemplateMarketing = {
   id: string;
@@ -76,25 +77,21 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
             <MetricCard
               label="Total starters"
               value={templates.length}
-              icon={<Boxes size={14} aria-hidden="true" />}
               footer="Curated by the Pipes team"
             />
             <MetricCard
               label="Simple"
               value={simpleCount}
-              icon={<Layers size={14} aria-hidden="true" />}
               footer="One-prompt builds"
             />
             <MetricCard
               label="Standard"
               value={standardCount}
-              icon={<GitBranch size={14} aria-hidden="true" />}
               footer="Multi-step builds"
             />
             <MetricCard
               label="Advanced"
               value={advancedCount}
-              icon={<Sparkles size={14} aria-hidden="true" />}
               footer="Multi-agent builds"
             />
           </div>
@@ -119,8 +116,9 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
       <section className="max-w-6xl mx-auto px-6 py-12">
         {visible.length === 0 ? (
           <EmptyState
-            title="No starters match your filters"
-            description="Try a different category or clear your search."
+            illustration={<EmptyTemplates size={96} />}
+            title="No starter matches that search"
+            description="Clear the filter or describe your own."
             action={
               <Button
                 variant="outline"

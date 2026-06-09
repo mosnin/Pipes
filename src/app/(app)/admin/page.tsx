@@ -1,15 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Activity,
-  AlertCircle,
-  Boxes,
-  KeyRound,
-  RefreshCw,
-  Search,
-  Users,
-} from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -303,28 +295,24 @@ export default function AdminPage() {
           value={metrics.members}
           delta="+12% MoM"
           deltaTone="up"
-          icon={<Users size={14} />}
         />
         <MetricCard
           label="Active workspaces"
           value={metrics.workspaces}
           delta="stable"
           deltaTone="flat"
-          icon={<Boxes size={14} />}
         />
         <MetricCard
           label="Systems created 7d"
           value={metrics.systems7d}
           delta={metrics.systems7d > 0 ? `+${metrics.systems7d} new` : "no change"}
           deltaTone={metrics.systems7d > 0 ? "up" : "flat"}
-          icon={<Activity size={14} />}
         />
         <MetricCard
           label="Tokens generated 7d"
           value={metrics.tokens}
           delta={metrics.tokens > 0 ? `${metrics.tokens} active` : "none"}
           deltaTone="flat"
-          icon={<KeyRound size={14} />}
         />
       </div>
 
@@ -332,12 +320,9 @@ export default function AdminPage() {
       <CardShell>
         <CardHeader bordered>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Search size={14} className="text-[#8E8E93]" />
-              <span className="t-label font-semibold text-[#111]">
-                Workspace lookup
-              </span>
-            </div>
+            <span className="t-label font-semibold text-[#111]">
+              Workspace lookup
+            </span>
             <HelpText>Inspect any workspace or system by id or email.</HelpText>
           </div>
         </CardHeader>

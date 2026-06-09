@@ -291,10 +291,17 @@ export type EmptyStateProps = {
   title: string;
   description: string;
   action?: ReactNode;
+  illustration?: ReactNode;
   className?: string;
 };
 
-export function EmptyState({ title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  action,
+  illustration,
+  className,
+}: EmptyStateProps) {
   return (
     <div
       role="status"
@@ -305,6 +312,11 @@ export function EmptyState({ title, description, action, className }: EmptyState
         className,
       )}
     >
+      {illustration != null && (
+        <div className="mb-1 text-[#C7C7CC]" aria-hidden="true">
+          {illustration}
+        </div>
+      )}
       <h3 className="t-label font-semibold text-[#111]">{title}</h3>
       <p className="t-caption text-[#8E8E93]">{description}</p>
       {action != null && <div className="mt-2">{action}</div>}

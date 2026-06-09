@@ -104,6 +104,13 @@ export function AppShellClient({
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
+      {/* Skip-to-content link for keyboard / AT users (WCAG 2.4.1). */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-[#111] focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-indigo-500"
+      >
+        Skip to content
+      </a>
       {/* -- Sidebar -- */}
       <aside
         aria-label="Primary navigation"
@@ -276,7 +283,14 @@ export function AppShellClient({
               e.preventDefault();
               setPaletteOpen(true);
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setPaletteOpen(true);
+              }
+            }}
             role="button"
+            tabIndex={0}
             aria-label="Open command palette"
           >
             <SearchInputWithId
@@ -328,7 +342,7 @@ export function AppShellClient({
         </header>
 
         {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto bg-white">{children}</main>
+        <main id="main" className="flex-1 overflow-y-auto bg-white">{children}</main>
       </div>
 
       <CommandPalette

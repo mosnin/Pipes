@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  CheckCircle2,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
@@ -289,7 +285,7 @@ export default async function HomePage() {
       {/* FEATURE DEEP-DIVE BLOCKS */}
       <section className="surface-subtle border-b border-black/[0.06] py-24">
         <div className="mx-auto max-w-6xl px-6 flex flex-col gap-24">
-          {FEATURE_BLOCKS.map((block, idx) => (
+          {FEATURE_BLOCKS.map((block) => (
             <div
               key={block.title}
               className={[
@@ -298,10 +294,7 @@ export default async function HomePage() {
               ].join(" ")}
             >
               <div className="flex flex-col gap-5">
-                <SectionBadge
-                  label={block.eyebrow}
-                  icon={<span className="t-mono">{String(idx + 1).padStart(2, "0")}</span>}
-                />
+                <SectionBadge label={block.eyebrow} />
                 <h3
                   className="t-h2 text-[#111]"
                   style={{ fontSize: 32, letterSpacing: "-0.025em" }}
@@ -311,13 +304,8 @@ export default async function HomePage() {
                 <p className="t-body text-[#3C3C43]">{block.body}</p>
                 <ul className="flex flex-col gap-2.5 pt-2">
                   {block.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2.5 t-label text-[#3C3C43]">
-                      <CheckCircle2
-                        size={16}
-                        className="mt-0.5 shrink-0 text-indigo-600"
-                        aria-hidden="true"
-                      />
-                      <span>{b}</span>
+                    <li key={b} className="t-label text-[#3C3C43]">
+                      {b}
                     </li>
                   ))}
                 </ul>

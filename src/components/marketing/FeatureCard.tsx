@@ -1,9 +1,7 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 
 interface FeatureCardProps {
-  icon?: ReactNode;
   eyebrow?: string;
   title: string;
   description?: string;
@@ -14,7 +12,6 @@ interface FeatureCardProps {
 }
 
 export function FeatureCard({
-  icon,
   eyebrow,
   title,
   description,
@@ -35,12 +32,6 @@ export function FeatureCard({
       {isNew && (
         <span className="absolute right-4 top-4 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 t-micro font-semibold uppercase tracking-[0.08em] text-emerald-700">
           New
-        </span>
-      )}
-
-      {icon != null && (
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600">
-          {icon}
         </span>
       )}
 

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
 import { Button, Dialog, Spinner, Tooltip } from "@/components/ui";
 
 type ConfigBlock = {
@@ -129,7 +128,7 @@ export function OpenInClaudeButton({ systemId, hasNodes, onOpenLegacy }: Props) 
             isDisabled={disabled}
             aria-label="Open in Claude"
           >
-            {loading ? <Spinner size="xs" /> : <Sparkles size={14} />}
+            {loading && <Spinner size="xs" />}
             <span className="hidden sm:inline">Open in Claude</span>
           </Button>
         </span>

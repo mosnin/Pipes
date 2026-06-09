@@ -1,17 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Boxes,
-  Code2,
-  FileCode,
-  GitCommitVertical,
-  ListTree,
-  MessageSquare,
-  PackageOpen,
-  PencilRuler,
-  ShieldCheck,
-  Workflow,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { InlineCode } from "@/components/ui";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
@@ -26,64 +14,52 @@ export const metadata = {
 type Capability = {
   cap: string;
   desc: string;
-  icon: React.ReactNode;
 };
 
 const CAPABILITIES: readonly Capability[] = [
   {
     cap: "systems:read",
     desc: "List and fetch systems and their metadata.",
-    icon: <ListTree size={16} aria-hidden="true" />,
   },
   {
     cap: "systems:write",
     desc: "Create, rename, and delete systems.",
-    icon: <PencilRuler size={16} aria-hidden="true" />,
   },
   {
     cap: "schema:read",
     desc: "Export systems as canonical pipes_schema_v1.",
-    icon: <FileCode size={16} aria-hidden="true" />,
   },
   {
     cap: "templates:read",
     desc: "List the catalog of starters.",
-    icon: <Boxes size={16} aria-hidden="true" />,
   },
   {
     cap: "templates:instantiate",
     desc: "Open a starter prompt in a new system.",
-    icon: <PackageOpen size={16} aria-hidden="true" />,
   },
   {
     cap: "versions:read",
     desc: "Inspect version history and snapshots.",
-    icon: <GitCommitVertical size={16} aria-hidden="true" />,
   },
   {
     cap: "versions:write",
     desc: "Snapshot and promote system versions.",
-    icon: <GitCommitVertical size={16} aria-hidden="true" />,
   },
   {
     cap: "graph:write",
     desc: "Apply node, port, and pipe mutations.",
-    icon: <Workflow size={16} aria-hidden="true" />,
   },
   {
     cap: "comments:write",
     desc: "Post comments and review threads.",
-    icon: <MessageSquare size={16} aria-hidden="true" />,
   },
   {
     cap: "import:write",
     desc: "Import systems from raw schema payloads.",
-    icon: <Code2 size={16} aria-hidden="true" />,
   },
   {
     cap: "validation:read",
     desc: "Run validation and read structured reports.",
-    icon: <ShieldCheck size={16} aria-hidden="true" />,
   },
 ] as const;
 
@@ -193,7 +169,7 @@ export default function ProtocolPage() {
               120 MCP calls/min
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck size={12} aria-hidden="true" />
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
               SHA-256 hashed at rest
             </span>
           </div>
@@ -219,18 +195,13 @@ export default function ProtocolPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {CAPABILITIES.map(({ cap, desc, icon }) => (
+            {CAPABILITIES.map(({ cap, desc }) => (
               <div
                 key={cap}
-                className="flex items-start gap-3 rounded-[12px] border border-black/[0.08] bg-white p-4"
+                className="flex flex-col gap-1 rounded-[12px] border border-black/[0.08] bg-white p-4 min-w-0"
               >
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-indigo-100 bg-indigo-50 text-indigo-600">
-                  {icon}
-                </span>
-                <div className="flex flex-col gap-1 min-w-0">
-                  <InlineCode className="w-fit">{cap}</InlineCode>
-                  <p className="t-caption text-[#3C3C43] leading-relaxed">{desc}</p>
-                </div>
+                <InlineCode className="w-fit">{cap}</InlineCode>
+                <p className="t-caption text-[#3C3C43] leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>

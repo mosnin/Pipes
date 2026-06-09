@@ -1,26 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "@/styles/globals.css";
 import { Providers } from "@/components/Providers";
 import { SoundProvider } from "@/lib/sound/SoundProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 
-// Geist binaries are not checked into the repo. Per the brand-polish spec,
-// fall back to Inter (variable, weights 400-700) + JetBrains Mono. Both are
-// open-source and CDN-served by next/font/google.
-const sans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans-runtime",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-const mono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono-runtime",
-  display: "swap",
-  weight: ["400", "500", "600"],
-});
+// Geist Sans + Geist Mono — Vercel's official open-source typefaces, shipped
+// as variable fonts via the `geist` npm package. No asset files required.
+// `GeistSans.variable` exposes `--font-geist-sans`; mono is `--font-geist-mono`.
 
 export const metadata: Metadata = {
   title: "Pipes",
@@ -32,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-color-scheme="light"
-      className={`${sans.variable} ${mono.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <head>
         <script

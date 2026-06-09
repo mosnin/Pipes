@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Menu,
   X,
-  Settings,
   ScrollText,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui";
@@ -152,10 +151,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
 
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-black/[0.08] bg-white px-4">
-        <div className="flex items-center gap-2">
-          <Settings size={18} className="text-[#8E8E93]" />
-          <span className="t-label font-semibold text-[#111]">Settings</span>
-        </div>
+        <span className="t-label font-semibold text-[#111]">Settings</span>
         <button
           type="button"
           onClick={() => setMobileOpen(true)}

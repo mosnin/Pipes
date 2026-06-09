@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Avatar } from "@heroui/react";
-import { Mail, Trash2, UserPlus, Users } from "lucide-react";
+import { Trash2, UserPlus } from "lucide-react";
 import {
   Button,
   CardShell,
@@ -21,6 +21,7 @@ import {
   type DataTableColumn,
   type StatusBadgeTone,
 } from "@/components/ui";
+import { EmptyMembers } from "@/components/illustrations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -429,8 +430,9 @@ export default function CollaborationSettingsPage() {
         ) : memberRows.length === 0 ? (
           <CardBody>
             <EmptyState
-              title="No members"
-              description="Invite teammates to collaborate on systems."
+              illustration={<EmptyMembers size={96} />}
+              title="It is just you in this workspace"
+              description="Invite the rest of the team."
               action={
                 <Button
                   variant="primary"
@@ -453,10 +455,7 @@ export default function CollaborationSettingsPage() {
         <CardHeader bordered>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="t-title text-[#111] flex items-center gap-2">
-                <Mail size={14} className="text-[#8E8E93]" />
-                Pending invites
-              </h2>
+              <h2 className="t-title text-[#111]">Pending invites</h2>
               <p className="mt-1 t-caption text-[#8E8E93]">
                 Invites awaiting acceptance.
               </p>
@@ -481,10 +480,7 @@ export default function CollaborationSettingsPage() {
       {/* ── Teams ─────────────────────────────────────────────────────────── */}
       <CardShell>
         <CardHeader bordered>
-          <div className="flex items-center gap-2">
-            <Users size={14} className="text-[#8E8E93]" />
-            <h2 className="t-title text-[#111]">Teams</h2>
-          </div>
+          <h2 className="t-title text-[#111]">Teams</h2>
           <p className="mt-1 t-caption text-[#8E8E93]">
             Group members for shared access patterns.
           </p>

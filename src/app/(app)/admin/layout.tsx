@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Shield } from "lucide-react";
 import {
   Breadcrumbs,
   SegmentedControl,
@@ -50,12 +49,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="sticky top-0 z-30 backdrop-blur-md bg-white/85 border-b border-black/[0.06]">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <span
-              className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-[#111] text-white shrink-0"
-              aria-hidden="true"
-            >
-              <Shield size={14} />
-            </span>
             <Breadcrumbs
               items={[
                 { label: "Admin", href: "/admin" },
