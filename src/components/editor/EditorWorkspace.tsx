@@ -28,6 +28,8 @@ import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 import { register as registerShortcut } from "@/lib/keyboard/registry";
 import { PortAffordance, type PortAffordanceData } from "@/components/editor/PortAffordance";
+import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
+import type { CommandItem } from "@/components/editor/CommandPalette";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -816,14 +818,45 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
       scope: "editor",
       handler: () => setFrameRequest((n) => n + 1),
     });
+    const offMetadata = registerShortcut({
+      id: "editor.show-metadata",
+      combo: "mod+shift+i",
+      label: "Show node metadata",
+      group: "editor",
+      scope: "editor",
+      handler: () => {
+        if (selectedNodeIds.length === 1) setMetadataDialogOpen(true);
+      },
+    });
     return () => {
       offUndo();
       offRedo();
       offDup();
       offFit();
       offFrame();
+      offMetadata();
     };
-  }, [duplicateSelection, redo, undo]);
+  }, [duplicateSelection, redo, selectedNodeIds, undo]);
+
+  // Publish the "Show node metadata" command into the global Command Palette
+  // when exactly one node is selected. Cleared otherwise. The action opens
+  // the same dialog as the keyboard shortcut.
+  useEffect(() => {
+    if (selectedNodeIds.length !== 1) {
+      clearPaletteScope("editor.metadata");
+      return;
+    }
+    const item: CommandItem = {
+      id: "system.show-metadata",
+      label: "Show node metadata",
+      section: "system",
+      aliases: ["inspect", "json", "raw"],
+      combo: "mod+shift+i",
+      run: () => setMetadataDialogOpen(true),
+    };
+    publishPaletteItems("editor.metadata", [item]);
+    return () => clearPaletteScope("editor.metadata");
+  }, [selectedNodeIds]);
 
   useEffect(() => {
     if (!paletteOpen) return;
@@ -1474,7 +1507,6 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                             <DropdownMenu aria-label="Inspector overflow">
                               <DropdownItem id="validation" onAction={() => setValidationDialogOpen(true)}>Validation report</DropdownItem>
                               <DropdownItem id="docs" onAction={() => window.open("/docs", "_blank")}>Open in docs</DropdownItem>
-                              <DropdownItem id="metadata" onAction={() => setMetadataDialogOpen(true)}>Show metadata</DropdownItem>
                             </DropdownMenu>
                           </Dropdown.Popover>
                         </Dropdown>
@@ -1676,7 +1708,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
         size="md"
       >
         <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-3 rounded-md overflow-auto max-h-80 whitespace-pre-wrap">
-          {selectedNode ? JSON.stringify({ node: selectedNode, definition: selectedDefinition ?? null }, null, 2) : "No selection."}
+          {selectedNode ? JSON.stringify(selectedNode, null, 2) : "No selection."}
         </pre>
       </Dialog>
     </div>

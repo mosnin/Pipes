@@ -343,6 +343,90 @@ async def test_meta_event_accepts_dict_provider_usage() -> None:
 
 
 @pytest.mark.asyncio
+async def test_plan_only_request_emits_done_with_zero_tool_calls() -> None:
+    """A request with plan_only=True emits the proposal then `done` with no
+    tool calls, regardless of what the runner would otherwise yield."""
+    plan_with_json = (
+        SAMPLE_PLAN_2NODE
+        + '\n\n```json\n{"steps":['
+        '{"kind":"add_node","label":"Planner","args":{"title":"Planner","description":"x","x":240,"y":180}},'
+        '{"kind":"add_node","label":"Coder","args":{"title":"Coder","description":"y","x":460,"y":180}},'
+        '{"kind":"add_pipe","label":"wire","args":{"fromStepId":"s1","toStepId":"s2"}}'
+        ']}\n```'
+    )
+    request = BuildRequest(systemId="sys_test", prompt="x", planOnly=True)
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": plan_with_json}
+        yield {
+            "kind": "tool_call",
+            "id": "tc_unreachable",
+            "tool_name": "add_node",
+            "arguments": {
+                "systemId": "sys_test",
+                "type": "Agent",
+                "title": "Unreachable",
+                "description": "Should never be emitted because plan_only=True.",
+            },
+        }
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+    assert "tool_call" not in names
+    assert "plan_proposal" in names
+    assert names[-1] == "done"
+
+
+@pytest.mark.asyncio
+async def test_execute_steps_runs_supplied_steps_in_order_skipping_planning() -> None:
+    """When execute_steps is supplied, the builder skips the plan_proposal
+    phase and runs each supplied step as a tool call in order."""
+    from agents.schemas import PlanStep
+
+    steps = [
+        PlanStep(
+            id="s1",
+            kind="add_node",
+            label="Planner",
+            args={
+                "type": "Agent",
+                "title": "Planner",
+                "description": "Reads the prompt and emits a plan.",
+                "x": 240,
+                "y": 180,
+            },
+        ),
+        PlanStep(
+            id="s2",
+            kind="add_pipe",
+            label="wire s1 to s1",
+            args={"fromStepId": "s1", "toStepId": "s1"},
+        ),
+    ]
+    request = BuildRequest(
+        systemId="sys_exec",
+        prompt="x",
+        executeSteps=steps,
+    )
+
+    async def unreachable_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        if False:
+            yield {"kind": "message", "text": "unreachable"}
+
+    frames = await _consume(run_turn_stream(request, runner=unreachable_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+    assert "plan_proposal" not in names
+    # Both supplied steps fire as tool_calls.
+    assert names.count("tool_call") == 2
+    tool_calls = [p for p in parsed if p["event"] == "tool_call"]
+    assert tool_calls[0]["data"]["tool_name"] == "add_node"
+    assert tool_calls[1]["data"]["tool_name"] == "add_pipe"
+    assert names[-1] == "done"
+
+
+@pytest.mark.asyncio
 async def test_meta_event_counts_tool_calls() -> None:
     """`tool_call_count` on the meta event reflects how many tool calls fired."""
     request = BuildRequest(systemId="sys_test", prompt="planner+coder")

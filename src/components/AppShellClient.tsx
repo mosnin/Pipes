@@ -26,6 +26,8 @@ import {
 } from "@/components/editor/CommandPalette";
 import { KeyboardShortcutsOverlay } from "@/components/editor/KeyboardShortcutsOverlay";
 import { register } from "@/lib/keyboard/registry";
+import { Wordmark } from "@/components/Wordmark";
+import { useDynamicPaletteItems } from "@/lib/palette/useDynamicPaletteItems";
 
 const COLLAPSE_KEY = "pipes-sidebar-collapsed";
 
@@ -134,9 +136,11 @@ export function AppShellClient({
               className="flex items-center min-w-0 flex-1 px-1"
               aria-label="Pipes home"
             >
-              <span className="t-title font-bold tracking-[-0.04em] text-[#111] truncate">
-                {collapsed ? "P" : "Pipes"}
-              </span>
+              {collapsed ? (
+                <span className="t-title font-bold tracking-[-0.04em] text-[#111] truncate">P</span>
+              ) : (
+                <Wordmark size="sm" cover="#F5F5F7" />
+              )}
             </Link>
             {!collapsed && (
               <Tooltip content="Collapse sidebar" side="bottom">
@@ -349,28 +353,12 @@ export function AppShellClient({
         <main id="main" className="flex-1 overflow-y-auto bg-white">{children}</main>
       </div>
 
-      <CommandPalette
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        items={useGlobalPaletteItems({
-          showAdmin,
-          go: (href) => router.push(href),
-          openShortcuts: () => setShortcutsOpen(true),
-          toggleTheme: () => {
-            // Reuse ThemeToggle behavior inline so we don't depend on its
-            // internal state. The single source of truth is the data attr +
-            // localStorage key.
-            const root = document.documentElement;
-            const cur = root.getAttribute("data-color-scheme") ?? "light";
-            const next = cur === "dark" ? "light" : "dark";
-            root.setAttribute("data-color-scheme", next);
-            try {
-              localStorage.setItem("pipes-theme", next);
-            } catch {
-              // ignore
-            }
-          },
-        })}
+      <CommandPaletteWithDynamicItems
+        paletteOpen={paletteOpen}
+        setPaletteOpen={setPaletteOpen}
+        showAdmin={showAdmin}
+        router={router}
+        setShortcutsOpen={setShortcutsOpen}
       />
       <KeyboardShortcutsOverlay
         open={shortcutsOpen}
@@ -465,6 +453,54 @@ function useGlobalPaletteItems(opts: {
     }
     return items;
   }, [showAdmin, go, openShortcuts, toggleTheme]);
+}
+
+// Renders the global CommandPalette with the static items plus any dynamic
+// items published by surfaces (the editor's metadata command, for example).
+function CommandPaletteWithDynamicItems({
+  paletteOpen,
+  setPaletteOpen,
+  showAdmin,
+  router,
+  setShortcutsOpen,
+}: {
+  paletteOpen: boolean;
+  setPaletteOpen: (open: boolean) => void;
+  showAdmin: boolean;
+  router: { push: (href: string) => void };
+  setShortcutsOpen: (open: boolean) => void;
+}) {
+  const dynamicItems = useDynamicPaletteItems();
+  const staticItems = useGlobalPaletteItems({
+    showAdmin,
+    go: (href) => router.push(href),
+    openShortcuts: () => setShortcutsOpen(true),
+    toggleTheme: () => {
+      // Reuse ThemeToggle behavior inline so we don't depend on its
+      // internal state. The single source of truth is the data attr +
+      // localStorage key.
+      const root = document.documentElement;
+      const cur = root.getAttribute("data-color-scheme") ?? "light";
+      const next = cur === "dark" ? "light" : "dark";
+      root.setAttribute("data-color-scheme", next);
+      try {
+        localStorage.setItem("pipes-theme", next);
+      } catch {
+        // ignore
+      }
+    },
+  });
+  const items = useMemo(
+    () => [...staticItems, ...dynamicItems],
+    [staticItems, dynamicItems],
+  );
+  return (
+    <CommandPalette
+      open={paletteOpen}
+      onOpenChange={setPaletteOpen}
+      items={items}
+    />
+  );
 }
 
 // Local wrapper around SearchInput to attach a fixed id for the global Cmd-K shortcut.

@@ -54,6 +54,8 @@ from .schemas import (
     MAX_TOOL_CALLS_PER_TURN,
     MAX_WALL_CLOCK_SECONDS,
     BuildRequest,
+    PlanProposal,
+    PlanStep,
     ProviderUsage,
 )
 from .tools import (
@@ -136,6 +138,189 @@ def _new_id(prefix: str) -> str:
 Step = dict[str, Any]
 
 
+# ---- Plan parsing (interactive plan editor) ----
+
+
+import re
+
+
+_PLAN_JSON_FENCE_RE = re.compile(
+    r"```(?:json)?\s*(\{.*?\})\s*```",
+    re.DOTALL | re.IGNORECASE,
+)
+
+
+def split_plan_text_and_steps(
+    plan_text: str,
+) -> tuple[str, Optional[PlanProposal]]:
+    """Pull a fenced JSON block off the END of a plan message and return
+    `(stripped_text, proposal)`. The proposal carries the structured steps.
+
+    Backwards compat: if no JSON block is found OR the block fails to parse
+    into the `PlanProposal` schema, returns `(plan_text, None)` so the legacy
+    text-only flow keeps working.
+
+    The matching is conservative: we only accept a fenced ```json block whose
+    parsed JSON contains a top-level `steps` array. Anything else passes
+    through untouched.
+    """
+    matches = list(_PLAN_JSON_FENCE_RE.finditer(plan_text))
+    if not matches:
+        return plan_text, None
+
+    # Prefer the LAST matching block so prose snippets earlier in the plan
+    # that may quote JSON for example purposes don't accidentally get consumed.
+    last = matches[-1]
+    raw = last.group(1).strip()
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        return plan_text, None
+
+    if not isinstance(parsed, dict) or "steps" not in parsed:
+        return plan_text, None
+
+    raw_steps = parsed.get("steps")
+    if not isinstance(raw_steps, list):
+        return plan_text, None
+
+    # Assign stable step ids (s1, s2, ...) before validating the model so the
+    # model is free to omit ids. Existing ids on the input are kept verbatim
+    # so a re-execute call can round-trip.
+    normalized_steps: list[PlanStep] = []
+    for idx, raw_step in enumerate(raw_steps):
+        if not isinstance(raw_step, dict):
+            return plan_text, None
+        step_id = raw_step.get("id") or f"s{idx + 1}"
+        kind = raw_step.get("kind")
+        if kind not in ("add_node", "add_pipe", "update_node", "delete_node", "validate"):
+            return plan_text, None
+        label = raw_step.get("label")
+        if not isinstance(label, str) or not label.strip():
+            return plan_text, None
+        args = raw_step.get("args") or {}
+        if not isinstance(args, dict):
+            return plan_text, None
+        try:
+            normalized_steps.append(
+                PlanStep(id=step_id, kind=kind, label=label, args=args)
+            )
+        except Exception:  # noqa: BLE001 - any pydantic error means we bail to legacy
+            return plan_text, None
+
+    plan_str = parsed.get("planText")
+    auto_after = parsed.get("autoExecuteAfterMs", 0)
+    if not isinstance(auto_after, (int, float)):
+        auto_after = 0
+
+    proposal = PlanProposal(
+        plan_text=plan_str if isinstance(plan_str, str) else plan_text[: last.start()].strip(),
+        steps=normalized_steps,
+        auto_execute_after_ms=int(auto_after),
+    )
+
+    # Strip the entire fenced block (and the trailing whitespace) from the
+    # human-readable plan text. The PlanProposal carries the structured form.
+    stripped = (plan_text[: last.start()] + plan_text[last.end():]).rstrip()
+    return stripped, proposal
+
+
+def _resolve_step_args_for_pipe(
+    args: dict[str, Any],
+    step_id_to_node_id: dict[str, str],
+) -> dict[str, Any]:
+    """For an `add_pipe` step, swap `fromStepId`/`toStepId` references into the
+    actual node ids the prior tool calls produced. Existing `fromNodeId`/
+    `toNodeId` keys win if present (caller already resolved).
+    """
+    out = dict(args)
+    if "fromStepId" in out and "fromNodeId" not in out:
+        sid = out.pop("fromStepId")
+        if isinstance(sid, str) and sid in step_id_to_node_id:
+            out["fromNodeId"] = step_id_to_node_id[sid]
+    if "toStepId" in out and "toNodeId" not in out:
+        sid = out.pop("toStepId")
+        if isinstance(sid, str) and sid in step_id_to_node_id:
+            out["toNodeId"] = step_id_to_node_id[sid]
+    return out
+
+
+def _tool_args_for_step(
+    step: PlanStep,
+    system_id: str,
+    step_id_to_node_id: dict[str, str],
+) -> dict[str, Any]:
+    """Build the tool-call argument dict for one PlanStep, injecting the
+    canonical systemId and resolving step references for add_pipe."""
+    args = dict(step.args)
+    if step.kind == "add_pipe":
+        args = _resolve_step_args_for_pipe(args, step_id_to_node_id)
+    if step.kind in ("add_node", "add_pipe", "validate"):
+        args.setdefault("systemId", system_id)
+    return args
+
+
+async def _execute_plan_steps(
+    request: BuildRequest,
+    steps: list[PlanStep],
+    dispatch: dict[str, Callable[..., dict[str, Any]]],
+) -> AsyncIterator["Step"]:
+    """Drive a sequence of approved PlanSteps as tool calls. Used when the
+    caller has supplied `execute_steps` (i.e. the user already accepted an
+    edited plan). Resolves `fromStepId`/`toStepId` references for add_pipe.
+
+    Skips disabled steps (`step.enabled is False`); a None or True enabled
+    flag means include.
+    """
+    step_id_to_node_id: dict[str, str] = {}
+    for idx, step in enumerate(steps):
+        if step.enabled is False:
+            continue
+        call_id = f"tc_{idx + 1}_{step.id}"
+        args = _tool_args_for_step(step, request.system_id, step_id_to_node_id)
+        yield {
+            "kind": "tool_call",
+            "id": call_id,
+            "tool_name": step.kind,
+            "arguments": args,
+        }
+        fn = dispatch.get(step.kind)
+        if fn is None:
+            yield {
+                "kind": "tool_result",
+                "id": call_id,
+                "ok": False,
+                "error": f"Unknown tool {step.kind}",
+            }
+            continue
+        try:
+            result = fn(**_camel_to_snake_args(step.kind, args))
+        except Exception as exc:  # noqa: BLE001
+            yield {
+                "kind": "tool_result",
+                "id": call_id,
+                "ok": False,
+                "error": str(exc),
+            }
+            continue
+        step_record: "Step" = {
+            "kind": "tool_result",
+            "id": call_id,
+            "ok": True,
+        }
+        if isinstance(result, dict):
+            if "action" in result:
+                step_record["action"] = result
+                node_id = result.get("clientNodeId")
+                if isinstance(node_id, str):
+                    step_id_to_node_id[step.id] = node_id
+            elif "ok" in result and "errors" in result:
+                step_record["data"] = result
+            else:
+                step_record["data"] = result
+        yield step_record
+
+
 # ---- Streaming run loop ----
 
 
@@ -190,6 +375,82 @@ async def run_turn_stream(
 
     yield sse_event("status", {"state": "thinking"})
     if aborted():
+        return
+
+    # ---- execute_steps short-circuit ----
+    # When the caller supplies an approved step list, skip planning entirely
+    # and run the steps in order. No plan_proposal is emitted because the
+    # caller already accepted the plan.
+    if request.execute_steps is not None:
+        runner_iter = _execute_plan_steps(request, request.execute_steps, dispatch)
+        async for step in runner_iter:
+            if aborted():
+                return
+            elapsed = time.monotonic() - started_at
+            if elapsed > MAX_WALL_CLOCK_SECONDS:
+                yield sse_event(
+                    "error",
+                    {
+                        "code": "timeout",
+                        "message": "Turn exceeded 60 second budget.",
+                        "retryable": False,
+                    },
+                )
+                return
+            kind = step.get("kind")
+            if kind == "tool_call":
+                tool_call_count += 1
+                if tool_call_count > MAX_TOOL_CALLS_PER_TURN:
+                    yield sse_event(
+                        "error",
+                        {
+                            "code": "tool_call_limit_exceeded",
+                            "message": "Turn exceeded the 30 tool call cap.",
+                            "retryable": False,
+                        },
+                    )
+                    return
+                yield sse_event(
+                    "status",
+                    {"state": "calling_tool", "tool_name": step["tool_name"]},
+                )
+                yield sse_event(
+                    "tool_call",
+                    {
+                        "id": step["id"],
+                        "tool_name": step["tool_name"],
+                        "arguments": step["arguments"],
+                    },
+                )
+            elif kind == "tool_result":
+                payload: dict[str, Any] = {
+                    "id": step["id"],
+                    "ok": step.get("ok", True),
+                }
+                if "action" in step and step["action"] is not None:
+                    payload["action"] = step["action"]
+                if "data" in step and step["data"] is not None:
+                    payload["data"] = step["data"]
+                if "error" in step and step["error"]:
+                    payload["error"] = step["error"]
+                    payload["ok"] = False
+                yield sse_event("tool_result", payload)
+                action = step.get("action") or {}
+                act_kind = action.get("action") if isinstance(action, dict) else None
+                if act_kind == "addNode":
+                    nid = action.get("clientNodeId")
+                    if nid and nid not in state.nodes:
+                        state.add_node(nid, dict(action))
+                elif act_kind == "addPipe":
+                    pid = action.get("clientPipeId")
+                    if pid and pid not in state.pipes:
+                        state.add_pipe(pid, dict(action))
+        if aborted():
+            return
+        yield sse_event(
+            "done",
+            {"conversationId": conversation_id, "turnId": turn_id},
+        )
         return
 
     # ---- Plan-first flow ----
@@ -259,14 +520,28 @@ async def run_turn_stream(
                 )
                 return
 
-        # Emit the plan.
+        # Emit the plan. If the model embedded a fenced JSON block at the
+        # end, strip it before emitting the message and emit a separate
+        # `plan_proposal` event carrying the structured steps.
+        stripped_text, proposal = split_plan_text_and_steps(plan_text)
         yield sse_event("status", {"state": "writing_message"})
-        yield sse_event("message", {"text": plan_text, "role": "assistant"})
+        yield sse_event("message", {"text": stripped_text, "role": "assistant"})
+        if proposal is not None:
+            yield sse_event("plan_proposal", proposal.to_dict())
         if aborted():
             return
 
         # No-op plan: skip to done with no tool calls.
         if plan_eval.is_no_op:
+            yield sse_event(
+                "done",
+                {"conversationId": conversation_id, "turnId": turn_id},
+            )
+            return
+
+        # Plan-only mode: emit the proposal then terminate cleanly with no
+        # tool calls. The client renders PlanEditor; the user accepts or edits.
+        if request.plan_only:
             yield sse_event(
                 "done",
                 {"conversationId": conversation_id, "turnId": turn_id},
@@ -331,9 +606,12 @@ async def run_turn_stream(
             if kind == "plan":
                 # When the runner emits a plan step (no injected planner),
                 # evaluate it and gate tool calls behind it.
-                plan_text = step.get("text", "")
+                raw_plan_text = step.get("text", "")
+                # Pull the structured plan off the message tail. Falls back
+                # cleanly if the model didn't emit a JSON block.
+                stripped_text, proposal = split_plan_text_and_steps(raw_plan_text)
                 plan_eval = evaluate_plan(
-                    plan_text,
+                    stripped_text,
                     request.existing_nodes_count,
                     request.existing_pipes_count,
                 )
@@ -351,10 +629,19 @@ async def run_turn_stream(
                     yield sse_event("status", {"state": "writing_message"})
                 yield sse_event(
                     "message",
-                    {"text": plan_text, "role": "assistant"},
+                    {"text": stripped_text, "role": "assistant"},
                 )
+                if proposal is not None:
+                    yield sse_event("plan_proposal", proposal.to_dict())
                 plan_received_from_runner = True
                 if plan_eval.is_no_op:
+                    yield sse_event(
+                        "done",
+                        {"conversationId": conversation_id, "turnId": turn_id},
+                    )
+                    return
+                # Plan-only mode: emit done after the proposal with no tools.
+                if request.plan_only:
                     yield sse_event(
                         "done",
                         {"conversationId": conversation_id, "turnId": turn_id},

@@ -11,6 +11,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, MessageSquare } from "lucide-react";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { ConversationMessages } from "@/components/editor/ConversationMessages";
+import { PlanEditor } from "@/components/editor/PlanEditor";
+import type { PlanStep } from "@/lib/agent/plan-types";
 import { NpsPrompt } from "@/components/editor/NpsPrompt";
 import { TurnHistoryRail, type TurnRailEntry } from "@/components/editor/TurnHistoryRail";
 import { useAgentBuild, type AgentApplyContext } from "@/lib/agent/hooks";
@@ -101,6 +103,28 @@ export function ConversationDrawer({
   const inputRef = useRef<ConversationInputHandle>(null);
   const handledInitialRef = useRef(false);
   const promptStartedRef = useRef(false);
+  // The "Plan first" toggle. Persisted in localStorage so power users keep
+  // it on across sessions. ASCII-only label matches docs/audience.md.
+  const [planFirstToggle, setPlanFirstToggle] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("pipes-plan-first");
+      if (stored === "true") setPlanFirstToggle(true);
+    } catch {
+      // localStorage unavailable; keep default off.
+    }
+  }, []);
+  const togglePlanFirst = useCallback(() => {
+    setPlanFirstToggle((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem("pipes-plan-first", next ? "true" : "false");
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
   // Captured at send-time so endTurn can attach the prompt to the completed
   // turn even after the user has started typing the next one.
   const turnPromptsRef = useRef<Record<string, string>>({});
@@ -204,9 +228,31 @@ export function ConversationDrawer({
     const value = text.trim();
     if (!value) return;
     pendingTurnPromptRef.current = value;
-    agent.send(value);
+    agent.send(value, { planOnly: planFirstToggle });
     setText("");
   };
+
+  // Shift+Enter (and the eventual toggle handler) bypass the user's pref and
+  // always send plan-only. Lets a power user keep the toggle off but still
+  // ask for a plan preview on the next prompt.
+  const handleSendPlanFirst = () => {
+    const value = text.trim();
+    if (!value) return;
+    pendingTurnPromptRef.current = value;
+    agent.send(value, { planOnly: true });
+    setText("");
+  };
+
+  const handlePlanAccept = useCallback(
+    (steps: PlanStep[]) => {
+      agent.submitEditedPlan(steps);
+    },
+    [agent],
+  );
+
+  const handlePlanAbort = useCallback(() => {
+    agent.stop();
+  }, [agent]);
 
   const handleStop = () => {
     agent.stop();
@@ -310,6 +356,15 @@ export function ConversationDrawer({
               onShowDiff={onShowLatestDiff}
               diffAvailable={Boolean(latestDiffAvailable)}
             />
+            {agent.currentPlan && agent.currentPlan.length > 0 ? (
+              <PlanEditor
+                steps={agent.currentPlan}
+                isBuilding={isRunning && !agent.planOnly}
+                toolCalls={agent.toolCalls}
+                onAccept={handlePlanAccept}
+                onAbort={handlePlanAbort}
+              />
+            ) : null}
           </div>
         ) : !hasMessages ? (
           <EmptyStarters

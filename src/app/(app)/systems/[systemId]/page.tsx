@@ -1,4 +1,6 @@
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
+import { MobileGate } from "@/components/mobile/MobileGate";
+import { MobileSystemView } from "@/components/mobile/MobileSystemView";
 
 type Props = {
   params: Promise<{ systemId: string }>;
@@ -10,5 +12,9 @@ export default async function SystemEditorPage({ params, searchParams }: Props) 
   const sp = await searchParams;
   const rawPrompt = Array.isArray(sp.prompt) ? sp.prompt[0] : sp.prompt;
   const initialPrompt = rawPrompt ? decodeURIComponent(rawPrompt) : undefined;
-  return <EditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />;
+  return (
+    <MobileGate mobile={<MobileSystemView systemId={systemId} />}>
+      <EditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />
+    </MobileGate>
+  );
 }

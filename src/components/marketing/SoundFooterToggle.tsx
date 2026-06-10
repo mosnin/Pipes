@@ -1,8 +1,8 @@
 "use client";
 
-// A subtle footer toggle. Off by default; reads + writes the same preference
-// the editor uses (pipes-sound-on in localStorage). Hidden when the user has
-// prefers-reduced-motion: reduce.
+// A subtle footer toggle. Sound is on by default; this control reads and
+// writes the same preference the editor uses (pipes-sound-on in
+// localStorage). Hidden when the user has prefers-reduced-motion: reduce.
 
 import { useSound } from "@/lib/sound/SoundProvider";
 
@@ -31,7 +31,7 @@ export function SoundFooterToggle() {
           enabled ? "bg-indigo-600" : "bg-[#C7C7CC]",
         ].join(" ")}
       />
-      Sound {enabled ? "on" : "off"}
+      {enabled ? "Sound on by default. Tap to silence." : "Sound off. Tap to enable."}
     </button>
   );
 }

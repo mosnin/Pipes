@@ -2,6 +2,7 @@
 // The 6 events are the entire contract between the client and /api/agent/build.
 
 import type { EditorGraphAction } from "@/components/editor/editor_state";
+import type { PlanProposal, PlanStep } from "@/lib/agent/plan-types";
 
 export type AgentToolName = "add_node" | "add_pipe" | "update_node" | "delete_node" | "validate";
 
@@ -56,17 +57,27 @@ export type ErrorEvent = {
   retryable: boolean;
 };
 
-// Discriminated union over the 6 events.
+// `plan_proposal` lands after the textual plan `message` and before the first
+// `tool_call`. Carries the structured steps the user can edit in PlanEditor.
+export type PlanProposalEvent = PlanProposal;
+
+// Discriminated union over the events.
 export type AgentEvent =
   | { type: "tool_call"; data: ToolCallEvent }
   | { type: "tool_result"; data: ToolResultEvent }
   | { type: "message"; data: MessageEvent }
   | { type: "status"; data: StatusEvent }
   | { type: "done"; data: DoneEvent }
-  | { type: "error"; data: ErrorEvent };
+  | { type: "error"; data: ErrorEvent }
+  | { type: "plan_proposal"; data: PlanProposalEvent };
 
 export type AgentBuildRequest = {
   systemId: string;
   prompt: string;
   conversationId?: string;
+  // Interactive plan editor (Phase 6).
+  // planOnly=true: emit the proposal, then done. No tool calls.
+  // executeSteps: caller-approved steps; skips planning and runs them in order.
+  planOnly?: boolean;
+  executeSteps?: PlanStep[];
 };

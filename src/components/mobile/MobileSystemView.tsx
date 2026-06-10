@@ -1,66 +1,77 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { Copy, Monitor } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { GraphNode, GraphPipe } from "@/components/editor/editor_state";
+import { MobileTopBar } from "./MobileTopBar";
+import { MobileActionBar } from "./MobileActionBar";
+import { MobileSystemCanvas } from "./MobileSystemCanvas";
+import { MobileNodeSheet, type ConnectionRow } from "./MobileNodeSheet";
 import { DesktopFirstBanner } from "./DesktopFirstBanner";
 
-// MobileSystemView: read-only artifact view of a system on a phone or small
-// tablet. No canvas, no drag, no agent build. We chose desktop-first for the
-// editor and this view names that decision while still letting a mobile user
-// read the structure of the system they own.
+// MobileSystemView — the mobile experience for a single system. It is NOT a
+// "your screen is too small" page. It is the same product, sized for thumbs:
+// a real interactive (read-only) canvas at the top, a slide-up detail sheet
+// for nodes, a sticky action bar at the bottom that copies the link and
+// opens the share dialog.
 
-type NodeRow = {
+type RawNode = {
   id: string;
+  type?: string;
   title: string;
-  description: string;
-  outboundTitles: string[];
+  description?: string;
+  position?: { x: number; y: number };
+  portIds?: string[];
+  config?: Record<string, unknown>;
+};
+type RawPipe = {
+  id?: string;
+  fromPortId?: string;
+  toPortId?: string;
+  fromNodeId?: string;
+  toNodeId?: string;
+  systemId?: string;
+};
+type RawSystem = { id?: string; name: string; description?: string };
+
+type SystemData = {
+  system: { id: string; name: string; description: string };
+  nodes: GraphNode[];
+  pipes: GraphPipe[];
 };
 
-type SystemSummary = {
-  name: string;
-  description: string;
-  nodes: NodeRow[];
-};
-
-type RawNode = { id: string; title: string; description?: string };
-type RawPipe = { fromNodeId?: string; toNodeId?: string };
-type RawSystem = { name: string; description?: string };
-
-function buildSummary(input: { system: RawSystem; nodes: RawNode[]; pipes: RawPipe[] }): SystemSummary {
-  const titleById = new Map<string, string>();
-  for (const node of input.nodes) {
-    titleById.set(node.id, node.title);
-  }
-  const outboundByNodeId = new Map<string, string[]>();
-  for (const pipe of input.pipes) {
-    if (!pipe.fromNodeId || !pipe.toNodeId) continue;
-    const targetTitle = titleById.get(pipe.toNodeId);
-    if (!targetTitle) continue;
-    const existing = outboundByNodeId.get(pipe.fromNodeId) ?? [];
-    existing.push(targetTitle);
-    outboundByNodeId.set(pipe.fromNodeId, existing);
-  }
-  const nodes: NodeRow[] = input.nodes.map((node) => ({
-    id: node.id,
-    title: node.title,
-    description: (node.description ?? "").slice(0, 80),
-    outboundTitles: outboundByNodeId.get(node.id) ?? [],
-  }));
+function normalizeNode(node: RawNode, index: number): GraphNode {
   return {
-    name: input.system.name,
-    description: input.system.description ?? "",
-    nodes,
+    id: node.id,
+    type: node.type ?? "step",
+    title: node.title,
+    description: node.description,
+    position: node.position ?? { x: 64 + (index % 4) * 200, y: 64 + Math.floor(index / 4) * 120 },
+    portIds: node.portIds ?? [`${node.id}_in`, `${node.id}_out`],
+    config: node.config ?? {},
+  };
+}
+
+function normalizePipe(pipe: RawPipe, index: number, systemId: string): GraphPipe {
+  return {
+    id: pipe.id ?? `pipe_${index}`,
+    fromPortId: pipe.fromPortId ?? `${pipe.fromNodeId ?? ""}_out`,
+    toPortId: pipe.toPortId ?? `${pipe.toNodeId ?? ""}_in`,
+    systemId: pipe.systemId ?? systemId,
+    fromNodeId: pipe.fromNodeId,
+    toNodeId: pipe.toNodeId,
   };
 }
 
 export type MobileSystemViewProps = {
   systemId: string;
+  workspaceName?: string;
 };
 
-export function MobileSystemView({ systemId }: MobileSystemViewProps) {
-  const [summary, setSummary] = useState<SystemSummary | null>(null);
+export function MobileSystemView({ systemId, workspaceName }: MobileSystemViewProps): React.ReactElement {
+  const [data, setData] = useState<SystemData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const focusFnRef = useRef<((nodeId: string) => void) | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +84,17 @@ export function MobileSystemView({ systemId }: MobileSystemViewProps) {
           setError("Could not load system.");
           return;
         }
-        setSummary(buildSummary(body.data));
+        const raw = body.data as { system: RawSystem; nodes: RawNode[]; pipes: RawPipe[] };
+        const normalized: SystemData = {
+          system: {
+            id: raw.system.id ?? systemId,
+            name: raw.system.name,
+            description: raw.system.description ?? "",
+          },
+          nodes: raw.nodes.map(normalizeNode),
+          pipes: raw.pipes.map((p, i) => normalizePipe(p, i, raw.system.id ?? systemId)),
+        };
+        setData(normalized);
       } catch {
         if (!cancelled) setError("Could not load system.");
       }
@@ -83,103 +104,133 @@ export function MobileSystemView({ systemId }: MobileSystemViewProps) {
     };
   }, [systemId]);
 
-  const copyShareLink = useCallback(async () => {
+  const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
     const url = window.location.href;
+    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title: data?.system.name ?? "Pipes", url });
+        return;
+      } catch {
+        // fall through to clipboard
+      }
+    }
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
     } catch {
-      toast.error("Could not copy link");
+      // best-effort
     }
+  }, [data]);
+
+  const portToNode = useMemo(() => {
+    if (!data) return new Map<string, string>();
+    const m = new Map<string, string>();
+    for (const node of data.nodes) {
+      for (const portId of node.portIds ?? []) m.set(portId, node.id);
+    }
+    return m;
+  }, [data]);
+
+  const selectedNode = useMemo<GraphNode | null>(() => {
+    if (!data || !selectedNodeId) return null;
+    return data.nodes.find((n) => n.id === selectedNodeId) ?? null;
+  }, [data, selectedNodeId]);
+
+  const { outbound, inbound } = useMemo<{ outbound: ConnectionRow[]; inbound: ConnectionRow[] }>(() => {
+    if (!data || !selectedNodeId) return { outbound: [], inbound: [] };
+    const titleById = new Map(data.nodes.map((n) => [n.id, n.title] as const));
+    const out: ConnectionRow[] = [];
+    const inc: ConnectionRow[] = [];
+    for (const pipe of data.pipes) {
+      const fromId = pipe.fromNodeId ?? portToNode.get(pipe.fromPortId);
+      const toId = pipe.toNodeId ?? portToNode.get(pipe.toPortId);
+      if (!fromId || !toId) continue;
+      if (fromId === selectedNodeId) {
+        const title = titleById.get(toId);
+        if (title) out.push({ nodeId: toId, title });
+      } else if (toId === selectedNodeId) {
+        const title = titleById.get(fromId);
+        if (title) inc.push({ nodeId: fromId, title });
+      }
+    }
+    return { outbound: out, inbound: inc };
+  }, [data, selectedNodeId, portToNode]);
+
+  const handleNodeTap = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
   }, []);
 
-  const copyEditOnDesktop = useCallback(async () => {
-    if (typeof window === "undefined") return;
-    const url = window.location.href;
-    const message = `Open this URL on desktop to edit: ${url}`;
-    try {
-      await navigator.clipboard.writeText(message);
-      toast.success("Copied. Paste on desktop to edit.");
-    } catch {
-      toast.error("Could not copy");
-    }
+  const handleConnectionTap = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    if (focusFnRef.current) focusFnRef.current(nodeId);
   }, []);
+
+  const registerFocus = useCallback((focus: (nodeId: string) => void) => {
+    focusFnRef.current = focus;
+  }, []);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <MobileTopBar workspaceName={workspaceName} systemName="Pipes" onShare={handleShare} />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <p className="t-label text-[#8E8E93]">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <MobileTopBar workspaceName={workspaceName} systemName="Loading" onShare={handleShare} />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <p className="t-label text-[#8E8E93]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-4 p-4 max-w-xl mx-auto">
-      <DesktopFirstBanner />
-
-      {error ? (
-        <p className="t-label text-[#8E8E93]">{error}</p>
-      ) : !summary ? (
-        <p className="t-label text-[#8E8E93]">Loading...</p>
-      ) : (
-        <>
-          <header className="flex flex-col gap-1">
-            <h1 className="t-h2 text-[#111] leading-tight">{summary.name}</h1>
-            {summary.description ? (
-              <p className="t-body text-[#3C3C43] leading-snug">{summary.description}</p>
-            ) : null}
-            <p className="t-caption text-[#8E8E93] mt-1">
-              Read-only view. The editor opens on desktop.
+    <div className="min-h-screen flex flex-col bg-white">
+      <MobileTopBar
+        workspaceName={workspaceName}
+        systemName={data.system.name || "Untitled system"}
+        onShare={handleShare}
+      />
+      <div className="px-3 pt-3">
+        <DesktopFirstBanner />
+      </div>
+      <div
+        className="flex-1 relative"
+        style={{ minHeight: "60vh" }}
+      >
+        <MobileSystemCanvas
+          nodes={data.nodes}
+          pipes={data.pipes}
+          selectedNodeId={selectedNodeId}
+          onNodeTap={handleNodeTap}
+          onEmptyTap={() => setSelectedNodeId(null)}
+          registerFocus={registerFocus}
+        />
+        {data.nodes.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="t-label text-[#8E8E93] bg-white/80 px-3 py-1.5 rounded-full border border-black/[0.06]">
+              Empty system. Open on desktop to start building.
             </p>
-          </header>
-
-          {summary.nodes.length === 0 ? (
-            <div className="border border-black/[0.08] rounded-lg p-4 bg-white">
-              <p className="t-label text-[#3C3C43]">Empty system. Try desktop to start a build.</p>
-            </div>
-          ) : (
-            <ol className="flex flex-col gap-2" aria-label="Nodes in this system">
-              {summary.nodes.map((node) => (
-                <li
-                  key={node.id}
-                  className="border border-black/[0.08] rounded-lg p-3 bg-white"
-                >
-                  <p className="t-label font-semibold text-[#111] leading-tight">
-                    {node.title}
-                  </p>
-                  {node.description ? (
-                    <p className="t-caption text-[#3C3C43] leading-snug mt-1">
-                      {node.description}
-                      {node.description.length === 80 ? "..." : ""}
-                    </p>
-                  ) : null}
-                  {node.outboundTitles.length > 0 ? (
-                    <p className="t-caption text-[#8E8E93] mt-2">
-                      to {node.outboundTitles.join(", ")}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ol>
-          )}
-
-          <div className="border border-black/[0.08] rounded-lg p-4 bg-white flex flex-col gap-2">
-            <p className="t-label font-semibold text-[#111]">Edit on desktop</p>
-            <p className="t-caption text-[#3C3C43] leading-snug">
-              The canvas, drag, and agent build run at full size on a larger screen.
-            </p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              <button
-                type="button"
-                onClick={copyEditOnDesktop}
-                className="inline-flex items-center gap-1.5 t-label font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md transition-colors"
-              >
-                <Monitor size={14} /> Edit on desktop
-              </button>
-              <button
-                type="button"
-                onClick={copyShareLink}
-                className="inline-flex items-center gap-1.5 t-label font-medium text-[#111] bg-white border border-black/[0.12] hover:border-black/[0.24] px-3 py-2 rounded-md transition-colors"
-              >
-                <Copy size={14} /> Copy share link
-              </button>
-            </div>
           </div>
-        </>
-      )}
+        ) : null}
+      </div>
+      <MobileActionBar shareUrl={typeof window !== "undefined" ? window.location.href : undefined} shareTitle={data.system.name} />
+      <MobileNodeSheet
+        open={selectedNodeId !== null}
+        node={selectedNode}
+        outbound={outbound}
+        inbound={inbound}
+        onClose={() => setSelectedNodeId(null)}
+        onConnectionTap={handleConnectionTap}
+      />
     </div>
   );
 }

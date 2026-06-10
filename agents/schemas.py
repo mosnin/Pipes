@@ -67,6 +67,19 @@ class BuildRequest(BaseModel):
     # future patch; for now the field rides through so wiring lands first.
     user_feedback_hint: Optional[str] = Field(default=None, alias="userFeedbackHint")
 
+    # Interactive plan editor (Phase 6).
+    # `plan_only=True`: emit the plan proposal, then `done` without any tool
+    # calls. Used when the user wants to review the agent's structured plan
+    # before any changes land on the canvas.
+    plan_only: bool = Field(default=False, alias="planOnly")
+    # `execute_steps`: caller-approved steps to execute directly. Skips the
+    # planning + plan_proposal phase entirely. Each step lands as a tool call
+    # in order; `add_pipe` step args may reference prior step ids via
+    # `fromStepId`/`toStepId` which the runner resolves to actual node ids.
+    execute_steps: Optional[list["PlanStep"]] = Field(
+        default=None, alias="executeSteps"
+    )
+
     model_config = {"populate_by_name": True}
 
 
@@ -273,6 +286,73 @@ class MetaEvent(BaseModel):
         }
 
 
+# ---- Interactive plan editor (plan proposal) ----
+
+
+# A "step" is one atomic action the agent intends to take. The model emits a
+# JSON block at the end of its plan message describing these steps; the builder
+# parses it, assigns stable ids (s1, s2, ...), and emits one `plan_proposal`
+# SSE event before any tool_call. The client renders this in PlanEditor so the
+# user can disable, reorder, or accept the steps verbatim.
+
+PlanStepKind = Literal[
+    "add_node",
+    "add_pipe",
+    "update_node",
+    "delete_node",
+    "validate",
+]
+
+
+class PlanStep(BaseModel):
+    """One concrete step in a plan. Args is a free dict because each kind has
+    a different shape; the TypeScript side narrows on `kind` for type safety.
+
+    For `add_pipe`, args may use `fromStepId`/`toStepId` to reference prior
+    `add_node` steps by their plan step id. The execution layer resolves those
+    into the concrete node ids returned by the prior tool calls.
+    """
+
+    id: str
+    kind: PlanStepKind
+    label: str
+    args: dict[str, Any] = Field(default_factory=dict)
+    enabled: Optional[bool] = None
+
+    model_config = {"populate_by_name": True}
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "id": self.id,
+            "kind": self.kind,
+            "label": self.label,
+            "args": dict(self.args),
+        }
+        if self.enabled is not None:
+            out["enabled"] = self.enabled
+        return out
+
+
+class PlanProposal(BaseModel):
+    """The structured plan emitted before any tool call. `planText` is the
+    human-readable plan paragraph; `steps` are the structured units the user
+    can edit; `autoExecuteAfterMs` is reserved for a future auto-accept
+    countdown (default 0 = wait for explicit user action)."""
+
+    plan_text: str = Field(..., alias="planText")
+    steps: list[PlanStep] = Field(default_factory=list)
+    auto_execute_after_ms: int = Field(default=0, alias="autoExecuteAfterMs")
+
+    model_config = {"populate_by_name": True}
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "planText": self.plan_text,
+            "steps": [step.to_dict() for step in self.steps],
+            "autoExecuteAfterMs": self.auto_execute_after_ms,
+        }
+
+
 # ---- Limits ----
 
 
@@ -282,3 +362,9 @@ DEFAULT_FIRST_NODE_X: float = 240.0
 DEFAULT_FIRST_NODE_Y: float = 180.0
 COL_STEP: float = 220.0
 ROW_STEP: float = 140.0
+
+
+# Resolve the forward reference from BuildRequest -> PlanStep so callers
+# can pass `execute_steps=[PlanStep(...)]` without seeing a Pydantic
+# UnresolvedForwardRef error.
+BuildRequest.model_rebuild()

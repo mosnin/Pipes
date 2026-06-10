@@ -3,7 +3,8 @@
 // Hook for reading + setting the user's sound preference.
 //
 // Storage key: pipes-sound-on (string "true"/"false").
-// Default: false (opt-in).
+// Default: true. The localStorage key tracks the user's explicit choice;
+// when it is absent we treat sound as on.
 // prefers-reduced-motion always wins: if the user prefers reduced motion,
 // `enabled` is reported as false and `setEnabled` is a no-op.
 
@@ -12,11 +13,13 @@ import { useCallback, useEffect, useState } from "react";
 export const SOUND_STORAGE_KEY = "pipes-sound-on";
 
 function readPersistedPreference(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
-    return window.localStorage.getItem(SOUND_STORAGE_KEY) === "true";
+    const stored = window.localStorage.getItem(SOUND_STORAGE_KEY);
+    if (stored === null) return true;
+    return stored === "true";
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -38,7 +41,11 @@ export interface SoundPreference {
 }
 
 export function useSoundPreference(): SoundPreference {
-  const [persisted, setPersisted] = useState<boolean>(false);
+  // Initial state mirrors readPersistedPreference. The default is true so
+  // the first render after hydration reads "on" when no explicit choice
+  // has been stored. The mount effect below still re-reads on the client
+  // to pick up any race between SSR and hydration.
+  const [persisted, setPersisted] = useState<boolean>(true);
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
 
   // Read initial values once on mount. SSR-safe.

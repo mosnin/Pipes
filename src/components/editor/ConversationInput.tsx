@@ -29,6 +29,10 @@ export type ConversationInputProps = {
   size?: "drawer" | "hero";
   placeholder?: string;
   hintText?: string;
+  // Plan first hook. When provided, Shift+Enter triggers a plan-only send so
+  // the user sees the structured plan before any tool call. The drawer keeps
+  // a synced toggle for non-keyboard users.
+  onSendPlanFirst?: () => void;
 };
 
 const MAX_VISIBLE_ROWS = 4;
@@ -55,6 +59,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
       size = "drawer",
       placeholder = "Describe your system. Watch it build itself.",
       hintText,
+      onSendPlanFirst,
     },
     ref,
   ) {
@@ -83,6 +88,21 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
     const finalPlaceholder = placeholderTextFor(placeholderHint, placeholder);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Shift+Enter triggers a "plan first" send when the host wires it.
+      // The user sees the structured plan and can edit it before any tool
+      // call lands. Falls back to a normal newline if no handler is wired.
+      if (
+        e.key === "Enter" &&
+        e.shiftKey &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        onSendPlanFirst &&
+        canSend
+      ) {
+        e.preventDefault();
+        onSendPlanFirst();
+        return;
+      }
       if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         if (canSend) onSend();

@@ -66,8 +66,15 @@ describe("useSoundPreference", () => {
     window.localStorage.clear();
   });
 
-  it("defaults to disabled when no preference is stored", () => {
+  it("defaults to enabled when no preference is stored", () => {
     installMatchMedia(false);
+    const { result } = renderHook(() => useSoundPreference());
+    expect(result.current.enabled).toBe(true);
+  });
+
+  it("respects a previously-stored false preference", () => {
+    installMatchMedia(false);
+    window.localStorage.setItem(SOUND_STORAGE_KEY, "false");
     const { result } = renderHook(() => useSoundPreference());
     expect(result.current.enabled).toBe(false);
   });
@@ -79,6 +86,13 @@ describe("useSoundPreference", () => {
     expect(result.current.enabled).toBe(true);
   });
 
+  it("forces disabled when prefers-reduced-motion is reduce, even with no stored preference", () => {
+    installMatchMedia(true);
+    const { result } = renderHook(() => useSoundPreference());
+    expect(result.current.reducedMotion).toBe(true);
+    expect(result.current.enabled).toBe(false);
+  });
+
   it("forces disabled when prefers-reduced-motion is reduce, even if stored true", () => {
     installMatchMedia(true);
     window.localStorage.setItem(SOUND_STORAGE_KEY, "true");
@@ -87,14 +101,14 @@ describe("useSoundPreference", () => {
     expect(result.current.enabled).toBe(false);
   });
 
-  it("persists setEnabled(true) and surfaces it as enabled", () => {
+  it("persists setEnabled(false) and surfaces it as disabled", () => {
     installMatchMedia(false);
     const { result } = renderHook(() => useSoundPreference());
     act(() => {
-      result.current.setEnabled(true);
+      result.current.setEnabled(false);
     });
-    expect(window.localStorage.getItem(SOUND_STORAGE_KEY)).toBe("true");
-    expect(result.current.enabled).toBe(true);
+    expect(window.localStorage.getItem(SOUND_STORAGE_KEY)).toBe("false");
+    expect(result.current.enabled).toBe(false);
   });
 
   it("setEnabled is a no-op under prefers-reduced-motion", () => {
@@ -116,6 +130,8 @@ describe("SoundProvider", () => {
 
   it("exposes a context where play() is a no-op when disabled", () => {
     installMatchMedia(false);
+    // Explicitly opt out so we exercise the disabled path.
+    window.localStorage.setItem(SOUND_STORAGE_KEY, "false");
 
     let captured: ReturnType<typeof useSound> | null = null;
     function Probe() {
@@ -135,7 +151,7 @@ describe("SoundProvider", () => {
     expect(() => captured!.play("buildComplete")).not.toThrow();
   });
 
-  it("flips enabled true after setEnabled and persists", () => {
+  it("flips enabled false after setEnabled(false) and persists", () => {
     installMatchMedia(false);
 
     let captured: ReturnType<typeof useSound> | null = null;
@@ -151,10 +167,10 @@ describe("SoundProvider", () => {
     );
 
     act(() => {
-      captured!.setEnabled(true);
+      captured!.setEnabled(false);
     });
-    expect(window.localStorage.getItem(SOUND_STORAGE_KEY)).toBe("true");
-    expect(screen.getByTestId("enabled").textContent).toBe("true");
+    expect(window.localStorage.getItem(SOUND_STORAGE_KEY)).toBe("false");
+    expect(screen.getByTestId("enabled").textContent).toBe("false");
   });
 
   it("falls back to a no-op shape when useSound is called outside a provider", () => {

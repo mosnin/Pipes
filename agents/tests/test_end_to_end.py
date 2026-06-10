@@ -164,6 +164,57 @@ async def test_event_order_matches_contract() -> None:
 
 
 @pytest.mark.asyncio
+async def test_plan_proposal_event_lands_before_first_tool_call() -> None:
+    """The new `plan_proposal` SSE event must land AFTER the textual plan
+    `message` and BEFORE the first `tool_call`. This is the ordering the
+    PlanEditor depends on to render its editable steps."""
+    plan_with_json = (
+        GOOD_PLAN
+        + '\n\n```json\n{"steps":['
+        '{"kind":"add_node","label":"Planner","args":{"title":"Planner","description":"x","x":240,"y":180}},'
+        '{"kind":"add_node","label":"Coder","args":{"title":"Coder","description":"y","x":460,"y":180}},'
+        '{"kind":"add_pipe","label":"wire","args":{"fromStepId":"s1","toStepId":"s2"}}'
+        ']}\n```'
+    )
+    request = BuildRequest(systemId="sys_test", prompt="planner-coder")
+
+    async def stub_runner(**kwargs: Any) -> AsyncIterator[dict[str, Any]]:
+        yield {"kind": "plan", "text": plan_with_json}
+        yield {
+            "kind": "tool_call",
+            "id": "tc_1",
+            "tool_name": "add_node",
+            "arguments": {
+                "systemId": "sys_test",
+                "type": "Agent",
+                "title": "Planner",
+                "description": "Reads the prompt and emits a plan for Coder.",
+            },
+        }
+        yield {
+            "kind": "tool_result",
+            "id": "tc_1",
+            "ok": True,
+            "action": {
+                "action": "addNode",
+                "systemId": "sys_test",
+                "title": "Planner",
+                "clientNodeId": "tmp_p1",
+            },
+        }
+        yield {"kind": "message", "text": "Planner ready."}
+
+    frames = await _consume(run_turn_stream(request, runner=stub_runner))
+    parsed = _parse_frames(frames)
+    names = [p["event"] for p in parsed]
+    assert "plan_proposal" in names
+    msg_idx = names.index("message")
+    proposal_idx = names.index("plan_proposal")
+    first_tool_idx = names.index("tool_call")
+    assert msg_idx < proposal_idx < first_tool_idx
+
+
+@pytest.mark.asyncio
 async def test_conversation_and_turn_ids_round_trip() -> None:
     request = BuildRequest(
         systemId="sys_test",

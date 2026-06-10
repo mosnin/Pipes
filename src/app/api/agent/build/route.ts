@@ -39,10 +39,23 @@ const CONCURRENT_TURN_LIMIT = 1;
 const BODY_BYTE_CAP = 16 * 1024;
 const FREE_PLAN_MONTHLY_BUILDS = 50;
 
+// Interactive plan editor: structured PlanStep accepted from the client.
+// The Modal side honors plan_only (emit proposal then done) and execute_steps
+// (skip planning, run the supplied steps directly).
+const planStepSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["add_node", "add_pipe", "update_node", "delete_node", "validate"]),
+  label: z.string().min(1),
+  args: z.record(z.string(), z.unknown()),
+  enabled: z.boolean().optional()
+});
+
 const buildRequestSchema = z.object({
   systemId: z.string().min(1, "systemId is required"),
   prompt: z.string().min(1, "prompt is required"),
-  conversationId: z.string().min(1).optional()
+  conversationId: z.string().min(1).optional(),
+  planOnly: z.boolean().optional(),
+  executeSteps: z.array(planStepSchema).optional()
 });
 
 type BuildRequestInput = z.infer<typeof buildRequestSchema>;
@@ -513,7 +526,11 @@ export async function POST(request: Request): Promise<Response> {
                 priorSystemsSummary: personalization.priorSystemsSummary,
                 systemName: personalization.systemName,
                 existingNodesCount: personalization.existingNodesCount,
-                existingPipesCount: personalization.existingPipesCount
+                existingPipesCount: personalization.existingPipesCount,
+                // Interactive plan editor: ride-through fields that the
+                // Modal builder reads to gate planning and execution.
+                planOnly: body.planOnly ?? false,
+                executeSteps: body.executeSteps ?? null
               }),
               signal: upstreamSignal
             });

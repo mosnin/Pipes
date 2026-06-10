@@ -24,6 +24,7 @@ import type {
   ErrorEvent,
   StatusEvent,
 } from "@/lib/agent/types";
+import type { PlanStep } from "@/lib/agent/plan-types";
 import type {
   EditorGraphAction,
   GraphNode,
@@ -83,6 +84,14 @@ export function useAgentBuild(
   // The node id referenced by the most recent tool_call's arguments, if any.
   // Cleared on done / error / stop.
   const [currentTargetNodeId, setCurrentTargetNodeId] = useState<string | null>(null);
+  // The structured plan from the most recent plan_proposal event. PlanEditor
+  // mounts when this is non-null. Reset at each new send().
+  const [currentPlan, setCurrentPlan] = useState<PlanStep[] | null>(null);
+  // True while the in-flight turn was launched with planOnly=true.
+  const [planOnly, setPlanOnly] = useState<boolean>(false);
+  // The prompt the most recent turn was launched with. Used by
+  // submitEditedPlan to re-run the same prompt with caller-approved steps.
+  const lastPromptRef = useRef<string>("");
 
   const abortRef = useRef<AbortController | null>(null);
   const timersRef = useRef<Timers>(NO_TIMERS);
@@ -285,6 +294,18 @@ export function useAgentBuild(
         return;
       }
 
+      if (event.type === "plan_proposal") {
+        // Capture the structured plan. PlanEditor mounts off of currentPlan.
+        // Default `enabled` to true on each step so the editor checkboxes
+        // render as checked unless the user opts out.
+        const steps: PlanStep[] = event.data.steps.map((s) => ({
+          ...s,
+          enabled: s.enabled ?? true,
+        }));
+        setCurrentPlan(steps);
+        return;
+      }
+
       if (event.type === "message") {
         currentAssistantMessageRef.current += event.data.text;
         const text = currentAssistantMessageRef.current;
@@ -356,12 +377,15 @@ export function useAgentBuild(
     [disarmTimers, flushApplyQueueImmediately, scheduleApply],
   );
 
-  const send = useCallback(
-    (prompt: string) => {
-      const text = prompt.trim();
-      if (!text) return;
-      if (state === "running" || state === "connecting") return;
-
+  const startTurn = useCallback(
+    (
+      text: string,
+      options: {
+        planOnly?: boolean;
+        executeSteps?: PlanStep[];
+        appendUserMessage?: boolean;
+      },
+    ) => {
       // Reset per-turn local state.
       setError(undefined);
       setFinishedAt(undefined);
@@ -370,6 +394,13 @@ export function useAgentBuild(
       setStatusState(undefined);
       setCurrentTargetNodeId(null);
       setToolCalls([]);
+      // Only reset the captured plan when the caller is NOT submitting an
+      // edited plan. Submitting an edited plan keeps the plan visible so
+      // the user can see live progress against the steps they accepted.
+      if (!options.executeSteps) {
+        setCurrentPlan(null);
+      }
+      setPlanOnly(Boolean(options.planOnly));
       currentAssistantMessageRef.current = "";
       turnHasFirstEventRef.current = false;
       toolCallsSeenRef.current = 0;
@@ -377,20 +408,25 @@ export function useAgentBuild(
       setPlaceholderHint("building");
       setState("connecting");
 
+      lastPromptRef.current = text;
+
       // Generate a client-side turn id so we can begin/end the composite undo
       // entry before the server returns its real turnId on `done`.
       const turnId = `turn_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       currentTurnIdRef.current = turnId;
       turnStartedAtRef.current = Date.now();
 
-      // Append the user's prompt to the chat surface immediately.
-      const userMessage: AgentChatMessage = {
-        id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        role: "user",
-        text,
-        ts: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
+      // Append the user's prompt to the chat surface unless suppressed (the
+      // edited-plan re-run does not echo the original prompt a second time).
+      if (options.appendUserMessage !== false) {
+        const userMessage: AgentChatMessage = {
+          id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          role: "user",
+          text,
+          ts: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+      }
 
       // Wire the abort controller and the cold-start escalation timers.
       const controller = new AbortController();
@@ -400,7 +436,13 @@ export function useAgentBuild(
       setState("running");
 
       void startAgentBuild({
-        request: { systemId, prompt: text, conversationId },
+        request: {
+          systemId,
+          prompt: text,
+          conversationId,
+          planOnly: options.planOnly,
+          executeSteps: options.executeSteps,
+        },
         onEvent: handleEvent,
         signal: controller.signal,
       })
@@ -414,8 +456,6 @@ export function useAgentBuild(
           setState("error");
           setPlaceholderHint("failed");
           setFinishedAt(Date.now());
-          // Close the composite undo entry even on transport failure so any
-          // tool_results that already landed are bundled into one undo step.
           flushApplyQueueImmediately();
           const c = ctxRef.current;
           const tid = currentTurnIdRef.current;
@@ -429,7 +469,33 @@ export function useAgentBuild(
           if (abortRef.current === controller) abortRef.current = null;
         });
     },
-    [armTimers, conversationId, disarmTimers, flushApplyQueueImmediately, handleEvent, state, systemId],
+    [armTimers, conversationId, disarmTimers, flushApplyQueueImmediately, handleEvent, systemId],
+  );
+
+  const send = useCallback(
+    (prompt: string, options?: { planOnly?: boolean }) => {
+      const text = prompt.trim();
+      if (!text) return;
+      if (state === "running" || state === "connecting") return;
+      startTurn(text, { planOnly: options?.planOnly });
+    },
+    [startTurn, state],
+  );
+
+  const submitEditedPlan = useCallback(
+    (steps: PlanStep[]) => {
+      if (state === "running" || state === "connecting") return;
+      const prompt = lastPromptRef.current.trim();
+      if (!prompt) return;
+      const enabled = steps.filter((s) => s.enabled !== false);
+      if (enabled.length === 0) return;
+      setCurrentPlan(enabled);
+      startTurn(prompt, {
+        executeSteps: enabled,
+        appendUserMessage: false,
+      });
+    },
+    [startTurn, state],
   );
 
   const stop = useCallback(() => {
@@ -468,6 +534,7 @@ export function useAgentBuild(
       toolCalls,
       send,
       stop,
+      submitEditedPlan,
       error,
       startedAt,
       finishedAt,
@@ -475,20 +542,25 @@ export function useAgentBuild(
       activeToolName,
       placeholderHint,
       currentTargetNodeId,
+      currentPlan,
+      planOnly,
     }),
     [
       activeToolName,
       conversationId,
+      currentPlan,
       currentTargetNodeId,
       error,
       finishedAt,
       messages,
       placeholderHint,
+      planOnly,
       send,
       startedAt,
       state,
       statusState,
       stop,
+      submitEditedPlan,
       toolCalls,
     ],
   );

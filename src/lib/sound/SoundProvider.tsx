@@ -2,8 +2,10 @@
 
 // React context that gates sounds by user preference.
 //
-// - Default off (opt-in).
-// - prefers-reduced-motion always wins; play() becomes a no-op.
+// - Default on. The localStorage key tracks an explicit choice; when the key
+//   is absent, sound is on.
+// - prefers-reduced-motion always wins; play() becomes a no-op and the
+//   reported `enabled` flips to false regardless of the stored preference.
 // - Sounds are synthesized on demand by lib/sound/effects.ts.
 
 import { createContext, useCallback, useContext, useMemo } from "react";

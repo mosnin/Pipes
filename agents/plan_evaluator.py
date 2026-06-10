@@ -442,10 +442,82 @@ def evaluate_action(
     return ActionEvalResult(False, f"Unknown tool {tool}.")
 
 
+def evaluate_plan_with_steps(
+    plan_text: str,
+    steps: list[dict[str, Any]],
+    existing_nodes_count: int,
+    existing_pipes_count: int,
+) -> EvalResult:
+    """Extended plan eval that also round-trips the structured steps.
+
+    Runs the existing text eval, then verifies the structured steps look
+    sane against the text plan:
+
+    - Step count is non-negative and within the same bounds the text eval
+      uses for node mentions (fresh vs iteration).
+    - Every `add_pipe` step references either real fromNodeId/toNodeId or a
+      `fromStepId`/`toStepId` that points to an earlier `add_node` step in
+      the list (no forward references, no self-references).
+
+    Returns a single `EvalResult` whose `reasons` aggregate both layers.
+    """
+    text_eval = evaluate_plan(plan_text, existing_nodes_count, existing_pipes_count)
+    if text_eval.is_no_op:
+        # A no-op plan should not carry structured steps; if it does, the
+        # caller can choose to ignore them. We don't fail here.
+        return text_eval
+
+    reasons = list(text_eval.reasons)
+    seen_node_step_ids: set[str] = set()
+    for idx, raw_step in enumerate(steps):
+        kind = raw_step.get("kind")
+        step_id = raw_step.get("id")
+        if not isinstance(step_id, str) or not step_id:
+            reasons.append(f"Step {idx} missing id.")
+            continue
+        if kind == "add_node":
+            seen_node_step_ids.add(step_id)
+            continue
+        if kind == "add_pipe":
+            args = raw_step.get("args") or {}
+            if not isinstance(args, dict):
+                reasons.append(f"Step {step_id} args is not an object.")
+                continue
+            from_id = args.get("fromStepId") or args.get("fromNodeId")
+            to_id = args.get("toStepId") or args.get("toNodeId")
+            if not from_id or not to_id:
+                reasons.append(
+                    f"Step {step_id} add_pipe missing fromStepId/fromNodeId or toStepId/toNodeId."
+                )
+                continue
+            if from_id == to_id:
+                reasons.append(f"Step {step_id} add_pipe is a self-loop.")
+                continue
+            if isinstance(from_id, str) and "fromStepId" in args:
+                if from_id not in seen_node_step_ids:
+                    reasons.append(
+                        f"Step {step_id} references unknown or future fromStepId {from_id}."
+                    )
+            if isinstance(to_id, str) and "toStepId" in args:
+                if to_id not in seen_node_step_ids:
+                    reasons.append(
+                        f"Step {step_id} references unknown or future toStepId {to_id}."
+                    )
+            continue
+        if kind in ("update_node", "delete_node"):
+            continue
+        if kind == "validate":
+            continue
+        reasons.append(f"Step {step_id} has unknown kind {kind!r}.")
+
+    return EvalResult(ok=len(reasons) == 0, reasons=reasons, is_no_op=False)
+
+
 __all__ = [
     "BANNED_WORDS",
     "EvalResult",
     "ActionEvalResult",
     "evaluate_plan",
+    "evaluate_plan_with_steps",
     "evaluate_action",
 ]

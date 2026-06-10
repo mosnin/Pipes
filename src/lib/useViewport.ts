@@ -28,3 +28,45 @@ export function useViewport(breakpoint: number = 768): Viewport {
 
   return { isMobile: width > 0 && width < breakpoint, width };
 }
+
+// useIsTouch: true when the primary pointer is coarse (no precise mouse).
+// This lets us separate "small viewport, has mouse" (a docked laptop window)
+// from "phone or tablet". The mobile UI keys on both: narrow viewport AND
+// touch-only. SSR-safe: returns false until the effect runs.
+export function useIsTouch(): boolean {
+  const [touch, setTouch] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const coarse = window.matchMedia("(pointer: coarse)");
+    const noHover = window.matchMedia("(hover: none)");
+    const evaluate = (): void => {
+      setTouch(coarse.matches || noHover.matches);
+    };
+    evaluate();
+    const onCoarse = (): void => evaluate();
+    const onHover = (): void => evaluate();
+    // addEventListener for MediaQueryList is the modern API; older Safari uses
+    // addListener. Wrap both so jsdom and real browsers both work.
+    if (typeof coarse.addEventListener === "function") {
+      coarse.addEventListener("change", onCoarse);
+      noHover.addEventListener("change", onHover);
+      return () => {
+        coarse.removeEventListener("change", onCoarse);
+        noHover.removeEventListener("change", onHover);
+      };
+    }
+    return undefined;
+  }, []);
+
+  return touch;
+}
+
+// useIsMobileExperience: combine viewport + touch. The mobile experience is
+// for narrow viewports on touch devices. A 700px-wide laptop window keeps the
+// desktop UI because the user has a mouse.
+export function useIsMobileExperience(breakpoint: number = 768): boolean {
+  const { isMobile } = useViewport(breakpoint);
+  const touch = useIsTouch();
+  return isMobile && touch;
+}

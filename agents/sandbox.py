@@ -83,6 +83,13 @@ async def _stream_for_request(body: dict[str, Any]) -> AsyncIterator[bytes]:
     payload right before `done`. We pass those bytes through unchanged; the
     Next.js route reads them, persists the snapshot on `agent_turns`, and
     forwards the same frame to the client. No proxy-side rewriting here.
+
+    Interactive plan editor: the body may include `planOnly: bool` and
+    `executeSteps: list[PlanStep]`. Both are picked up by the BuildRequest
+    schema through its camelCase aliases. The builder emits a new
+    `plan_proposal` SSE event before any tool_call; in plan_only mode it
+    terminates after that proposal, and with executeSteps the planning
+    phase is skipped entirely.
     """
     # Lazy import so tests can load this module without the rest of the package
     # resolving. Modal containers will resolve once the image boots.

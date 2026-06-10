@@ -39,6 +39,8 @@ import {
 import type { DataTableColumn } from "@/components/ui";
 import { EmptyCanvas } from "@/components/illustrations";
 import { MentalModelCard } from "@/components/MentalModelCard";
+import { MobileGate } from "@/components/mobile/MobileGate";
+import { MobileDashboard } from "@/components/mobile/MobileDashboard";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -260,6 +262,14 @@ function SystemCard({
 // ---------------------------------------------------------------------------
 
 export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPayload }) {
+  return (
+    <MobileGate mobile={<MobileDashboard initialLibrary={initialLibrary} />}>
+      <DesktopDashboardClient initialLibrary={initialLibrary} />
+    </MobileGate>
+  );
+}
+
+function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPayload }) {
   const router = useRouter();
   const [library, setLibrary] = useState<LibraryPayload>(initialLibrary);
   const [query, setQuery] = useState("");

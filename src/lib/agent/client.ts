@@ -7,6 +7,7 @@ import type {
   DoneEvent,
   ErrorEvent,
   MessageEvent,
+  PlanProposalEvent,
   StatusEvent,
   ToolCallEvent,
   ToolResultEvent,
@@ -28,6 +29,7 @@ const KNOWN_EVENT_NAMES = new Set([
   "status",
   "done",
   "error",
+  "plan_proposal",
 ]);
 
 // Parse a single decoded `event: ... data: ...` block into a typed AgentEvent.
@@ -68,6 +70,8 @@ function parseFrame(frame: string): AgentEvent | null {
       return { type: "done", data: parsed as DoneEvent };
     case "error":
       return { type: "error", data: parsed as ErrorEvent };
+    case "plan_proposal":
+      return { type: "plan_proposal", data: parsed as PlanProposalEvent };
     default:
       return null;
   }

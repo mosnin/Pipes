@@ -47,22 +47,15 @@ export function DesktopFirstBanner() {
           Pipes is built for desktop.
         </p>
         <p className="t-caption text-[#3C3C43] leading-snug mt-0.5">
-          The canvas works at full size on a larger screen.
+          Read and share here. Editing feels right with a keyboard.
         </p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
           onClick={dismiss}
-          className="t-caption font-medium text-indigo-700 hover:text-indigo-900 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors"
-        >
-          Continue anyway
-        </button>
-        <button
-          type="button"
-          onClick={dismiss}
           aria-label="Dismiss"
-          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100 transition-colors"
+          className="inline-flex items-center justify-center w-11 h-11 -mr-2 rounded-md text-indigo-700 hover:text-indigo-900 hover:bg-indigo-100 transition-colors"
         >
           <X size={14} />
         </button>
