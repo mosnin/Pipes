@@ -7,15 +7,16 @@
 // turns. Once `done` lands the strip collapses to a single summary line.
 //
 // Each assistant bubble carries a tiny thumbs-up/thumbs-down pair below the
-// timestamp; the build summary line carries the same pair plus a Revert link
-// that rewinds the entire turn through the editor's composite history.
+// timestamp; the build summary line carries the same pair plus the
+// PostBuildSuccess affordance card (Open in Claude / See diff / Revert).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RotateCcw, ThumbsDown, ThumbsUp } from "lucide-react";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sendFeedback } from "@/lib/feedback/client";
 import type { ThumbsTargetType, ThumbsVerdict } from "@/lib/feedback/types";
 import type { AgentChatMessage, AgentToolCallRecord } from "@/lib/agent/hook_types";
+import { PostBuildSuccess } from "@/components/editor/PostBuildSuccess";
 
 export type ConversationMessagesProps = {
   messages: AgentChatMessage[];
@@ -35,6 +36,15 @@ export type ConversationMessagesProps = {
   // True once the user starts typing the next prompt; we hide the Revert
   // link after that.
   nextPromptStarted?: boolean;
+  // Triggers the Open-in-Claude flow. Threaded from EditorWorkspace through
+  // the drawer. Shown as the primary CTA on the post-build success card.
+  onOpenInClaude?: () => void;
+  // Opens the TurnDiffDialog. Hidden when there is no prior turn to diff
+  // against.
+  onShowDiff?: () => void;
+  // True when at least one prior turn exists, so we can compute a meaningful
+  // diff.
+  diffAvailable?: boolean;
 };
 
 function formatSeconds(ms: number): string {
@@ -78,6 +88,9 @@ export function ConversationMessages({
   lastTurnId,
   onRevertTurn,
   nextPromptStarted,
+  onOpenInClaude,
+  onShowDiff,
+  diffAvailable,
 }: ConversationMessagesProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
 
@@ -136,6 +149,9 @@ export function ConversationMessages({
           turnId={turnId}
           onRevertTurn={onRevertTurn}
           revertVisible={!nextPromptStarted}
+          onOpenInClaude={onOpenInClaude}
+          onShowDiff={diffAvailable ? onShowDiff : undefined}
+          nextPromptStarted={Boolean(nextPromptStarted)}
         />
       ) : null}
     </div>
@@ -210,12 +226,18 @@ function SummaryLine({
   turnId,
   onRevertTurn,
   revertVisible,
+  onOpenInClaude,
+  onShowDiff,
+  nextPromptStarted,
 }: {
   text: string;
   conversationId: string;
   turnId: string;
   onRevertTurn?: (turnId: string) => void;
   revertVisible: boolean;
+  onOpenInClaude?: () => void;
+  onShowDiff?: () => void;
+  nextPromptStarted: boolean;
 }) {
   const [reverted, setReverted] = useState(false);
   const handleRevert = useCallback(() => {
@@ -224,27 +246,24 @@ function SummaryLine({
     onRevertTurn(turnId);
   }, [onRevertTurn, turnId, reverted]);
 
+  const revertActive = revertVisible && !reverted && Boolean(onRevertTurn) && Boolean(turnId);
+
   return (
     <div className="flex items-center justify-between gap-2 pl-1 pr-1">
       <p className="t-caption t-num text-[#8E8E93] truncate">{text}</p>
       <div className="flex items-center gap-1.5 shrink-0">
+        <PostBuildSuccess
+          onOpenInClaude={onOpenInClaude}
+          onShowDiff={onShowDiff}
+          onRevert={revertActive ? handleRevert : undefined}
+          nextPromptStarted={nextPromptStarted}
+        />
         <ThumbsRow
           targetType="agent_build_summary"
           targetId={turnId || "summary"}
           conversationId={conversationId}
           turnId={turnId}
         />
-        {revertVisible && !reverted && onRevertTurn && turnId ? (
-          <button
-            type="button"
-            onClick={handleRevert}
-            aria-label="Revert this turn"
-            className="inline-flex items-center gap-1 t-caption text-[#8E8E93] hover:text-[#111] transition-colors px-1.5 h-6 rounded-md hover:bg-black/[0.04]"
-          >
-            <RotateCcw size={12} />
-            <span>Revert</span>
-          </button>
-        ) : null}
       </div>
     </div>
   );

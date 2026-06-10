@@ -7,6 +7,7 @@ export const KEYS = {
   TUTORIAL_PILL_PREFIX: "pipes-tutorial-seen-",
   NPS_SEEN: "pipes-nps-seen",
   BUILD_COUNT: "pipes-build-count",
+  MENTAL_MODEL_SEEN: "pipes-mental-model-seen",
 } as const;
 
 export function getTutorialSeen(): boolean {
@@ -51,4 +52,14 @@ export function incrementBuildCount(): number {
   const next = getBuildCount() + 1;
   localStorage.setItem(KEYS.BUILD_COUNT, String(next));
   return next;
+}
+
+export function getMentalModelSeen(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(KEYS.MENTAL_MODEL_SEEN) === "true";
+}
+
+export function setMentalModelSeen(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(KEYS.MENTAL_MODEL_SEEN, "true");
 }

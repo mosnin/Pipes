@@ -2,6 +2,10 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+// Public, unauthenticated routes (kept here as documentation, not enforced):
+// - `/` and any other marketing route
+// - `/play` — the guest playground: a visitor lands, picks a starter, and
+//   watches the canvas build itself in seconds. No Clerk, no Convex.
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/systems(.*)",

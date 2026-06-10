@@ -12,6 +12,7 @@ import { ChevronDown, MessageSquare } from "lucide-react";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { ConversationMessages } from "@/components/editor/ConversationMessages";
 import { NpsPrompt } from "@/components/editor/NpsPrompt";
+import { TurnHistoryRail, type TurnRailEntry } from "@/components/editor/TurnHistoryRail";
 import { useAgentBuild, type AgentApplyContext } from "@/lib/agent/hooks";
 import { getNpsSeen, incrementBuildCount } from "@/lib/feedback/storage";
 import { useSound } from "@/lib/sound/SoundProvider";
@@ -35,6 +36,25 @@ export type ConversationDrawerProps = {
   // Fired the first time the user starts typing in the input. EditorWorkspace
   // uses this to dismiss the first tutorial pill.
   onPromptStarted?: () => void;
+  // The ordered list of completed turns from the editor. Drives the
+  // TurnHistoryRail mounted on the left edge of the drawer.
+  turns?: TurnRailEntry[];
+  // The active turn id whose snapshot is currently on screen. The rail
+  // highlights the matching dot.
+  activeTurnId?: string;
+  // Called when the user clicks a rail dot.
+  onJumpToTurn?: (turnId: string) => void;
+  // Triggered by the PostBuildSuccess "Open in Claude" link. Wired to the
+  // shared triggerOpenInClaude flow.
+  onOpenInClaude?: () => void;
+  // Triggered by the PostBuildSuccess "See diff" link. Opens the diff dialog
+  // for the latest turn's before/after snapshots.
+  onShowLatestDiff?: () => void;
+  // True when the latest completed turn can be diffed (a prior turn exists).
+  latestDiffAvailable?: boolean;
+  // Called once when the agent finishes a turn with at least one mutation.
+  // The editor uses (turnId, prompt) to label rail dots and the diff dialog.
+  onTurnCompleted?: (turnId: string, prompt: string) => void;
 };
 
 export const STARTER_CHIPS: Array<{ id: string; label: string; prompt: string }> = [
@@ -68,12 +88,23 @@ export function ConversationDrawer({
   onCurrentTargetNodeIdChange,
   onRevertCurrentTurn,
   onPromptStarted,
+  turns,
+  activeTurnId,
+  onJumpToTurn,
+  onOpenInClaude,
+  onShowLatestDiff,
+  latestDiffAvailable,
+  onTurnCompleted,
 }: ConversationDrawerProps) {
   const [text, setText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const inputRef = useRef<ConversationInputHandle>(null);
   const handledInitialRef = useRef(false);
   const promptStartedRef = useRef(false);
+  // Captured at send-time so endTurn can attach the prompt to the completed
+  // turn even after the user has started typing the next one.
+  const turnPromptsRef = useRef<Record<string, string>>({});
+  const pendingTurnPromptRef = useRef<string>("");
 
   // Track the active turn's id by intercepting beginTurn / endTurn on the
   // editor's agent apply context. This is the same id the editor uses to
@@ -95,10 +126,18 @@ export function ConversationDrawer({
         setLastTurnId(turnId);
         // A new turn starting always re-arms the Revert link for that turn.
         setNextPromptStarted(false);
+        if (pendingTurnPromptRef.current) {
+          turnPromptsRef.current[turnId] = pendingTurnPromptRef.current;
+        }
         agentApplyContext.beginTurn(turnId);
       },
+      endTurn: (turnId: string) => {
+        const prompt = turnPromptsRef.current[turnId] ?? "";
+        agentApplyContext.endTurn(turnId);
+        if (onTurnCompleted) onTurnCompleted(turnId, prompt);
+      },
     };
-  }, [agentApplyContext]);
+  }, [agentApplyContext, onTurnCompleted]);
 
   const agent = useAgentBuild(systemId, wrappedApplyContext);
 
@@ -119,6 +158,7 @@ export function ConversationDrawer({
     // Defer to the next tick so the input renders with the value first.
     const id = window.setTimeout(() => {
       inputRef.current?.focus();
+      pendingTurnPromptRef.current = initialPrompt;
       agent.send(initialPrompt);
       setText("");
       if (onInitialPromptHandled) onInitialPromptHandled();
@@ -163,6 +203,7 @@ export function ConversationDrawer({
   const handleSend = () => {
     const value = text.trim();
     if (!value) return;
+    pendingTurnPromptRef.current = value;
     agent.send(value);
     setText("");
   };
@@ -175,6 +216,7 @@ export function ConversationDrawer({
     if (agent.messages.length === 0) return;
     const lastUser = [...agent.messages].reverse().find((m) => m.role === "user");
     if (!lastUser) return;
+    pendingTurnPromptRef.current = lastUser.text;
     agent.send(lastUser.text);
   };
 
@@ -235,7 +277,14 @@ export function ConversationDrawer({
     <DrawerShell>
       <div className="w-full max-w-[720px] flex flex-col gap-2">
         {showActive ? (
-          <div className="bg-white border border-black/[0.08] rounded-2xl shadow-md-token flex flex-col overflow-hidden" style={{ height: 280 }}>
+          <div className="relative bg-white border border-black/[0.08] rounded-2xl shadow-md-token flex flex-col overflow-hidden" style={{ height: 280 }}>
+            {turns && turns.length > 1 && onJumpToTurn ? (
+              <TurnHistoryRail
+                turns={turns}
+                activeTurnId={activeTurnId}
+                onJumpToTurn={onJumpToTurn}
+              />
+            ) : null}
             <div className="flex items-center justify-between px-3 pt-2 pb-1">
               <span className="t-caption text-[#8E8E93]">Pipes</span>
               <button
@@ -257,6 +306,9 @@ export function ConversationDrawer({
               lastTurnId={lastTurnId}
               onRevertTurn={onRevertCurrentTurn ? handleRevertTurn : undefined}
               nextPromptStarted={nextPromptStarted}
+              onOpenInClaude={onOpenInClaude}
+              onShowDiff={onShowLatestDiff}
+              diffAvailable={Boolean(latestDiffAvailable)}
             />
           </div>
         ) : !hasMessages ? (
@@ -324,4 +376,3 @@ function EmptyStarters({
     </div>
   );
 }
-

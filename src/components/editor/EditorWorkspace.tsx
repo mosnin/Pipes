@@ -21,6 +21,9 @@ import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsys
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
 import { ConversationDrawer } from "@/components/editor/ConversationDrawer";
+import { TurnDiffDialog } from "@/components/editor/TurnDiffDialog";
+import type { TurnRailEntry } from "@/components/editor/TurnHistoryRail";
+import { triggerOpenInClaude } from "@/lib/agent/open-in-claude";
 import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/pipes_schema_v1/schema";
 import { register as registerShortcut } from "@/lib/keyboard/registry";
@@ -352,23 +355,57 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     setQueue((prev) => [...prev, { action, id: crypto.randomUUID(), retries: 0, turnId }]);
   }, []);
 
+  // Ordered list of completed turns surfaced to the conversation drawer's
+  // rail and the turn diff dialog. Each entry captures the canvas snapshot
+  // before and after the turn ran.
+  type CompletedTurn = {
+    turnId: string;
+    index: number;
+    prompt: string;
+    prior: { nodes: GraphNode[]; pipes: GraphPipe[] };
+    post: { nodes: GraphNode[]; pipes: GraphPipe[] };
+    completedAt: number;
+  };
+  const [completedTurns, setCompletedTurns] = useState<CompletedTurn[]>([]);
+  const [activeTurnId, setActiveTurnId] = useState<string | undefined>();
+  const [diffTurnId, setDiffTurnId] = useState<string | null>(null);
+
   const agentEndTurn = useCallback((turnId: string) => {
     const snap = turnSnapshotsRef.current[turnId];
     if (!snap) return;
     delete turnSnapshotsRef.current[turnId];
     // Skip the composite entry if the turn produced no graph changes.
     if (snap.actions.length === 0) return;
+    const priorNodes = snap.nodes;
+    const priorPipes = snap.pipes;
+    const postNodes = nodesRef.current;
+    const postPipes = pipesRef.current;
     setHistory((h) => pushHistory(h, {
       kind: "composite",
       turnId,
       forward: snap.actions,
       inverse: [],
-      priorNodes: snap.nodes,
-      priorPipes: snap.pipes,
-      postNodes: nodesRef.current,
-      postPipes: pipesRef.current,
+      priorNodes,
+      priorPipes,
+      postNodes,
+      postPipes,
       at: Date.now(),
     }));
+    setCompletedTurns((prev) => {
+      if (prev.some((t) => t.turnId === turnId)) return prev;
+      return [
+        ...prev,
+        {
+          turnId,
+          index: prev.length + 1,
+          prompt: "",
+          prior: { nodes: priorNodes, pipes: priorPipes },
+          post: { nodes: postNodes, pipes: postPipes },
+          completedAt: Date.now(),
+        },
+      ];
+    });
+    setActiveTurnId(turnId);
   }, []);
 
   const agentApplyContext = useMemo(() => ({
@@ -377,6 +414,45 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     endTurn: agentEndTurn,
     userInteractedAt: userInteractedAtRef,
   }), [agentApply, agentBeginTurn, agentEndTurn]);
+
+  const handleTurnCompleted = useCallback((turnId: string, prompt: string) => {
+    setCompletedTurns((prev) =>
+      prev.map((t) => (t.turnId === turnId ? { ...t, prompt } : t)),
+    );
+  }, []);
+
+  // Restore the canvas state to a previous turn's post snapshot.
+  const jumpToTurn = useCallback((turnId: string) => {
+    setCompletedTurns((prev) => {
+      const turn = prev.find((t) => t.turnId === turnId);
+      if (!turn) return prev;
+      nodesRef.current = turn.post.nodes;
+      pipesRef.current = turn.post.pipes;
+      setNodes(turn.post.nodes);
+      setPipes(turn.post.pipes);
+      return prev;
+    });
+    setActiveTurnId(turnId);
+  }, []);
+
+  // When the user starts a new prompt while focused on an older turn, drop
+  // every turn after the active one. Simple v1 model — no branching.
+  const dropFutureTurnsIfBranching = useCallback(() => {
+    setCompletedTurns((prev) => {
+      if (!activeTurnId) return prev;
+      const idx = prev.findIndex((t) => t.turnId === activeTurnId);
+      if (idx === -1 || idx === prev.length - 1) return prev;
+      const dropped = prev.length - 1 - idx;
+      if (dropped > 0) {
+        void fetch("/api/editor/signal", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ event: "turn_future_discarded", metadata: { count: dropped } }),
+        }).catch(() => {});
+      }
+      return prev.slice(0, idx + 1);
+    });
+  }, [activeTurnId]);
 
   const deferredNodes = useDeferredValue(nodes);
   const deferredPipes = useDeferredValue(pipes);
@@ -761,6 +837,21 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     return () => window.removeEventListener("keydown", onKey);
   }, [insertNodeFromEntry, paletteIndex, paletteOpen, paletteResults]);
 
+  // Build rail entries from the completed turns. Turns after the active turn
+  // are marked stale (dashed) so the rail reads as "you walked back past me".
+  const turnRailEntries: TurnRailEntry[] = useMemo(() => {
+    if (completedTurns.length === 0) return [];
+    const activeIdx = activeTurnId
+      ? completedTurns.findIndex((t) => t.turnId === activeTurnId)
+      : completedTurns.length - 1;
+    return completedTurns.map((t, idx) => ({
+      turnId: t.turnId,
+      index: t.index,
+      prompt: t.prompt,
+      stale: activeIdx >= 0 && idx > activeIdx,
+    }));
+  }, [activeTurnId, completedTurns]);
+
   if (!data) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <Spinner size="lg" />
@@ -1064,7 +1155,10 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           agentApplyContext={agentApplyContext}
           onCurrentTargetNodeIdChange={setAgentTargetNodeId}
           onRevertCurrentTurn={undo}
-          onPromptStarted={() => setTutorialPromptStarted(true)}
+          onPromptStarted={() => {
+            setTutorialPromptStarted(true);
+            dropFutureTurnsIfBranching();
+          }}
           onInitialPromptHandled={() => {
             if (typeof window === "undefined") return;
             const url = new URL(window.location.href);
@@ -1073,7 +1167,31 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
               window.history.replaceState({}, "", url.toString());
             }
           }}
+          turns={turnRailEntries}
+          activeTurnId={activeTurnId}
+          onJumpToTurn={jumpToTurn}
+          onOpenInClaude={() => { void triggerOpenInClaude(systemId); }}
+          onShowLatestDiff={
+            completedTurns.length > 1
+              ? () => setDiffTurnId(completedTurns[completedTurns.length - 1].turnId)
+              : undefined
+          }
+          latestDiffAvailable={completedTurns.length > 1}
+          onTurnCompleted={handleTurnCompleted}
         />
+        {diffTurnId ? (() => {
+          const turn = completedTurns.find((t) => t.turnId === diffTurnId);
+          if (!turn) return null;
+          return (
+            <TurnDiffDialog
+              open={true}
+              onOpenChange={(open) => { if (!open) setDiffTurnId(null); }}
+              turnIndex={turn.index}
+              before={turn.prior}
+              after={turn.post}
+            />
+          );
+        })() : null}
         {nodes.length === 0 && pipes.length === 0 && !tutorialSeen ? (
           <EditorTutorial
             promptStarted={tutorialPromptStarted}

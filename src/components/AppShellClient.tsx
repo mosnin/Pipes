@@ -17,6 +17,7 @@ import {
   Tooltip,
   StatusBadge,
 } from "@/components/ui";
+import { UsageBadge } from "@/components/UsageBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { PrimaryNavLinks, BottomNavLinks, usePageLabel } from "./NavLinks";
 import {
@@ -302,6 +303,9 @@ export function AppShellClient({
 
           {/* Right: status + bell + avatar */}
           <div className="flex items-center gap-2 shrink-0">
+            <div className="hidden md:flex">
+              <UsageBadge />
+            </div>
             <div className="hidden lg:flex">
               <StatusBadge tone="success" pulse>
                 All systems operational
