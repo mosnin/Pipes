@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ArrowRight } from "lucide-react";
 import { Wordmark } from "@/components/Wordmark";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
 
 // ---------------------------------------------------------------------------
 // Data
 // ---------------------------------------------------------------------------
-
-const NAV_LINKS = [
-  { href: "/templates",  label: "Starters"  },
-  { href: "/use-cases",  label: "Customers" },
-  { href: "/protocol",   label: "Protocol"  },
-  { href: "/pricing",    label: "Pricing"   },
-  { href: "/docs",       label: "Docs"      },
-  { href: "/changelog",  label: "Changelog" },
-] as const;
 
 const FOOTER_COLUMNS = [
   {
@@ -65,148 +55,6 @@ const FOOTER_COLUMNS = [
     ],
   },
 ] as const;
-
-// ---------------------------------------------------------------------------
-// Navbar
-// ---------------------------------------------------------------------------
-
-function MarketingNavbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 1024) setMenuOpen(false); };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  return (
-    <header
-      className={[
-        "sticky top-0 z-50 w-full transition-all duration-200",
-        scrolled
-          ? "bg-white/85 backdrop-blur-xl border-b border-black/[0.08] shadow-xs"
-          : "bg-white/70 backdrop-blur-md border-b border-transparent",
-      ].join(" ")}
-      role="banner"
-    >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between gap-6">
-
-          {/* Brand */}
-          <Link
-            href="/"
-            className="group relative flex shrink-0 items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
-            aria-label="Pipes home"
-          >
-            <Wordmark size="lg" />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] origin-left scale-x-0 bg-indigo-600 transition-transform duration-150 group-hover:scale-x-100"
-            />
-          </Link>
-
-          {/* Center nav */}
-          <nav
-            className="hidden lg:flex items-center gap-0.5"
-            aria-label="Main navigation"
-          >
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="relative rounded-md px-2.5 py-1.5 t-label font-medium text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right actions */}
-          <div className="hidden lg:flex items-center gap-1.5 shrink-0">
-            <Link
-              href="/login"
-              className="inline-flex items-center rounded-md px-2.5 py-1.5 t-label font-medium text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-3 py-1.5 t-label font-semibold text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-            >
-              Start building
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-
-          {/* Hamburger */}
-          <button
-            type="button"
-            className="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04] active:bg-black/[0.07] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            <span className="sr-only">{menuOpen ? "Close menu" : "Open menu"}</span>
-            {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile drawer */}
-      <div
-        id="mobile-menu"
-        aria-hidden={!menuOpen}
-        className={[
-          "lg:hidden overflow-hidden border-t border-black/[0.06] bg-white transition-all duration-200 ease-in-out",
-          menuOpen ? "max-h-[40rem] opacity-100" : "max-h-0 opacity-0",
-        ].join(" ")}
-      >
-        <nav
-          className="mx-auto max-w-7xl px-4 pt-3 pb-5 flex flex-col gap-0.5"
-          aria-label="Mobile navigation"
-        >
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center rounded-md px-3 py-2.5 t-label font-medium text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04] transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              {label}
-            </Link>
-          ))}
-
-          <div className="mt-4 pt-4 border-t border-black/[0.06] flex flex-col gap-2">
-            <Link
-              href="/login"
-              className="flex items-center justify-center rounded-md border border-black/[0.08] px-4 py-2.5 t-label font-medium text-[#3C3C43] hover:border-black/[0.14] hover:bg-black/[0.03] transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="flex items-center justify-center gap-1.5 rounded-md bg-[#111] hover:bg-indigo-700 active:bg-indigo-800 px-4 py-2.5 t-label font-semibold text-white transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              Start building
-              <ArrowRight size={13} aria-hidden="true" />
-            </Link>
-          </div>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Footer
@@ -343,7 +191,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <MarketingNavbar />
+      <MarketingNav />
       <main id="main" className="flex-1">{children}</main>
       <MarketingFooter />
     </div>

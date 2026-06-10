@@ -1,10 +1,19 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
+import { starterTemplates } from "@/domain/templates/catalog";
+import { useCases } from "@/lib/public/content";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
-import { SectionBadge } from "@/components/marketing/SectionBadge";
-import { HeroFrameAnimated } from "@/components/marketing/HeroFrameAnimated";
-import { SoundFooterToggle } from "@/components/marketing/SoundFooterToggle";
+import { HeroScrollDemo } from "@/components/marketing/HeroScrollDemo";
+import {
+  ScrollSection,
+  RevealStack,
+  RevealItem,
+} from "@/components/marketing/ScrollSection";
+import { MetricsStrip } from "@/components/marketing/MetricsStrip";
+import { FeatureGrid } from "@/components/marketing/FeatureGrid";
+import { CompareStrip } from "@/components/marketing/CompareStrip";
+import { StarterShowcase, QuoteRotator } from "@/components/marketing/StarterShowcase";
 
 const HOMEPAGE_TITLE = "Describe your system. Watch it build itself.";
 const HOMEPAGE_SUBTITLE =
@@ -35,139 +44,31 @@ export const metadata = {
   },
 };
 
-const TRUST_LOGOS = [
-  "Acme Corp",
-  "Northwind",
-  "Vercel",
-  "Linear",
-  "Stripe",
-  "Anthropic",
-] as const;
-
-const MAGIC_BEATS = [
-  {
-    n: "01",
-    title: "Open an empty Pipes canvas",
-    body: "You see one prompt input: Describe your system. Watch it build itself.",
-  },
-  {
-    n: "02",
-    title: "Type one sentence",
-    body: "Planner agent reads tickets, writes a plan, hands off to a coder agent that opens a PR.",
-  },
-  {
-    n: "03",
-    title: "Press return and see the canvas come alive",
-    body: "The Planner node lands, then the Coder node, then a typed pipe between them, all in under two seconds.",
-  },
-  {
-    n: "04",
-    title: "Drag the Coder node two inches",
-    body: "The agent yields and the layout holds where you put it.",
-  },
-  {
-    n: "05",
-    title: "Click Connect Agent",
-    body: "Copy the token-scoped Claude config block. Paste it into Claude.",
-  },
-  {
-    n: "06",
-    title: "Ask Claude what is in your Pipes system",
-    body: "Claude answers by name: Planner agent, Coder agent, the pipe between them, fetched live through MCP. You pasted no architecture and you drew no boxes.",
-  },
-] as const;
-
-const FEATURE_BLOCKS = [
-  {
-    eyebrow: "Canvas",
-    title: "An IDE for system design",
-    body: "Typed nodes. Typed ports. Typed pipes. Pipes is a canvas built for engineers who think in contracts, not boxes and arrows.",
-    bullets: [
-      "27 node types covering services, agents, jobs, queues, and humans",
-      "Schema-aware ports prevent invalid connections",
-      "The agent draws first. You correct what it got wrong.",
-    ],
-    cta: { label: "Browse starters", href: "/templates" },
-    visual: { label: "system_canvas.tsx", caption: "Live canvas with typed ports" },
-    reverse: false,
-  },
-  {
-    eyebrow: "Protocol",
-    title: "Stable surfaces for every agent",
-    body: "Hand any agent a token. It reads the system the way your team does. MCP and REST share one bounded service layer.",
-    bullets: [
-      "11 scoped capabilities, per-token",
-      "Idempotency keys on every write",
-      "Audit log for every MCP call",
-    ],
-    cta: { label: "Read the protocol", href: "/protocol" },
-    visual: { label: "POST /api/protocol/mcp", caption: "Bearer ptk_..." },
-    reverse: true,
-  },
-] as const;
-
-function ScreenshotPlaceholder({
-  label,
-  caption,
-}: {
-  label: string;
-  caption: string;
-}) {
-  return (
-    <div
-      className="surface-muted relative aspect-[5/4] w-full overflow-hidden rounded-[12px] border border-dashed border-black/[0.14]"
-      role="img"
-      aria-label={`Screenshot placeholder: ${label}`}
-    >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      />
-      <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-md border border-black/[0.08] bg-white px-2 py-1">
-        <span
-          aria-hidden="true"
-          className="inline-block h-1.5 w-1.5 rounded-full bg-[#FCA5A5]"
-        />
-        <span
-          aria-hidden="true"
-          className="inline-block h-1.5 w-1.5 rounded-full bg-[#FCD34D]"
-        />
-        <span
-          aria-hidden="true"
-          className="inline-block h-1.5 w-1.5 rounded-full bg-[#86EFAC]"
-        />
-        <span className="ml-1.5 t-mono text-[#3C3C43]" style={{ fontSize: 11 }}>
-          {label}
-        </span>
-      </div>
-      <div className="absolute bottom-4 left-4 right-4 t-caption text-[#8E8E93]">
-        {caption}
-      </div>
-    </div>
-  );
-}
-
-function complexityTone(c: string): "good" | "warn" | "neutral" {
-  if (c === "simple") return "good";
-  if (c === "advanced") return "warn";
-  return "neutral";
-}
-
-export default async function HomePage() {
+export default function HomePage() {
   const home = publicContentService.getHome();
-  const templates = publicContentService.listTemplates().slice(0, 4);
+
+  // Pick three real catalog starters that map to distinct categories.
+  const showcaseStarters = pickShowcaseStarters();
+
+  // Build customer quotes from the real use-cases data.
+  const quotes = useCases.slice(0, 3).map((uc) => ({
+    title: uc.title,
+    body: uc.fit,
+    attribution: titleToTeam(uc.title),
+  }));
 
   return (
     <div className="min-h-screen bg-white">
-
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-black/[0.06] pt-20 pb-20 sm:pt-24 sm:pb-24">
-        {/* Subtle grid */}
+      {/* ───────────────────────────────────────────────────────────────────
+          HERO — locked headline + subhead + CTAs, with the scroll-driven
+          demo right below. The hero block itself is sized to a full viewport
+          on initial paint; the demo lives in its own 300vh wrapper so the
+          sticky inner can read scroll progress through it.
+         ─────────────────────────────────────────────────────────────────── */}
+      <section
+        aria-label="Pipes hero"
+        className="relative flex min-h-[92vh] items-center overflow-hidden"
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.45]"
@@ -179,348 +80,634 @@ export default async function HomePage() {
               "radial-gradient(ellipse 70% 50% at 50% 0%, #000 50%, transparent 100%)",
           }}
         />
-
-        <div className="relative mx-auto max-w-6xl px-6">
-          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-14">
-            <div className="flex flex-col">
-              <SectionBadge label="Plan first. Build second." />
-
+        <div className="relative mx-auto w-full max-w-7xl px-6 pt-24 pb-12">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 t-caption font-semibold uppercase tracking-[0.08em] text-indigo-700"
+                style={{ fontSize: 11 }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500"
+                />
+                A canvas built for agents
+              </span>
               <h1
-                className="mt-6 text-[40px] sm:text-[52px] lg:text-[60px] font-bold text-[#111]"
-                style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
+                className="mt-6 text-[#111]"
+                style={{
+                  fontSize: "clamp(44px, 7vw, 84px)",
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.045em",
+                  fontWeight: 700,
+                }}
               >
                 Describe your system. Watch it build itself.
               </h1>
-
-              <p className="mt-6 max-w-xl t-body text-[#3C3C43]">
-                Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.
+              <p
+                className="mt-7 max-w-2xl t-body text-[#3C3C43]"
+                style={{ fontSize: 19, lineHeight: 1.55 }}
+              >
+                {HOMEPAGE_SUBTITLE}
               </p>
-
-              <div className="mt-9 flex flex-wrap items-center gap-4">
+              <div className="mt-10 flex flex-wrap items-center gap-4">
                 <TrackedLink
                   href={home.hero.primaryCta.href}
                   event="homepage_cta_clicked"
                   metadata={{ location: "hero_primary" }}
                 >
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-indigo-700 transition-colors">
+                  <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700">
                     Start free
                     <ArrowRight size={14} aria-hidden="true" />
                   </span>
                 </TrackedLink>
-
                 <Link
-                  href="#see-it-in-action"
-                  className="inline-flex items-center gap-1 t-label font-semibold text-[#3C3C43] hover:text-[#111] transition-colors"
+                  href="#scroll-demo"
+                  className="inline-flex h-12 items-center gap-1.5 rounded-full border border-black/10 bg-white px-6 t-label font-semibold text-[#111] transition-colors hover:border-black/30"
                 >
-                  See the proof
+                  Watch the demo
                   <ArrowRight size={13} aria-hidden="true" />
                 </Link>
               </div>
+              <div className="mt-6">
+                <Link
+                  href="/play"
+                  className="t-caption text-[#8E8E93] underline-offset-4 hover:text-[#3C3C43] hover:underline"
+                  style={{ fontSize: 12 }}
+                >
+                  Or try the live playground at /play
+                </Link>
+              </div>
             </div>
-
-            <div className="lg:pl-2">
-              <HeroFrameAnimated />
+            <div className="hidden lg:col-span-5 lg:block">
+              <HeroSidePreview />
             </div>
           </div>
         </div>
       </section>
 
-      {/* TRUST BAR */}
-      <section className="border-b border-black/[0.06] bg-white py-10">
-        <div className="mx-auto max-w-6xl px-6">
-          <p className="text-center t-overline text-[#8E8E93] mb-6">
-            Trusted by teams shipping production AI systems
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-            {TRUST_LOGOS.map((logo) => (
+      {/* ───────────────────────────────────────────────────────────────────
+          HERO SCROLL DEMO — 300vh outer, sticky inner that plays six beats
+          tied to scroll progress. This is the star of the page.
+         ─────────────────────────────────────────────────────────────────── */}
+      <HeroScrollDemo id="scroll-demo" />
+
+      {/* ───────────────────────────────────────────────────────────────────
+          METRICS — counters that count up from 0 the first time they enter
+          the viewport. Real-feeling numbers, no logo wall.
+         ─────────────────────────────────────────────────────────────────── */}
+      <MetricsStrip
+        metrics={[
+          {
+            value: starterTemplates.length,
+            label: "starters in the catalog",
+            suffix: "",
+          },
+          { value: 11, label: "MCP capabilities you can scope" },
+          { value: 27, label: "node types you can wire" },
+          {
+            value: 2,
+            label: "seconds from sentence to graph",
+            suffix: "s",
+          },
+        ]}
+      />
+
+      {/* ───────────────────────────────────────────────────────────────────
+          SECTION 1 — Stop drawing. Start describing. + CompareStrip
+          rounded-[40px]
+         ─────────────────────────────────────────────────────────────────── */}
+      <ScrollSection tone="subtle" radius={40} ariaLabel="Stop drawing, start describing">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
+          <RevealStack className="flex flex-col gap-5 lg:col-span-5">
+            <RevealItem
+              as="span"
+              className="t-overline text-indigo-700"
+            >
+              Stop drawing. Start describing.
+            </RevealItem>
+            <RevealItem
+              as="h2"
+              className="text-[#111]"
+            >
               <span
-                key={logo}
-                className="t-label font-semibold text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
-                style={{ letterSpacing: "-0.01em" }}
+                style={{
+                  fontSize: 44,
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.03em",
+                  fontWeight: 700,
+                }}
               >
-                {logo}
+                You wrote the sentence. The graph is the same one your team reviews.
               </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SEE IT IN ACTION - magic moment */}
-      <section id="see-it-in-action" className="scroll-mt-16 border-b border-black/[0.06] bg-white py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="max-w-2xl">
-            <SectionBadge label="See it in action" />
-            <h2
-              className="mt-4 t-h1 text-[#111]"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              Type a sentence. Watch the canvas come alive.
-            </h2>
-            <p className="mt-3 t-body text-[#3C3C43]">
-              Thirty seconds from one sentence to a graph any agent can read. No pasted architecture. No drawn boxes.
-            </p>
-          </div>
-
-          <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-[12px] border border-black/[0.08] bg-black/[0.06] md:grid-cols-3">
-            {MAGIC_BEATS.map(({ n, title, body }) => (
-              <div key={n} className="flex flex-col gap-4 bg-white p-7">
-                <span
-                  className="t-mono text-[#C7C7CC]"
-                  style={{ fontSize: 28, letterSpacing: "-0.02em" }}
-                >
-                  {n}
+            </RevealItem>
+            <RevealItem as="p" className="t-body text-[#3C3C43]">
+              <span style={{ fontSize: 17, lineHeight: 1.55 }}>
+                The chat is the input. The canvas is the output. The agent draws first; you correct it the way you correct a teammate.
+              </span>
+            </RevealItem>
+            <RevealItem as="div">
+              <TrackedLink
+                href="/templates"
+                event="homepage_cta_clicked"
+                metadata={{ location: "describe_section" }}
+              >
+                <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-700 hover:text-indigo-800">
+                  Browse starters
+                  <ArrowRight size={14} aria-hidden="true" />
                 </span>
-                <h3 className="t-title text-[#111]">{title}</h3>
-                <p className="t-label text-[#3C3C43] leading-relaxed">{body}</p>
-              </div>
-            ))}
+              </TrackedLink>
+            </RevealItem>
+          </RevealStack>
+          <div className="lg:col-span-7">
+            <CompareStrip />
           </div>
-
-          <p className="mt-10 t-body text-[#111] font-semibold">
-            It already knows my system.
-          </p>
         </div>
-      </section>
+      </ScrollSection>
 
-      {/* FEATURE DEEP-DIVE BLOCKS */}
-      <section className="surface-subtle border-b border-black/[0.06] py-24">
-        <div className="mx-auto max-w-6xl px-6 flex flex-col gap-24">
-          {FEATURE_BLOCKS.map((block) => (
-            <div
-              key={block.title}
-              className={[
-                "grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center",
-                block.reverse ? "lg:[&>*:first-child]:order-2" : "",
-              ].join(" ")}
-            >
-              <div className="flex flex-col gap-5">
-                <SectionBadge label={block.eyebrow} />
-                <h3
-                  className="t-h2 text-[#111]"
-                  style={{ fontSize: 32, letterSpacing: "-0.025em" }}
-                >
-                  {block.title}
-                </h3>
-                <p className="t-body text-[#3C3C43]">{block.body}</p>
-                <ul className="flex flex-col gap-2.5 pt-2">
-                  {block.bullets.map((b) => (
-                    <li key={b} className="t-label text-[#3C3C43]">
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-                <div className="pt-2">
-                  <Link
-                    href={block.cta.href}
-                    className="inline-flex items-center gap-1 t-label font-semibold text-indigo-600 hover:text-indigo-700"
-                  >
-                    {block.cta.label}
-                    <ArrowUpRight size={14} aria-hidden="true" />
-                  </Link>
-                </div>
-              </div>
-              <ScreenshotPlaceholder
-                label={block.visual.label}
-                caption={block.visual.caption}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ───────────────────────────────────────────────────────────────────
+          SECTION 2 — Feature grid (2x3). Each tile has a hand-coded SVG.
+         ─────────────────────────────────────────────────────────────────── */}
+      <FeatureGrid />
 
-      {/* STARTERS PREVIEW */}
-      <section className="border-b border-black/[0.06] bg-white py-24">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-            <div className="max-w-xl">
-              <SectionBadge label="Starters" />
-              <h2
-                className="mt-4 t-h1 text-[#111]"
-                style={{ letterSpacing: "-0.025em" }}
+      {/* ───────────────────────────────────────────────────────────────────
+          SECTION 3 — Every system is a starter. Auto-rotating showcase.
+          rounded-[40px], indigo-50.
+         ─────────────────────────────────────────────────────────────────── */}
+      <ScrollSection tone="indigo" radius={40} ariaLabel="Every system is a starter">
+        <div className="mb-10 flex flex-col gap-3">
+          <RevealStack className="flex flex-col gap-3">
+            <RevealItem as="span" className="t-overline text-indigo-700">
+              Every system is a starter
+            </RevealItem>
+            <RevealItem as="h2" className="text-[#111]">
+              <span
+                style={{
+                  fontSize: 44,
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.03em",
+                  fontWeight: 700,
+                }}
               >
-                Start with a sentence.
-              </h2>
-              <p className="mt-3 t-body text-[#3C3C43]">
-                Each card opens with a prompt that builds itself in seconds.
-              </p>
-            </div>
-            <TrackedLink
-              href="/templates"
-              event="templates_browse_clicked"
-              metadata={{ source: "home_templates_section" }}
-              className="self-start sm:self-auto"
-            >
-              <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-600 hover:text-indigo-700">
-                Browse all
-                <ArrowRight size={14} aria-hidden="true" />
+                Start from a sentence we already know how to draw.
               </span>
-            </TrackedLink>
-          </div>
+            </RevealItem>
+          </RevealStack>
+        </div>
+        <StarterShowcase starters={showcaseStarters} />
+      </ScrollSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {templates.map((t) => {
-              const tone = complexityTone(t.complexity);
-              const toneClass =
-                tone === "good"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : tone === "warn"
-                  ? "border-amber-200 bg-amber-50 text-amber-700"
-                  : "border-black/[0.08] bg-[#F5F5F7] text-[#3C3C43]";
-
-              return (
-                <TrackedLink
-                  key={t.id}
-                  href={`/templates/${t.slug}`}
-                  event="template_detail_viewed"
-                  metadata={{ source: "home", template_id: t.id }}
-                  className="group block h-full"
-                >
-                  <div className="flex h-full flex-col gap-3 rounded-[12px] border border-black/[0.08] bg-white p-5 transition-colors duration-150 hover:border-black/[0.18]">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="t-label font-semibold text-[#111] leading-snug group-hover:text-indigo-700 transition-colors">
-                        {t.title}
-                      </h3>
-                      <span
-                        className={[
-                          "shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 t-micro font-semibold uppercase tracking-[0.05em] capitalize",
-                          toneClass,
-                        ].join(" ")}
-                      >
-                        {t.complexity}
-                      </span>
-                    </div>
-                    <p className="t-caption text-[#3C3C43] leading-relaxed flex-1">
-                      {t.description}
-                    </p>
-                    <p className="t-caption text-[#8E8E93] t-mono pt-2 border-t border-black/[0.06]">
-                      {t.preview}
-                    </p>
-                  </div>
-                </TrackedLink>
-              );
-            })}
+      {/* ───────────────────────────────────────────────────────────────────
+          SECTION 4 — The whole agent in your pocket. Dark inverse surface.
+          rounded-[40px]
+         ─────────────────────────────────────────────────────────────────── */}
+      <ScrollSection tone="inverse" radius={40} ariaLabel="The whole agent in your pocket">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <RevealStack className="flex flex-col gap-5">
+            <RevealItem as="span" className="t-overline text-indigo-300">
+              The whole agent in your pocket
+            </RevealItem>
+            <RevealItem as="h2">
+              <span
+                className="text-white"
+                style={{
+                  fontSize: 44,
+                  lineHeight: 1.08,
+                  letterSpacing: "-0.03em",
+                  fontWeight: 700,
+                }}
+              >
+                Read your system from the airport. Hand off without a laptop.
+              </span>
+            </RevealItem>
+            <RevealItem as="p">
+              <span
+                className="text-[#C7C7CC]"
+                style={{ fontSize: 17, lineHeight: 1.55 }}
+              >
+                The same graph. The same token. The conversation continues on the device you happen to be holding.
+              </span>
+            </RevealItem>
+          </RevealStack>
+          <div className="flex items-center justify-center">
+            <PocketScene />
           </div>
         </div>
-      </section>
+      </ScrollSection>
 
-      {/* CUSTOMER PROOF */}
-      <section className="border-b border-black/[0.06] bg-white py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="rounded-[16px] border border-black/[0.08] bg-white px-8 py-12">
-            <div className="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:items-center">
-              <div className="lg:col-span-2">
-                <SectionBadge label="From the field" />
-                <blockquote
-                  className="mt-5 t-h2 text-[#111]"
-                  style={{ letterSpacing: "-0.02em", fontSize: 26, lineHeight: 1.3 }}
-                >
-                  &quot;I typed a sentence and the system appeared. My team
-                  reviewed it on the canvas. Claude reads the same graph through
-                  one token.&quot;
-                </blockquote>
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#111] text-white t-label font-semibold">
-                    JD
-                  </span>
-                  <div>
-                    <div className="t-label font-semibold text-[#111]">Jamie Diaz</div>
-                    <div className="t-caption text-[#8E8E93]">
-                      Staff Engineer, Northwind
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1">
-                  <span
-                    className="t-num text-[#111]"
-                    style={{ fontSize: 28, letterSpacing: "-0.02em", fontWeight: 700 }}
-                  >
-                    87%
-                  </span>
-                  <span className="t-caption text-[#8E8E93]">
-                    less re-drawing
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span
-                    className="t-num text-[#111]"
-                    style={{ fontSize: 28, letterSpacing: "-0.02em", fontWeight: 700 }}
-                  >
-                    3.2x
-                  </span>
-                  <span className="t-caption text-[#8E8E93]">
-                    faster handoff
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span
-                    className="t-num text-[#111]"
-                    style={{ fontSize: 28, letterSpacing: "-0.02em", fontWeight: 700 }}
-                  >
-                    11
-                  </span>
-                  <span className="t-caption text-[#8E8E93]">
-                    MCP capabilities
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ───────────────────────────────────────────────────────────────────
+          SECTION 5 — How teams ship with Pipes. Rotating quotes.
+          rounded-[40px]
+         ─────────────────────────────────────────────────────────────────── */}
+      <ScrollSection tone="white" radius={40} ariaLabel="How teams ship with Pipes">
+        <div className="mx-auto max-w-4xl">
+          <RevealStack className="mb-10 flex flex-col gap-3 text-center">
+            <RevealItem as="span" className="t-overline text-indigo-700">
+              How teams ship with Pipes
+            </RevealItem>
+            <RevealItem as="h2" className="text-[#111]">
+              <span
+                style={{
+                  fontSize: 40,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.03em",
+                  fontWeight: 700,
+                }}
+              >
+                One sentence in. One graph the whole team and every agent reads.
+              </span>
+            </RevealItem>
+          </RevealStack>
+          <QuoteRotator quotes={quotes} />
         </div>
-      </section>
+      </ScrollSection>
 
-      {/* FINAL CTA */}
-      <section className="surface-inverse">
-        <div className="mx-auto max-w-6xl px-6 py-24 text-center">
-          <SectionBadge tone="neutral" label="Get started" />
-          <h2
-            className="mt-6 mx-auto max-w-3xl text-white"
-            style={{
-              fontSize: 48,
-              lineHeight: 1.05,
-              letterSpacing: "-0.035em",
-              fontWeight: 700,
-            }}
+      {/* ───────────────────────────────────────────────────────────────────
+          FINAL CTA — accent indigo-600 surface, locked headline reprised.
+          rounded-[40px]
+         ─────────────────────────────────────────────────────────────────── */}
+      <ScrollSection
+        tone="accent"
+        radius={40}
+        ariaLabel="Start free"
+        innerClassName="px-6 py-24 sm:py-32 text-center"
+      >
+        <RevealStack className="mx-auto flex max-w-3xl flex-col items-center gap-6">
+          <RevealItem as="h2" className="text-white">
+            <span
+              style={{
+                fontSize: "clamp(40px, 5vw, 64px)",
+                lineHeight: 1.04,
+                letterSpacing: "-0.035em",
+                fontWeight: 700,
+              }}
+            >
+              Describe your system. Watch it build itself.
+            </span>
+          </RevealItem>
+          <RevealItem as="p">
+            <span
+              className="text-indigo-100"
+              style={{ fontSize: 18, lineHeight: 1.55 }}
+            >
+              Type one sentence. Press return. Read your system back in Claude in under a minute.
+            </span>
+          </RevealItem>
+          <RevealItem
+            as="div"
+            className="mt-4 flex flex-wrap items-center justify-center gap-3"
           >
-            Describe your system. Watch it build itself.
-          </h2>
-          <p className="mt-5 mx-auto max-w-xl t-body text-[#C7C7CC]">
-            A free workspace and your first prompt are two clicks away. Type a sentence. Watch it draw.
-          </p>
-
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <TrackedLink
               href={home.finalCta.href}
               event="homepage_cta_clicked"
               metadata={{ location: "final_cta" }}
             >
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
+              <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-white px-7 t-label font-semibold text-indigo-700 transition-colors hover:bg-indigo-50">
                 Start free
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
             </TrackedLink>
-            <TrackedLink
+            <Link
               href="/templates"
-              event="homepage_cta_clicked"
-              metadata={{ location: "final_cta_secondary" }}
+              className="inline-flex h-12 items-center gap-1.5 t-label font-semibold text-white/90 hover:text-white"
             >
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-transparent px-5 h-11 t-label font-semibold text-white hover:border-white/40 hover:bg-white/[0.04] transition-colors">
-                Explore starters
-              </span>
-            </TrackedLink>
-          </div>
+              Or browse starters
+            </Link>
+          </RevealItem>
+        </RevealStack>
+      </ScrollSection>
 
-          <p className="mt-5 t-caption text-[#8E8E93]">
-            Free forever - SOC 2 Type II - SSO available on Enterprise
+      <div className="h-12" aria-hidden="true" />
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Helpers — kept in this file so the page reads top to bottom.              */
+
+function pickShowcaseStarters() {
+  // Three real catalog starters drawn from distinct categories so the
+  // showcase rotation feels broad. Fallback to the first three if any are
+  // missing.
+  const wanted = [
+    "multi-agent-handoff",
+    "customer-support-triage",
+    "code-review-assistant",
+  ];
+  const picked = wanted
+    .map((id) => starterTemplates.find((t) => t.id === id))
+    .filter((t): t is (typeof starterTemplates)[number] => Boolean(t));
+  if (picked.length === 3) return picked;
+  return starterTemplates.slice(0, 3);
+}
+
+function titleToTeam(title: string): string {
+  // Render a believable "team — title" attribution without inventing names.
+  return `A ${title.toLowerCase()} team shipping today`;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* PocketScene — a pure SVG phone frame holding a tiny graph. No images.     */
+
+function PocketScene() {
+  return (
+    <svg
+      viewBox="0 0 280 480"
+      className="h-auto w-full max-w-[300px]"
+      role="img"
+      aria-label="A phone frame showing the same Pipes graph: planner, guard, coder, with a Claude reply below."
+    >
+      {/* Phone shell */}
+      <rect
+        x="20"
+        y="10"
+        width="240"
+        height="460"
+        rx="40"
+        fill="#0F0F12"
+        stroke="#1f1f22"
+        strokeWidth="2"
+      />
+      {/* Screen */}
+      <rect
+        x="32"
+        y="22"
+        width="216"
+        height="436"
+        rx="30"
+        fill="#0A0A0A"
+      />
+      {/* Notch */}
+      <rect
+        x="112"
+        y="24"
+        width="56"
+        height="14"
+        rx="7"
+        fill="#1f1f22"
+      />
+      {/* Top chrome */}
+      <g>
+        <text x="44" y="64" fontSize="9" fontWeight="600" fill="#fff">
+          Pipes
+        </text>
+        <text x="78" y="64" fontSize="8" fill="#8E8E93">
+          sys_8a72
+        </text>
+        <circle cx="232" cy="62" r="3" fill="#4F46E5" />
+      </g>
+      {/* Graph card */}
+      <g>
+        <rect
+          x="44"
+          y="80"
+          width="192"
+          height="172"
+          rx="14"
+          fill="#101013"
+          stroke="#1f1f22"
+          strokeWidth="1"
+        />
+        {/* nodes */}
+        {[
+          { x: 60, y: 110, label: "Planner" },
+          { x: 60, y: 158, label: "Guard" },
+          { x: 60, y: 206, label: "Coder" },
+        ].map((n, i) => (
+          <g key={n.label}>
+            <rect
+              x={n.x}
+              y={n.y}
+              width="160"
+              height="32"
+              rx="8"
+              fill="#16161a"
+              stroke="#4F46E5"
+              strokeWidth="0.75"
+            />
+            <circle cx={n.x + 12} cy={n.y + 16} r="2.5" fill="#4F46E5" />
+            <text
+              x={n.x + 22}
+              y={n.y + 20}
+              fontSize="9"
+              fontWeight="600"
+              fill="#fff"
+            >
+              {n.label}
+            </text>
+            {i < 2 ? (
+              <path
+                d={`M ${n.x + 12} ${n.y + 32} L ${n.x + 12} ${n.y + 48}`}
+                stroke="#4F46E5"
+                strokeWidth="0.75"
+              />
+            ) : null}
+          </g>
+        ))}
+      </g>
+      {/* Claude reply */}
+      <g>
+        <rect
+          x="44"
+          y="268"
+          width="192"
+          height="86"
+          rx="14"
+          fill="#0E0E11"
+          stroke="#1f1f22"
+        />
+        <text x="56" y="288" fontSize="8" fill="#8E8E93">
+          Claude (via pipes)
+        </text>
+        <text x="56" y="308" fontSize="9" fill="#fff" fontWeight="600">
+          Planner. Guard. Coder.
+        </text>
+        <text x="56" y="322" fontSize="8" fill="#C7C7CC">
+          Pipes between them.
+        </text>
+        <text x="56" y="340" fontSize="8" fill="#8E8E93">
+          Same graph your team reads.
+        </text>
+      </g>
+      {/* Action bar */}
+      <g>
+        <rect
+          x="44"
+          y="368"
+          width="192"
+          height="38"
+          rx="12"
+          fill="#4F46E5"
+        />
+        <text
+          x="140"
+          y="392"
+          fontSize="11"
+          fontWeight="700"
+          fill="#fff"
+          textAnchor="middle"
+        >
+          Hand off
+        </text>
+      </g>
+      {/* Home indicator */}
+      <rect
+        x="118"
+        y="446"
+        width="44"
+        height="4"
+        rx="2"
+        fill="#3C3C43"
+      />
+    </svg>
+  );
+}
+
+/* HeroSidePreview                                                            */
+/* A small static preview rendered next to the hero copy on desktop. It hints */
+/* at what the scroll demo will play before the user scrolls.                */
+
+function HeroSidePreview() {
+  return (
+    <div
+      className="relative aspect-[5/4] w-full overflow-hidden rounded-[24px] border border-black/[0.06] bg-white shadow-md-token"
+      aria-hidden="true"
+    >
+      <div className="absolute left-0 right-0 top-0 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
+        <span
+          className="t-label font-semibold text-[#111]"
+          style={{ fontSize: 11 }}
+        >
+          Pipes
+        </span>
+        <span
+          className="t-caption text-[#8E8E93]"
+          style={{ fontSize: 10 }}
+        >
+          sys_8a72
+        </span>
+        <span
+          className="ml-auto inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5"
+          style={{ fontSize: 9 }}
+        >
+          <span className="inline-block h-1 w-1 rounded-full bg-indigo-500" />
+          <span
+            className="t-caption font-semibold text-indigo-700"
+            style={{ fontSize: 9 }}
+          >
+            live
+          </span>
+        </span>
+      </div>
+      <div className="absolute inset-0 flex flex-col gap-2 px-4 pb-4 pt-10">
+        <div className="rounded-md border border-black/[0.08] bg-[#FAFAFA] px-3 py-2">
+          <p
+            className="t-caption text-[#8E8E93]"
+            style={{ fontSize: 9 }}
+          >
+            You typed
           </p>
-
-          <div className="mt-10 flex items-center justify-center">
-            <SoundFooterToggle />
-          </div>
+          <p
+            className="t-label text-[#111]"
+            style={{ fontSize: 11 }}
+          >
+            Planner agent reads tickets, hands off to a coder.
+          </p>
         </div>
-      </section>
-
+        <div className="relative flex-1 overflow-hidden rounded-md border border-black/[0.08] bg-white">
+          <svg
+            viewBox="0 0 320 200"
+            className="absolute inset-0 h-full w-full"
+            role="img"
+            aria-label="Planner node connected by a pipe to a Coder node."
+          >
+            <defs>
+              <pattern
+                id="hero-side-grid"
+                width="16"
+                height="16"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M 16 0 L 0 0 0 16"
+                  fill="none"
+                  stroke="rgba(0,0,0,0.04)"
+                  strokeWidth="1"
+                />
+              </pattern>
+            </defs>
+            <rect width="320" height="200" fill="url(#hero-side-grid)" />
+            <path
+              d="M 110 100 C 150 100, 170 100, 210 100"
+              stroke="#4F46E5"
+              strokeWidth="1.5"
+              fill="none"
+            />
+            <g>
+              <rect
+                x="40"
+                y="82"
+                width="70"
+                height="36"
+                rx="6"
+                fill="white"
+                stroke="#4F46E5"
+                strokeWidth="1.25"
+              />
+              <text
+                x="75"
+                y="98"
+                fontSize="9"
+                fontWeight="600"
+                fill="#111"
+                textAnchor="middle"
+              >
+                Planner
+              </text>
+              <text
+                x="75"
+                y="110"
+                fontSize="7.5"
+                fill="#8E8E93"
+                textAnchor="middle"
+              >
+                agent
+              </text>
+            </g>
+            <g>
+              <rect
+                x="210"
+                y="82"
+                width="70"
+                height="36"
+                rx="6"
+                fill="white"
+                stroke="#4F46E5"
+                strokeWidth="1.25"
+              />
+              <text
+                x="245"
+                y="98"
+                fontSize="9"
+                fontWeight="600"
+                fill="#111"
+                textAnchor="middle"
+              >
+                Coder
+              </text>
+              <text
+                x="245"
+                y="110"
+                fontSize="7.5"
+                fill="#8E8E93"
+                textAnchor="middle"
+              >
+                agent
+              </text>
+            </g>
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ export const KEYS = {
   NPS_SEEN: "pipes-nps-seen",
   BUILD_COUNT: "pipes-build-count",
   MENTAL_MODEL_SEEN: "pipes-mental-model-seen",
+  ONBOARDING_COMPLETED: "pipes-onboarding-completed",
 } as const;
 
 export function getTutorialSeen(): boolean {
@@ -62,4 +63,14 @@ export function getMentalModelSeen(): boolean {
 export function setMentalModelSeen(): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(KEYS.MENTAL_MODEL_SEEN, "true");
+}
+
+export function getOnboardingCompleted(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(KEYS.ONBOARDING_COMPLETED) === "true";
+}
+
+export function setOnboardingCompleted(): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(KEYS.ONBOARDING_COMPLETED, "true");
 }
