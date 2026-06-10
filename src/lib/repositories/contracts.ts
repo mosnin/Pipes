@@ -73,7 +73,7 @@ export interface SystemsRepository {
 
 export interface GraphRepository {
   addNode(input: { systemId: string; type: string; title: string; description?: string; x: number; y: number }): Promise<string>;
-  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }): Promise<void>;
+  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number }; config?: Record<string, unknown> }): Promise<void>;
   deleteNode(nodeId: string): Promise<void>;
   addPipe(input: { systemId: string; fromNodeId: string; toNodeId: string }): Promise<string>;
   deletePipe(pipeId: string): Promise<void>;
@@ -113,6 +113,26 @@ export type FeedbackStatus = "new" | "reviewing" | "closed";
 export type FeedbackCategory = "bug" | "ux" | "feature_request" | "reliability" | "billing" | "other";
 export type FeedbackSeverity = "low" | "medium" | "high";
 
+export type FeedbackEntryKind = "thumbs" | "nps" | "free_text";
+export type FeedbackVerdict = "up" | "down";
+
+export type FeedbackEntryRecord = {
+  id: string;
+  userId: string;
+  workspaceId?: string;
+  kind: FeedbackEntryKind;
+  targetType?: string;
+  targetId?: string;
+  conversationId?: string;
+  turnId?: string;
+  verdict?: FeedbackVerdict;
+  score?: number;
+  surface?: string;
+  text?: string;
+  note?: string;
+  createdAt: string;
+};
+
 export interface FeedbackRepository {
   create(input: {
     workspaceId: string;
@@ -145,6 +165,92 @@ export interface FeedbackRepository {
     updatedAt: string;
   }>>;
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
+  record(input: Omit<FeedbackEntryRecord, "id" | "createdAt">): Promise<FeedbackEntryRecord>;
+  listEntries(opts?: { userId?: string; kind?: FeedbackEntryKind; limit?: number }): Promise<FeedbackEntryRecord[]>;
+}
+
+export type AgentTurnToolCallRecord = {
+  id: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  ok: boolean;
+  action?: Record<string, unknown>;
+  error?: string;
+};
+
+export type AgentConversationRecord = {
+  id: string;
+  systemId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CostSnapshot = {
+  tokensIn?: number;
+  tokensOut?: number;
+  dollars?: number;
+  model?: string;
+  provider?: string;
+};
+
+export type AgentTurnRecord = {
+  id: string;
+  conversationId: string;
+  index: number;
+  prompt: string;
+  toolCalls: AgentTurnToolCallRecord[];
+  finalMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  cancelled: boolean;
+  costSnapshot?: CostSnapshot;
+};
+
+export interface AgentConversationsRepository {
+  createConversation(input: { systemId: string; userId: string }): Promise<AgentConversationRecord>;
+  getConversation(conversationId: string): Promise<AgentConversationRecord | null>;
+  listConversations(input: { userId: string; systemId: string }): Promise<AgentConversationRecord[]>;
+  touchConversation(conversationId: string): Promise<void>;
+  createTurn(input: { conversationId: string; index: number; prompt: string; startedAt: string }): Promise<AgentTurnRecord>;
+  listTurns(conversationId: string): Promise<AgentTurnRecord[]>;
+  appendToolCall(input: { turnId: string; toolCall: AgentTurnToolCallRecord; costSnapshot?: CostSnapshot }): Promise<void>;
+  completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean; costSnapshot?: CostSnapshot }): Promise<void>;
+}
+
+export type MetricsSampleRecord = {
+  id: string;
+  kind: "latency" | "counter" | "error";
+  label: string;
+  value: number;
+  tags?: Record<string, string>;
+  ts: string;
+};
+
+export type AggregatedMetricsResult = {
+  latencyHourly: Array<{ ts: string; p50: number; p95: number }>;
+  buildsDaily: Array<{ date: string; count: number }>;
+  errorsHourly: Array<{ ts: string; count: number }>;
+  costWeekly: Array<{ date: string; tokensIn: number; tokensOut: number }>;
+};
+
+export interface MetricsRepository {
+  recordSample(input: { kind: "latency" | "counter" | "error"; label: string; value: number; tags?: Record<string, string>; ts: string }): Promise<void>;
+  listSamples(input?: { kind?: "latency" | "counter" | "error"; label?: string; sinceTs?: string; limit?: number }): Promise<MetricsSampleRecord[]>;
+  listAggregated(opts?: { nowMs?: number; latencyHours?: number; buildDays?: number; errorHours?: number; costDays?: number; sampleCap?: number }): Promise<AggregatedMetricsResult>;
+}
+
+export type AgentRunnerMetricRecord = {
+  userId: string;
+  workspaceId: string;
+  monthKey: string;
+  buildsUsed: number;
+  updatedAt: string;
+};
+
+export interface AgentRunnerMetricsRepository {
+  getMonthly(input: { userId: string; monthKey: string }): Promise<AgentRunnerMetricRecord | null>;
+  incrementMonthly(input: { userId: string; workspaceId: string; monthKey: string; delta: number }): Promise<AgentRunnerMetricRecord>;
 }
 
 export type RepositorySet = {
@@ -263,6 +369,9 @@ export type RepositorySet = {
     addEscalationRecord(input: Omit<EscalationRecord, "id">): Promise<EscalationRecord>;
     listEscalationRecords(input: { runId: string }): Promise<EscalationRecord[]>;
   };
+  agentConversations: AgentConversationsRepository;
+  agentRunnerMetrics: AgentRunnerMetricsRepository;
+  metrics: MetricsRepository;
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;

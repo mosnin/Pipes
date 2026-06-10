@@ -432,5 +432,52 @@ export default defineSchema({
     strategyId: v.optional(v.id("builder_strategies")),
     summary: v.string(),
     createdAt: v.string()
-  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"])
+  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"]),
+  agent_conversations: defineTable({
+    systemId: v.id("systems"),
+    userId: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_system", ["systemId"]).index("by_user_system", ["userId", "systemId"]),
+  agent_turns: defineTable({
+    conversationId: v.id("agent_conversations"),
+    index: v.number(),
+    prompt: v.string(),
+    toolCalls: v.array(v.object({
+      id: v.string(),
+      toolName: v.string(),
+      arguments: v.any(),
+      ok: v.boolean(),
+      action: v.optional(v.any()),
+      error: v.optional(v.string())
+    })),
+    finalMessage: v.optional(v.string()),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string()),
+    cancelled: v.boolean()
+  }).index("by_conversation", ["conversationId"]),
+  agent_runner_metrics: defineTable({
+    userId: v.string(),
+    workspaceId: v.string(),
+    monthKey: v.string(),
+    buildsUsed: v.number(),
+    updatedAt: v.string()
+  }).index("by_user_month", ["userId", "monthKey"]),
+  feedback_entries: defineTable({
+    userId: v.string(),
+    workspaceId: v.optional(v.string()),
+    kind: v.string(),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    conversationId: v.optional(v.string()),
+    turnId: v.optional(v.string()),
+    verdict: v.optional(v.string()),
+    score: v.optional(v.number()),
+    surface: v.optional(v.string()),
+    text: v.optional(v.string()),
+    note: v.optional(v.string()),
+    createdAt: v.string()
+  })
+    .index("by_user", ["userId"])
+    .index("by_kind", ["kind"])
 });

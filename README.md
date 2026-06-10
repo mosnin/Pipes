@@ -82,7 +82,7 @@ npm run test
 ## Enterprise trust and scale pass
 - workspace trust settings: `/settings/trust`
 - workspace export manifest endpoint: `GET /api/settings/export/workspace`
-- enterprise auth readiness model: shared vs `sso_ready` (Auth0 connection metadata + allowed domain validation)
+- enterprise auth readiness model: shared vs `sso_ready` (SSO connection metadata + allowed domain validation)
 - safer permission admin: owner immutability, explicit role-change confirmation, audited role changes
 - bounded lifecycle posture: archive/restore for systems, workspace deactivate/reactivate, no hard delete
 - see `docs/enterprise_trust.md` for supported vs deferred enterprise controls

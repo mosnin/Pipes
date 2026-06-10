@@ -1,0 +1,17 @@
+[
+  { "delay_ms": 80, "event": "status", "data": { "state": "thinking" } },
+  { "delay_ms": 220, "event": "message", "data": { "role": "assistant", "text": "Three nodes, wired left to right: intake, classifier, escalation." } },
+  { "delay_ms": 140, "event": "tool_call", "data": { "id": "tc_1", "tool_name": "add_node", "arguments": { "title": "Ticket intake", "description": "Receive the inbound ticket.", "x": 200, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_1", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Ticket intake", "description": "Receive the inbound ticket.", "x": 200, "y": 200, "clientNodeId": "pg_cs_intake" } } },
+  { "delay_ms": 220, "event": "tool_call", "data": { "id": "tc_2", "tool_name": "add_node", "arguments": { "title": "Intent classifier", "description": "Predict intent and route.", "x": 480, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_2", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Intent classifier", "description": "Predict intent and route.", "x": 480, "y": 200, "clientNodeId": "pg_cs_classifier" } } },
+  { "delay_ms": 220, "event": "tool_call", "data": { "id": "tc_3", "tool_name": "add_node", "arguments": { "title": "Escalation handoff", "description": "Send to senior support.", "x": 760, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_3", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Escalation handoff", "description": "Send to senior support.", "x": 760, "y": 200, "clientNodeId": "pg_cs_escalation" } } },
+  { "delay_ms": 160, "event": "tool_call", "data": { "id": "tc_4", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cs_intake", "toNodeId": "pg_cs_classifier" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_4", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cs_intake", "toNodeId": "pg_cs_classifier", "clientPipeId": "pg_cs_pipe_1" } } },
+  { "delay_ms": 160, "event": "tool_call", "data": { "id": "tc_5", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cs_classifier", "toNodeId": "pg_cs_escalation" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_5", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cs_classifier", "toNodeId": "pg_cs_escalation", "clientPipeId": "pg_cs_pipe_2" } } },
+  { "delay_ms": 120, "event": "message", "data": { "role": "assistant", "text": "Done. Three nodes wired left to right." } },
+  { "delay_ms": 40, "event": "meta", "data": { "elapsed_ms": 1860, "cost_usd": 0.0021 } },
+  { "delay_ms": 40, "event": "done", "data": { "conversationId": "playground", "turnId": "pg_cs_turn_1" } }
+]

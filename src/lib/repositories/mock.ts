@@ -1,8 +1,49 @@
 import { store } from "@/lib/convex/store";
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
 import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import { aggregateAll, seedMockSamples } from "@/lib/observability/metrics-aggregation";
 
 const now = () => new Date().toISOString();
+
+let mockMetricsSeeded = false;
+
+function ensureMockMetricsSeeded(): void {
+  if (mockMetricsSeeded) return;
+  // Avoid seeding during Next.js production build prerendering. Multiple
+  // worker processes share the on-disk mock DB file; concurrent writes from
+  // a fat seed can corrupt the JSON. The admin dashboard runs at request
+  // time, not at build time, so build-phase seeding is unnecessary anyway.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const db = store.readDb();
+  db.metricsSamples = db.metricsSamples ?? [];
+  if (db.metricsSamples.length > 0) {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const seeded = seedMockSamples(Date.now());
+  for (const sample of seeded) {
+    db.metricsSamples.push({
+      id: store.createId("met"),
+      kind: sample.kind,
+      label: sample.label,
+      value: sample.value,
+      tags: sample.tags,
+      ts: sample.ts
+    });
+  }
+  if (db.metricsSamples.length > 10_000) {
+    db.metricsSamples = db.metricsSamples.slice(-10_000);
+  }
+  store.writeDb(db);
+  mockMetricsSeeded = true;
+}
+
+export function resetMockMetricsSeedForTests(): void {
+  mockMetricsSeeded = false;
+}
 
 async function provision(identity: { externalId: string; email: string; name: string }): Promise<AppContext> {
   const db = store.readDb();
@@ -120,6 +161,7 @@ export function createMockRepositories(): RepositorySet {
         if (input.title !== undefined) node.title = input.title;
         if (input.description !== undefined) node.description = input.description;
         if (input.position) node.position = input.position;
+        if (input.config !== undefined) node.config = input.config;
         store.writeDb(db);
       },
       async deleteNode(nodeId) {
@@ -284,6 +326,39 @@ export function createMockRepositories(): RepositorySet {
         row.status = input.status;
         row.updatedAt = now();
         store.writeDb(db);
+      },
+      async record(input) {
+        const db = store.readDb();
+        db.feedbackEntries = db.feedbackEntries ?? [];
+        const id = store.createId("fbe");
+        const row = {
+          id,
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          kind: input.kind,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          conversationId: input.conversationId,
+          turnId: input.turnId,
+          verdict: input.verdict,
+          score: input.score,
+          surface: input.surface,
+          text: input.text,
+          note: input.note,
+          createdAt: now()
+        };
+        db.feedbackEntries.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listEntries(opts) {
+        const db = store.readDb();
+        const entries = db.feedbackEntries ?? [];
+        let rows = entries.slice();
+        if (opts?.userId) rows = rows.filter((row) => row.userId === opts.userId);
+        if (opts?.kind) rows = rows.filter((row) => row.kind === opts.kind);
+        rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        return rows.slice(0, opts?.limit ?? 200);
       }
     },
     agentTokens: {
@@ -920,6 +995,131 @@ export function createMockRepositories(): RepositorySet {
         return row;
       },
       async listEscalationRecords(input) { return store.readDb().escalationRecords.filter((row) => row.runId === input.runId); }
+    },
+    agentConversations: {
+      async createConversation(input) {
+        const db = store.readDb();
+        const id = store.createId("ac");
+        const row = { id, systemId: input.systemId, userId: input.userId, createdAt: now(), updatedAt: now() };
+        db.agentConversations.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async getConversation(conversationId) {
+        return store.readDb().agentConversations.find((row) => row.id === conversationId) ?? null;
+      },
+      async listConversations(input) {
+        return store.readDb().agentConversations.filter((row) => row.userId === input.userId && row.systemId === input.systemId);
+      },
+      async touchConversation(conversationId) {
+        const db = store.readDb();
+        const row = db.agentConversations.find((item) => item.id === conversationId);
+        if (!row) return;
+        row.updatedAt = now();
+        store.writeDb(db);
+      },
+      async createTurn(input) {
+        const db = store.readDb();
+        const id = store.createId("at");
+        const row = { id, conversationId: input.conversationId, index: input.index, prompt: input.prompt, toolCalls: [], startedAt: input.startedAt, cancelled: false };
+        db.agentTurns.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listTurns(conversationId) {
+        return store.readDb().agentTurns.filter((row) => row.conversationId === conversationId).sort((a, b) => a.index - b.index);
+      },
+      async appendToolCall(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.toolCalls = [...row.toolCalls, input.toolCall];
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
+        store.writeDb(db);
+      },
+      async completeTurn(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.finalMessage = input.finalMessage;
+        row.completedAt = input.completedAt;
+        row.cancelled = input.cancelled;
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
+        store.writeDb(db);
+      }
+    },
+    metrics: {
+      async recordSample(input) {
+        const db = store.readDb();
+        db.metricsSamples = db.metricsSamples ?? [];
+        db.metricsSamples.push({
+          id: store.createId("met"),
+          kind: input.kind,
+          label: input.label,
+          value: input.value,
+          tags: input.tags,
+          ts: input.ts
+        });
+        if (db.metricsSamples.length > 5000) {
+          db.metricsSamples = db.metricsSamples.slice(-5000);
+        }
+        store.writeDb(db);
+      },
+      async listSamples(opts) {
+        ensureMockMetricsSeeded();
+        const db = store.readDb();
+        const rows = (db.metricsSamples ?? []).slice();
+        const filtered = rows
+          .filter((row) => !opts?.kind || row.kind === opts.kind)
+          .filter((row) => !opts?.label || row.label === opts.label)
+          .filter((row) => !opts?.sinceTs || row.ts >= opts.sinceTs)
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1));
+        return filtered.slice(0, opts?.limit ?? 500);
+      },
+      async listAggregated(opts) {
+        ensureMockMetricsSeeded();
+        const db = store.readDb();
+        const nowMs = opts?.nowMs ?? Date.now();
+        const cap = Math.max(1, opts?.sampleCap ?? 10_000);
+        // Pull the most recent `cap` samples (already capped to 10k in store).
+        const rows = (db.metricsSamples ?? [])
+          .slice()
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1))
+          .slice(0, cap);
+        return aggregateAll(rows, nowMs, {
+          latencyHours: opts?.latencyHours,
+          buildDays: opts?.buildDays,
+          errorHours: opts?.errorHours,
+          costDays: opts?.costDays
+        });
+      }
+    },
+    agentRunnerMetrics: {
+      async getMonthly(input) {
+        const db = store.readDb();
+        const row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        return row ? { ...row } : null;
+      },
+      async incrementMonthly(input) {
+        const db = store.readDb();
+        let row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        if (!row) {
+          row = {
+            userId: input.userId,
+            workspaceId: input.workspaceId,
+            monthKey: input.monthKey,
+            buildsUsed: Math.max(0, input.delta),
+            updatedAt: now()
+          };
+          db.agentRunnerMetrics.push(row);
+        } else {
+          row.buildsUsed = Math.max(0, (row.buildsUsed ?? 0) + input.delta);
+          row.workspaceId = input.workspaceId;
+          row.updatedAt = now();
+        }
+        store.writeDb(db);
+        return { ...row };
+      }
     },
     agentMemory: {
       async addMemoryEntry(input) {

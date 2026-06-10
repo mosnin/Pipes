@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
     if (payload.tool === "instantiate_template") {
       requireCapability(ctx, "templates:instantiate");
-      const data = await services.templates.instantiate(ctx, input.templateId, input.name);
+      const data = await services.templates.instantiate(ctx, input.templateId, input.name, input.params);
       await services.protocol.writeAudit(ctx, { action: "protocol.template.instantiate", targetType: "template", targetId: input.templateId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool }) });
       return NextResponse.json({ ok: true, data, requestId });
     }
@@ -49,8 +49,13 @@ export async function POST(request: Request) {
     }
     if (payload.tool === "apply_graph_actions") {
       requireCapability(ctx, "graph:write", input.systemId);
-      const data = await services.graph.mutate(ctx, input.action);
-      await services.protocol.writeAudit(ctx, { action: `protocol.graph.${input.action?.action ?? "mutate"}`, targetType: "system", targetId: input.systemId, systemId: input.systemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool }) });
+      const actions = Array.isArray(input.actions) ? input.actions : [input.action].filter(Boolean);
+      const results: unknown[] = [];
+      for (const action of actions) {
+        results.push(await services.graph.mutate(ctx, action));
+      }
+      const data = { results, count: results.length };
+      await services.protocol.writeAudit(ctx, { action: `protocol.graph.batch_mutate`, targetType: "system", targetId: input.systemId, systemId: input.systemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool, actionCount: results.length }) });
       return NextResponse.json({ ok: true, data, requestId });
     }
     if (payload.tool === "add_comment") {
@@ -61,8 +66,76 @@ export async function POST(request: Request) {
     }
     if (payload.tool === "get_validation_report") {
       requireCapability(ctx, "validation:read", input.systemId);
+      const { validateSystem } = await import("@/domain/validation");
       const bundle = await services.systems.getBundle(ctx, input.systemId);
-      return NextResponse.json({ ok: true, data: { nodes: bundle.nodes.length, pipes: bundle.pipes.length }, requestId });
+      const ports = bundle.nodes.flatMap((n: any) => [
+        n.portIds?.[0] ? { id: n.portIds[0], nodeId: n.id, key: "in", label: "in", direction: "input", dataType: "any", required: false } : null,
+        n.portIds?.[1] ? { id: n.portIds[1], nodeId: n.id, key: "out", label: "out", direction: "output", dataType: "any", required: false } : null,
+      ]).filter(Boolean) as any[];
+      const system = bundle.system as any;
+      const report = validateSystem(
+        { id: system.id, workspaceId: system.workspaceId, name: system.name, description: system.description, createdBy: system.createdBy, createdAt: system.createdAt, updatedAt: system.updatedAt, nodeIds: bundle.nodes.map((n: any) => n.id), portIds: bundle.nodes.flatMap((n: any) => n.portIds ?? []), pipeIds: bundle.pipes.map((p: any) => p.id), groupIds: [], annotationIds: [], commentIds: [], assetIds: [], snippetIds: [], subsystemNodeIds: [] } as any,
+        bundle.nodes as any,
+        ports,
+        bundle.pipes as any,
+      );
+      return NextResponse.json({ ok: true, data: report, requestId });
+    }
+    if (payload.tool === "export_subsystem_blueprint") {
+      requireCapability(ctx, "graph:write", input.systemId);
+      const { SubsystemBlueprintService } = await import("@/domain/subsystem_blueprint/service");
+      const { repositories } = await (await import("@/lib/composition/server")).getServerApp();
+      const data = await new SubsystemBlueprintService(repositories).export(ctx, { systemId: input.systemId, subsystemNodeId: input.subsystemNodeId, name: input.name });
+      await services.protocol.writeAudit(ctx, { action: "protocol.blueprint.export", targetType: "system", targetId: input.systemId, systemId: input.systemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool }) });
+      return NextResponse.json({ ok: true, data, requestId });
+    }
+    if (payload.tool === "list_blueprints") {
+      requireCapability(ctx, "systems:read");
+      const { SubsystemBlueprintService } = await import("@/domain/subsystem_blueprint/service");
+      const { repositories } = await (await import("@/lib/composition/server")).getServerApp();
+      const data = await new SubsystemBlueprintService(repositories).list(ctx);
+      return NextResponse.json({ ok: true, data, requestId });
+    }
+    if (payload.tool === "instantiate_blueprint") {
+      requireCapability(ctx, "graph:write", input.targetSystemId);
+      const { SubsystemBlueprintService } = await import("@/domain/subsystem_blueprint/service");
+      const { repositories } = await (await import("@/lib/composition/server")).getServerApp();
+      const data = await new SubsystemBlueprintService(repositories).instantiate(ctx, { blueprintId: input.blueprintId, targetSystemId: input.targetSystemId, offsetX: input.offsetX, offsetY: input.offsetY });
+      await services.protocol.writeAudit(ctx, { action: "protocol.blueprint.instantiate", targetType: "system", targetId: input.targetSystemId, systemId: input.targetSystemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool }) });
+      return NextResponse.json({ ok: true, data, requestId });
+    }
+    if (payload.tool === "learn_patterns") {
+      requireCapability(ctx, "versions:write", input.systemId);
+      const { PatternLearningService } = await import("@/domain/services/pattern_learning");
+      const { repositories } = await (await import("@/lib/composition/server")).getServerApp();
+      const data = await new PatternLearningService(repositories).learnFromSystem(ctx, input.systemId);
+      return NextResponse.json({ ok: true, data, requestId });
+    }
+    if (payload.tool === "list_patterns") {
+      requireCapability(ctx, "systems:read");
+      const { PatternLearningService } = await import("@/domain/services/pattern_learning");
+      const { repositories } = await (await import("@/lib/composition/server")).getServerApp();
+      const data = await new PatternLearningService(repositories).listPatterns(ctx, input.systemId);
+      return NextResponse.json({ ok: true, data, requestId });
+    }
+    if (payload.tool === "describe_tools") {
+      const tools = [
+        { name: "list_systems", capability: "systems:read", description: "List all systems in the workspace." },
+        { name: "get_system", capability: "systems:read", description: "Get full system bundle including nodes and pipes." },
+        { name: "export_system_schema", capability: "schema:read", description: "Export canonical pipes_schema_v1 JSON." },
+        { name: "list_templates", capability: "templates:read", description: "List available starter templates." },
+        { name: "instantiate_template", capability: "templates:instantiate", description: "Create a new system from a template." },
+        { name: "create_system_from_schema", capability: "import:write", description: "Import a pipes_schema_v1 JSON as a new system." },
+        { name: "create_version", capability: "versions:write", description: "Snapshot the current system state." },
+        { name: "apply_graph_actions", capability: "graph:write", description: "Apply one or many graph mutations (actions: addNode|updateNode|deleteNode|addPipe|deletePipe). Accepts single action or actions[] array." },
+        { name: "add_comment", capability: "comments:write", description: "Add a comment to a system or node." },
+        { name: "get_validation_report", capability: "validation:read", description: "Get node/pipe count and basic validation for a system." },
+        { name: "export_subsystem_blueprint", capability: "graph:write", description: "Export a subsystem node as a reusable blueprint." },
+        { name: "list_blueprints", capability: "systems:read", description: "List all saved subsystem blueprints in the workspace." },
+        { name: "instantiate_blueprint", capability: "graph:write", description: "Instantiate a saved subsystem blueprint into a target system." },
+        { name: "describe_tools", capability: null, description: "List all available MCP tools and their required capabilities." },
+      ];
+      return NextResponse.json({ ok: true, data: { tools }, requestId });
     }
 
     throw new ProtocolError("NOT_FOUND", "Unknown MCP tool.", 404);

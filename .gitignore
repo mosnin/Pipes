@@ -9,3 +9,15 @@ test-results
 
 .pipes-db.json
 tsconfig.tsbuildinfo
+
+# clerk configuration (can include secrets)
+/.clerk/
+
+# Python (agents/)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/

@@ -1,0 +1,12 @@
+[
+  { "delay_ms": 0, "event": "status", "data": { "state": "thinking" } },
+  { "delay_ms": 0, "event": "message", "data": { "role": "assistant", "text": "Building a small two-node loop." } },
+  { "delay_ms": 0, "event": "tool_call", "data": { "id": "tc_1", "tool_name": "add_node", "arguments": { "title": "Input", "description": "User question", "x": 240, "y": 180 } } },
+  { "delay_ms": 0, "event": "tool_result", "data": { "id": "tc_1", "ok": true, "action": { "action": "addNode", "type": "Node", "title": "Input", "description": "User question", "x": 240, "y": 180, "clientNodeId": "tmp_aaaa1111" } } },
+  { "delay_ms": 0, "event": "tool_call", "data": { "id": "tc_2", "tool_name": "add_node", "arguments": { "title": "Output", "description": "Final reply", "x": 460, "y": 180 } } },
+  { "delay_ms": 0, "event": "tool_result", "data": { "id": "tc_2", "ok": true, "action": { "action": "addNode", "type": "Node", "title": "Output", "description": "Final reply", "x": 460, "y": 180, "clientNodeId": "tmp_bbbb2222" } } },
+  { "delay_ms": 0, "event": "tool_call", "data": { "id": "tc_3", "tool_name": "add_pipe", "arguments": { "fromNodeId": "tmp_aaaa1111", "toNodeId": "tmp_bbbb2222" } } },
+  { "delay_ms": 0, "event": "tool_result", "data": { "id": "tc_3", "ok": true, "action": { "action": "addPipe", "systemId": "<runtime>", "fromNodeId": "tmp_aaaa1111", "toNodeId": "tmp_bbbb2222", "clientPipeId": "tmp_pipe_1111" } } },
+  { "delay_ms": 0, "event": "message", "data": { "role": "assistant", "text": "Two nodes wired and ready." } },
+  { "delay_ms": 0, "event": "done", "data": { "conversationId": "<runtime>", "turnId": "<runtime>" } }
+]

@@ -1,56 +1,46 @@
-import Link from "next/link";
-import { Sidebar, Topbar, Badge, Button } from "@/components/ui";
 import { getAuthService } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
 import { canAccessAdmin } from "@/lib/admin/access";
+import { AppShellClient } from "./AppShellClient";
 
-const navItems = [
-  ["/dashboard", "Systems"],
-  ["/onboarding", "Onboarding"],
-  ["/settings/billing", "Settings · Billing"],
-  ["/settings/collaboration", "Settings · Collaboration"],
-  ["/settings/trust", "Settings · Trust"],
-  ["/settings/tokens", "Settings · Tokens"],
-  ["/settings/audit", "Settings · Audit"],
-  ["/settings/feedback", "Settings · Feedback"],
-  ["/admin", "Admin · Support"],
-  ["/admin/insights", "Admin · Insights"],
-  ["/admin/release", "Admin · Release"],
-  ["/admin/issues", "Admin · Issues"],
-  ["/templates", "Templates"],
-  ["/protocol", "Protocol"]
-];
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
+}
+
+function deriveWorkspaceName(workspaceId: string): string {
+  // Convex IDs and synthetic IDs are not user-friendly. Show a stable short label.
+  if (workspaceId.length === 0) return "Workspace";
+  if (workspaceId.length <= 12) return workspaceId;
+  return "Workspace";
+}
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getAuthService().requireUser();
   const { ctx } = await getServerApp();
-  const nav = canAccessAdmin(user.email) ? navItems : navItems.filter(([href]) => !href.startsWith("/admin"));
+  const showAdmin = canAccessAdmin(user.email);
+  const initials = getInitials(user.name);
 
   return (
-    <div className="app-shell">
-      <Sidebar>
-        <h2>Pipes</h2>
-        <p>{user.name}</p>
-        <nav aria-label="Primary">
-          {nav.map(([href, label]) => (
-            <div key={href} style={{ marginBottom: 8 }}>
-              <Link href={href}>{label}</Link>
-            </div>
-          ))}
-        </nav>
-      </Sidebar>
-      <div className="app-content">
-        <Topbar
-          left={<strong>Workspace: {ctx.workspaceId}</strong>}
-          right={
-            <div className="nav-inline">
-              <Badge tone="good">Plan: {ctx.plan}</Badge>
-              <Link href="/api/auth/logout"><Button>Logout</Button></Link>
-            </div>
-          }
-        />
-        <main className="app-main">{children}</main>
-      </div>
-    </div>
+    <AppShellClient
+      user={{
+        name: user.name,
+        email: user.email,
+        initials,
+      }}
+      workspace={{
+        id: ctx.workspaceId,
+        name: deriveWorkspaceName(ctx.workspaceId),
+        plan: ctx.plan,
+        role: ctx.role,
+      }}
+      showAdmin={showAdmin}
+    >
+      {children}
+    </AppShellClient>
   );
 }

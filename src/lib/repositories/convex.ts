@@ -15,7 +15,8 @@ import {
   convexUpdateNode,
   convexUpsertPresence
 } from "@/lib/convex/modeApi";
-import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
+import type { AppContext, MetricsSampleRecord, RepositorySet } from "@/lib/repositories/contracts";
+import { aggregateAll } from "@/lib/observability/metrics-aggregation";
 
 export function createConvexRepositories(): RepositorySet {
   return {
@@ -221,6 +222,63 @@ export function createConvexRepositories(): RepositorySet {
           status: input.status,
           updatedBy: input.updatedBy as never
         });
+      },
+      async record(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.recordFeedback, {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          kind: input.kind,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          conversationId: input.conversationId,
+          turnId: input.turnId,
+          verdict: input.verdict,
+          score: input.score,
+          surface: input.surface,
+          text: input.text,
+          note: input.note
+        });
+        return {
+          id: String(row._id),
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          kind: row.kind,
+          targetType: row.targetType,
+          targetId: row.targetId,
+          conversationId: row.conversationId,
+          turnId: row.turnId,
+          verdict: row.verdict,
+          score: row.score,
+          surface: row.surface,
+          text: row.text,
+          note: row.note,
+          createdAt: row.createdAt
+        };
+      },
+      async listEntries(opts) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listFeedback, {
+          userId: opts?.userId,
+          kind: opts?.kind,
+          limit: opts?.limit
+        });
+        return rows.map((row: any) => ({
+          id: String(row._id),
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          kind: row.kind,
+          targetType: row.targetType,
+          targetId: row.targetId,
+          conversationId: row.conversationId,
+          turnId: row.turnId,
+          verdict: row.verdict,
+          score: row.score,
+          surface: row.surface,
+          text: row.text,
+          note: row.note,
+          createdAt: row.createdAt
+        }));
       }
     },
     presence: {
@@ -673,6 +731,137 @@ export function createConvexRepositories(): RepositorySet {
       async getRuntimeUsageRecord(input) { const row = await getConvexHttpClient().query((api as any).app.getRuntimeUsageRecord, { runId: input.runId as never }); if (!row) return null; return { id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), providerCalls: row.providerCalls, estimatedTokens: row.estimatedTokens, estimatedCostUsd: row.estimatedCostUsd, elapsedMs: row.elapsedMs, autoAppliedActions: row.autoAppliedActions, createdAt: row.createdAt, updatedAt: row.updatedAt }; },
       async addEscalationRecord(input) { const row = await getConvexHttpClient().mutation((api as any).app.addEscalationRecord, { ...input, runId: input.runId as never, workspaceId: input.workspaceId as never, systemId: input.systemId as never }); return { id: String(row._id), ...input }; },
       async listEscalationRecords(input) { const rows = await getConvexHttpClient().query((api as any).app.listEscalationRecords, { runId: input.runId as never }); return rows.map((row: any) => ({ id: String(row._id), runId: String(row.runId), workspaceId: String(row.workspaceId), systemId: row.systemId ? String(row.systemId) : undefined, reason: row.reason, suggestedAction: row.suggestedAction, severity: row.severity, createdAt: row.createdAt })); },
+    },
+    agentConversations: {
+      async createConversation(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentConversation, { systemId: input.systemId as never, userId: input.userId });
+        return { id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async getConversation(conversationId) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getAgentConversation, { conversationId: conversationId as never });
+        if (!row) return null;
+        return { id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt };
+      },
+      async listConversations(input) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentConversations, { userId: input.userId, systemId: input.systemId as never });
+        return rows.map((row: any) => ({ id: String(row._id), systemId: String(row.systemId), userId: row.userId, createdAt: row.createdAt, updatedAt: row.updatedAt }));
+      },
+      async touchConversation(conversationId) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.touchAgentConversation, { conversationId: conversationId as never });
+      },
+      async createTurn(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.createAgentTurn, { conversationId: input.conversationId as never, index: input.index, prompt: input.prompt, startedAt: input.startedAt });
+        return { id: String(row._id), conversationId: String(row.conversationId), index: row.index, prompt: row.prompt, toolCalls: row.toolCalls ?? [], finalMessage: row.finalMessage, startedAt: row.startedAt, completedAt: row.completedAt, cancelled: row.cancelled };
+      },
+      async listTurns(conversationId) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listAgentTurns, { conversationId: conversationId as never });
+        return rows.map((row: any) => ({ id: String(row._id), conversationId: String(row.conversationId), index: row.index, prompt: row.prompt, toolCalls: row.toolCalls ?? [], finalMessage: row.finalMessage, startedAt: row.startedAt, completedAt: row.completedAt, cancelled: row.cancelled }));
+      },
+      async appendToolCall(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.appendAgentTurnToolCall, { turnId: input.turnId as never, toolCall: input.toolCall, costSnapshot: input.costSnapshot });
+      },
+      async completeTurn(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.completeAgentTurn, { turnId: input.turnId as never, finalMessage: input.finalMessage, completedAt: input.completedAt, cancelled: input.cancelled, costSnapshot: input.costSnapshot });
+      }
+    },
+    metrics: {
+      async recordSample(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.recordMetricSample, {
+          kind: input.kind,
+          label: input.label,
+          value: input.value,
+          tagsJson: input.tags ? JSON.stringify(input.tags) : undefined,
+          ts: input.ts
+        });
+      },
+      async listSamples(opts) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listMetricSamples, {
+          kind: opts?.kind,
+          label: opts?.label,
+          sinceTs: opts?.sinceTs,
+          limit: opts?.limit
+        });
+        return (rows ?? []).map((row: any) => ({
+          id: String(row._id),
+          kind: row.kind,
+          label: row.label,
+          value: row.value,
+          tags: row.tagsJson ? (JSON.parse(row.tagsJson) as Record<string, string>) : undefined,
+          ts: row.ts
+        }));
+      },
+      async listAggregated(opts) {
+        // Convex queries don't aggregate natively; pull the most recent
+        // samples within the widest window we need, then bucket in-process.
+        const nowMs = opts?.nowMs ?? Date.now();
+        const cap = Math.max(1, opts?.sampleCap ?? 10_000);
+        const widestDays = Math.max(
+          opts?.buildDays ?? 14,
+          opts?.costDays ?? 7,
+          Math.ceil((opts?.latencyHours ?? 24) / 24),
+          Math.ceil((opts?.errorHours ?? 24) / 24)
+        );
+        const sinceTs = new Date(nowMs - widestDays * 24 * 60 * 60 * 1000).toISOString();
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listMetricSamples, {
+          sinceTs,
+          limit: cap
+        });
+        const samples: MetricsSampleRecord[] = (rows ?? []).map((row: any) => ({
+          id: String(row._id),
+          kind: row.kind,
+          label: row.label,
+          value: row.value,
+          tags: row.tagsJson ? (JSON.parse(row.tagsJson) as Record<string, string>) : undefined,
+          ts: row.ts
+        }));
+        return aggregateAll(samples, nowMs, {
+          latencyHours: opts?.latencyHours,
+          buildDays: opts?.buildDays,
+          errorHours: opts?.errorHours,
+          costDays: opts?.costDays
+        });
+      }
+    },
+    agentRunnerMetrics: {
+      async getMonthly(input) {
+        const client = getConvexHttpClient();
+        const row = await client.query((api as any).app.getAgentRunnerMetric, { userId: input.userId, monthKey: input.monthKey });
+        if (!row) return null;
+        return {
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          monthKey: row.monthKey,
+          buildsUsed: row.buildsUsed,
+          updatedAt: row.updatedAt
+        };
+      },
+      async incrementMonthly(input) {
+        const client = getConvexHttpClient();
+        const row = await client.mutation((api as any).app.incrementAgentRunnerMetric, {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          monthKey: input.monthKey,
+          delta: input.delta
+        });
+        return {
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          monthKey: row.monthKey,
+          buildsUsed: row.buildsUsed,
+          updatedAt: row.updatedAt
+        };
+      }
     },
     agentMemory: {
       async addMemoryEntry(input) {

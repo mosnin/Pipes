@@ -14,6 +14,7 @@ import { hashAgentToken, issueAgentTokenSecret, parseCapabilityList, type AgentC
 import { ProtocolError } from "@/lib/protocol/errors";
 import { canAccessAdmin } from "@/lib/admin/access";
 import { isProductSignalEvent, type ProductSignalEvent } from "@/domain/services/product_signals";
+import { migrateDocument, needsMigration } from "@/domain/pipes_schema_v1/migration";
 
 function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
@@ -60,7 +61,7 @@ export class GraphService {
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
-    if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position });
+    if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position, config: payload.config });
     if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);
     if (payload.action === "addPipe") return this.repos.graph.addPipe({ systemId: payload.systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
     if (payload.action === "deletePipe") return this.repos.graph.deletePipe(payload.pipeId);
@@ -280,12 +281,19 @@ export class ProtocolGuardService {
 export class TemplateService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly repos: RepositorySet, private readonly signals: ProductSignalService) {}
   list() { return starterTemplates; }
-  async instantiate(ctx: AppContext, templateId: string, name?: string) {
+  async instantiate(ctx: AppContext, templateId: string, name?: string, params?: Record<string, string>) {
     const template = starterTemplates.find((t) => t.id === templateId);
     if (!template) throw new Error("Template not found.");
     const systemId = await this.systems.create(ctx, { name: name ?? template.title, description: template.description });
     const map = new Map<string, string>();
-    for (const node of template.nodes) map.set(node.id, await this.graph.mutate(ctx, { action: "addNode", systemId, type: node.type, title: node.title, x: node.x, y: node.y }) as string);
+    function applyParams(str: string, parameters: Record<string, string>): string {
+      return str.replace(/\{\{(\w+)\}\}/g, (_, key) => parameters[key] ?? _);
+    }
+    for (const node of template.nodes) {
+      const appliedTitle = params ? applyParams(node.title, params) : node.title;
+      const appliedDescription = node.description && params ? applyParams(node.description, params) : node.description;
+      map.set(node.id, await this.graph.mutate(ctx, { action: "addNode", systemId, type: node.type, title: appliedTitle, description: appliedDescription, x: node.x, y: node.y }) as string);
+    }
     for (const pipe of template.pipes) await this.graph.mutate(ctx, { action: "addPipe", systemId, fromNodeId: map.get(pipe.fromNodeId), toNodeId: map.get(pipe.toNodeId) });
     const prior = await this.repos.audits.list(ctx.workspaceId, { actionPrefix: "signal.first_template_instantiated", actorId: ctx.actorId, limit: 1 });
     if (prior.length === 0) await this.signals.track(ctx, "first_template_instantiated", { templateId, systemId });
@@ -353,7 +361,8 @@ export class AiGenerationService {
 export class ImportExportService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly versions: VersionService, private readonly schema: SchemaExportService, private readonly signals: ProductSignalService) {}
   async planMerge(ctx: AppContext, raw: string, targetSystemId: string) {
-    const parsed = PipesSchemaV1.safeParse(JSON.parse(raw));
+    const rawDoc = JSON.parse(raw);
+    const parsed = PipesSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data;
     const src = doc.systems[0];
@@ -386,7 +395,8 @@ export class ImportExportService {
     return { ok: true, applied: { additions: plan.summary?.additions ?? 0, updates: plan.summary?.updates ?? 0, conflicts: strategy === "replace_conflicts" ? plan.summary?.conflicts ?? 0 : 0 } };
   }
   async importSchema(ctx: AppContext, raw: string, mode: "new" | "existing", targetSystemId?: string) {
-    const parsed = PipesSchemaV1.safeParse(JSON.parse(raw));
+    const rawDoc = JSON.parse(raw);
+    const parsed = PipesSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data; const src = doc.systems[0]; if (!src) return { ok: false, diagnostics: ["No system in schema"] };
     await this.signals.track(ctx, "import_merge_attempted", { mode, targetSystemId: targetSystemId ?? null });
@@ -682,7 +692,7 @@ export class ReleaseReviewService {
     const signal = (event: string) => audits.filter((row) => row.action === `signal.${event}`).length;
     const runtime = resolveRuntimeMode();
     return {
-      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.AUTH0_DOMAIN, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
+      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.CLERK_SECRET_KEY, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
       checklist: {
         criticalFlows: [
           { key: "signup_onboarding", route: "/signup -> /onboarding", status: "review" },
@@ -721,7 +731,7 @@ export class ReleaseReviewService {
 type EnterpriseAuthSettings = {
   mode: "shared" | "sso_ready";
   allowedDomains: string[];
-  auth0Connection?: string;
+  ssoConnection?: string;
   enforceDomainMatch: boolean;
 };
 
@@ -773,7 +783,7 @@ export class WorkspaceGovernanceService {
   async updateEnterpriseAuth(ctx: AppContext, input: EnterpriseAuthSettings) {
     this.access.ensureCanManageMembers(ctx);
     this.validateDomains(input.allowedDomains ?? []);
-    if (input.mode === "sso_ready" && !input.auth0Connection) throw new Error("Auth0 connection is required for sso_ready mode.");
+    if (input.mode === "sso_ready" && !input.ssoConnection) throw new Error("An SSO connection is required for sso_ready mode.");
     await this.repos.audits.add({
       actorType: ctx.actorType,
       actorId: ctx.actorId,

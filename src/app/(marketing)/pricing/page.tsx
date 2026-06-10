@@ -1,25 +1,548 @@
-import { Button, Card, PageHeader, Table } from "@/components/ui";
+import Link from "next/link";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { SectionBadge } from "@/components/marketing/SectionBadge";
+import { PricingHeroAndTiers } from "@/components/marketing/PricingHeroAndTiers";
+import { PricingComparisonTable } from "@/components/marketing/PricingComparisonTable";
+import { PricingFaq } from "@/components/marketing/PricingFaq";
+import type { PricingTier } from "@/components/marketing/PricingTiersGrid";
+import type { ComparisonGroup } from "@/components/marketing/PricingComparisonTable";
+import type { FaqItem } from "@/components/marketing/PricingFaq";
 
 export const metadata = {
-  title: "Pipes pricing",
-  description: "Pricing for structured system authoring, collaboration, and protocol-ready architecture workflows."
+  title: "Per seat. Per workspace. Decide later. - Pipes",
+  description:
+    "Per-workspace pricing. Start free. Pay only when your team is ready to ship.",
 };
+
+// ─── Tier data ────────────────────────────────────────────────────────────────
+
+const TIERS: readonly PricingTier[] = [
+  {
+    id: "starter",
+    name: "Starter",
+    description:
+      "Everything you need to describe a system and watch it build. No credit card.",
+    monthlyPrice: "$0",
+    yearlyPrice: "$0",
+    monthlyPeriod: "free, forever",
+    yearlyPeriod: "free, forever",
+    highlighted: false,
+    ctaLabel: "Start free",
+    ctaHref: "/signup?source=pricing_starter",
+    ctaEvent: "pricing_cta_clicked",
+    ctaMeta: { plan: "starter", source: "pricing_cards" },
+    ctaTone: "secondary",
+    features: [
+      "50 builds per month",
+      "Up to 3 systems",
+      "Validation and simulation",
+      "Versioned canvas",
+      "Local export",
+      "Community support",
+    ],
+  },
+  {
+    id: "team",
+    name: "Team",
+    description:
+      "For the staff engineer shipping a multi-agent system with their team.",
+    monthlyPrice: "$12",
+    yearlyPrice: "$10",
+    monthlyPeriod: "per seat / month",
+    yearlyPeriod: "per seat / month, billed yearly",
+    highlighted: true,
+    ctaLabel: "Start 14-day trial",
+    ctaHref: "/signup?source=pricing_team",
+    ctaEvent: "pricing_cta_clicked",
+    ctaMeta: { plan: "team", source: "pricing_cards" },
+    ctaTone: "primary",
+    features: [
+      "Unlimited builds",
+      "Unlimited systems",
+      "Up to 25 collaborators",
+      "MCP and REST protocol",
+      "SSO, audit log, comments",
+      "Priority email support",
+      "14-day trial, no card",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    description:
+      "For teams that need SAML, SCIM, a signed DPA, and a self-hosted option.",
+    monthlyPrice: "Custom",
+    yearlyPrice: "Custom",
+    monthlyPeriod: "talk to sales",
+    yearlyPeriod: "talk to sales",
+    highlighted: false,
+    ctaLabel: "Contact sales",
+    ctaHref: "/contact?source=pricing_enterprise",
+    ctaEvent: "pricing_cta_clicked",
+    ctaMeta: { plan: "enterprise", source: "pricing_cards" },
+    ctaTone: "secondary",
+    features: [
+      "Everything in Team",
+      "SAML SSO + SCIM provisioning",
+      "Audit log streaming",
+      "SOC 2 Type II + signed DPA",
+      "Self-hosted Convex option",
+      "99.9% uptime SLA",
+      "Dedicated support engineer",
+    ],
+  },
+] as const;
+
+// ─── Comparison data ──────────────────────────────────────────────────────────
+
+const COMPARISON: readonly ComparisonGroup[] = [
+  {
+    title: "Build",
+    rows: [
+      {
+        feature: "Agent builds per month",
+        detail: "One build = one prompt the agent acts on.",
+        starter: "50",
+        team: "Unlimited",
+        enterprise: "Unlimited",
+      },
+      {
+        feature: "Systems per workspace",
+        starter: "3",
+        team: "Unlimited",
+        enterprise: "Unlimited",
+      },
+      {
+        feature: "Collaborators",
+        starter: "1",
+        team: "25",
+        enterprise: "Unlimited",
+      },
+      {
+        feature: "Versioned canvas history",
+        starter: "7 days",
+        team: "Unlimited",
+        enterprise: "Unlimited",
+      },
+      {
+        feature: "Comments and review",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Cmd-Z undoes a whole agent turn",
+        starter: true,
+        team: true,
+        enterprise: true,
+      },
+    ],
+  },
+  {
+    title: "Authoring",
+    rows: [
+      {
+        feature: "Validation engine",
+        detail: "Type-checks every node, port, and pipe.",
+        starter: "Basic",
+        team: "Advanced",
+        enterprise: "Advanced",
+      },
+      {
+        feature: "Simulation",
+        starter: true,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Starter library",
+        starter: "Public",
+        team: "Public + private",
+        enterprise: "Public + private",
+      },
+      {
+        feature: "Custom node config schemas",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Bring your own model keys",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+    ],
+  },
+  {
+    title: "Protocol",
+    rows: [
+      {
+        feature: "MCP read endpoint",
+        detail: "Hand any agent a token. It reads the same graph.",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "REST endpoint",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Capability-scoped tokens",
+        starter: false,
+        team: { kind: "limited", label: "Limited" },
+        enterprise: true,
+      },
+      {
+        feature: "Idempotency keys",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Audit log export",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+    ],
+  },
+  {
+    title: "Support",
+    rows: [
+      {
+        feature: "Community Slack",
+        starter: true,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Priority email",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Dedicated support engineer",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+      {
+        feature: "Uptime SLA",
+        starter: "–",
+        team: "99.5%",
+        enterprise: "99.9%",
+      },
+    ],
+  },
+  {
+    title: "Security and compliance",
+    rows: [
+      {
+        feature: "SAML SSO",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+      {
+        feature: "SCIM provisioning",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+      {
+        feature: "SOC 2 Type II",
+        starter: true,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Signed DPA",
+        starter: false,
+        team: true,
+        enterprise: true,
+      },
+      {
+        feature: "Self-hosted Convex",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+      {
+        feature: "Data residency choice",
+        starter: false,
+        team: false,
+        enterprise: true,
+      },
+    ],
+  },
+] as const;
+
+// ─── Built-into-every-tier panel ──────────────────────────────────────────────
+
+const EVERY_TIER = [
+  {
+    title: "One typed graph",
+    body: "Every node, port, and pipe is typed. The same map your team reviews is the one your agents read.",
+  },
+  {
+    title: "MCP-ready by design",
+    body: "Hand any agent a token. It reads through the Pipes Protocol. No bespoke client to ship.",
+  },
+  {
+    title: "Optimistic edits",
+    body: "Drag a node, the agent yields. Edits land instantly. Cmd-Z undoes the whole agent turn.",
+  },
+  {
+    title: "Plan-first agent",
+    body: "The agent plans before it draws. You see what it intends, not just what it did.",
+  },
+] as const;
+
+// ─── Customer logos (text-only placeholders) ──────────────────────────────────
+
+const LOGO_WORDS = [
+  "Northwind",
+  "Cascade Labs",
+  "Halo Robotics",
+  "Quay & Co",
+  "Lumen Health",
+  "Arc Systems",
+  "Telegraph AI",
+  "Glasshouse",
+] as const;
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+const FAQS: readonly FaqItem[] = [
+  {
+    id: "faq-build",
+    question: "What counts as a build?",
+    answer:
+      "Every prompt the agent acts on counts as one build. If you hit return and the agent draws or edits a node, that is one build. Editing the canvas by hand never counts. Reading the graph through the protocol never counts.",
+  },
+  {
+    id: "faq-cap",
+    question: "What happens if I exceed my monthly builds?",
+    answer:
+      "On Starter, the agent pauses for the rest of the cycle. Your work persists. Manual editing keeps working. Upgrade to Team and builds restart immediately, with no lost state.",
+  },
+  {
+    id: "faq-keys",
+    question: "Can I bring my own model keys?",
+    answer:
+      "On Team and Enterprise, yes. Drop in your OpenAI or Anthropic key per workspace. Bills land on your provider, not on us. Starter uses our shared key with a monthly cap.",
+  },
+  {
+    id: "faq-trial",
+    question: "Is there a trial?",
+    answer:
+      "Team includes a 14-day trial. No card required. Your work and seats persist if you do not upgrade. You are never blocked from your own graphs.",
+  },
+  {
+    id: "faq-seats",
+    question: "How do seats work on Team?",
+    answer:
+      "You pay per active seat per month. Viewers are free. A seat is anyone who can describe a system or edit the canvas. Downgrade a seat to viewer any time.",
+  },
+  {
+    id: "faq-mcp",
+    question: "What is the Pipes Protocol?",
+    answer:
+      "A token-authenticated read and write surface for the same graph the agent built. MCP and REST. Every external agent and tool reads the same contract your team reviewed.",
+  },
+  {
+    id: "faq-downgrade",
+    question: "What if I downgrade?",
+    answer:
+      "Downgrades take effect at the end of your current cycle. Any systems above the new tier limit become read-only until you remove or upgrade. Nothing is deleted.",
+  },
+  {
+    id: "faq-enterprise",
+    question: "What does Enterprise include that Team does not?",
+    answer:
+      "SAML SSO, SCIM provisioning, signed DPA, audit log streaming, data residency, a self-hosted Convex option, a 99.9% uptime SLA, and a dedicated support engineer.",
+  },
+] as const;
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PricingPage() {
   return (
-    <div>
-      <PageHeader title="Pricing" subtitle="Start with core system modeling, upgrade for deeper collaboration and protocol-heavy workflows." />
-      <Card>
-        <Table
-          headers={["Plan", "Systems", "Collab", "Version History", "API/MCP"]}
-          rows={[["Free", "3", "No", "No", "No"],["Pro", "25", "Yes", "Yes", "Yes"],["Builder", "250", "Yes", "Yes", "Yes"]]}
-        />
-        <div className="nav-inline">
-          <TrackedLink href="/signup?source=pricing" event="pricing_cta_clicked" metadata={{ source: "pricing_primary" }}><Button>Start free workspace</Button></TrackedLink>
-          <TrackedLink href="/signup?source=pricing_upgrade" event="pricing_cta_clicked" metadata={{ source: "pricing_secondary" }}><Button>Upgrade later in app</Button></TrackedLink>
+    <div className="bg-white">
+      {/* ── 1. HERO + TIERS ─────────────────────────────────────────────── */}
+      <section className="px-6 pt-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="surface-subtle rounded-[40px] border border-black/[0.06] py-24 sm:py-32 px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <SectionBadge label="Pricing" />
+              <h1
+                className="mt-6 text-[#111] mx-auto"
+                style={{
+                  fontSize: 64,
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.04em",
+                  fontWeight: 700,
+                }}
+              >
+                Per seat. Per workspace. Decide later.
+              </h1>
+              <p className="mt-6 t-body text-[#3C3C43] mx-auto max-w-xl leading-relaxed">
+                Start free. Upgrade when your team is ready to ship. Every tier
+                speaks the same protocol your agents read.
+              </p>
+              <div className="mt-12">
+                <PricingHeroAndTiers tiers={TIERS} />
+              </div>
+            </div>
+          </div>
         </div>
-      </Card>
+      </section>
+
+      {/* ── 3. COMPARISON TABLE ─────────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <SectionBadge label="Compare" />
+            <h2
+              className="mt-4 text-[#111] mx-auto max-w-2xl"
+              style={{
+                fontSize: 44,
+                lineHeight: 1.05,
+                letterSpacing: "-0.03em",
+                fontWeight: 700,
+              }}
+            >
+              The whole product. Side by side.
+            </h2>
+            <p className="mt-4 t-body text-[#3C3C43] mx-auto max-w-xl">
+              Every limit, every protocol surface, every compliance line. No
+              fine print at the bottom.
+            </p>
+          </div>
+          <PricingComparisonTable groups={COMPARISON} />
+        </div>
+      </section>
+
+      {/* ── 4. BUILT INTO EVERY TIER ────────────────────────────────────── */}
+      <section className="px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="surface-subtle rounded-[40px] border border-black/[0.06] p-10 sm:p-16">
+            <div className="mb-10 text-center">
+              <SectionBadge label="Built in" />
+              <h2
+                className="mt-4 text-[#111] mx-auto max-w-2xl"
+                style={{
+                  fontSize: 36,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.025em",
+                  fontWeight: 700,
+                }}
+              >
+                These ship on every tier.
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {EVERY_TIER.map((feature) => (
+                <div
+                  key={feature.title}
+                  className="rounded-2xl border border-black/[0.06] bg-white p-6 flex flex-col gap-2"
+                >
+                  <h3 className="t-title text-[#111]">{feature.title}</h3>
+                  <p className="t-label text-[#3C3C43] leading-relaxed">
+                    {feature.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. CUSTOMER LOGOS STRIP ─────────────────────────────────────── */}
+      <section className="px-6 py-16 border-t border-black/[0.06]">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-center t-overline text-[#8E8E93]">
+            Teams shipping multi-agent systems on Pipes
+          </p>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
+            {LOGO_WORDS.map((word) => (
+              <span
+                key={word}
+                className="text-center t-label font-semibold text-[#8E8E93] tracking-tight"
+                style={{ letterSpacing: "-0.02em" }}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. FAQ ──────────────────────────────────────────────────────── */}
+      <section className="py-24 px-6">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-10 text-center">
+            <SectionBadge label="FAQ" />
+            <h2
+              className="mt-4 text-[#111] mx-auto"
+              style={{
+                fontSize: 44,
+                lineHeight: 1.05,
+                letterSpacing: "-0.03em",
+                fontWeight: 700,
+              }}
+            >
+              Questions, answered.
+            </h2>
+          </div>
+          <PricingFaq items={FAQS} />
+        </div>
+      </section>
+
+      {/* ── 7. FINAL CTA ────────────────────────────────────────────────── */}
+      <section className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="surface-inverse rounded-[40px] p-12 sm:p-20 text-center">
+            <h2
+              className="text-white mx-auto max-w-2xl"
+              style={{
+                fontSize: 52,
+                lineHeight: 1.05,
+                letterSpacing: "-0.035em",
+                fontWeight: 700,
+              }}
+            >
+              Start free. Pay only when you scale.
+            </h2>
+            <p className="mt-5 mx-auto max-w-lg t-body text-[#C7C7CC]">
+              Describe your system. Watch it build itself. The first 50 builds
+              are on us.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <TrackedLink
+                href="/signup?source=pricing_bottom_cta"
+                event="pricing_cta_clicked"
+                metadata={{ source: "pricing_bottom_cta" }}
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-6 h-12 t-label font-semibold text-[#111] hover:bg-[#F5F5F7] transition-colors">
+                  Start free
+                </span>
+              </TrackedLink>
+              <Link
+                href="/contact?source=pricing_bottom_sales"
+                className="t-label font-medium text-white/80 hover:text-white transition-colors"
+              >
+                Talk to sales {"→"}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

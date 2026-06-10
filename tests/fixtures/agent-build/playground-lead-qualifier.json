@@ -1,0 +1,21 @@
+[
+  { "delay_ms": 80, "event": "status", "data": { "state": "thinking" } },
+  { "delay_ms": 220, "event": "message", "data": { "role": "assistant", "text": "Lead intake feeds enrichment, then a tier classifier writes to CRM." } },
+  { "delay_ms": 140, "event": "tool_call", "data": { "id": "tc_1", "tool_name": "add_node", "arguments": { "title": "Lead intake", "description": "Receive new lead.", "x": 200, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_1", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Lead intake", "description": "Receive new lead.", "x": 200, "y": 200, "clientNodeId": "pg_lq_intake" } } },
+  { "delay_ms": 220, "event": "tool_call", "data": { "id": "tc_2", "tool_name": "add_node", "arguments": { "title": "Enrichment lookup", "description": "Add firmographic data.", "x": 480, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_2", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Enrichment lookup", "description": "Add firmographic data.", "x": 480, "y": 200, "clientNodeId": "pg_lq_enrich" } } },
+  { "delay_ms": 200, "event": "tool_call", "data": { "id": "tc_3", "tool_name": "add_node", "arguments": { "title": "Tier classifier", "description": "Hot, warm, or cold.", "x": 760, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_3", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Tier classifier", "description": "Hot, warm, or cold.", "x": 760, "y": 200, "clientNodeId": "pg_lq_tier" } } },
+  { "delay_ms": 200, "event": "tool_call", "data": { "id": "tc_4", "tool_name": "add_node", "arguments": { "title": "CRM write", "description": "Persist the qualified lead.", "x": 1040, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_4", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "CRM write", "description": "Persist the qualified lead.", "x": 1040, "y": 200, "clientNodeId": "pg_lq_crm" } } },
+  { "delay_ms": 140, "event": "tool_call", "data": { "id": "tc_5", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_lq_intake", "toNodeId": "pg_lq_enrich" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_5", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_lq_intake", "toNodeId": "pg_lq_enrich", "clientPipeId": "pg_lq_pipe_1" } } },
+  { "delay_ms": 120, "event": "tool_call", "data": { "id": "tc_6", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_lq_enrich", "toNodeId": "pg_lq_tier" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_6", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_lq_enrich", "toNodeId": "pg_lq_tier", "clientPipeId": "pg_lq_pipe_2" } } },
+  { "delay_ms": 120, "event": "tool_call", "data": { "id": "tc_7", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_lq_tier", "toNodeId": "pg_lq_crm" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_7", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_lq_tier", "toNodeId": "pg_lq_crm", "clientPipeId": "pg_lq_pipe_3" } } },
+  { "delay_ms": 120, "event": "message", "data": { "role": "assistant", "text": "Done. Four nodes wired left to right, every lead ends in the CRM." } },
+  { "delay_ms": 40, "event": "meta", "data": { "elapsed_ms": 2240, "cost_usd": 0.0024 } },
+  { "delay_ms": 40, "event": "done", "data": { "conversationId": "playground", "turnId": "pg_lq_turn_1" } }
+]

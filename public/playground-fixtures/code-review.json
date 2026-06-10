@@ -1,0 +1,23 @@
+[
+  { "delay_ms": 80, "event": "status", "data": { "state": "thinking" } },
+  { "delay_ms": 220, "event": "message", "data": { "role": "assistant", "text": "Three reviewers fan out from a diff fetcher, then post one comment." } },
+  { "delay_ms": 140, "event": "tool_call", "data": { "id": "tc_1", "tool_name": "add_node", "arguments": { "title": "Diff fetcher", "description": "Pull the changed files.", "x": 200, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_1", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Diff fetcher", "description": "Pull the changed files.", "x": 200, "y": 200, "clientNodeId": "pg_cr_diff" } } },
+  { "delay_ms": 220, "event": "tool_call", "data": { "id": "tc_2", "tool_name": "add_node", "arguments": { "title": "Linter agent", "description": "Run static analysis.", "x": 480, "y": 120 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_2", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Linter agent", "description": "Run static analysis.", "x": 480, "y": 120, "clientNodeId": "pg_cr_lint" } } },
+  { "delay_ms": 200, "event": "tool_call", "data": { "id": "tc_3", "tool_name": "add_node", "arguments": { "title": "Security agent", "description": "Find unsafe patterns.", "x": 480, "y": 280 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_3", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Security agent", "description": "Find unsafe patterns.", "x": 480, "y": 280, "clientNodeId": "pg_cr_security" } } },
+  { "delay_ms": 200, "event": "tool_call", "data": { "id": "tc_4", "tool_name": "add_node", "arguments": { "title": "Comment poster", "description": "Reply on the PR.", "x": 760, "y": 200 } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_4", "ok": true, "action": { "action": "addNode", "systemId": "playground", "type": "Node", "title": "Comment poster", "description": "Reply on the PR.", "x": 760, "y": 200, "clientNodeId": "pg_cr_post" } } },
+  { "delay_ms": 140, "event": "tool_call", "data": { "id": "tc_5", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cr_diff", "toNodeId": "pg_cr_lint" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_5", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cr_diff", "toNodeId": "pg_cr_lint", "clientPipeId": "pg_cr_pipe_1" } } },
+  { "delay_ms": 120, "event": "tool_call", "data": { "id": "tc_6", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cr_diff", "toNodeId": "pg_cr_security" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_6", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cr_diff", "toNodeId": "pg_cr_security", "clientPipeId": "pg_cr_pipe_2" } } },
+  { "delay_ms": 120, "event": "tool_call", "data": { "id": "tc_7", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cr_lint", "toNodeId": "pg_cr_post" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_7", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cr_lint", "toNodeId": "pg_cr_post", "clientPipeId": "pg_cr_pipe_3" } } },
+  { "delay_ms": 120, "event": "tool_call", "data": { "id": "tc_8", "tool_name": "add_pipe", "arguments": { "fromNodeId": "pg_cr_security", "toNodeId": "pg_cr_post" } } },
+  { "delay_ms": 60, "event": "tool_result", "data": { "id": "tc_8", "ok": true, "action": { "action": "addPipe", "systemId": "playground", "fromNodeId": "pg_cr_security", "toNodeId": "pg_cr_post", "clientPipeId": "pg_cr_pipe_4" } } },
+  { "delay_ms": 120, "event": "message", "data": { "role": "assistant", "text": "Done. Four nodes, two reviewers fanned out, one comment poster." } },
+  { "delay_ms": 40, "event": "meta", "data": { "elapsed_ms": 2680, "cost_usd": 0.0032 } },
+  { "delay_ms": 40, "event": "done", "data": { "conversationId": "playground", "turnId": "pg_cr_turn_1" } }
+]
