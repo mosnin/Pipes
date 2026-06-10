@@ -11,6 +11,7 @@ import { starterTemplates } from "@/domain/templates/catalog";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { TemplateDetailHero } from "@/components/marketing/TemplateDetailHero";
 import { TemplateNodeBreakdown } from "@/components/marketing/TemplateNodeBreakdown";
+import { TemplateInlineRun } from "@/components/marketing/TemplateInlineRun";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -92,6 +93,15 @@ export default async function TemplateDetailPage({
             : null
         }
       />
+
+      {/* 1b. Inline runnable canvas */}
+      {catalogEntry && (
+        <TemplateInlineRun
+          templateId={template.id}
+          slug={template.slug}
+          title={template.title}
+        />
+      )}
 
       {/* 2. Node breakdown */}
       {catalogEntry && (

@@ -59,7 +59,10 @@ export function PricingTiersGrid({ tiers, period }: PricingTiersGridProps) {
           >
             {isHighlighted && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1 t-micro font-semibold uppercase tracking-[0.08em] text-white shadow-sm-token">
+                <span
+                  data-testid="most-popular-badge"
+                  className="accent-warm-bg accent-warm-text accent-warm-border inline-flex items-center rounded-full border px-3 py-1 t-micro font-semibold uppercase tracking-[0.08em] shadow-sm-token"
+                >
                   Most popular
                 </span>
               </div>

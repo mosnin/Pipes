@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
+import { RouteTransition } from "@/components/marketing/RouteTransition";
 
 // ---------------------------------------------------------------------------
 // Data
@@ -192,7 +193,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
       <MarketingNav />
-      <main id="main" className="flex-1">{children}</main>
+      <main id="main" className="flex-1">
+        <RouteTransition>{children}</RouteTransition>
+      </main>
       <MarketingFooter />
     </div>
   );

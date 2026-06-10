@@ -13,6 +13,7 @@ import {
   type FeatureValue,
 } from "@/components/marketing/CompareFeatureMatrix";
 import { CompareSwitchStrip } from "@/components/marketing/CompareSwitchStrip";
+import { CompareInlineDemo } from "@/components/marketing/CompareInlineDemo";
 
 export async function generateMetadata({
   params,
@@ -426,6 +427,11 @@ export default async function CompareDetailPage({
           choosePipes={copy.choosePipes}
           chooseOther={copy.chooseOther}
         />
+      </div>
+
+      {/* 3b. Side-by-side embedded demo */}
+      <div className="mt-12 sm:mt-16">
+        <CompareInlineDemo competitor={competitorName} />
       </div>
 
       {/* 4. Quote */}

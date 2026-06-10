@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 import { remap, useScrollProgress } from "@/lib/marketing/useScrollProgress";
 import { AnimatedCanvas, type CanvasEdge, type CanvasNode } from "./AnimatedCanvas";
+import { ParallaxLayer } from "./ParallaxLayer";
 
 /**
  * HeroScrollDemo
@@ -111,9 +112,32 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
         className="sticky top-0 flex h-screen w-full items-center justify-center px-4 sm:px-6"
         data-testid="hero-scroll-demo-sticky"
       >
+        {/* Z-depth 1 — background: a soft indigo bloom locked to the section.
+            No movement; pure backdrop. Sits behind everything. */}
+        <ParallaxLayer
+          depth={0}
+          containerRef={wrapRef}
+          testId="hero-depth-bg"
+          className="depth-glow-indigo"
+        >
+          <span className="sr-only">background</span>
+        </ParallaxLayer>
+
+        {/* Z-depth 2 — mid: a faint 24px dotted grid that drifts at 0.35x
+            scroll speed. Subtle parallax against the foreground. */}
+        <ParallaxLayer
+          depth={0.35}
+          containerRef={wrapRef}
+          testId="hero-depth-mid"
+          className="grid-bg opacity-[0.55]"
+        >
+          <span className="sr-only">grid</span>
+        </ParallaxLayer>
+
         <div
-          className="relative w-full max-w-7xl overflow-hidden rounded-[32px] border border-black/[0.08] bg-white shadow-lg-token"
+          className="relative z-[1] w-full max-w-7xl overflow-hidden rounded-[32px] border border-black/[0.08] bg-white shadow-lg-token"
           style={{ aspectRatio: "16 / 9", maxHeight: "85vh" }}
+          data-testid="hero-depth-fg"
         >
           {/* Top chrome */}
           <div className="absolute left-0 right-0 top-0 z-10 flex items-center gap-2 border-b border-black/[0.06] bg-white/95 px-4 py-2.5 backdrop-blur">

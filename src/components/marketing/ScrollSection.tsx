@@ -26,6 +26,14 @@ export interface ScrollSectionProps {
   ariaLabel?: string;
   /** Optional id (for in-page anchors). */
   id?: string;
+  /**
+   * Depth treatment for the inner panel.
+   *
+   *   flat     — solid tone color (default).
+   *   radial   — subtle indigo radial bloom from the top edge.
+   *   vignette — large radial fading to soft shadow at the corners.
+   */
+  depth?: "flat" | "radial" | "vignette";
 }
 
 const TONE_CLASSES: Record<NonNullable<ScrollSectionProps["tone"]>, string> = {
@@ -36,6 +44,12 @@ const TONE_CLASSES: Record<NonNullable<ScrollSectionProps["tone"]>, string> = {
   accent: "bg-indigo-600 text-white",
 };
 
+const DEPTH_CLASSES: Record<NonNullable<ScrollSectionProps["depth"]>, string> = {
+  flat: "",
+  radial: "depth-radial",
+  vignette: "hero-vignette",
+};
+
 export function ScrollSection({
   children,
   tone = "subtle",
@@ -44,6 +58,7 @@ export function ScrollSection({
   innerClassName,
   ariaLabel,
   id,
+  depth = "flat",
 }: ScrollSectionProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const reduced = useReducedMotion();
@@ -58,9 +73,11 @@ export function ScrollSection({
       <div className="mx-auto max-w-7xl">
         <motion.div
           ref={ref}
+          data-depth={depth}
           className={[
             "relative overflow-hidden",
             TONE_CLASSES[tone],
+            DEPTH_CLASSES[depth],
             innerClassName ?? "px-6 py-24 sm:px-12 sm:py-32",
           ].join(" ")}
           style={{ borderRadius: radius }}
