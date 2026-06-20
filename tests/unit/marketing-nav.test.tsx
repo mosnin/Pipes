@@ -27,7 +27,7 @@ afterEach(() => {
 describe("MarketingNav — pill nav", () => {
   it("renders the wordmark and the auth actions", () => {
     render(<MarketingNav />);
-    expect(screen.getAllByText("Pipes").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Looper").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /log in/i })).toBeTruthy();
     expect(screen.getByRole("link", { name: /start free/i })).toBeTruthy();
   });

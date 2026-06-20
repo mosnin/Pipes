@@ -80,7 +80,7 @@ export function EditorTopBar({
         <Breadcrumbs
           items={[
             { label: "Workspace", href: "/dashboard" },
-            { label: "Systems", href: "/dashboard" },
+            { label: "Loops", href: "/dashboard" },
             { label: systemName },
           ]}
           className="hidden md:flex"

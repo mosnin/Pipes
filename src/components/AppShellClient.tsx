@@ -379,7 +379,7 @@ function useGlobalPaletteItems(opts: {
     const items: CommandItem[] = [
       {
         id: "act.new-system",
-        label: "New system",
+        label: "New loop",
         section: "actions",
         aliases: ["create", "blank"],
         run: () => go("/systems/new"),
@@ -407,7 +407,7 @@ function useGlobalPaletteItems(opts: {
       },
       {
         id: "nav.systems",
-        label: "Systems",
+        label: "Loops",
         section: "navigation",
         run: () => go("/systems"),
       },

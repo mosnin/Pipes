@@ -12,7 +12,7 @@ describe("JSON-LD generators", () => {
     const org = organizationJsonLd();
     expect(org["@context"]).toBe("https://schema.org");
     expect(org["@type"]).toBe("Organization");
-    expect(org.name).toBe("Pipes");
+    expect(org.name).toBe("Looper");
     expect(org.url.startsWith("http")).toBe(true);
     expect(org.logo.startsWith("http")).toBe(true);
     expect(Array.isArray(org.sameAs)).toBe(true);
@@ -86,7 +86,7 @@ describe("JSON-LD generators", () => {
       url: "https://pipes.dev/docs",
     });
     expect(withoutAuthor.author["@type"]).toBe("Organization");
-    expect(withoutAuthor.author.name).toBe("Pipes");
+    expect(withoutAuthor.author.name).toBe("Looper");
   });
 
   it("articleJsonLd carries publisher, image, and mainEntityOfPage", () => {

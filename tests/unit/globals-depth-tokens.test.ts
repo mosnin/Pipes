@@ -67,8 +67,8 @@ describe("globals.css depth tokens", () => {
   it("leaves existing animation tokens intact (no accidental deletion)", () => {
     // Anchor on three pre-existing names so a future rewrite of globals.css
     // can't quietly wipe them while landing depth utilities.
-    expect(css).toContain("pipes-node-arrival");
-    expect(css).toContain("pipes-edge-stream");
-    expect(css).toContain("pipes-node-pulsing");
+    expect(css).toContain("looper-node-arrival");
+    expect(css).toContain("looper-edge-stream");
+    expect(css).toContain("looper-node-pulsing");
   });
 });

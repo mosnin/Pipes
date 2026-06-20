@@ -29,7 +29,7 @@ const PRIMARY_SECTIONS: NavSection[] = [
   {
     title: "Workspace",
     items: [
-      { href: "/dashboard", label: "Systems", icon: <LayoutDashboard className={ic} />, shortcut: "G S" },
+      { href: "/dashboard", label: "Loops", icon: <LayoutDashboard className={ic} />, shortcut: "G S" },
       { href: "/templates", label: "Templates", icon: <BookOpen className={ic} />, shortcut: "G T" },
     ],
   },

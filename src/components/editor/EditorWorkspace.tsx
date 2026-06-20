@@ -1085,7 +1085,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             <button
               onClick={() => setLeftPaneOpen(true)}
               className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
-              aria-label="Subsystems"
+              aria-label="Sub-loops"
             >
               <Boxes size={16} />
             </button>

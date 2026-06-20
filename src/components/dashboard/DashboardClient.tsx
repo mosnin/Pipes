@@ -724,8 +724,8 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             library.rows.length === 0 && !query && filter !== "archived" ? (
               <div className="grid-bg min-h-[70vh] flex items-center justify-center rounded-[12px]">
                 <div className="flex flex-col items-center text-center gap-5 w-full max-w-[640px] px-6">
-                  <h2 className="t-h2 text-[#111]">One map your team and your agents both read.</h2>
-                  <p className="t-body text-[#3C3C43]">Describe your system. Watch it build itself.</p>
+                  <h2 className="t-h2 text-[#111]">Build your loop. Your agent builds with you.</h2>
+                  <p className="t-body text-[#3C3C43]">Describe a loop. Watch it appear on the canvas.</p>
                   <div className="w-full">
                     <ConversationInput
                       ref={heroInputRef}
@@ -737,7 +737,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                       hasError={false}
                       placeholderHint={heroSubmitting ? "building" : "idle"}
                       size="hero"
-                      placeholder="Describe your system."
+                      placeholder="Describe your loop."
                     />
                   </div>
                   <div className="flex flex-wrap items-center justify-center gap-2">
@@ -779,21 +779,21 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 illustration={<EmptyCanvas size={96} />}
                 title={
                   query
-                    ? `No systems match "${query}"`
+                    ? `No loops match "${query}"`
                     : filter === "archived"
                       ? "Nothing archived"
                       : filter === "favorites"
                         ? "No favorites yet"
-                        : "No systems yet"
+                        : "No loops yet"
                 }
                 description={
                   query
                     ? "Try a different search or clear the filter."
                     : filter === "archived"
-                      ? "Archived systems live here. They are hidden from the default view."
+                      ? "Archived loops live here. They are hidden from the default view."
                       : filter === "favorites"
-                        ? "Favorite systems for quick access from the toolbar."
-                        : "Describe your system. Watch it build itself."
+                        ? "Favorite loops for quick access from the toolbar."
+                        : "Describe your loop. Watch it appear on the canvas."
                 }
                 action={
                   query ? (
@@ -882,8 +882,8 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           setShowImport(o);
           if (!o) setImportText("");
         }}
-        title="Import system"
-        description="Paste a looper_schema_v1 JSON document. A new system will be created with its contents."
+        title="Import loop"
+        description="Paste a looper_schema_v1 JSON document. A new loop will be created with its contents."
         size="md"
         footer={
           <>

@@ -123,6 +123,39 @@ export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = 
     { key: "format", label: "Output format", type: "select", options: [{ value: "text", label: "Plain text" }, { value: "json", label: "JSON" }, { value: "markdown", label: "Markdown" }, { value: "stream", label: "Streaming" }], defaultValue: "text" },
     { key: "destination", label: "Destination hint", type: "text", placeholder: "UI, webhook, file" },
   ],
+  // Loop-native step types
+  LoopControl: [
+    { key: "maxIterations", label: "Max iterations", type: "number", placeholder: "10", defaultValue: 10, required: true },
+    { key: "stopCondition", label: "Stop condition", type: "text", placeholder: "output.done === true", description: "JavaScript expression evaluated against each iteration output" },
+    { key: "iterationDelay", label: "Delay between iterations (ms)", type: "number", placeholder: "0", defaultValue: 0 },
+    { key: "onMaxReached", label: "On max iterations reached", type: "select", options: [{ value: "stop", label: "Stop (return last output)" }, { value: "error", label: "Error" }, { value: "continue", label: "Continue indefinitely" }], defaultValue: "stop" },
+  ],
+  Checkpoint: [
+    { key: "label", label: "Checkpoint label", type: "text", placeholder: "After research phase", required: true },
+    { key: "saveState", label: "Save full loop state", type: "boolean", defaultValue: true },
+    { key: "allowResume", label: "Allow resume from this point", type: "boolean", defaultValue: true },
+    { key: "ttlHours", label: "State TTL (hours)", type: "number", placeholder: "24", defaultValue: 24 },
+  ],
+  Evaluator: [
+    { key: "criteria", label: "Evaluation criteria", type: "textarea", placeholder: "Score the output on: relevance (0-10), accuracy (0-10), completeness (0-10)", required: true },
+    { key: "scoreThreshold", label: "Pass threshold (0-10)", type: "number", placeholder: "7", defaultValue: 7 },
+    { key: "onFail", label: "On score below threshold", type: "select", options: [{ value: "loop_back", label: "Loop back (retry)" }, { value: "escalate", label: "Escalate to human" }, { value: "accept", label: "Accept anyway" }], defaultValue: "loop_back" },
+    { key: "maxRetries", label: "Max retries before escalate", type: "number", placeholder: "3", defaultValue: 3 },
+    { key: "judgeModel", label: "Judge model", type: "select", options: [{ value: "claude-opus-4-8", label: "Claude Opus 4.8" }, { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" }, { value: "gpt-4o", label: "GPT-4o" }], defaultValue: "claude-sonnet-4-6" },
+  ],
+  HumanReview: [
+    { key: "prompt", label: "Review prompt", type: "textarea", placeholder: "Please review the agent output and approve or request changes.", required: true },
+    { key: "reviewers", label: "Reviewer group / role", type: "text", placeholder: "admin, editor" },
+    { key: "timeoutHours", label: "Review timeout (hours)", type: "number", placeholder: "24", defaultValue: 24 },
+    { key: "onTimeout", label: "On timeout", type: "select", options: [{ value: "auto_approve", label: "Auto-approve" }, { value: "escalate", label: "Escalate" }, { value: "reject", label: "Reject" }], defaultValue: "escalate" },
+    { key: "requireNote", label: "Require decision note", type: "boolean", defaultValue: false },
+    { key: "allowEdit", label: "Allow reviewer to edit output", type: "boolean", defaultValue: true },
+  ],
+  SubLoop: [
+    { key: "loopId", label: "Referenced loop ID", type: "text", placeholder: "loop_abc123", required: true },
+    { key: "passthrough", label: "Pass parent context", type: "boolean", defaultValue: true },
+    { key: "maxIterations", label: "Max iterations override", type: "number", placeholder: "Inherit from sub-loop" },
+  ],
 };
 
 export function getConfigSchema(nodeType: NodeType): ConfigFieldDef[] {

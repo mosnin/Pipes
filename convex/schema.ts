@@ -479,5 +479,31 @@ export default defineSchema({
     createdAt: v.string()
   })
     .index("by_user", ["userId"])
-    .index("by_kind", ["kind"])
+    .index("by_kind", ["kind"]),
+  // Future: loop execution state (schema only — no runtime in Looper v1)
+  loop_runs: defineTable({
+    systemId: v.id("systems"),
+    workspaceId: v.id("workspaces"),
+    triggeredBy: v.union(v.literal("user"), v.literal("agent"), v.literal("schedule")),
+    triggeredById: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("running"),
+      v.literal("paused"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    iterationCount: v.number(),
+    maxIterations: v.optional(v.number()),
+    currentStepId: v.optional(v.string()),
+    inputJson: v.optional(v.string()),
+    outputJson: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.optional(v.string()),
+    pausedAt: v.optional(v.string()),
+    completedAt: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_system", ["systemId"]).index("by_workspace", ["workspaceId"])
 });

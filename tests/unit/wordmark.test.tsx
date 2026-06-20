@@ -3,11 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { Wordmark } from "@/components/Wordmark";
 
 describe("Wordmark", () => {
-  it("renders 'Pipes' as accessible text", () => {
+  it("renders 'Looper' as accessible text", () => {
     render(<Wordmark />);
     const root = screen.getByTestId("wordmark");
     expect(root).toBeTruthy();
-    expect(root.textContent).toContain("Pipes");
+    expect(root.textContent).toContain("Looper");
   });
 
   it("uses ASCII-safe characters only", () => {

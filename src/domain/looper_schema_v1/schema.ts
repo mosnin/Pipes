@@ -27,8 +27,14 @@ export const nodeTypeValues = [
   "Schedule",
   "Environment",
   "Subsystem",
+  "SubLoop",
   "Reference",
-  "Annotation"
+  "Annotation",
+  // Loop-native step types added in looper_schema_v1
+  "LoopControl",
+  "Checkpoint",
+  "Evaluator",
+  "HumanReview",
 ] as const;
 
 export const DEFAULT_NODE_TYPE = "Node" as const;

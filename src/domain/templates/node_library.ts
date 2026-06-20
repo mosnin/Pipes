@@ -2,7 +2,7 @@
 import type { NodeType } from "@/domain/looper_schema_v1/schema";
 
 export type PortType = "string" | "number" | "boolean" | "json" | "event" | "file" | "any";
-export type NodeLibraryCategory = "Core" | "Reasoning" | "I/O" | "Control" | "Data";
+export type NodeLibraryCategory = "Core" | "Reasoning" | "I/O" | "Control" | "Data" | "Loop";
 
 export type NodeLibraryEntry = {
   nodeType: NodeType;
@@ -28,13 +28,13 @@ export type InsertContext = {
 // users describe what it is via title and config.
 export const primaryNodeLibraryEntry: NodeLibraryEntry = {
   nodeType: "Node",
-  name: "New node",
-  description: "Describe what this node is. Looper treats every step uniformly -- you decide what it does.",
+  name: "New step",
+  description: "Describe what this step does. Looper treats every step uniformly -- you decide what it does.",
   category: "Core",
   inputTypes: ["any"],
   outputTypes: ["any"],
-  typicalUse: "Any step in a system. Title and config define behavior.",
-  tags: ["node", "generic", "any"],
+  typicalUse: "Any step in a loop. Title and config define behavior.",
+  tags: ["step", "generic", "any"],
   promoted: true
 };
 
@@ -51,7 +51,13 @@ export const legacyNodeLibraryCatalog: NodeLibraryEntry[] = [
   { nodeType: "Datastore", name: "Datastore", description: "Read/write structured records.", category: "Data", inputTypes: ["json", "string", "number"], outputTypes: ["json", "event"], typicalUse: "Structured persistence or lookup.", tags: ["db", "index", "records"] },
   { nodeType: "Decision", name: "Decision", description: "Branch by predicate or classification.", category: "Control", inputTypes: ["json", "boolean", "number", "string"], outputTypes: ["event", "json", "boolean"], typicalUse: "Conditional branching and policy checks.", tags: ["branch", "if", "policy"] },
   { nodeType: "Router", name: "Router", description: "Dispatch to one of many downstream paths.", category: "Control", inputTypes: ["event", "json", "string"], outputTypes: ["event", "json"], typicalUse: "Traffic split across specialists.", tags: ["dispatch", "fanout", "route"] },
-  { nodeType: "Loop", name: "Loop", description: "Iterate a sequence with stopping criteria.", category: "Control", inputTypes: ["json", "event", "number"], outputTypes: ["event", "json", "number"], typicalUse: "Retries, iterative refinements.", tags: ["iterate", "retry", "cycle"] }
+  { nodeType: "Loop", name: "Loop", description: "Iterate a sequence with stopping criteria.", category: "Control", inputTypes: ["json", "event", "number"], outputTypes: ["event", "json", "number"], typicalUse: "Retries, iterative refinements.", tags: ["iterate", "retry", "cycle"] },
+  // Loop-native step types
+  { nodeType: "LoopControl", name: "Loop Control", description: "Set iteration limits, stop conditions, and loop termination behavior.", category: "Loop", inputTypes: ["json", "event", "number"], outputTypes: ["event", "json", "boolean"], typicalUse: "Control how many times a loop runs and when it stops.", tags: ["iterations", "terminate", "stop", "counter"], promoted: true },
+  { nodeType: "Checkpoint", name: "Checkpoint", description: "Save loop state so the run can be paused and resumed.", category: "Loop", inputTypes: ["json", "event"], outputTypes: ["json", "event"], typicalUse: "Safe pause points and disaster recovery for long-running loops.", tags: ["save", "resume", "state", "recovery"] },
+  { nodeType: "Evaluator", name: "Evaluator", description: "Score or judge the last loop output and decide whether to iterate again.", category: "Loop", inputTypes: ["json", "string"], outputTypes: ["json", "boolean", "number"], typicalUse: "Reflection and self-critique pattern: loop continues until score passes threshold.", tags: ["judge", "score", "reflect", "critique", "quality"], promoted: true },
+  { nodeType: "HumanReview", name: "Human Review", description: "Pause the loop and surface output to a human for approval or editing.", category: "Loop", inputTypes: ["json", "string"], outputTypes: ["json", "string", "boolean"], typicalUse: "Quality gate: a human reviews before the loop continues.", tags: ["review", "approve", "human", "gate", "HITL"], promoted: true },
+  { nodeType: "SubLoop", name: "Sub-loop", description: "Embed another loop as a step inside this one.", category: "Loop", inputTypes: ["json", "event", "any"], outputTypes: ["json", "event", "any"], typicalUse: "Reusable loops as nested building blocks.", tags: ["nested", "reuse", "embed", "subsystem"] },
 ];
 
 // nodeLibraryCatalog is the unified catalog. The primary "Node" entry leads; legacy entries
@@ -64,14 +70,19 @@ export const nodeLibraryCatalog: NodeLibraryEntry[] = [
 
 const commonPatterns: Partial<Record<NodeType, NodeType[]>> = {
   Input: ["Agent", "Router", "Decision"],
-  Agent: ["Tool", "Model", "Memory", "Output"],
+  Agent: ["Tool", "Model", "Memory", "Output", "Evaluator"],
   Tool: ["Agent", "Decision", "Output"],
   Model: ["Agent", "Output"],
   Prompt: ["Model", "Agent"],
   Memory: ["Agent", "Decision"],
   Decision: ["Agent", "Tool", "Output"],
   Router: ["Agent", "Tool"],
-  Loop: ["Agent", "Tool"],
+  Loop: ["Agent", "Tool", "LoopControl"],
+  LoopControl: ["Agent", "Evaluator"],
+  Evaluator: ["Agent", "HumanReview", "Output"],
+  Checkpoint: ["Agent", "Evaluator"],
+  HumanReview: ["Agent", "Output"],
+  SubLoop: ["Agent", "Output", "Evaluator"],
   Datastore: ["Agent", "Decision"],
   Output: []
 };

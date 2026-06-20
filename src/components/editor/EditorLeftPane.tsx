@@ -59,7 +59,7 @@ export function EditorLeftPane({
             <ChevronRight size={16} />
           </button>
         </Tooltip>
-        <Tooltip content="Add node" side="right">
+        <Tooltip content="Add step" side="right">
           <button
             onClick={() => {
               onToggleCollapsed();
@@ -67,7 +67,7 @@ export function EditorLeftPane({
               if (fallback) onInsertEntry(fallback);
             }}
             className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
-            aria-label="Add node"
+            aria-label="Add step"
           >
             <Plus size={16} />
           </button>
@@ -81,11 +81,11 @@ export function EditorLeftPane({
             <Layers size={16} />
           </button>
         </Tooltip>
-        <Tooltip content="Subsystems" side="right">
+        <Tooltip content="Sub-loops" side="right">
           <button
             onClick={onToggleCollapsed}
             className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
-            aria-label="Subsystems"
+            aria-label="Sub-loops"
           >
             <Boxes size={16} />
           </button>
@@ -118,7 +118,7 @@ export function EditorLeftPane({
           items={[
             { id: "library", label: "Library" },
             { id: "structure", label: "Tree" },
-            { id: "subsystems", label: "Groups" },
+            { id: "subsystems", label: "Sub-loops" },
           ]}
           className="flex-1"
         />
@@ -141,7 +141,7 @@ export function EditorLeftPane({
             onClick={addNode}
             className="w-full justify-center font-semibold"
           >
-            <Plus size={14} /> Add node
+            <Plus size={14} /> Add step
           </Button>
           {recentTitles.length > 0 && (
             <div className="space-y-1">

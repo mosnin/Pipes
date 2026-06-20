@@ -113,7 +113,7 @@ describe("BlogPostLayout", () => {
       </BlogPostLayout>,
     );
     expect(screen.getByTestId("newsletter-signup")).toBeTruthy();
-    expect(screen.getByText("Subscribe to the Pipes notes.")).toBeTruthy();
+    expect(screen.getByText("Subscribe to the Looper notes.")).toBeTruthy();
   });
 
   it("includes a back link to /blog", () => {
