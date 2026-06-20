@@ -29,7 +29,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
           <div>
             <h3 className="t-h3 font-semibold text-[#111]">{this.props.area} crashed</h3>
             <p className="t-label text-[#3C3C43] mt-1">
-              Something went wrong rendering this surface. Reload the panel to retry.
+              This panel is temporarily unavailable. Reload to retry.
             </p>
             {this.state.message && (
               <p className="t-caption text-[#8E8E93] mt-2 break-words">{this.state.message}</p>
@@ -47,7 +47,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
               Reload panel
             </Button>
             <a
-              href="mailto:support@pipes.ai"
+              href="mailto:support@looper.dev"
               className="t-label text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               Report issue

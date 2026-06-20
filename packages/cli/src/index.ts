@@ -20,7 +20,7 @@ initTelemetry();
 const program = new Command("looper")
   .description("CLI for Looper — build and manage agent systems from your terminal")
   .version("0.1.0")
-  .option("--api <url>", "Pipes API base URL (overrides LOOPER_API and .looper.yml)")
+  .option("--api <url>", "Looper API base URL (overrides LOOPER_API and .looper.yml)")
   .option("--token <token>", "Agent token (overrides LOOPER_TOKEN and .looper.yml)")
   .option("--json", "Output raw JSON (machine-readable)")
   .option("--strict", "Reject content with detected prompt injection patterns (default: warn only)")
@@ -36,20 +36,20 @@ Config file:
   .looper.yml    Searched in the current directory and all parent directories
 
 Examples:
-  pipes init
-  pipes systems list
-  pipes systems create "My Agent System"
-  pipes schema export sys_abc123 --out schema.json
-  pipes graph add-node sys_abc123 --type Agent --title "Planner"
-  pipes graph apply actions.json
-  pipes validate sys_abc123
-  pipes capabilities
-  pipes mcp-server
+  looper init
+  looper loops list
+  looper loops create "My Research Loop"
+  looper schema export sys_abc123 --out schema.json
+  looper graph add-node sys_abc123 --type Agent --title "Planner"
+  looper graph apply actions.json
+  looper validate sys_abc123
+  looper capabilities
+  looper mcp-server
 
 Enable tab completion:
-  eval "$(pipes completion --shell bash)"  # bash
-  eval "$(pipes completion --shell zsh)"   # zsh
-  pipes completion --shell fish > ~/.config/fish/completions/pipes.fish
+  eval "$(looper completion --shell bash)"  # bash
+  eval "$(looper completion --shell zsh)"   # zsh
+  looper completion --shell fish > ~/.config/fish/completions/looper.fish
 `
   );
 

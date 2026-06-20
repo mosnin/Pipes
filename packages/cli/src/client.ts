@@ -29,7 +29,7 @@ function assertToken(token: string) {
   if (!token) {
     throw new ApiError(
       "AUTH_REQUIRED",
-      "No token found. Set LOOPER_TOKEN, add it to .looper.yml, or run: pipes init"
+      "No token found. Set LOOPER_TOKEN, add it to .looper.yml, or run: looper init"
     );
   }
 }
@@ -57,7 +57,7 @@ export class LooperClient {
   }
 
   async get<T>(path: string): Promise<T> {
-    return withSpan("pipes.api.get", { "http.method": "GET", "http.path": path }, async () => {
+    return withSpan("looper.api.get", { "http.method": "GET", "http.path": path }, async () => {
       assertToken(this.cfg.token);
       const res = await fetch(`${this.cfg.api}${path}`, {
         headers: this.headers(),
@@ -68,7 +68,7 @@ export class LooperClient {
   }
 
   async getRaw<T>(path: string): Promise<ApiResponse<T>> {
-    return withSpan("pipes.api.get_raw", { "http.method": "GET", "http.path": path }, async () => {
+    return withSpan("looper.api.get_raw", { "http.method": "GET", "http.path": path }, async () => {
       assertToken(this.cfg.token);
       const res = await fetch(`${this.cfg.api}${path}`, {
         headers: this.headers(),
@@ -82,7 +82,7 @@ export class LooperClient {
     body: unknown,
     opts: { idempotencyKey?: string } = {}
   ): Promise<ApiResponse<T>> {
-    return withSpan("pipes.api.post", { "http.method": "POST", "http.path": path }, async () => {
+    return withSpan("looper.api.post", { "http.method": "POST", "http.path": path }, async () => {
       assertToken(this.cfg.token);
       const extra: Record<string, string> = {};
       if (opts.idempotencyKey) extra["idempotency-key"] = opts.idempotencyKey;

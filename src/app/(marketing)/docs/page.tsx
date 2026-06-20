@@ -184,7 +184,7 @@ import { Looper } from "@looper/sdk";
 
 const looper = new Looper({ token: process.env.LOOPER_TOKEN });
 
-await pipes.templates.create({
+await looper.templates.create({
   sourceSystemId: "sys_01HQK3D2NXR4M9F7Z8AVB6PJTK",
   name: "Inbound research starter",
   summary: "Crawl, summarize, route, and store.",

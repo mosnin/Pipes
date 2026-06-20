@@ -46,7 +46,7 @@ const TOOLS = [
   },
   {
     name: "get_graph",
-    description: "Get the current nodes and pipes in a system.",
+    description: "Get the current steps and connections in a loop.",
     inputSchema: {
       type: "object" as const,
       properties: { systemId: { type: "string", description: "System ID" } },
@@ -153,7 +153,7 @@ const TOOLS = [
   },
   {
     name: "memory_store",
-    description: "Store a piece of content as a structured memory record. Calls OpenAI to extract metadata (title, type, topic, tags, summary, confidence, importance) then saves it as a Memory node in the specified Pipes system. Requires OPENAI_API_KEY env var.",
+    description: "Store a piece of content as a structured memory record. Calls OpenAI to extract metadata (title, type, topic, tags, summary, confidence, importance) then saves it as a Memory node in the specified Looper loop. Requires OPENAI_API_KEY env var.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -242,9 +242,9 @@ export function registerMcpServer(program: Command): void {
   program
     .command("mcp-server")
     .description(
-      "Start a stdio MCP server exposing all Pipes operations as tools"
+      "Start a stdio MCP server exposing all Looper Loop API operations as tools"
     )
-    .option("--api <url>", "Pipes API base URL")
+    .option("--api <url>", "Looper API base URL")
     .option("--token <token>", "Agent token")
     .option("--http", "Start in HTTP mode instead of stdio")
     .option("--port <port>", "HTTP port (default: 3456)")
@@ -396,7 +396,7 @@ export function registerMcpServer(program: Command): void {
               const injectionMatch = detectInjection(safeContent);
               if (injectionMatch) {
                 // In MCP context, log to stderr and continue (don't block agents)
-                process.stderr.write(`[pipes/mcp] Injection pattern detected in memory_store content: "${injectionMatch}"\n`);
+                process.stderr.write(`[looper/mcp] Injection pattern detected in memory_store content: "${injectionMatch}"\n`);
               }
               const record = await extractMetadata(safeContent, {
                 content_type: a["content_type"] as string | undefined,
@@ -595,7 +595,7 @@ export function registerMcpServer(program: Command): void {
         const host = opts.host ?? "127.0.0.1";
 
         httpServer.listen(port, host, () => {
-          process.stderr.write(`Pipes MCP server running (HTTP) on ${host}:${port}/mcp\n`);
+          process.stderr.write(`Looper MCP server running (HTTP) on ${host}:${port}/mcp\n`);
         });
 
         await server.connect(transport);

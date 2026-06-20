@@ -65,8 +65,8 @@ export function registerSystems(program: Command): void {
         console.log(`ID:          ${data.id}`);
         console.log(`Name:        ${data.name}`);
         console.log(`Description: ${data.description ?? "(none)"}`);
-        console.log(`Nodes:       ${data.nodes ?? 0}`);
-        console.log(`Pipes:       ${data.pipes ?? 0}`);
+        console.log(`Steps:       ${data.nodes ?? 0}`);
+        console.log(`Connections: ${data.pipes ?? 0}`);
         if (data.createdAt) console.log(`Created:     ${new Date(data.createdAt).toLocaleString()}`);
         if (data.updatedAt) console.log(`Updated:     ${new Date(data.updatedAt).toLocaleString()}`);
       } catch (err) {
