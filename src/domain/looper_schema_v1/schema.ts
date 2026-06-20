@@ -44,7 +44,7 @@ export function isLegacyNodeType(type: string): boolean {
 }
 
 export const roleValues = ["Owner", "Admin", "Editor", "Commenter", "Viewer"] as const;
-export const planValues = ["Free", "Pro", "Builder"] as const;
+export const planValues = ["Free", "Pro", "Team", "Enterprise", "Builder"] as const;
 
 const id = z.string().min(3);
 const isoDate = z.string().datetime();

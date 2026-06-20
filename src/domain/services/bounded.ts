@@ -40,11 +40,15 @@ export class SystemService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
   async list(ctx: AppContext) { this.access.ensureCanView(ctx); return (await this.repos.systems.list(ctx.workspaceId)).filter((s) => !s.archivedAt); }
   async listAll(ctx: AppContext) { this.access.ensureCanView(ctx); return this.repos.systems.list(ctx.workspaceId); }
-  async create(ctx: AppContext, input: { name: string; description?: string }) {
+  async create(ctx: AppContext, input: { name: string; description?: string; visibility?: "public" | "private" }) {
     this.access.ensureCanEdit(ctx);
     const existing = await this.repos.systems.list(ctx.workspaceId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
-    if (existing.length >= limits.maxSystems) throw new Error(`Plan limit reached (${limits.maxSystems} systems). Upgrade required.`);
+    if (limits.maxSystems >= 0 && existing.length >= limits.maxSystems) throw new Error(`Plan limit reached (${limits.maxSystems} loops). Upgrade to create more.`);
+    const visibility = input.visibility ?? "public";
+    if (visibility === "private" && !limits.privateLoops) throw new Error("Private loops require Pro. Upgrade to keep loops private.");
+    const publicCount = existing.filter((s) => !s.archivedAt).length;
+    if (visibility === "public" && limits.maxPublicLoops >= 0 && publicCount >= limits.maxPublicLoops) throw new Error(`Free plan includes ${limits.maxPublicLoops} public loops. Upgrade to Pro for unlimited loops.`);
     const created = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: input.name, description: input.description ?? "" });
     if (existing.length === 0) {
       await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "signal.first_system_created", targetType: "system", targetId: created, outcome: "success", systemId: created });
