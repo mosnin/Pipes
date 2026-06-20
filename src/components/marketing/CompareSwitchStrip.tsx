@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 /**
  * CompareSwitchStrip
  *
- * Two side-by-side panels: when to choose Pipes vs when to choose the
+ * Two side-by-side panels: when to choose Looper vs when to choose the
  * other product. Three short bullets each. Honest, not hype.
  *
  * Sits inside a rounded-[40px] inverse surface for visual contrast.
@@ -43,7 +43,7 @@ export function CompareSwitchStrip({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <Panel
-              eyebrow="Choose Pipes when"
+              eyebrow="Choose Looper when"
               title="The system has to be read back"
               bullets={choosePipes}
               accent

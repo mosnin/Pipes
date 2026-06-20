@@ -122,10 +122,10 @@ export async function POST(request: Request) {
       const tools = [
         { name: "list_systems", capability: "systems:read", description: "List all systems in the workspace." },
         { name: "get_system", capability: "systems:read", description: "Get full system bundle including nodes and pipes." },
-        { name: "export_system_schema", capability: "schema:read", description: "Export canonical pipes_schema_v1 JSON." },
+        { name: "export_system_schema", capability: "schema:read", description: "Export canonical looper_schema_v1 JSON." },
         { name: "list_templates", capability: "templates:read", description: "List available starter templates." },
         { name: "instantiate_template", capability: "templates:instantiate", description: "Create a new system from a template." },
-        { name: "create_system_from_schema", capability: "import:write", description: "Import a pipes_schema_v1 JSON as a new system." },
+        { name: "create_system_from_schema", capability: "import:write", description: "Import a looper_schema_v1 JSON as a new system." },
         { name: "create_version", capability: "versions:write", description: "Snapshot the current system state." },
         { name: "apply_graph_actions", capability: "graph:write", description: "Apply one or many graph mutations (actions: addNode|updateNode|deleteNode|addPipe|deletePipe). Accepts single action or actions[] array." },
         { name: "add_comment", capability: "comments:write", description: "Add a comment to a system or node." },

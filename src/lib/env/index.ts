@@ -11,7 +11,7 @@ const optionalUrl = z.preprocess(emptyToUndefined, z.string().url().optional());
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PIPES_USE_MOCKS: z.string().default("true").transform((value) => value === "true"),
+  LOOPER_USE_MOCKS: z.string().default("true").transform((value) => value === "true"),
   NEXT_PUBLIC_APP_URL: z.preprocess(emptyToUndefined, z.string().url().default("http://localhost:3000")),
   CLERK_SECRET_KEY: optionalString,
   CLERK_PUBLISHABLE_KEY: optionalString,
@@ -26,8 +26,8 @@ const envSchema = z.object({
   OPENAI_AGENTS_MODEL: optionalString,
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
-  PIPES_AGENT_ENDPOINT_URL: optionalUrl,
-  PIPES_ADMIN_ALLOWLIST: optionalString
+  LOOPER_AGENT_ENDPOINT_URL: optionalUrl,
+  LOOPER_ADMIN_ALLOWLIST: optionalString
 });
 
 export function buildEnv(source: NodeJS.ProcessEnv) {
@@ -37,20 +37,20 @@ export function buildEnv(source: NodeJS.ProcessEnv) {
 export const env = buildEnv(process.env);
 
 export const runtimeFlags = {
-  useMocks: env.PIPES_USE_MOCKS,
+  useMocks: env.LOOPER_USE_MOCKS,
   hasClerk: Boolean(env.CLERK_SECRET_KEY && (env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? env.CLERK_PUBLISHABLE_KEY)),
   hasConvex: Boolean(env.CONVEX_URL),
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL),
-  hasAgentRunner: Boolean(env.PIPES_AGENT_ENDPOINT_URL)
+  hasAgentRunner: Boolean(env.LOOPER_AGENT_ENDPOINT_URL)
 };
 
 export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 
 export function resolveRuntimeMode(): { mode: EffectiveRuntimeMode; warning?: string } {
-  if (env.PIPES_USE_MOCKS) return { mode: "mock" };
+  if (env.LOOPER_USE_MOCKS) return { mode: "mock" };
   const missing: string[] = [];
   if (!env.CONVEX_URL) missing.push("CONVEX_URL");
   if (!(env.CLERK_SECRET_KEY && (env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? env.CLERK_PUBLISHABLE_KEY))) missing.push("CLERK_SECRET_KEY/NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");

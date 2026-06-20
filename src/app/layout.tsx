@@ -11,7 +11,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 // `GeistSans.variable` exposes `--font-geist-sans`; mono is `--font-geist-mono`.
 
 export const metadata: Metadata = {
-  title: "Pipes",
+  title: "Looper",
   description: "One map your team and your agents both read.",
 };
 

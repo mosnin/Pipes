@@ -17,7 +17,7 @@ export function registerSchema(program: Command): void {
 
   schema
     .command("export <systemId>")
-    .description("Export a system as pipes_schema_v1 JSON (streamed to stdout or a file)")
+    .description("Export a system as looper_schema_v1 JSON (streamed to stdout or a file)")
     .option("--out <file>", "Write output to a file instead of stdout")
     .action(async (systemId: string, opts: { out?: string }) => {
       const global = program.optsWithGlobals<GlobalOpts>();
@@ -27,7 +27,7 @@ export function registerSchema(program: Command): void {
         printError(
           new ApiError(
             "AUTH_REQUIRED",
-            "No token found. Set PIPES_TOKEN, add it to .pipes.yml, or run: pipes init"
+            "No token found. Set LOOPER_TOKEN, add it to .looper.yml, or run: pipes init"
           )
         );
       }
@@ -75,7 +75,7 @@ export function registerSchema(program: Command): void {
 
   schema
     .command("import <file>")
-    .description("Import a pipes_schema_v1 JSON file as a new system")
+    .description("Import a looper_schema_v1 JSON file as a new system")
     .option("--name <name>", "Override the system name from the schema")
     .option("--idempotency-key <key>", "Idempotency key for safe retries")
     .action(async (file: string, opts: { name?: string; idempotencyKey?: string }) => {

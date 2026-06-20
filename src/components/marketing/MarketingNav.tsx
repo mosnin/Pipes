@@ -136,7 +136,7 @@ export function MarketingNav() {
             {/* Left: wordmark */}
             <Link
               href="/"
-              aria-label="Pipes home"
+              aria-label="Looper home"
               className="ml-2 inline-flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               <Wordmark size="sm" />

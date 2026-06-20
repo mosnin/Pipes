@@ -30,7 +30,7 @@ export class OpenAIAgentHarnessService {
           temperature: 0.1,
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: "You are Pipes runtime harness. Return strict JSON keys: planRefinement, critique, openQuestions, proposalInputs(actionType add_annotation|delete_node + rationale), conflictSignals." },
+            { role: "system", content: "You are Looper runtime harness. Return strict JSON keys: planRefinement, critique, openQuestions, proposalInputs(actionType add_annotation|delete_node + rationale), conflictSignals." },
             { role: "user", content: JSON.stringify(input) }
           ]
         })

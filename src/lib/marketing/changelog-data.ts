@@ -90,7 +90,7 @@ export const changelogEntries: ReadonlyArray<ChangelogEntry> = [
     anchor: "v2-5-0",
     title: "Schema migration v1 lock",
     summary:
-      "pipes_schema_v1 is the canonical export. Older bundles are auto-migrated on import.",
+      "looper_schema_v1 is the canonical export. Older bundles are auto-migrated on import.",
     changes: [
       { kind: "shipped", text: "27 node types frozen under nodeTypeValues with a migration map for legacy bundles." },
       { kind: "shipped", text: "Validation runs server-side on every import; rejects unknown types with a per-line error." },
@@ -213,7 +213,7 @@ export const changelogEntries: ReadonlyArray<ChangelogEntry> = [
     anchor: "v1-9-0",
     title: "Mock mode for offline dev",
     summary:
-      "Set PIPES_USE_MOCKS to true. Every repository is in-memory. No Convex, no Clerk, no external APIs.",
+      "Set LOOPER_USE_MOCKS to true. Every repository is in-memory. No Convex, no Clerk, no external APIs.",
     changes: [
       { kind: "shipped", text: "Mock implementation of every contract in src/lib/repositories/contracts.ts." },
       { kind: "shipped", text: "Unit tests now run against the mock by default and complete in under 8 seconds." },

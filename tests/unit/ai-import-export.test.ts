@@ -45,7 +45,7 @@ describe("ai + template + import/export", () => {
     expect(imported.ok).toBe(true);
     if (!("systemId" in imported)) throw new Error("Expected systemId from new import.");
     const exportedAgain = await services.importExport.exportSystem(ctx, imported.systemId as string);
-    expect(exportedAgain.schemaVersion).toBe("pipes_schema_v1");
+    expect(exportedAgain.schemaVersion).toBe("looper_schema_v1");
   });
 
   it("applies only selected AI changes and skips rejected changes", async () => {

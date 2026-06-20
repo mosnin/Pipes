@@ -25,7 +25,7 @@ import { TurnDiffDialog } from "@/components/editor/TurnDiffDialog";
 import type { TurnRailEntry } from "@/components/editor/TurnHistoryRail";
 import { triggerOpenInClaude } from "@/lib/agent/open-in-claude";
 import { getConfigSchema } from "@/domain/node_config/schema";
-import type { NodeType } from "@/domain/pipes_schema_v1/schema";
+import type { NodeType } from "@/domain/looper_schema_v1/schema";
 import { register as registerShortcut } from "@/lib/keyboard/registry";
 import { PortAffordance, type PortAffordanceData } from "@/components/editor/PortAffordance";
 import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
@@ -1400,7 +1400,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                   <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}>Export JSON</Button>
                   <Button variant="ghost" size="sm" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}>Export Markdown</Button>
                 </div>
-                <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
+                <Input value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="Paste looper_schema_v1 JSON" />
                 <Button onClick={async () => {
                   const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importPayload, mode: "existing", targetSystemId: systemId, preview: true }) });
                   const resData = await res.json();

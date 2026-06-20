@@ -1,4 +1,4 @@
-import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, RunStatus, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
 import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";

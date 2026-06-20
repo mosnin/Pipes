@@ -1,6 +1,6 @@
 # Audience
 
-This document names the one person Pipes is built for. Every screen, headline, starter, and API surface cites this file. If a feature does not serve the user named here, it does not ship.
+This document names the one person Looper is built for. Every screen, headline, starter, and API surface cites this file. If a feature does not serve the user named here, it does not ship.
 
 ## The user
 
@@ -22,7 +22,7 @@ Describe your system. Watch it build itself.
 
 ## The 30-second answer
 
-Pipes is a conversation surface for the architecture you are shipping. You describe the system in plain text. The agent draws the nodes, ports, and pipes on the canvas in front of you. You correct it the way you correct a teammate. Your team reviews the graph. Any agent you hand a token reads the same graph through one protocol. You stop drawing. You stop re-explaining.
+Looper is a conversation surface for the architecture you are shipping. You describe the system in plain text. The agent draws the nodes, ports, and pipes on the canvas in front of you. You correct it the way you correct a teammate. Your team reviews the graph. Any agent you hand a token reads the same graph through one protocol. You stop drawing. You stop re-explaining.
 
 ## Voice rules
 

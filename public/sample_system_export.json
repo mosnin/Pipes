@@ -1,5 +1,5 @@
 {
-  "version": "pipes_schema_v1",
+  "version": "looper_schema_v1",
   "systems": [
     {
       "id": "sys_support_router",

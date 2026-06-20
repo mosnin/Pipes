@@ -29,7 +29,7 @@ import { register } from "@/lib/keyboard/registry";
 import { Wordmark } from "@/components/Wordmark";
 import { useDynamicPaletteItems } from "@/lib/palette/useDynamicPaletteItems";
 
-const COLLAPSE_KEY = "pipes-sidebar-collapsed";
+const COLLAPSE_KEY = "looper-sidebar-collapsed";
 
 export type AppShellClientProps = {
   user: {
@@ -134,7 +134,7 @@ export function AppShellClient({
             <Link
               href="/dashboard"
               className="flex items-center min-w-0 flex-1 px-1"
-              aria-label="Pipes home"
+              aria-label="Looper home"
             >
               {collapsed ? (
                 <span className="t-title font-bold tracking-[-0.04em] text-[#111] truncate">P</span>
@@ -484,7 +484,7 @@ function CommandPaletteWithDynamicItems({
       const next = cur === "dark" ? "light" : "dark";
       root.setAttribute("data-color-scheme", next);
       try {
-        localStorage.setItem("pipes-theme", next);
+        localStorage.setItem("looper-theme", next);
       } catch {
         // ignore
       }

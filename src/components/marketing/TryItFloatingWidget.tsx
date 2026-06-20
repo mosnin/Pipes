@@ -133,7 +133,7 @@ export function TryItFloatingWidget() {
             onMouseLeave={() => setHovered(false)}
             onFocus={() => setHovered(true)}
             onBlur={() => setHovered(false)}
-            aria-label="Try Pipes in a slim playground"
+            aria-label="Try Looper in a slim playground"
             data-testid="try-it-trigger"
             data-seen={seenBefore ? "1" : "0"}
             className="inline-flex items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg-token outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
@@ -166,7 +166,7 @@ export function TryItFloatingWidget() {
         open={open}
         onOpenChange={(next) => (next ? handleOpen() : handleClose())}
         title="Describe a system in one sentence"
-        description="Pick a starter. Pipes draws it on the canvas in seconds."
+        description="Pick a starter. Looper draws it on the canvas in seconds."
         size="lg"
       >
         <SlimPlayground onClose={handleClose} />

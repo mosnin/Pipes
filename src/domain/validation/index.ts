@@ -1,4 +1,4 @@
-import type { Pipe, Port, System, ValidationIssue, ValidationReport, Node } from "@/domain/pipes_schema_v1/schema";
+import type { Pipe, Port, System, ValidationIssue, ValidationReport, Node } from "@/domain/looper_schema_v1/schema";
 
 export type ValidationSeverity = "info" | "warning" | "error";
 

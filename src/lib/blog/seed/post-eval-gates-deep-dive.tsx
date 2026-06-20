@@ -289,7 +289,7 @@ function PostBody() {
       </P>
       <P>
         We are sketching it as a Python module that takes a{" "}
-        <Inline>pipes_schema_v1</Inline> graph and a synthetic input,
+        <Inline>looper_schema_v1</Inline> graph and a synthetic input,
         walks the pipes, and reports a verdict. We are not shipping it
         yet. We will write about it when we are. The shape of the gate
         will be the same as the two we have:
@@ -319,7 +319,7 @@ export const post: BlogPost = {
     "The agent is non-deterministic. The graph is deterministic. The gap is where the bugs live. We sit two gates in the middle and let them veto.",
   author: {
     name: "Mira Patel",
-    role: "Staff engineer, Pipes",
+    role: "Staff engineer, Looper",
   },
   date: "2026-05-21",
   tags: ["Engineering", "Agent"],

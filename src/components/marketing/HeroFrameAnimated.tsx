@@ -87,7 +87,7 @@ export function HeroFrameAnimated() {
       {/* Top chrome */}
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
         <span className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>
-          Pipes
+          Looper
         </span>
         <span className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
           sys_8a72
@@ -211,7 +211,7 @@ export function HeroFrameAnimated() {
         <div className="flex flex-col gap-3">
           <div className="rounded-md border border-black/[0.08] bg-white px-3 py-2">
             <p className="t-caption text-[#8E8E93]" style={{ fontSize: 10 }}>
-              Pipes built
+              Looper built
             </p>
             <div className="pipes-hero-readback mt-1 flex flex-col gap-1.5">
               {READBACK_LINES.map((line) => (

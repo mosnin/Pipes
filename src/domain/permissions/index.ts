@@ -1,4 +1,4 @@
-import type { Role } from "@/domain/pipes_schema_v1/schema";
+import type { Role } from "@/domain/looper_schema_v1/schema";
 
 const roleRank: Record<Role, number> = {
   Viewer: 1,

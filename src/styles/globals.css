@@ -183,7 +183,7 @@ a { color: inherit; text-decoration: none; }
 /* Three beats, each tasteful, each fast. See docs/agent-product.md. */
 
 /* 1. Node arrival — scale + fade + indigo glow that decays. 300 ms total. */
-@keyframes pipes-node-arrival {
+@keyframes looper-node-arrival {
   0% {
     transform: scale(0.92);
     opacity: 0;
@@ -201,7 +201,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* 2. Edge stream — stroke draws on with a fade. 180 ms. */
-@keyframes pipes-edge-stream {
+@keyframes looper-edge-stream {
   0% {
     stroke-opacity: 0;
     stroke-width: 1;
@@ -217,7 +217,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* 3. Active-tool pulse — 1 px ring expands to 4 px and fades. 1.2 s loop. */
-@keyframes pipes-node-pulsing {
+@keyframes looper-node-pulsing {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.6);
   }
@@ -227,18 +227,18 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .pipes-node-arrival {
-    animation: pipes-node-arrival 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  .looper-node-arrival {
+    animation: looper-node-arrival 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
     will-change: transform, opacity, box-shadow;
   }
   /* The class lands on the React-Flow edge wrapper <g>; we drive the keyframe
      on the inner path that does the actual stroking. */
-  .pipes-edge-stream .react-flow__edge-path,
-  .pipes-edge-stream > path {
-    animation: pipes-edge-stream 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  .looper-edge-stream .react-flow__edge-path,
+  .looper-edge-stream > path {
+    animation: looper-edge-stream 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .pipes-node-pulsing {
-    animation: pipes-node-pulsing 1200ms ease-in-out infinite;
+  .looper-node-pulsing {
+    animation: looper-node-pulsing 1200ms ease-in-out infinite;
     border-radius: 8px;
   }
 }

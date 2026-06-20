@@ -1,6 +1,6 @@
-# Pipes
+# Looper
 
-Pipes is a visual and machine-readable system design platform for agentic systems.
+Looper is a visual and machine-readable system design platform for agentic systems.
 
 ## Structured creation milestone
 This pass adds:
@@ -169,7 +169,7 @@ Agent runs now persist explicit evaluation artifacts (run quality, proposal-batc
 
 ## Collaborative agent building
 
-Pipes now supports explicit collaborative run review: shared run presence, threaded review comments on proposal batches/diff items, collaborative approval input with owner/admin final authority, persisted handoff records, and first-class revision requests. These artifacts are inspectable and auditable, and do not create a second mutation path.
+Looper now supports explicit collaborative run review: shared run presence, threaded review comments on proposal batches/diff items, collaborative approval input with owner/admin final authority, persisted handoff records, and first-class revision requests. These artifacts are inspectable and auditable, and do not create a second mutation path.
 
 ## Agent policy and operational control
 
@@ -183,7 +183,7 @@ This milestone adds explicit run control (pause/resume/cancel/retry/fork), repla
 
 ## Implementation handoff and delivery
 
-Pipes can now generate typed implementation handoff packages from accepted persisted system state. Packages include structured artifacts (implementation plan, architecture spec, task breakdown, coding-agent prompt pack, QA checklist, risk register), support target variants (human, Codex, Claude Code, general LLM), require review before export, and provide deterministic markdown/JSON/prompt-pack exports.
+Looper can now generate typed implementation handoff packages from accepted persisted system state. Packages include structured artifacts (implementation plan, architecture spec, task breakdown, coding-agent prompt pack, QA checklist, risk register), support target variants (human, Codex, Claude Code, general LLM), require review before export, and provide deterministic markdown/JSON/prompt-pack exports.
 
 
 ## Real runtime stack: Agents SDK + Modal + Convex authority

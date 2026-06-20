@@ -55,7 +55,7 @@ const TOOLS = [
   },
   {
     name: "export_schema",
-    description: "Export a system as full pipes_schema_v1 JSON.",
+    description: "Export a system as full looper_schema_v1 JSON.",
     inputSchema: {
       type: "object" as const,
       properties: { systemId: { type: "string", description: "System ID" } },
@@ -64,11 +64,11 @@ const TOOLS = [
   },
   {
     name: "import_schema",
-    description: "Import a pipes_schema_v1 JSON object as a new system and return its ID.",
+    description: "Import a looper_schema_v1 JSON object as a new system and return its ID.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        schema: { type: "object", description: "pipes_schema_v1 JSON object" },
+        schema: { type: "object", description: "looper_schema_v1 JSON object" },
         name: { type: "string", description: "Override system name from schema" },
       },
       required: ["schema"],
@@ -158,7 +158,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         content: { type: "string", description: "The content to store" },
-        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        systemId: { type: "string", description: "Memory system ID (overrides LOOPER_MEMORY_SYSTEM env var)" },
         content_type: { type: "string", description: "Optional type hint: note, decision, fact, task, summary, reference, code, conversation" },
         topic: { type: "string", description: "Optional topic hint" },
       },
@@ -172,7 +172,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         query: { type: "string", description: "Search query — split into keywords for matching" },
-        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        systemId: { type: "string", description: "Memory system ID (overrides LOOPER_MEMORY_SYSTEM env var)" },
         content_type: { type: "string", description: "Filter by content type" },
         status: { type: "string", description: "Filter by status (default: excludes archived)" },
         limit: { type: "number", description: "Max results to return (default: 5)" },
@@ -187,7 +187,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         context: { type: "string", description: "Current context, question, or task to retrieve memory for" },
-        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        systemId: { type: "string", description: "Memory system ID (overrides LOOPER_MEMORY_SYSTEM env var)" },
         max_chars: { type: "number", description: "Approximate character budget for the returned context (default: 4000)" },
         limit: { type: "number", description: "Max records to consider before compressing (default: 10)" },
       },
@@ -201,7 +201,7 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         nodeId: { type: "string", description: "Starting node ID" },
-        systemId: { type: "string", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM env var)" },
+        systemId: { type: "string", description: "Memory system ID (overrides LOOPER_MEMORY_SYSTEM env var)" },
         depth: { type: "number", description: "Max hops to traverse (default: 2)" },
       },
       required: ["nodeId"],
@@ -256,7 +256,7 @@ export function registerMcpServer(program: Command): void {
       const client = makeClient({ api, token });
 
       const server = new Server(
-        { name: "@pipes/cli", version: "0.1.0" },
+        { name: "@looper/cli", version: "0.1.0" },
         { capabilities: { tools: {} } }
       );
 
@@ -267,7 +267,7 @@ export function registerMcpServer(program: Command): void {
       server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { name, arguments: args = {} } = request.params;
         const a = args as Record<string, unknown>;
-        const memorySystemId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+        const memorySystemId = (a["systemId"] as string | undefined) ?? process.env["LOOPER_MEMORY_SYSTEM"];
 
         try {
           switch (name) {
@@ -382,9 +382,9 @@ export function registerMcpServer(program: Command): void {
             }
 
             case "memory_store": {
-              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["LOOPER_MEMORY_SYSTEM"];
               if (!sysId) {
-                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                return errorResult("No memory system ID. Pass systemId or set LOOPER_MEMORY_SYSTEM env var.");
               }
               const content = a["content"] as string;
               let safeContent: string;
@@ -420,9 +420,9 @@ export function registerMcpServer(program: Command): void {
             }
 
             case "memory_search": {
-              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["LOOPER_MEMORY_SYSTEM"];
               if (!sysId) {
-                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                return errorResult("No memory system ID. Pass systemId or set LOOPER_MEMORY_SYSTEM env var.");
               }
               const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
               const schemaData = schemaRes.data as { nodes?: Array<{ id: string; type: string; description?: string }> } | undefined;
@@ -465,9 +465,9 @@ export function registerMcpServer(program: Command): void {
             }
 
             case "memory_get_context": {
-              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["LOOPER_MEMORY_SYSTEM"];
               if (!sysId) {
-                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                return errorResult("No memory system ID. Pass systemId or set LOOPER_MEMORY_SYSTEM env var.");
               }
               const schemaRes = await client.getRaw(`/api/protocol/systems/${sysId}/schema`);
               const schemaData = schemaRes.data as { nodes?: Array<{ id: string; type: string; description?: string }> } | undefined;
@@ -505,9 +505,9 @@ export function registerMcpServer(program: Command): void {
             }
 
             case "memory_traverse": {
-              const sysId = (a["systemId"] as string | undefined) ?? process.env["PIPES_MEMORY_SYSTEM"];
+              const sysId = (a["systemId"] as string | undefined) ?? process.env["LOOPER_MEMORY_SYSTEM"];
               if (!sysId) {
-                return errorResult("No memory system ID. Pass systemId or set PIPES_MEMORY_SYSTEM env var.");
+                return errorResult("No memory system ID. Pass systemId or set LOOPER_MEMORY_SYSTEM env var.");
               }
               const startNodeId = a["nodeId"] as string;
               const maxDepth = (a["depth"] as number | undefined) ?? 2;

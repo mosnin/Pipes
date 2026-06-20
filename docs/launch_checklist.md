@@ -14,7 +14,7 @@
 - [ ] Not found route fallback checked.
 - [ ] Empty/loading/error states reviewed across dashboard/onboarding/settings/editor.
 - [ ] Product signals visible for onboarding/library/editor trust events.
-- [ ] Operator allowlist configured (`PIPES_ADMIN_ALLOWLIST`) for production.
+- [ ] Operator allowlist configured (`LOOPER_ADMIN_ALLOWLIST`) for production.
 - [ ] Enterprise auth readiness posture documented (`docs/enterprise_trust.md`) and reviewed.
 - [ ] Growth model documented (`docs/growth_model.md`) and reviewed.
 

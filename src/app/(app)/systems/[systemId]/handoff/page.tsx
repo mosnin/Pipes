@@ -319,7 +319,7 @@ export default function SystemHandoffPage({
   const schemaPreview = useMemo(
     () =>
       `{
-  "pipes_schema_v1": {
+  "looper_schema_v1": {
     "system": {
       "id": "${systemId}",
       "name": "${systemName}",
@@ -406,7 +406,7 @@ export default function SystemHandoffPage({
                   Create a new handoff package
                 </p>
                 <p className="t-caption text-[#8E8E93] mt-0.5">
-                  Pick a target audience. Pipes will tailor artifacts for it.
+                  Pick a target audience. Looper will tailor artifacts for it.
                 </p>
               </CardHeader>
               <CardBody>
@@ -535,7 +535,7 @@ export default function SystemHandoffPage({
                   <div className="flex items-center gap-2">
                     <Code size={16} className="text-indigo-600" />
                     <p className="t-label font-semibold text-[#111]">
-                      pipes_schema_v1 JSON
+                      looper_schema_v1 JSON
                     </p>
                   </div>
                 </div>

@@ -12,9 +12,9 @@ import {
 } from "@/lib/marketing/customers-data";
 
 export const metadata = {
-  title: "Customers - Pipes",
+  title: "Customers - Looper",
   description:
-    "Teams shipping multi-agent systems on Pipes. Engineering, support, sales, data, and operations teams describe their systems and hand the graph to their agents.",
+    "Teams shipping multi-agent systems on Looper. Engineering, support, sales, data, and operations teams describe their systems and hand the graph to their agents.",
 };
 
 const STAT_METRICS: ReadonlyArray<Metric> = customerStats.map((stat) => ({
@@ -41,7 +41,7 @@ export default function CustomersPage() {
                 fontWeight: 700,
               }}
             >
-              Teams shipping multi-agent systems on Pipes.
+              Teams shipping multi-agent systems on Looper.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl t-body leading-relaxed text-[#3C3C43]">
               Five workloads. One typed graph their agents read. Pick the

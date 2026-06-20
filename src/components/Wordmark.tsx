@@ -1,18 +1,18 @@
 "use client";
 
-// Wordmark — the single source of truth for the "Pipes" brand mark.
+// Wordmark — the single source of truth for the "Looper" brand mark.
 //
-// Renders "Pipes" with a typographic flourish: the dot of the "i" is replaced
-// with a small indigo accent. Implemented as an HTML overlay (no Unicode
-// dotless-i in source). A short white sliver hides the native dot of the "i"
-// glyph; the indigo circle is then painted on top in the same position.
+// Renders "Looper" with a typographic accent: the second "o" carries a small
+// indigo dot above it, evoking the loop metaphor. Implemented as an HTML
+// overlay. A short white sliver hides the native counter of the "o" glyph;
+// the indigo circle is then painted on top.
 //
-// Three sizes are supported. They map to the existing inline wordmarks:
+// Three sizes are supported:
 //   - sm — used in the app sidebar
 //   - md — default
 //   - lg — used in the marketing navbar + footer
 //
-// Accessibility: the full word "Pipes" is rendered as real text, so screen
+// Accessibility: the full word "Looper" is rendered as real text, so screen
 // readers and SEO crawlers see it unchanged. The dot overlay carries
 // aria-hidden so AT does not double-announce it.
 
@@ -24,21 +24,21 @@ type Config = {
   fontSize: string;
   // Vertical position of the indigo dot from the wordmark baseline (px).
   dotTop: number;
-  // Horizontal center of the indigo dot, measured from the wordmark's left
-  // edge as a multiple of fontSize. Tuned so the dot sits over the "i" stem.
+  // Horizontal center of the indigo dot, measured from the wordmark left
+  // edge as a multiple of fontSize. Tuned to sit over the second "o".
   dotLeftRatio: number;
   // Diameter of the indigo dot (px).
   dotSize: number;
-  // Width of the white sliver that hides the original dot (px).
+  // Width of the white sliver that hides the glyph counter (px).
   hideWidth: number;
-  // Height of the white sliver that hides the original dot (px).
+  // Height of the white sliver that hides the glyph counter (px).
   hideHeight: number;
 };
 
 const CONFIGS: Record<WordmarkSize, Config> = {
-  sm: { fontSize: "17px", dotTop: 2, dotLeftRatio: 0.43, dotSize: 4, hideWidth: 5, hideHeight: 4 },
-  md: { fontSize: "20px", dotTop: 2, dotLeftRatio: 0.43, dotSize: 5, hideWidth: 6, hideHeight: 5 },
-  lg: { fontSize: "24px", dotTop: 2, dotLeftRatio: 0.43, dotSize: 6, hideWidth: 7, hideHeight: 6 },
+  sm: { fontSize: "17px", dotTop: 2, dotLeftRatio: 0.55, dotSize: 4, hideWidth: 5, hideHeight: 4 },
+  md: { fontSize: "20px", dotTop: 2, dotLeftRatio: 0.55, dotSize: 5, hideWidth: 6, hideHeight: 5 },
+  lg: { fontSize: "24px", dotTop: 2, dotLeftRatio: 0.55, dotSize: 6, hideWidth: 7, hideHeight: 6 },
 };
 
 export type WordmarkProps = {
@@ -47,9 +47,8 @@ export type WordmarkProps = {
   color?: string;
   // Optional override for the indigo accent color (defaults to indigo-600).
   accent?: string;
-  // Optional background color of the white "dot cover" sliver. Defaults to
-  // white, which matches every surface we render on today. Pass the surface
-  // color when used over a non-white background.
+  // Optional background color of the "dot cover" sliver. Defaults to white.
+  // Pass the surface color when used over a non-white background.
   cover?: string;
   className?: string;
 };
@@ -73,8 +72,6 @@ export function Wordmark({
     color,
   };
 
-  // Hide the original dot of the "i" by painting a small surface-colored
-  // rectangle just above the stem.
   const cover_style: CSSProperties = {
     position: "absolute",
     left: `${config.dotLeftRatio}em`,
@@ -86,7 +83,6 @@ export function Wordmark({
     pointerEvents: "none",
   };
 
-  // Indigo accent dot, painted on top of the cover.
   const dot: CSSProperties = {
     position: "absolute",
     left: `${config.dotLeftRatio}em`,
@@ -101,7 +97,7 @@ export function Wordmark({
 
   return (
     <span className={className} style={root} data-testid="wordmark">
-      Pipes
+      Looper
       <span aria-hidden="true" style={cover_style} data-testid="wordmark-cover" />
       <span aria-hidden="true" style={dot} data-testid="wordmark-dot" />
     </span>

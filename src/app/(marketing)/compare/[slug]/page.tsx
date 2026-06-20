@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const entry = publicContentService.getComparison(slug);
   if (!entry) return { title: "Comparison not found" };
-  return { title: `${entry.title} - Pipes`, description: entry.summary };
+  return { title: `${entry.title} - Looper`, description: entry.summary };
 }
 
 // ---------------------------------------------------------------------------
@@ -49,49 +49,49 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "Structured graph editor",
       pipes: true,
       competitor: "Frame-based",
-      why: "Pipes types every node, port, and pipe. Figma frames are pictures the runtime cannot read.",
+      why: "Looper types every step, port, and connection. Figma frames are pictures the runtime cannot read.",
     },
     {
       feature: "AI-native editing",
       pipes: true,
       competitor: "Plugins only",
-      why: "In Pipes the chat is the input and the canvas is the output. In Figma the AI lives in a side panel.",
+      why: "In Looper the chat is the input and the canvas is the output. In Figma the AI lives in a side panel.",
     },
     {
       feature: "Protocol surface for agents",
       pipes: true,
       competitor: false,
-      why: "Hand any agent a Pipes token. It reads the same graph through one MCP endpoint.",
+      why: "Hand any agent a Looper token. It reads the same graph through one MCP endpoint.",
     },
     {
       feature: "Versioning",
       pipes: true,
       competitor: "Branch history",
-      why: "Pipes versions the schema. Figma versions the picture.",
+      why: "Looper versions the schema. Figma versions the picture.",
     },
     {
       feature: "Handoff packages",
       pipes: true,
       competitor: "Dev Mode specs",
-      why: "Pipes exports the typed system your runtime can run. Dev Mode exports a design spec for a human to read.",
+      why: "Looper exports the typed loop your runtime can run. Dev Mode exports a design spec for a human to read.",
     },
     {
       feature: "Simulation",
       pipes: true,
       competitor: false,
-      why: "Pipes can run the system in the editor. Figma cannot execute a frame.",
+      why: "Looper can run the loop in the editor. Figma cannot execute a frame.",
     },
     {
       feature: "Multi-agent support",
       pipes: true,
       competitor: false,
-      why: "Pipes was built for handoff between planners, specialists, and reviewers.",
+      why: "Looper was built for handoff between planners, specialists, and reviewers.",
     },
     {
       feature: "Team collaboration",
       pipes: true,
       competitor: true,
-      why: "Both are real-time. Pipes review threads attach to typed nodes, not floating comments.",
+      why: "Both are real-time. Looper review threads attach to typed nodes, not floating comments.",
     },
   ],
   miro: [
@@ -99,19 +99,19 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "AI builds the graph from a description",
       pipes: true,
       competitor: false,
-      why: "Pipes turns one sentence into the system. Miro starts with a blank canvas.",
+      why: "Looper turns one sentence into the system. Miro starts with a blank canvas.",
     },
     {
       feature: "Structured graph editor",
       pipes: true,
       competitor: "Freeform canvas",
-      why: "Pipes nodes have types and typed ports. Miro shapes are just shapes.",
+      why: "Looper steps have types and typed ports. Miro shapes are just shapes.",
     },
     {
       feature: "AI-native editing",
       pipes: true,
       competitor: "Assist (limited)",
-      why: "Miro Assist generates stickies. Pipes drives the graph itself.",
+      why: "Miro Assist generates stickies. Looper drives the graph itself.",
     },
     {
       feature: "Protocol surface for agents",
@@ -122,7 +122,7 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "Versioning",
       pipes: true,
       competitor: false,
-      why: "Pipes records every turn. Miro keeps a board history but no typed diff.",
+      why: "Looper records every turn. Miro keeps a board history but no typed diff.",
     },
     {
       feature: "Handoff packages",
@@ -143,7 +143,7 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "Team collaboration",
       pipes: true,
       competitor: true,
-      why: "Both are excellent for live editing. Miro wins on the workshop, Pipes wins after.",
+      why: "Both are excellent for live editing. Miro wins on the workshop, Looper wins after.",
     },
   ],
   lucidchart: [
@@ -151,19 +151,19 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "AI builds the graph from a description",
       pipes: true,
       competitor: false,
-      why: "Pipes is conversational. Lucidchart starts from shape libraries.",
+      why: "Looper is conversational. Lucidchart starts from shape libraries.",
     },
     {
       feature: "Structured graph editor",
       pipes: true,
       competitor: "Shape-based",
-      why: "Pipes nodes have a contract. Lucidchart shapes do not.",
+      why: "Looper steps have a contract. Lucidchart shapes do not.",
     },
     {
       feature: "AI-native editing",
       pipes: true,
       competitor: "Diagram generation",
-      why: "Lucid can generate a diagram from a prompt once. Pipes lets you correct it the way you correct a teammate.",
+      why: "Lucid can generate a diagram from a prompt once. Looper lets you correct it the way you correct a teammate.",
     },
     {
       feature: "Protocol surface for agents",
@@ -174,7 +174,7 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "Versioning",
       pipes: true,
       competitor: "Version history",
-      why: "Both keep history. Only Pipes diffs the typed schema.",
+      why: "Both keep history. Only Looper diffs the typed schema.",
     },
     {
       feature: "Handoff packages",
@@ -202,19 +202,19 @@ const featureMatrices: Record<string, ReadonlyArray<FeatureSpec>> = {
       feature: "AI builds the graph from a description",
       pipes: true,
       competitor: "One-shot picture",
-      why: "Pipes draws into an editor you can correct. A one-shot picture is the end of the conversation.",
+      why: "Looper draws into an editor you can correct. A one-shot picture is the end of the conversation.",
     },
     {
       feature: "Structured graph editor",
       pipes: true,
       competitor: false,
-      why: "Pipes types every node and pipe. A picture has no schema.",
+      why: "Looper types every step and connection. A picture has no schema.",
     },
     {
       feature: "AI-native editing",
       pipes: true,
       competitor: "Generation only",
-      why: "Pipes lets you iterate the graph in conversation. Generators force you to regenerate the whole thing.",
+      why: "Looper lets you iterate the graph in conversation. Generators force you to regenerate the whole thing.",
     },
     {
       feature: "Protocol surface for agents",
@@ -301,7 +301,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "Brainstorming is the deliverable.",
     ],
     quote: {
-      text: "Miro is great for the meeting. Pipes is what we ship out of it.",
+      text: "Miro is great for the meeting. Looper is what we ship out of it.",
       author: "Priya R.",
       role: "Director of engineering",
     },
@@ -318,7 +318,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "The deliverable is a static diagram in a doc.",
     ],
     quote: {
-      text: "Lucid was where the picture lived. Pipes is where the system lives.",
+      text: "Lucid was where the picture lived. Looper is where the system lives.",
       author: "Marcus T.",
       role: "Principal engineer",
     },
@@ -335,7 +335,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "There is no runtime that needs to consume it.",
     ],
     quote: {
-      text: "Pipes is the difference between a screenshot and a system.",
+      text: "Looper is the difference between a screenshot and a system.",
       author: "Riley K.",
       role: "Tech lead, agents team",
     },
@@ -354,7 +354,7 @@ const defaultSwitchCopy: SwitchCopy = {
     "No runtime has to consume the artifact.",
   ],
   quote: {
-    text: "Pipes turned our architecture from a slide deck into a working system.",
+    text: "Looper turned our architecture from a slide deck into a working system.",
     author: "Alex H.",
     role: "Staff engineer",
   },
@@ -373,7 +373,7 @@ export default async function CompareDetailPage({
   const entry = publicContentService.getComparison(slug);
   if (!entry) notFound();
 
-  const competitorName = entry.title.replace(/^Pipes vs\.?\s*/i, "").trim();
+  const competitorName = entry.title.replace(/^Looper vs\.?\s*/i, "").trim();
   const baseRows = featureMatrices[slug] ?? defaultMatrix;
   const featureRows: FeatureRow[] = baseRows.map((r, i) => ({ id: `r-${i}`, ...r }));
 
@@ -472,7 +472,7 @@ export default async function CompareDetailPage({
                 See it for yourself.
               </h2>
               <p className="t-body text-white/85">
-                Open a fresh workspace. Describe your system. Pipes draws it in under two seconds.
+                Open a fresh workspace. Describe your loop. Looper draws it in under two seconds.
               </p>
             </div>
             <TrackedLink

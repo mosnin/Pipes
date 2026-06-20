@@ -1,6 +1,6 @@
-# Agent-driven Pipes
+# Agent-driven Looper
 
-Pipes is no longer a drafting tool. It is a conversation surface for the architecture you are shipping. The headline is now "Describe your system. Watch it build itself."
+Looper is no longer a drafting tool. It is a conversation surface for the architecture you are shipping. The headline is now "Describe your system. Watch it build itself."
 
 ## The shift in one sentence
 
@@ -8,8 +8,8 @@ Before: the user draws the graph. After: the user describes the system and watch
 
 ## What is invisible
 
-- The agent. The user never says "use the agent." They use Pipes.
-- The model. The user never picks "GPT-4 vs GPT-4 mini." Pipes picks.
+- The agent. The user never says "use the agent." They use Looper.
+- The model. The user never picks "GPT-4 vs GPT-4 mini." Looper picks.
 - The sandbox. The user never sees Modal. They see the canvas change.
 
 ## What is the user-facing primitive
@@ -38,7 +38,7 @@ That is the full surface. No browse, no search, no fork, no rename-system, no im
 
 ## What does NOT change
 
-- The pipes_schema_v1 graph format. Same schema. Same MCP-readability. Same export.
+- The looper_schema_v1 graph format. Same schema. Same MCP-readability. Same export.
 - The Convex persistence layer. Same.
 - Manual editing. Still works. The agent and the user write through the same optimistic queue.
 - Mock mode. Still boots without Modal or OpenAI keys.

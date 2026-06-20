@@ -22,7 +22,7 @@ class ResendEmailService implements EmailService {
       method: "POST",
       headers: { "authorization": `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
       body: JSON.stringify({
-        from: "Pipes <noreply@pipes.local>",
+        from: "Looper <noreply@looper.local>",
         to: [input.email],
         subject: `${input.inviterName} invited you to ${input.workspaceName}`,
         text: `You've been invited as ${input.role}. Accept invite: ${input.acceptUrl}`

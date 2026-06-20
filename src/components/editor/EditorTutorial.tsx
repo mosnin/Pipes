@@ -3,7 +3,7 @@
 // First-run editor coaching. Three subtle pills, dismissible individually,
 // pinned to the regions of the editor they describe. Each pill writes its
 // own per-pill flag to localStorage; once all three are dismissed the
-// global "pipes-tutorial-seen" flag flips so we never show again.
+// global "looper-tutorial-seen" flag flips so we never show again.
 //
 // Steve Jobs note: the pills do not teach. They name. Each pill is a single
 // verb-led sentence pointing at the place where the user can act. They

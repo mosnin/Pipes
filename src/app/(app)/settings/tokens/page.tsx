@@ -305,7 +305,7 @@ export default function TokensSettingsPage() {
           <CardBody>
             <EmptyState
               title="No tokens yet"
-              description="Generate a token to start integrating with the Pipes Protocol API or MCP."
+              description="Generate a token to start integrating with the Looper Protocol API or MCP."
               action={
                 <Button
                   variant="primary"

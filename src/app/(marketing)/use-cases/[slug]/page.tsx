@@ -18,7 +18,7 @@ export async function generateMetadata({
   const entry = publicContentService.getUseCase(slug);
   if (!entry) return { title: "Use case not found" };
   return {
-    title: `${entry.title} - Pipes case study`,
+    title: `${entry.title} - Looper case study`,
     description: entry.fit,
   };
 }
@@ -59,12 +59,12 @@ const STORIES: Record<string, StoryDetail> = {
       { value: 12, suffix: " min", label: "Median time to draw a new system" },
     ],
     challengeBody:
-      "Northwind ships robotics planners that coordinate three agents per system. Before Pipes, every new system started with a whiteboard, then a Lucidchart, then a Notion doc, then a Slack thread. By the time the first code landed, the team had re-explained the architecture four times. Reviewers caught contract drift in code review, not in the diagram.",
+      "Northwind ships robotics planners that coordinate three agents per system. Before Looper, every new system started with a whiteboard, then a Lucidchart, then a Notion doc, then a Slack thread. By the time the first code landed, the team had re-explained the architecture four times. Reviewers caught contract drift in code review, not in the diagram.",
     challengeQuote:
       "Every new system started with a whiteboard and ended with a Slack thread.",
     challengeQuoteAuthor: "Maya Reyes, Staff engineer",
     approachBody:
-      "Maya now opens Pipes and types a sentence. The agent draws Planner, Specialist, and Reviewer in under two seconds. She drags Specialist closer to Reviewer because she likes the visual. The agent yields. She types one more line. The pipe between them changes shape. Her teammate opens the same workspace and leaves a comment on the Reviewer node. The MCP token she handed to Claude reads the same graph.",
+      "Maya now opens Looper and types a sentence. The agent draws Planner, Specialist, and Reviewer in under two seconds. She drags Specialist closer to Reviewer because she likes the visual. The agent yields. She types one more line. The pipe between them changes shape. Her teammate opens the same workspace and leaves a comment on the Reviewer node. The MCP token she handed to Claude reads the same graph.",
     approachNodes: ["Planner", "Specialist", "Reviewer"],
     pullQuote:
       "We stopped drawing diagrams. We started shipping systems our agents can read.",
@@ -84,7 +84,7 @@ const STORIES: Record<string, StoryDetail> = {
     headline:
       "How Quay & Co replaced a wiki of Zapier maps with one typed graph.",
     intro:
-      "Daniel inherited 41 automations spread across three tools and four wiki pages. He described the new triage flow in two sentences. The canvas drew itself. The wiki page is now a link to Pipes.",
+      "Daniel inherited 41 automations spread across three tools and four wiki pages. He described the new triage flow in two sentences. The canvas drew itself. The wiki page is now a link to Looper.",
     metrics: [
       { value: 41, suffix: "", label: "Automations consolidated to one map" },
       { value: 88, suffix: "%", label: "Fewer 'where does this run' questions" },
@@ -189,7 +189,7 @@ const STORIES: Record<string, StoryDetail> = {
       "We delivered diagrams. The client wanted something they could keep editing.",
     challengeQuoteAuthor: "Olivia Chen, Principal consultant",
     approachBody:
-      "Olivia now builds the system in the client's Pipes workspace. The agent draws the graph. Olivia annotates decisions. The client gets the workspace, the graph, and a token. When they want a new branch, they describe it. The agent adds the node. No call needed.",
+      "Olivia now builds the system in the client's Looper workspace. The agent draws the graph. Olivia annotates decisions. The client gets the workspace, the graph, and a token. When they want a new branch, they describe it. The agent adds the node. No call needed.",
     approachNodes: ["Intake", "Classifier", "Action"],
     pullQuote:
       "Clients now extend the system themselves. The handoff became a hand-up.",
@@ -342,7 +342,7 @@ export default async function UseCaseDetailPage({
                   letterSpacing: "-0.03em",
                 }}
               >
-                Other teams shipping on Pipes.
+                Other teams shipping on Looper.
               </h2>
             </div>
             <Link

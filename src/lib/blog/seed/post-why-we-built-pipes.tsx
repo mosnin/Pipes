@@ -11,7 +11,7 @@ import {
 import type { BlogPost, BlogTocEntry } from "@/lib/blog/types";
 
 /**
- * Post: Why we built Pipes.
+ * Post: Why we built Looper.
  *
  * Origin story. Locked voice. No hype. Specific about what changed.
  */
@@ -92,11 +92,11 @@ function PostBody() {
       </P>
       <P>
         First, the schema is fixed. The graph is{" "}
-        <Inline>pipes_schema_v1</Inline>. There are 27 node types. Every
+        <Inline>looper_schema_v1</Inline>. There are 27 node types. Every
         export, every import, every model call, every protocol read goes
         through the same Zod schema. We will version the schema before
         we add a 28th node type, and the migration map lives in
-        <Inline> src/domain/pipes_schema_v1/migration.ts</Inline>. The
+        <Inline> src/domain/looper_schema_v1/migration.ts</Inline>. The
         cost of fixing the format is that a graph drawn today still reads
         in a year. The cost of letting it drift is the bug we set out to
         fix.
@@ -113,7 +113,7 @@ function PostBody() {
       <UL>
         <LI>
           <Strong>One format.</Strong> Every export is{" "}
-          <Inline>pipes_schema_v1</Inline> JSON. No proprietary wrappers.
+          <Inline>looper_schema_v1</Inline> JSON. No proprietary wrappers.
         </LI>
         <LI>
           <Strong>One protocol.</Strong> MCP over HTTP. Bearer auth.
@@ -150,8 +150,8 @@ function PostBody() {
       </P>
       <P>
         The product we want to build is the product we wanted to use
-        last year. We are dogfooding it now. We use Pipes to describe
-        Pipes. The graph is checked into the repo and the agent edits
+        last year. We are dogfooding it now. We use Looper to describe
+        Looper. The graph is checked into the repo and the agent edits
         it in conversation when we add a node type. When we got tired of
         the editor for a feature, we changed the editor. When we got
         tired of the canvas for a beat, we changed the canvas.
@@ -183,12 +183,12 @@ function PostBody() {
 
 export const post: BlogPost = {
   slug: "why-we-built-pipes",
-  title: "Why we built Pipes",
+  title: "Why we built Looper",
   excerpt:
     "Re-explaining the system to every model in every chat is the bug. The diagram is the artifact that should survive the conversation. This is the origin story.",
   author: {
     name: "Devansh Rao",
-    role: "Founder, Pipes",
+    role: "Founder, Looper",
   },
   date: "2025-12-12",
   tags: ["Company"],

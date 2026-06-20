@@ -7,7 +7,7 @@ export function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("pipes-theme");
+    const saved = localStorage.getItem("looper-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const isDark = saved ? saved === "dark" : prefersDark;
     setDark(isDark);
@@ -17,7 +17,7 @@ export function ThemeToggle() {
   function toggle() {
     const next = !dark;
     setDark(next);
-    localStorage.setItem("pipes-theme", next ? "dark" : "light");
+    localStorage.setItem("looper-theme", next ? "dark" : "light");
     document.documentElement.setAttribute("data-color-scheme", next ? "dark" : "light");
   }
 

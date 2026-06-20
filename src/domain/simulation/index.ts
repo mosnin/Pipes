@@ -1,4 +1,4 @@
-import type { Node, Pipe, Port, SimulationRun, System } from "@/domain/pipes_schema_v1/schema";
+import type { Node, Pipe, Port, SimulationRun, System } from "@/domain/looper_schema_v1/schema";
 
 type SimulationInput = Record<string, unknown>;
 

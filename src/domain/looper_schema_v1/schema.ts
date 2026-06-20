@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const PIPES_SCHEMA_VERSION = 1 as const;
-export type PipesSchemaVersion = typeof PIPES_SCHEMA_VERSION;
+export const LOOPER_SCHEMA_VERSION = 1 as const;
+export type LooperSchemaVersion = typeof LOOPER_SCHEMA_VERSION;
 
 export const nodeTypeValues = [
   "Node",
@@ -245,8 +245,8 @@ export const SystemSchema = z.object({
   subsystemNodeIds: z.array(id).default([])
 });
 
-export const PipesSchemaV1 = z.object({
-  version: z.literal("pipes_schema_v1"),
+export const LooperSchemaV1 = z.object({
+  version: z.literal("looper_schema_v1"),
   users: z.array(UserSchema),
   workspaces: z.array(WorkspaceSchema),
   systems: z.array(SystemSchema),
@@ -296,4 +296,4 @@ export type AgentToken = z.infer<typeof AgentTokenSchema>;
 export type ValidationIssue = z.infer<typeof ValidationIssueSchema>;
 export type ValidationReport = z.infer<typeof ValidationReportSchema>;
 export type SimulationRun = z.infer<typeof SimulationRunSchema>;
-export type PipesSchemaDocument = z.infer<typeof PipesSchemaV1>;
+export type LooperSchemaDocument = z.infer<typeof LooperSchemaV1>;

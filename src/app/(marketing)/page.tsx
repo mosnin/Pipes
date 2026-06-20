@@ -21,7 +21,7 @@ const HOMEPAGE_SUBTITLE =
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {
-  title: "Describe your system. Watch it build itself. - Pipes",
+  title: "Describe your system. Watch it build itself. - Looper",
   description: HOMEPAGE_SUBTITLE,
   openGraph: {
     title: HOMEPAGE_TITLE,
@@ -66,7 +66,7 @@ export default function HomePage() {
           sticky inner can read scroll progress through it.
          ─────────────────────────────────────────────────────────────────── */}
       <section
-        aria-label="Pipes hero"
+        aria-label="Looper hero"
         className="relative flex min-h-[92vh] items-center overflow-hidden"
       >
         <div
@@ -296,14 +296,14 @@ export default function HomePage() {
       </ScrollSection>
 
       {/* ───────────────────────────────────────────────────────────────────
-          SECTION 5 — How teams ship with Pipes. Rotating quotes.
+          SECTION 5 — How teams ship with Looper. Rotating quotes.
           rounded-[40px]
          ─────────────────────────────────────────────────────────────────── */}
-      <ScrollSection tone="white" radius={40} ariaLabel="How teams ship with Pipes">
+      <ScrollSection tone="white" radius={40} ariaLabel="How teams ship with Looper">
         <div className="mx-auto max-w-4xl">
           <RevealStack className="mb-10 flex flex-col gap-3 text-center">
             <RevealItem as="span" className="t-overline text-indigo-700">
-              How teams ship with Pipes
+              How teams ship with Looper
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
               <span
@@ -415,7 +415,7 @@ function PocketScene() {
       viewBox="0 0 280 480"
       className="h-auto w-full max-w-[300px]"
       role="img"
-      aria-label="A phone frame showing the same Pipes graph: planner, guard, coder, with a Claude reply below."
+      aria-label="A phone frame showing the same Looper graph: planner, guard, coder, with a Claude reply below."
     >
       {/* Phone shell */}
       <rect
@@ -449,7 +449,7 @@ function PocketScene() {
       {/* Top chrome */}
       <g>
         <text x="44" y="64" fontSize="9" fontWeight="600" fill="#fff">
-          Pipes
+          Looper
         </text>
         <text x="78" y="64" fontSize="8" fill="#8E8E93">
           sys_8a72
@@ -523,7 +523,7 @@ function PocketScene() {
           Planner. Guard. Coder.
         </text>
         <text x="56" y="322" fontSize="8" fill="#C7C7CC">
-          Pipes between them.
+          Connections between them.
         </text>
         <text x="56" y="340" fontSize="8" fill="#8E8E93">
           Same graph your team reads.
@@ -578,8 +578,8 @@ function HeroSidePreview() {
           className="t-label font-semibold text-[#111]"
           style={{ fontSize: 11 }}
         >
-          Pipes
-        </span>
+          Looper
+</span>
         <span
           className="t-caption text-[#8E8E93]"
           style={{ fontSize: 10 }}

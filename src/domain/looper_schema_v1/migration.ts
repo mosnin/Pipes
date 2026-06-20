@@ -1,8 +1,8 @@
-import { PIPES_SCHEMA_VERSION } from "./schema";
+import { LOOPER_SCHEMA_VERSION } from "./schema";
 
 export type VersionedDocument = {
   schemaVersion?: number;
-  pipes_schema_v1?: unknown;
+  looper_schema_v1?: unknown;
   [key: string]: unknown;
 };
 
@@ -27,7 +27,7 @@ const migrations: Map<number, MigrationFn> = new Map([
 
 export function migrateDocument(doc: VersionedDocument): VersionedDocument {
   const fromVersion = (doc.schemaVersion as number | undefined) ?? 0;
-  const toVersion = PIPES_SCHEMA_VERSION;
+  const toVersion = LOOPER_SCHEMA_VERSION;
 
   if (fromVersion >= toVersion) return doc;
 
@@ -46,10 +46,10 @@ export function detectSchemaVersion(doc: unknown): number {
   if (typeof doc !== "object" || doc === null) return 0;
   const d = doc as Record<string, unknown>;
   if (typeof d.schemaVersion === "number") return d.schemaVersion;
-  if ("pipes_schema_v1" in d) return 1;
+  if ("looper_schema_v1" in d) return 1;
   return 0;
 }
 
 export function needsMigration(doc: unknown): boolean {
-  return detectSchemaVersion(doc) < PIPES_SCHEMA_VERSION;
+  return detectSchemaVersion(doc) < LOOPER_SCHEMA_VERSION;
 }

@@ -72,7 +72,7 @@ export function NewsletterSignup({
           "flex flex-col sm:flex-row items-stretch gap-2 w-full",
           className,
         )}
-        aria-label="Subscribe to the Pipes newsletter"
+        aria-label="Subscribe to the Looper newsletter"
       >
         <input
           type="email"
@@ -113,14 +113,14 @@ export function NewsletterSignup({
       data-testid="newsletter-signup"
     >
       <div className="max-w-2xl mx-auto flex flex-col gap-5 text-center">
-        <h2 className="t-h1 text-[#111]">Subscribe to the Pipes notes.</h2>
+        <h2 className="t-h1 text-[#111]">Subscribe to the Looper notes.</h2>
         <p className="t-body text-[#3C3C43]">
           Get an email when we ship something interesting. About one a month.
         </p>
         <form
           onSubmit={onSubmit}
           className="flex flex-col sm:flex-row items-stretch gap-2 w-full max-w-md mx-auto"
-          aria-label="Subscribe to the Pipes newsletter"
+          aria-label="Subscribe to the Looper newsletter"
         >
           <input
             type="email"

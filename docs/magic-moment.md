@@ -4,18 +4,18 @@ This is the 30 seconds we sell to the staff engineer shipping a multi-agent syst
 
 ## The scene - 30 seconds, beat by beat
 
-1. The engineer opens an empty Pipes canvas and sees one prompt input: "Describe your system. Watch it build itself."
+1. The engineer opens an empty Looper canvas and sees one prompt input: "Describe your system. Watch it build itself."
 2. They type one sentence: "Planner agent reads tickets, writes a plan, hands off to a coder agent that opens a PR."
 3. They press return and see the canvas come alive: the Planner node lands, then the Coder node, then a typed pipe between them, all in under two seconds.
 4. They drag the Coder node two inches to the right; the agent yields and the layout holds where they put it.
 5. They click the one button in the top right that they will remember afterward: Connect Agent, copy the token-scoped Claude config block, paste it into Claude.
-6. They ask Claude "what is in my Pipes system?" and Claude answers by name: Planner agent, Coder agent, the pipe between them, fetched live through the MCP endpoint - they pasted no architecture and they drew no boxes.
+6. They ask Claude "what is in my Looper system?" and Claude answers by name: Planner agent, Coder agent, the pipe between them, fetched live through the MCP endpoint - they pasted no architecture and they drew no boxes.
 
 The one click they remember is Connect Agent. The thing they will tell another engineer is that they typed a sentence and the system appeared.
 
 ## The frame
 
-The hero screenshot is a split frame at the instant beat 6 lands. Left half: the Pipes canvas with the Planner node, the Coder node, and one typed pipe between them, with the user's original sentence visible above the input as a sent message. Right half: a Claude chat window where Claude has just replied, naming both nodes and the pipe, with a small "via pipes (MCP)" tool-call chip above its message. Not in the frame: no inspector tabs, no node palette, no library, no second prompt, no customer logos, no pricing, no Pipes nav chrome beyond the system name in the top left.
+The hero screenshot is a split frame at the instant beat 6 lands. Left half: the Looper canvas with the Planner node, the Coder node, and one typed pipe between them, with the user's original sentence visible above the input as a sent message. Right half: a Claude chat window where Claude has just replied, naming both nodes and the pipe, with a small "via pipes (MCP)" tool-call chip above its message. Not in the frame: no inspector tabs, no node palette, no library, no second prompt, no customer logos, no pricing, no Looper nav chrome beyond the system name in the top left.
 
 ## The line
 
@@ -35,7 +35,7 @@ The hero screenshot is a split frame at the instant beat 6 lands. Left half: the
 - A separate chat window that pops out. The chat is the input and the input is the canvas.
 - A diff-review modal showing pending agent changes. The canvas IS the diff. Cmd-Z is the reject.
 - Voice input. Engineers type.
-- An "agent persona" dropdown or a "model" picker. Pipes picks. The user does not see the engine.
+- An "agent persona" dropdown or a "model" picker. Looper picks. The user does not see the engine.
 - A node palette or a library shelf in the hero. The agent picks the nodes.
 - A second node added by hand before beat 3 lands. The agent draws first.
 - A demo video longer than 30 seconds or a voiceover that explains what MCP is.

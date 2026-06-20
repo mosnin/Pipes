@@ -54,8 +54,8 @@ const TOKEN_INK_2 = "#3C3C43";
 
 const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
   const classes: string[] = [];
-  if (data.arrived) classes.push("pipes-node-arrival");
-  if (data.pulsing) classes.push("pipes-node-pulsing");
+  if (data.arrived) classes.push("looper-node-arrival");
+  if (data.pulsing) classes.push("looper-node-pulsing");
   const className = classes.length > 0 ? classes.join(" ") : undefined;
   return (
     <div
@@ -420,7 +420,7 @@ export function EditorCanvas({
           const isFresh = freshEdgeIds.has(edge.id);
           return {
             ...edge,
-            className: [edge.className, isFresh ? "pipes-edge-stream" : null].filter(Boolean).join(" ") || undefined,
+            className: [edge.className, isFresh ? "looper-edge-stream" : null].filter(Boolean).join(" ") || undefined,
             style: {
               stroke: highlighted
                 ? regionStatus === "applied"

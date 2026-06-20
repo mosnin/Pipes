@@ -20,7 +20,7 @@ This audit grades every customer-facing string against the locked headline from 
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| page.tsx | 13 | metadata title: "Pipes - System memory for software you ship with agents" | REWRITE | "Pipes - One map your team and your agents both read" |
+| page.tsx | 13 | metadata title: "Looper - System memory for software you ship with agents" | REWRITE | "Looper - One map your team and your agents both read" |
 | page.tsx | 14-15 | metadata desc: "Design, validate, and version the architecture..." | REWRITE | "Draw the system once. Your team reviews it. Your agents read it through one token." |
 | page.tsx | 156 | SectionBadge "Now with MCP capability scoping" | KEEP | - |
 | page.tsx | 159-165 | hero h1: "System memory for software you ship with agents." | REWRITE | "One map your team and your agents both read." (the locked headline; current line is off-brief) |
@@ -29,14 +29,14 @@ This audit grades every customer-facing string against the locked headline from 
 | page.tsx | 194-196 | "Free workspace - no credit card required - SOC 2 Type II" | KEEP | - |
 | page.tsx | 203-205 | "Trusted by teams shipping production AI systems" | KEEP | - |
 | page.tsx | 229-230 | section h2: "From sketch to shipped system in three steps." | KEEP | - |
-| page.tsx | 231-234 | "Pipes shortens the loop from architecture diagram to production handoff." | KEEP | - |
+| page.tsx | 231-234 | "Looper shortens the loop from architecture diagram to production handoff." | KEEP | - |
 | page.tsx | 31 | step 01 body: "Sketch nodes, ports, and pipes on a typed canvas. Promote it to a versioned blueprint in one click." | KEEP | - |
 | page.tsx | 41 | step 03 body: "MCP and REST surfaces stream the full system - inputs, outputs, contracts - to Claude, GPT, or your own runtime." | REWRITE | "Hand any agent a token. It reads the system the way your team does." (current has 3+ commas and reads like a brochure) |
-| page.tsx | 49 | feature body: "Typed nodes. Typed ports. Typed pipes. Pipes is a canvas built for engineers who think in contracts, not boxes and arrows." | KEEP | - |
+| page.tsx | 49 | feature body: "Typed nodes. Typed ports. Typed pipes. Looper is a canvas built for engineers who think in contracts, not boxes and arrows." | KEEP | - |
 | page.tsx | 232 | "Make your architecture executable." | KEEP | - |
 | page.tsx | 318 | "Start from a proven blueprint." | KEEP | - |
 | page.tsx | 321 | "Battle-tested system shapes you can fork in seconds." | KEEP | - |
-| page.tsx | 392-396 | testimonial: "Pipes is the first tool where our architecture diagrams stop drifting from reality. Our agents read the same system our engineers do." | KEEP | - |
+| page.tsx | 392-396 | testimonial: "Looper is the first tool where our architecture diagrams stop drifting from reality. Our agents read the same system our engineers do." | KEEP | - |
 | page.tsx | 463 | h2: "Make your architecture executable." | KEEP | - |
 | page.tsx | 465-468 | "A free workspace and your first system are two clicks away. Bring your team. Bring your agents." | KEEP | - |
 | page.tsx | 492-494 | "Free forever - SOC 2 Type II - SSO available on Enterprise" | KEEP | - |
@@ -46,7 +46,7 @@ This audit grades every customer-facing string against the locked headline from 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
 | pricing/page.tsx | 9-11 | metadata desc: "Transparent, per-workspace pricing. Start free. Upgrade when your team grows." | KEEP | - |
-| pricing/page.tsx | 38 | starter tagline: "Explore Pipes and ship your first system." | KEEP | - |
+| pricing/page.tsx | 38 | starter tagline: "Explore Looper and ship your first system." | KEEP | - |
 | pricing/page.tsx | 58 | team tagline: "For teams collaborating on shared system memory." | KEEP | - |
 | pricing/page.tsx | 79 | enterprise tagline: "For organizations with security, scale, and procurement needs." | REWRITE | "For teams that need SSO, SCIM, and a signed DPA." (verbs and specifics, not noun pile) |
 | pricing/page.tsx | 91 | enterprise feature: "Dedicated solutions engineer" | REWRITE | "Dedicated support engineer" (drops banned word `solution`) |
@@ -60,7 +60,7 @@ This audit grades every customer-facing string against the locked headline from 
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| protocol/page.tsx | 21-23 | metadata desc: "Token-authenticated MCP and REST surfaces over the Pipes bounded services. Connect any agent to your system memory." | KEEP | - |
+| protocol/page.tsx | 21-23 | metadata desc: "Token-authenticated MCP and REST surfaces over the Looper bounded services. Connect any agent to your system memory." | KEEP | - |
 | protocol/page.tsx | 162-166 | h1: "One bounded service layer. Two transports. Eleven capabilities." | KEEP | - |
 | protocol/page.tsx | 167-171 | "Token-authenticated REST and MCP surfaces over the same audited service layer that powers the editor. Connect agents, CI pipelines, and integrations without re-implementing access control." | REWRITE | "The same service layer that powers the editor. Hand any agent a token. Re-implement nothing." (current has too many commas; condense) |
 | protocol/page.tsx | 219 | "Scope every token to exactly what it needs." | KEEP | - |
@@ -73,24 +73,24 @@ This audit grades every customer-facing string against the locked headline from 
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| docs/page.tsx | 7 | metadata desc: "Build, validate, and ship systems with Pipes." | KEEP | - |
-| docs/page.tsx | 105-110 | h1: "Build, validate, and ship systems with Pipes." | KEEP | - |
+| docs/page.tsx | 7 | metadata desc: "Build, validate, and ship systems with Looper." | KEEP | - |
+| docs/page.tsx | 105-110 | h1: "Build, validate, and ship systems with Looper." | KEEP | - |
 | docs/page.tsx | 112-115 | "Concepts, guides, and reference. Everything you need to take a system from idea to production handoff." | KEEP | - |
-| docs/page.tsx | 161-164 | "Pipes is a typed canvas, validation engine, and protocol layer for the architecture your team and agents share. A Pipes system is more than a diagram - it is an executable contract any agent can read." | KEEP | - |
+| docs/page.tsx | 161-164 | "Looper is a typed canvas, validation engine, and protocol layer for the architecture your team and agents share. A Looper system is more than a diagram - it is an executable contract any agent can read." | KEEP | - |
 
 ### Marketing surface: use cases `src/app/(marketing)/use-cases/page.tsx` + detail
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| use-cases/page.tsx | 8-10 | metadata desc: "How teams use Pipes to ship multi-agent systems, automation, support ops, and architecture handoffs." | KEEP | - |
-| use-cases/page.tsx | 31 | h1: "How teams ship with Pipes." | KEEP | - |
+| use-cases/page.tsx | 8-10 | metadata desc: "How teams use Looper to ship multi-agent systems, automation, support ops, and architecture handoffs." | KEEP | - |
+| use-cases/page.tsx | 31 | h1: "How teams ship with Looper." | KEEP | - |
 | use-cases/page.tsx | 33-36 | "Real workloads from real teams. Pick a use case to see the system shape, workflow, and templates that ship with it." | KEEP | - |
 | use-cases/page.tsx | 80 | "Don't see your workload?" | KEEP | - |
-| use-cases/page.tsx | 83-86 | "Pipes adapts to any system shape. Talk to our team about how to model yours." | KEEP | - |
-| use-cases/[slug]/page.tsx | 117-119 | "Pipes turned our system diagrams into something our agents actually respect. We stopped re-prompting and started shipping." | KEEP | - |
+| use-cases/page.tsx | 83-86 | "Looper adapts to any system shape. Talk to our team about how to model yours." | KEEP | - |
+| use-cases/[slug]/page.tsx | 117-119 | "Looper turned our system diagrams into something our agents actually respect. We stopped re-prompting and started shipping." | KEEP | - |
 | use-cases/[slug]/page.tsx | 120-122 | "Composite quote from teams running this workload" | DELETE | - (a synthetic-quote disclaimer screams unlaunched. The audience is a senior engineer who reads this as fake.) |
 | use-cases/[slug]/page.tsx | 134 | SectionBadge "The problem" | KEEP | - |
-| use-cases/[slug]/page.tsx | 150 | SectionBadge "The solution" | REWRITE | Replace label "The solution" with "How Pipes fits" (drops banned `solution`) |
+| use-cases/[slug]/page.tsx | 150 | SectionBadge "The solution" | REWRITE | Replace label "The solution" with "How Looper fits" (drops banned `solution`) |
 | use-cases/[slug]/page.tsx | 270-272 | "Fork a template, validate, and hand it to your agents in under five minutes." | KEEP | - |
 | use-cases/[slug]/page.tsx | 309 | bottom h2: "Make this your team's next system." | KEEP | - |
 
@@ -102,23 +102,23 @@ This audit grades every customer-facing string against the locked headline from 
 | TemplatesGallery.tsx | 70-72 | badge: "Production-ready system blueprints" | KEEP | - |
 | TemplatesGallery.tsx | 73 | h1: "Templates" | REWRITE | "Forkable systems your team has already shipped." (h1 is the cheapest copy slot on the page; "Templates" repeats the page title) |
 | TemplatesGallery.tsx | 74-76 | "Pre-built, validated system designs you can fork into your workspace in seconds. Each template ships with typed nodes, pipes, and a reviewable graph." | KEEP | - |
-| TemplatesGallery.tsx | 90 | metric footer: "Curated by the Pipes team" | KEEP | - |
+| TemplatesGallery.tsx | 90 | metric footer: "Curated by the Looper team" | KEEP | - |
 | TemplatesGallery.tsx | 150 | "Need a custom template?" | KEEP | - |
 | TemplatesGallery.tsx | 151-153 | "Start from a blank canvas and let the AI assistant scaffold the system for you." | KEEP | - |
-| templates/[slug]/page.tsx | 73 | step "Sign up free" body: "Create your Pipes workspace in under a minute. No credit card required." | KEEP | - |
+| templates/[slug]/page.tsx | 73 | step "Sign up free" body: "Create your Looper workspace in under a minute. No credit card required." | KEEP | - |
 | templates/[slug]/page.tsx | 167-171 | overview body: "{useCase} - A reliable starting point for teams building {category} systems. Includes the core flow plus extension points for tools, guardrails, and integrations." | REWRITE | "{useCase}. A starting point for teams building {category} systems. Fork it, edit the nodes, ship." (cuts `extension points`, `integrations`, the noun pile) |
 
 ### Marketing surface: compare
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| compare/page.tsx | 14-16 | metadata desc: "Honest, head-to-head comparisons: Pipes vs Figma, Miro, Lucidchart, and AI-generated diagrams." | KEEP | - |
-| compare/page.tsx | 32 | h1: "How Pipes stacks up" | KEEP | - |
-| compare/page.tsx | 33-35 | "We respect the alternatives. Here is where Pipes wins, where competitors lead, and how to choose between them for your team." | KEEP | - |
-| compare/page.tsx | 85 | "Ready to evaluate Pipes for your team?" | KEEP | - |
+| compare/page.tsx | 14-16 | metadata desc: "Honest, head-to-head comparisons: Looper vs Figma, Miro, Lucidchart, and AI-generated diagrams." | KEEP | - |
+| compare/page.tsx | 32 | h1: "How Looper stacks up" | KEEP | - |
+| compare/page.tsx | 33-35 | "We respect the alternatives. Here is where Looper wins, where competitors lead, and how to choose between them for your team." | KEEP | - |
+| compare/page.tsx | 85 | "Ready to evaluate Looper for your team?" | KEEP | - |
 | compare/page.tsx | 86-88 | "Spin up a free workspace and see how it fits your architecture workflow." | KEEP | - |
 | compare/[slug]/page.tsx | 256-259 | "When visual presentation, freeform canvas, or general diagramming is the primary goal and execution context is not required." | REWRITE | "When the goal is a picture, not a system your agents will read." (current is one sentence with five clauses) |
-| compare/[slug]/page.tsx | 287-290 | "See it for yourself" / "Spin up a free Pipes workspace - no credit card, no time limit." | KEEP | - |
+| compare/[slug]/page.tsx | 287-290 | "See it for yourself" / "Spin up a free Looper workspace - no credit card, no time limit." | KEEP | - |
 
 ### Marketing shell: nav, footer, newsletter `src/components/MarketingShell.tsx`
 
@@ -136,11 +136,11 @@ This audit grades every customer-facing string against the locked headline from 
 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
-| login/page.tsx | 7 | metadata desc: "Sign in to your Pipes workspace." | KEEP | - |
+| login/page.tsx | 7 | metadata desc: "Sign in to your Looper workspace." | KEEP | - |
 | login/page.tsx | 30 | h1: "Welcome back" | KEEP | - |
-| login/page.tsx | 31-33 | "Continue to your Pipes workspace" | KEEP | - |
+| login/page.tsx | 31-33 | "Continue to your Looper workspace" | KEEP | - |
 | login/page.tsx | 53 | placeholder: "alex@acme.com" | KEEP | - |
-| login/page.tsx | 132-134 | "Secured by Auth0 - your credentials are never stored by Pipes" | KEEP | - |
+| login/page.tsx | 132-134 | "Secured by Auth0 - your credentials are never stored by Looper" | KEEP | - |
 | signup/page.tsx | 81 | h1: "Create your workspace" | KEEP | - |
 | signup/page.tsx | 82-84 | "Free forever. No credit card required." | KEEP | - |
 | signup/page.tsx | 137 | placeholder workspace: "Acme AI" | KEEP | - |
@@ -160,14 +160,14 @@ This audit grades every customer-facing string against the locked headline from 
 | DashboardClient.tsx | 593-595 | search placeholder "Search systems" | KEEP | - |
 | DashboardClient.tsx | 631 | button "New System" | KEEP | - |
 | DashboardClient.tsx | 661 | h2: "Start your first system" | REWRITE | "One map your team and your agents both read." (this is the dashboard empty state - the closest thing to the editor empty state per audience.md voice rule. Headline MUST appear here.) |
-| DashboardClient.tsx | 662-664 | "Pipes treats every node the same. You decide what each one is." | REWRITE | "Draw the nodes, ports, and pipes once. Stop being the map." |
+| DashboardClient.tsx | 662-664 | "Looper treats every node the same. You decide what each one is." | REWRITE | "Draw the nodes, ports, and pipes once. Stop being the map." |
 | DashboardClient.tsx | 668 | button "New system" | KEEP | - |
 | DashboardClient.tsx | 675 | "or start from a template" | KEEP | - |
 | DashboardClient.tsx | 686-689 | empty filter titles "Nothing archived" / "No favorites yet" / "No systems yet" | KEEP | - |
 | DashboardClient.tsx | 695 | "Archived systems live here. They are hidden from the default view." | KEEP | - |
 | DashboardClient.tsx | 697 | "Favorite systems for quick access from the toolbar." | KEEP | - |
 | DashboardClient.tsx | 698 | "Start fresh, import a schema, or grab a template." | KEEP | - |
-| DashboardClient.tsx | 789-791 | dialog "Import system" / "Paste a pipes_schema_v1 JSON document. A new system will be created with its contents." | KEEP | - |
+| DashboardClient.tsx | 789-791 | dialog "Import system" / "Paste a looper_schema_v1 JSON document. A new system will be created with its contents." | KEEP | - |
 
 ### App surface: AppShellClient + NavLinks
 
@@ -192,7 +192,7 @@ This audit grades every customer-facing string against the locked headline from 
 | collaboration/page.tsx | 513 | empty state desc: "Teams let you grant access to groups instead of individuals. Coming soon." | KEEP | - |
 | collaboration/page.tsx | 530-531 | dialog "Invite a member" / "Send an invite to add a new member to this workspace." | KEEP | - |
 | tokens/page.tsx | 267-268 | PageHeader title "Developer" / subtitle "API tokens, audit log, and developer integrations." | REWRITE | "API tokens and integrations." (drops repeated `developer`; current line names the same thing the heading already named) |
-| tokens/page.tsx | 307-308 | empty: "No tokens yet" / "Generate a token to start integrating with the Pipes Protocol API or MCP." | KEEP | - |
+| tokens/page.tsx | 307-308 | empty: "No tokens yet" / "Generate a token to start integrating with the Looper Protocol API or MCP." | KEEP | - |
 | tokens/page.tsx | 356-357 | dialog "Generate a token" / "Pick a descriptive name and only the capabilities you need." | KEEP | - |
 | tokens/page.tsx | 458-459 | "Token created" / "Copy and store this secret now. It will not be shown again." | KEEP | - |
 
@@ -250,21 +250,21 @@ This audit grades every customer-facing string against the locked headline from 
 | File | Line(s) | Current copy | Verdict | Proposed replacement |
 |------|---------|--------------|---------|----------------------|
 | content.ts | 5 | hero title: "Design systems your team and agents can both execute" | REWRITE | "One map your team and your agents both read." (locked headline) |
-| content.ts | 6 | subtitle: "Pipes captures architecture as reusable, validated, machine-readable system memory." | REWRITE | "Draw the nodes, ports, and pipes once. Your team reviews it. Your agents read it." (verbs, one idea per sentence) |
+| content.ts | 6 | subtitle: "Looper captures architecture as reusable, validated, machine-readable system memory." | REWRITE | "Draw the nodes, ports, and pipes once. Your team reviews it. Your agents read it." (verbs, one idea per sentence) |
 | content.ts | 10-15 | proof titles "Systems, not diagrams" / "Validation + simulation" / "Protocol-ready" / "Human + agent collaboration" | KEEP | - |
 | content.ts | 21 | use case "Multi-agent systems" / problem: "Coordinating planners, specialists, and reviewers across one reliable contract is hard." | KEEP | - |
-| content.ts | 21 | fit: "Pipes models multi-agent orchestration with typed interfaces and explicit dependencies." | REWRITE | "Pipes hands off planners, specialists, and reviewers through one typed contract." (drops the noun `orchestration`) |
+| content.ts | 21 | fit: "Looper models multi-agent orchestration with typed interfaces and explicit dependencies." | REWRITE | "Looper hands off planners, specialists, and reviewers through one typed contract." (drops the noun `orchestration`) |
 | content.ts | 22 | "automation triggers, decisions, and actions in one reusable system model" | KEEP | - |
-| content.ts | 23 | fit: "Pipes captures triage, policy checks, and human approval points explicitly." | KEEP | - |
-| content.ts | 24 | "technical-system-design" fit: "Pipes keeps architecture and operational interface truth in one structured source." | REWRITE | "One map your team reads. Your agents read it too." (current is jargon soup with `operational interface truth`) |
-| content.ts | 25 | "agency-handoff" fit: "Pipes provides a transferable system artifact with versions, notes, and protocol endpoints." | KEEP | - |
-| content.ts | 29 | figma summary: "Figma excels at interface design. Pipes is built for executable system architecture." | KEEP | - |
-| content.ts | 29 | figma differences[0]: "Pipes uses typed system graph semantics" | REWRITE | "Pipes types every node, port, and pipe." (drops the academic noun `semantics`) |
+| content.ts | 23 | fit: "Looper captures triage, policy checks, and human approval points explicitly." | KEEP | - |
+| content.ts | 24 | "technical-system-design" fit: "Looper keeps architecture and operational interface truth in one structured source." | REWRITE | "One map your team reads. Your agents read it too." (current is jargon soup with `operational interface truth`) |
+| content.ts | 25 | "agency-handoff" fit: "Looper provides a transferable system artifact with versions, notes, and protocol endpoints." | KEEP | - |
+| content.ts | 29 | figma summary: "Figma excels at interface design. Looper is built for executable system architecture." | KEEP | - |
+| content.ts | 29 | figma differences[0]: "Looper uses typed system graph semantics" | REWRITE | "Looper types every node, port, and pipe." (drops the academic noun `semantics`) |
 | content.ts | 29 | figma bestFor: "When architecture needs to be reusable operational memory, not only visual communication." | KEEP | - |
-| content.ts | 30 | miro summary: "Miro is excellent for broad collaborative canvases. Pipes focuses on structured system specification." | KEEP | - |
+| content.ts | 30 | miro summary: "Miro is excellent for broad collaborative canvases. Looper focuses on structured system specification." | KEEP | - |
 | content.ts | 30 | miro differences[2]: "Agent and protocol-ready outputs" | KEEP | - |
-| content.ts | 31 | lucidchart summary: "Lucidchart is strong for diagramming standards. Pipes prioritizes reusable architecture execution context." | REWRITE | "Lucidchart draws diagrams. Pipes draws systems your agents can read." (drops the noun pile `architecture execution context`) |
-| content.ts | 32 | ai-generated summary: "AI-generated diagrams are fast drafts; Pipes is ongoing system memory with governance." | KEEP | - |
+| content.ts | 31 | lucidchart summary: "Lucidchart is strong for diagramming standards. Looper prioritizes reusable architecture execution context." | REWRITE | "Lucidchart draws diagrams. Looper draws systems your agents can read." (drops the noun pile `architecture execution context`) |
+| content.ts | 32 | ai-generated summary: "AI-generated diagrams are fast drafts; Looper is ongoing system memory with governance." | KEEP | - |
 
 ## Headline placement
 

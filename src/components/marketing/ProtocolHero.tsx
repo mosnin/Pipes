@@ -58,7 +58,7 @@ export function ProtocolHero({ className }: ProtocolHeroProps) {
                   className="mt-5 t-body text-[#3C3C43] max-w-[44ch]"
                   style={{ fontSize: 17, lineHeight: 1.55 }}
                 >
-                  Pipes speaks MCP. Hand any agent a Bearer token and it sees your system the way your team does.
+                  Looper speaks MCP. Hand any agent a Bearer token and it sees your system the way your team does.
                 </p>
                 <div className="mt-7 flex flex-wrap items-center gap-3">
                   <Link

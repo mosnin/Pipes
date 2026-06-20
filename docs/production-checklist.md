@@ -1,4 +1,4 @@
-# Production checklist - Pipes agent runner
+# Production checklist - Looper agent runner
 
 This is the one-page deploy. Follow it top to bottom. Each step ends
 with a verification command and what you should see. If a step's
@@ -29,7 +29,7 @@ and re-run. Exit codes:
 | 13   | `modal token list` failed (CLI not authenticated)  |
 | 14   | OpenAI API rejected the key (HTTP 401)             |
 | 15   | OpenAI API check could not reach the network       |
-| 16   | The Modal secret `pipes-agent-secrets` is missing  |
+| 16   | The Modal secret `looper-agent-secrets` is missing  |
 
 `bash agents/deploy.sh` runs this check as its Step 0 and refuses to
 deploy until it returns 0.
@@ -56,18 +56,18 @@ Token created.
 
 ## 2. Set Modal secrets
 
-The Modal app reads one secret named `pipes-agent-secrets`
+The Modal app reads one secret named `looper-agent-secrets`
 containing `OPENAI_API_KEY`.
 
 ```bash
-modal secret create pipes-agent-secrets OPENAI_API_KEY=sk-...
+modal secret create looper-agent-secrets OPENAI_API_KEY=sk-...
 modal secret list
 ```
 
 # Expected output:
 ```
 Name                  Last used    Created
-pipes-agent-secrets   never        a few seconds ago
+looper-agent-secrets   never        a few seconds ago
 ```
 
 ## 3. Deploy the Modal endpoint
@@ -80,7 +80,7 @@ modal app list
 # Expected output:
 ```
 Name              State    Created       Stopped
-pipes-agent       deployed a moment ago  -
+looper-agent       deployed a moment ago  -
 ```
 
 ## 4. Capture the endpoint URL
@@ -88,30 +88,30 @@ pipes-agent       deployed a moment ago  -
 The deploy command prints the function URL. If you missed it:
 
 ```bash
-modal app stats pipes-agent
+modal app stats looper-agent
 ```
 
 Look for the line starting with `serve_modal => https://...`. Copy
-that URL (no trailing slash). It is `PIPES_AGENT_ENDPOINT_URL` for
+that URL (no trailing slash). It is `LOOPER_AGENT_ENDPOINT_URL` for
 the rest of the steps.
 
 # Expected output:
 ```
-serve_modal => https://<workspace>--pipes-agent-serve-modal.modal.run
+serve_modal => https://<workspace>--looper-agent-serve-modal.modal.run
 ```
 
 ## 5. Set Next.js env in production
 
 In Vercel (or your host), set:
 
-- `PIPES_AGENT_ENDPOINT_URL=<from step 4>`
+- `LOOPER_AGENT_ENDPOINT_URL=<from step 4>`
 - `OPENAI_AGENTS_MODEL=gpt-4o-mini` (optional override)
 - `CLERK_SECRET_KEY=<from Clerk dashboard>`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<from Clerk dashboard>`
 - `CONVEX_URL=<from Convex dashboard>`
 - `NEXT_PUBLIC_CONVEX_URL=<same>`
-- `PIPES_USE_MOCKS=false`
-- `NEXT_PUBLIC_PIPES_USE_MOCKS=false`
+- `LOOPER_USE_MOCKS=false`
+- `NEXT_PUBLIC_LOOPER_USE_MOCKS=false`
 
 ```bash
 vercel env ls production
@@ -119,12 +119,12 @@ vercel env ls production
 
 # Expected output:
 ```
-PIPES_AGENT_ENDPOINT_URL          Encrypted   Production
+LOOPER_AGENT_ENDPOINT_URL          Encrypted   Production
 CLERK_SECRET_KEY                  Encrypted   Production
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY Encrypted   Production
 CONVEX_URL                        Encrypted   Production
 NEXT_PUBLIC_CONVEX_URL            Encrypted   Production
-PIPES_USE_MOCKS                   Encrypted   Production
+LOOPER_USE_MOCKS                   Encrypted   Production
 ```
 
 ## 6. Run the live eval
@@ -133,7 +133,7 @@ From your laptop, with `OPENAI_API_KEY` exported (the harness
 checks the var as a guardrail against a missing Modal secret):
 
 ```bash
-PIPES_AGENT_ENDPOINT_URL=https://...modal.run \
+LOOPER_AGENT_ENDPOINT_URL=https://...modal.run \
 OPENAI_API_KEY=sk-... \
 python agents/eval/run_live_eval.py
 ```
@@ -156,7 +156,7 @@ Read the table and fix the regression before continuing.
 A direct curl confirms the endpoint streams SSE end to end:
 
 ```bash
-curl -N -X POST "$PIPES_AGENT_ENDPOINT_URL/build" \
+curl -N -X POST "$LOOPER_AGENT_ENDPOINT_URL/build" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{"systemId":"sys_smoke","prompt":"Planner agent feeds a Coder agent."}'
@@ -182,8 +182,8 @@ data: {"conversationId":"...","turnId":"..."}
 If the production endpoint misbehaves, set in the host env:
 
 ```
-PIPES_USE_MOCKS=true
-NEXT_PUBLIC_PIPES_USE_MOCKS=true
+LOOPER_USE_MOCKS=true
+NEXT_PUBLIC_LOOPER_USE_MOCKS=true
 ```
 
 Redeploy. The Next.js route at `/api/agent/build` short-circuits to
@@ -194,12 +194,12 @@ See `docs/agent-contract.md`, "The mock-mode contract."
 To stop the Modal app entirely:
 
 ```bash
-modal app stop pipes-agent
+modal app stop looper-agent
 ```
 
 # Expected output:
 ```
-Stopped app pipes-agent.
+Stopped app looper-agent.
 ```
 
 ## Open follow-ups (not blocking deploy)
@@ -216,8 +216,8 @@ Stopped app pipes-agent.
 
 ## Troubleshooting
 
-- `modal secret list` shows no `pipes-agent-secrets`: re-run step 2.
-- `modal app list` shows `pipes-agent` as `stopped` after step 3:
+- `modal secret list` shows no `looper-agent-secrets`: re-run step 2.
+- `modal app list` shows `looper-agent` as `stopped` after step 3:
   re-run with `MODAL_LOGLEVEL=DEBUG bash agents/deploy.sh` and check
   the last error.
 - `curl` in step 7 returns HTTP 500: a Modal dep is missing. Confirm

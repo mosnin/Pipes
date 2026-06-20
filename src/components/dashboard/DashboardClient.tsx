@@ -883,7 +883,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           if (!o) setImportText("");
         }}
         title="Import system"
-        description="Paste a pipes_schema_v1 JSON document. A new system will be created with its contents."
+        description="Paste a looper_schema_v1 JSON document. A new system will be created with its contents."
         size="md"
         footer={
           <>
@@ -910,7 +910,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         <Textarea
           aria-label="Schema JSON"
           rows={10}
-          placeholder='{ "pipes_schema_v1": { ... } }'
+          placeholder='{ "looper_schema_v1": { ... } }'
           value={importText}
           onChange={(e) => setImportText(e.target.value)}
           className="font-mono"

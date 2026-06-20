@@ -1,5 +1,5 @@
 // Single-node-type design (Steve Jobs cut). Legacy types remain in the schema enum for backwards compat.
-import type { NodeType } from "@/domain/pipes_schema_v1/schema";
+import type { NodeType } from "@/domain/looper_schema_v1/schema";
 
 export type PortType = "string" | "number" | "boolean" | "json" | "event" | "file" | "any";
 export type NodeLibraryCategory = "Core" | "Reasoning" | "I/O" | "Control" | "Data";
@@ -29,7 +29,7 @@ export type InsertContext = {
 export const primaryNodeLibraryEntry: NodeLibraryEntry = {
   nodeType: "Node",
   name: "New node",
-  description: "Describe what this node is. Pipes treats every node uniformly -- you decide what it does.",
+  description: "Describe what this node is. Looper treats every step uniformly -- you decide what it does.",
   category: "Core",
   inputTypes: ["any"],
   outputTypes: ["any"],

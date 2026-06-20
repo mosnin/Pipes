@@ -66,7 +66,7 @@ When adding persistence for a new feature, define the interface in contracts fir
 
 ### The canonical schema
 
-`src/domain/pipes_schema_v1/schema.ts` is the source of truth for all types. 27 node types are defined in `nodeTypeValues`. The canonical export format is `pipes_schema_v1` JSON validated by Zod. Schema migration lives in `src/domain/pipes_schema_v1/migration.ts` — add new version migrations to the `migrations` map there.
+`src/domain/looper_schema_v1/schema.ts` is the source of truth for all types. 27 node types are defined in `nodeTypeValues`. The canonical export format is `looper_schema_v1` JSON validated by Zod. Schema migration lives in `src/domain/looper_schema_v1/migration.ts` — add new version migrations to the `migrations` map there.
 
 ### The MCP/Protocol layer
 

@@ -10,7 +10,7 @@ Pass criteria per prompt: node count within +/-2 of baseline, pipe count within 
 
 ## Results table
 
-| Prompt id | Verdict | Nodes (got/expected) | Pipes (got/expected) | Title overlap | Connectivity | Notes |
+| Prompt id | Verdict | Nodes (got/expected) | Looper (got/expected) | Title overlap | Connectivity | Notes |
 |-----------|---------|---------------------|---------------------|---------------|-------------|-------|
 | multi-agent-handoff | PASS | 5/5 | 4/4 | 1.00 | pass | - |
 | multi-agent-research | PASS | 5/5 | 5/5 | 1.00 | pass | - |

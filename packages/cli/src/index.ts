@@ -17,11 +17,11 @@ import { initAuditLog } from "./audit.js";
 
 initTelemetry();
 
-const program = new Command("pipes")
-  .description("CLI for Pipes — build and manage agent systems from your terminal")
+const program = new Command("looper")
+  .description("CLI for Looper — build and manage agent systems from your terminal")
   .version("0.1.0")
-  .option("--api <url>", "Pipes API base URL (overrides PIPES_API and .pipes.yml)")
-  .option("--token <token>", "Agent token (overrides PIPES_TOKEN and .pipes.yml)")
+  .option("--api <url>", "Pipes API base URL (overrides LOOPER_API and .looper.yml)")
+  .option("--token <token>", "Agent token (overrides LOOPER_TOKEN and .looper.yml)")
   .option("--json", "Output raw JSON (machine-readable)")
   .option("--strict", "Reject content with detected prompt injection patterns (default: warn only)")
   .option("--audit-log <file>", "Append NDJSON audit entries to a file")
@@ -29,11 +29,11 @@ const program = new Command("pipes")
     "after",
     `
 Environment variables:
-  PIPES_API     API base URL (default: https://app.pipes.sh)
-  PIPES_TOKEN   Agent token
+  LOOPER_API     API base URL (default: https://app.looper.dev)
+  LOOPER_TOKEN   Agent token
 
 Config file:
-  .pipes.yml    Searched in the current directory and all parent directories
+  .looper.yml    Searched in the current directory and all parent directories
 
 Examples:
   pipes init
@@ -55,7 +55,7 @@ Enable tab completion:
 
 program.hook("preAction", (_thisCommand, _actionCommand) => {
   const opts = program.opts<{ auditLog?: string }>();
-  const auditPath = opts.auditLog ?? process.env["PIPES_AUDIT_LOG"];
+  const auditPath = opts.auditLog ?? process.env["LOOPER_AUDIT_LOG"];
   if (auditPath) initAuditLog(auditPath);
 });
 

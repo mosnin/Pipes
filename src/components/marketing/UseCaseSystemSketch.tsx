@@ -37,7 +37,7 @@ export function UseCaseSystemSketch({ nodes }: UseCaseSystemSketchProps) {
 
         {/* pipes */}
         <path
-          className="pipes-edge-stream"
+          className="looper-edge-stream"
           d="M 130 80 C 170 80, 190 80, 220 80"
           stroke="#4F46E5"
           strokeWidth="1.5"
@@ -45,7 +45,7 @@ export function UseCaseSystemSketch({ nodes }: UseCaseSystemSketchProps) {
           strokeLinecap="round"
         />
         <path
-          className="pipes-edge-stream"
+          className="looper-edge-stream"
           d="M 290 80 C 330 80, 350 80, 380 80"
           stroke="#4F46E5"
           strokeWidth="1.5"
@@ -54,7 +54,7 @@ export function UseCaseSystemSketch({ nodes }: UseCaseSystemSketchProps) {
         />
 
         {/* node 1 */}
-        <g className="pipes-node-arrival">
+        <g className="looper-node-arrival">
           <rect
             x="40"
             y="58"
@@ -75,7 +75,7 @@ export function UseCaseSystemSketch({ nodes }: UseCaseSystemSketchProps) {
         </g>
 
         {/* node 2 */}
-        <g className="pipes-node-arrival">
+        <g className="looper-node-arrival">
           <rect
             x="200"
             y="58"
@@ -96,7 +96,7 @@ export function UseCaseSystemSketch({ nodes }: UseCaseSystemSketchProps) {
         </g>
 
         {/* node 3 */}
-        <g className="pipes-node-arrival">
+        <g className="looper-node-arrival">
           <rect
             x="360"
             y="58"

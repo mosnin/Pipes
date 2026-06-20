@@ -106,7 +106,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
       className="relative w-full"
       style={{ height: "300vh" }}
       data-testid="hero-scroll-demo-outer"
-      aria-label="Scroll-driven Pipes demo. Type a sentence, watch the canvas build, watch Claude read it back."
+      aria-label="Scroll-driven Looper demo. Type a sentence, watch the canvas build, watch Claude read it back."
     >
       <div
         className="sticky top-0 flex h-screen w-full items-center justify-center px-4 sm:px-6"
@@ -145,7 +145,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
               className="t-label font-semibold text-[#111]"
               style={{ fontSize: 12 }}
             >
-              Pipes
+              Looper
             </span>
             <span
               className="t-caption text-[#8E8E93]"
@@ -312,7 +312,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                   className="mt-1 t-label text-[#111]"
                   style={{ fontSize: 12 }}
                 >
-                  What is in my Pipes system?
+                  What is in my Looper loop?
                 </p>
               </div>
 

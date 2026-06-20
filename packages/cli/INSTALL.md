@@ -1,4 +1,4 @@
-# Installing @pipes/cli
+# Installing @looper/cli
 
 ## Option 1: Pre-built binary (recommended)
 
@@ -31,7 +31,7 @@ Download `pipes-win-x64.exe` from the Releases page and add it to your PATH.
 ## Option 2: npm (requires Node.js 18+)
 
 ```bash
-npm install -g @pipes/cli
+npm install -g @looper/cli
 ```
 
 ## Setup

@@ -5,7 +5,7 @@ import chalk from "chalk";
 import yaml from "js-yaml";
 import { configFilePath } from "../config.js";
 
-const DEFAULT_API = "https://app.pipes.sh";
+const DEFAULT_API = "https://app.looper.dev";
 
 interface GlobalOpts {
   api?: string;
@@ -26,7 +26,7 @@ async function prompt(question: string, defaultValue = ""): Promise<string> {
 export function registerInit(program: Command): void {
   program
     .command("init")
-    .description("Create a .pipes.yml config file in the current directory")
+    .description("Create a .looper.yml config file in the current directory")
     .option("--api <url>", "Pipes API URL")
     .option("--token <token>", "Agent token (from Settings -> API Tokens)")
     .action(async (opts: { api?: string; token?: string }) => {
@@ -34,7 +34,7 @@ export function registerInit(program: Command): void {
       const configPath = configFilePath();
 
       if (existsSync(configPath)) {
-        console.error(chalk.yellow(`! .pipes.yml already exists at ${configPath}`));
+        console.error(chalk.yellow(`! .looper.yml already exists at ${configPath}`));
         console.error("  Delete it first or edit it manually.");
         process.exit(1);
       }
@@ -54,7 +54,7 @@ export function registerInit(program: Command): void {
       console.log();
       console.log(chalk.green(`✓ Written ${configPath}`));
       console.log();
-      console.log(chalk.yellow("Keep your token secret — add .pipes.yml to .gitignore:"));
-      console.log(chalk.dim("  echo '.pipes.yml' >> .gitignore"));
+      console.log(chalk.yellow("Keep your token secret — add .looper.yml to .gitignore:"));
+      console.log(chalk.dim("  echo '.looper.yml' >> .gitignore"));
     });
 }

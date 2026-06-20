@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { canComment, canEditSystem, canManageMembers, canViewSystem } from "@/domain/permissions";
-import { PipesSchemaV1, type Role } from "@/domain/pipes_schema_v1/schema";
-import { serializePipesSchema } from "@/domain/pipes_schema_v1/serde";
+import { LooperSchemaV1, type Role } from "@/domain/looper_schema_v1/schema";
+import { serializeLooperSchema } from "@/domain/looper_schema_v1/serde";
 import { getEntitlements } from "@/domain/templates/plans";
 import type { AppContext, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
 import { getBillingService } from "@/lib/billing";
@@ -14,7 +14,7 @@ import { hashAgentToken, issueAgentTokenSecret, parseCapabilityList, type AgentC
 import { ProtocolError } from "@/lib/protocol/errors";
 import { canAccessAdmin } from "@/lib/admin/access";
 import { isProductSignalEvent, type ProductSignalEvent } from "@/domain/services/product_signals";
-import { migrateDocument, needsMigration } from "@/domain/pipes_schema_v1/migration";
+import { migrateDocument, needsMigration } from "@/domain/looper_schema_v1/migration";
 
 function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
@@ -97,8 +97,8 @@ export class SchemaExportService {
     const bundle = await this.repos.systems.getBundle(systemId);
     const systems = await this.repos.systems.list(ctx.workspaceId);
     const members = await this.repos.memberships.list(ctx.workspaceId);
-    return serializePipesSchema({
-      version: "pipes_schema_v1",
+    return serializeLooperSchema({
+      version: "looper_schema_v1",
       users: [{ id: ctx.userId, email: "unknown@pipes.local", name: "User", createdAt: new Date().toISOString() }],
       workspaces: [{ id: ctx.workspaceId, ownerId: ctx.userId, name: "Workspace", slug: "workspace", plan: ctx.plan, createdAt: new Date().toISOString() }],
       systems: systems.filter((s) => s.id === systemId).map((s) => ({ ...s, nodeIds: bundle.nodes.map((n) => n.id), portIds: bundle.nodes.flatMap((n) => n.portIds), pipeIds: bundle.pipes.map((p) => p.id), groupIds: [], annotationIds: [], commentIds: bundle.comments.map((c) => c.id), assetIds: [], snippetIds: [], subsystemNodeIds: [] })),
@@ -115,13 +115,13 @@ export class VersionService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly exportService: SchemaExportService, private readonly entitlementService: EntitlementService) {}
   async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.versions.list(systemId); }
   async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
-  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
+  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); LooperSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
 }
 
 export class CollaborationService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
   async list(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return { members: await this.repos.memberships.list(ctx.workspaceId), invites: await this.repos.invites.list(ctx.workspaceId) }; }
-  async invite(ctx: AppContext, email: string, role: Role) { this.access.ensureCanManageMembers(ctx); if (!(await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId)).collaboration) throw new Error("Plan does not include collaboration."); const token = crypto.randomBytes(18).toString("hex"); const expiresAt = new Date(Date.now() + 604800000).toISOString(); await this.repos.invites.add({ workspaceId: ctx.workspaceId, email, role, token, invitedBy: ctx.userId, expiresAt }); await getEmailService().sendWorkspaceInvite({ email, workspaceName: "Pipes Workspace", inviterName: "Pipes teammate", acceptUrl: `${env.NEXT_PUBLIC_APP_URL}/invites/${token}`, role }); return { token }; }
+  async invite(ctx: AppContext, email: string, role: Role) { this.access.ensureCanManageMembers(ctx); if (!(await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId)).collaboration) throw new Error("Plan does not include collaboration."); const token = crypto.randomBytes(18).toString("hex"); const expiresAt = new Date(Date.now() + 604800000).toISOString(); await this.repos.invites.add({ workspaceId: ctx.workspaceId, email, role, token, invitedBy: ctx.userId, expiresAt }); await getEmailService().sendWorkspaceInvite({ email, workspaceName: "Looper Workspace", inviterName: "Looper teammate", acceptUrl: `${env.NEXT_PUBLIC_APP_URL}/invites/${token}`, role }); return { token }; }
   async acceptInvite(ctx: AppContext, token: string) { const invite = await this.repos.invites.getByToken(token); if (!invite || invite.status !== "pending" || new Date(invite.expiresAt).getTime() < Date.now()) throw new Error("Invite invalid."); await this.repos.memberships.add(invite.workspaceId, ctx.userId, invite.role); await this.repos.invites.accept(token, ctx.userId); await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "signal.invite_accepted", targetType: "invite", targetId: token, outcome: "success" }); }
   async cancelInvite(ctx: AppContext, token: string) { this.access.ensureCanManageMembers(ctx); await this.repos.invites.cancel(token); }
   async updateMemberRole(ctx: AppContext, userId: string, role: Role) {
@@ -362,7 +362,7 @@ export class ImportExportService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly versions: VersionService, private readonly schema: SchemaExportService, private readonly signals: ProductSignalService) {}
   async planMerge(ctx: AppContext, raw: string, targetSystemId: string) {
     const rawDoc = JSON.parse(raw);
-    const parsed = PipesSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
+    const parsed = LooperSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data;
     const src = doc.systems[0];
@@ -396,7 +396,7 @@ export class ImportExportService {
   }
   async importSchema(ctx: AppContext, raw: string, mode: "new" | "existing", targetSystemId?: string) {
     const rawDoc = JSON.parse(raw);
-    const parsed = PipesSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
+    const parsed = LooperSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data; const src = doc.systems[0]; if (!src) return { ok: false, diagnostics: ["No system in schema"] };
     await this.signals.track(ctx, "import_merge_attempted", { mode, targetSystemId: targetSystemId ?? null });
@@ -414,7 +414,7 @@ export class ImportExportService {
     await this.signals.track(ctx, "import_merged", { mode: "new", systemId });
     return { ok: true, systemId, diagnostics: [] };
   }
-  async exportSystem(ctx: AppContext, systemId: string) { const canonical = await this.schema.export(ctx, systemId); const b = await this.systems.getBundle(ctx, systemId); return { schemaVersion: "pipes_schema_v1", canonical, markdown: `# ${b.system.name}\n\n${b.system.description}\n\n## Nodes\n${b.nodes.map((n) => `- ${n.title} (${n.type})`).join("\n")}\n` }; }
+  async exportSystem(ctx: AppContext, systemId: string) { const canonical = await this.schema.export(ctx, systemId); const b = await this.systems.getBundle(ctx, systemId); return { schemaVersion: "looper_schema_v1", canonical, markdown: `# ${b.system.name}\n\n${b.system.description}\n\n## Nodes\n${b.nodes.map((n) => `- ${n.title} (${n.type})`).join("\n")}\n` }; }
 }
 
 export class SystemLibraryService {
@@ -817,7 +817,7 @@ export class WorkspaceGovernanceService {
     const systems = await this.systems.listAll(ctx);
     const manifest = {
       exportVersion: "workspace_manifest_v1",
-      schemaVersion: "pipes_schema_v1",
+      schemaVersion: "looper_schema_v1",
       exportedAt: new Date().toISOString(),
       workspace: { id: ctx.workspaceId, plan: ctx.plan },
       systems: systems.map((system) => ({ id: system.id, name: system.name, updatedAt: system.updatedAt, archivedAt: system.archivedAt ?? null, schemaExportPath: `/api/systems/${system.id}/export?format=json` }))

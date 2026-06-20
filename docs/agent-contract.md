@@ -16,7 +16,7 @@ JSON schema:
 { "type": "object",
   "properties": {
     "systemId": { "type": "string" },
-    "type": { "type": "string", "description": "One of nodeTypeValues from src/domain/pipes_schema_v1/schema.ts" },
+    "type": { "type": "string", "description": "One of nodeTypeValues from src/domain/looper_schema_v1/schema.ts" },
     "title": { "type": "string", "maxLength": 80 },
     "description": { "type": "string", "maxLength": 400 },
     "x": { "type": "number" }, "y": { "type": "number" } },
@@ -83,7 +83,7 @@ validate(systemId: string): { ok: boolean, errors: Array<{ nodeId?: string, pipe
 
 JSON schema: `{ "type": "object", "properties": { "systemId": { "type": "string" } }, "required": ["systemId"] }`
 
-Validates the current graph against pipes_schema_v1. Read-only. Produces no `EditorGraphAction`. The result is included on the `tool_result` event verbatim; the agent uses it to write its final message.
+Validates the current graph against looper_schema_v1. Read-only. Produces no `EditorGraphAction`. The result is included on the `tool_result` event verbatim; the agent uses it to write its final message.
 
 ## What is intentionally missing in v1
 
@@ -93,7 +93,7 @@ Validates the current graph against pipes_schema_v1. Read-only. Produces no `Edi
 - Comments. The agent does not annotate the graph; comments are a human surface in v1.
 - Version checkpoints. The agent does not snapshot; manual versioning stays a power-user action.
 - Suggestions on top of suggestions. The agent commits one plan per turn; it does not propose alternatives mid-build.
-- Simulation runs. Pipes does not execute the graph; the agent cannot kick off runs.
+- Simulation runs. Looper does not execute the graph; the agent cannot kick off runs.
 
 ## The streaming protocol
 
@@ -185,7 +185,7 @@ If the user edits the graph manually mid-turn, the manual edit pushes its own no
 - The client closes the SSE connection.
 - The server route handler observes `request.signal.aborted` and signals Modal cancellation.
 - Modal: if the runtime supports cancellation, the function exits. If not, the function continues to completion but the route stops persisting events and stops writing to `agent_turns` after the abort timestamp; the partially completed turn is marked `cancelled: true`.
-- UI: the chat shows a single line "Stopped." Partial graph writes that already arrived stay on the canvas; Pipes is forgiving and the user can keep editing.
+- UI: the chat shows a single line "Stopped." Partial graph writes that already arrived stay on the canvas; Looper is forgiving and the user can keep editing.
 - The user can type a new prompt immediately. The next turn starts fresh and reads the current graph (including the partial state) as its starting point.
 
 ## The cap contract
@@ -206,7 +206,7 @@ V1 ships without warm pools. The first request after a quiet period may take up 
 
 ## The mock-mode contract
 
-When `PIPES_USE_MOCKS=true`:
+When `LOOPER_USE_MOCKS=true`:
 
 - `/api/agent/build` returns canned events from a fixture file at `tests/fixtures/agent-build/<sha256(prompt).slice(0,12)>.json` if one exists, else a generic 3-node fixture at `tests/fixtures/agent-build/_default.json`.
 - No Modal call. No OpenAI call. No network egress.

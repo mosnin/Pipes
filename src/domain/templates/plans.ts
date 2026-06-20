@@ -1,4 +1,4 @@
-import type { Plan } from "@/domain/pipes_schema_v1/schema";
+import type { Plan } from "@/domain/looper_schema_v1/schema";
 
 export type Entitlements = {
   maxSystems: number;

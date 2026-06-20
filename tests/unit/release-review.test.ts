@@ -33,18 +33,18 @@ describe("release review service", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|release-mode", email: "ops@pipes.local", name: "Ops" });
-    const prevMocks = env.PIPES_USE_MOCKS;
+    const prevMocks = env.LOOPER_USE_MOCKS;
     const prevConvex = env.CONVEX_URL;
     const prevClerkSecret = env.CLERK_SECRET_KEY;
     const prevClerkPub = env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
     try {
-      (env as any).PIPES_USE_MOCKS = true;
+      (env as any).LOOPER_USE_MOCKS = true;
       (env as any).CONVEX_URL = "https://convex.example";
       const forcedMockSummary = await services.release.summary(ctx);
       expect(forcedMockSummary.environment.runtimeMode).toBe("mock");
       expect(forcedMockSummary.environment.configurationWarning).toBeNull();
 
-      (env as any).PIPES_USE_MOCKS = false;
+      (env as any).LOOPER_USE_MOCKS = false;
       (env as any).CONVEX_URL = undefined;
       const fallbackSummary = await services.release.summary(ctx);
       expect(fallbackSummary.environment.runtimeMode).toBe("fallback_mock");
@@ -62,7 +62,7 @@ describe("release review service", () => {
       const fullProviderSummary = await services.release.summary(ctx);
       expect(fullProviderSummary.environment.runtimeMode).toBe("provider");
     } finally {
-      (env as any).PIPES_USE_MOCKS = prevMocks;
+      (env as any).LOOPER_USE_MOCKS = prevMocks;
       (env as any).CONVEX_URL = prevConvex;
       (env as any).CLERK_SECRET_KEY = prevClerkSecret;
       (env as any).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = prevClerkPub;

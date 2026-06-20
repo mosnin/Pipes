@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export const SOUND_STORAGE_KEY = "pipes-sound-on";
+export const SOUND_STORAGE_KEY = "looper-sound-on";
 
 function readPersistedPreference(): boolean {
   if (typeof window === "undefined") return true;

@@ -17,7 +17,7 @@
 - Instantiation uses same create + graph mutation services as manual authoring.
 
 ## Canonical import/export
-- Import parses/validates `pipes_schema_v1` before mutation.
+- Import parses/validates `looper_schema_v1` before mutation.
 - Export uses canonical persisted state and supports JSON + markdown spec output.
 
 ## Protocol hardening ownership
@@ -106,7 +106,7 @@
 - Real sub-agent provider calls are isolated behind `src/lib/ai/sub_agents.ts`.
 - Runtime dispatch seam is isolated behind `src/lib/runtime/sub_agent_executor.ts` (`InlineSubAgentExecutor`, `ModalReadySubAgentExecutor`).
 - `AgentRunService` remains orchestration authority and persists task/skill/result/reconciliation artifacts in Convex/mock repositories.
-- Sub-agent outputs are normalized into Pipes-native artifacts (no provider payload contracts in routes/UI).
+- Sub-agent outputs are normalized into Looper-native artifacts (no provider payload contracts in routes/UI).
 - Graph mutation authority remains unchanged: proposal + apply pathway only.
 
 - Review services (`ProposalDiffService`, `ReviewSelectionService`, `ProposalPreviewService`, `AffectedRegionService`) are authoritative for diff/preview/selection behavior; routes remain thin wrappers.

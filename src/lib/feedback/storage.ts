@@ -3,8 +3,8 @@
 // with a typeof window check so SSR pages stay happy.
 
 export const KEYS = {
-  TUTORIAL_SEEN: "pipes-tutorial-seen",
-  TUTORIAL_PILL_PREFIX: "pipes-tutorial-seen-",
+  TUTORIAL_SEEN: "looper-tutorial-seen",
+  TUTORIAL_PILL_PREFIX: "looper-tutorial-seen-",
   NPS_SEEN: "pipes-nps-seen",
   BUILD_COUNT: "pipes-build-count",
   MENTAL_MODEL_SEEN: "pipes-mental-model-seen",

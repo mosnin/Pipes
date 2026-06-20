@@ -3,7 +3,7 @@
 // shared system links and marketing surfaces.
 //
 // Query params:
-//   ?title=Pipes&subtitle=Describe your system. Watch it build itself.
+//   ?title=Looper&subtitle=Describe your system. Watch it build itself.
 //
 // Both have sensible defaults so an unparameterized hit still renders.
 
@@ -11,7 +11,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-const DEFAULT_TITLE = "Pipes";
+const DEFAULT_TITLE = "Looper";
 const DEFAULT_SUBTITLE = "Describe your system. Watch it build itself.";
 const MAX_TITLE = 80;
 const MAX_SUBTITLE = 140;
@@ -63,7 +63,7 @@ export function GET(request: Request): ImageResponse {
               color: "#111111",
             }}
           >
-            Pipes
+            Looper
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export function GET(request: Request): ImageResponse {
             }}
           >
             <div>One map your team and your agents both read.</div>
-            <div>pipes.dev</div>
+            <div>looper.dev</div>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ verdict.
 ## 1. Five-second test
 
 Persona: a staff engineer shipping a multi-agent system to production. Has
-never heard of Pipes. Reads only the homepage hero (pill, h1, subhead,
+never heard of Looper. Reads only the homepage hero (pill, h1, subhead,
 primary CTA) above the fold.
 
 What I see, in order:
@@ -18,7 +18,7 @@ What I see, in order:
 - Primary CTA: "Start free"
 - Right half: a Claude window quoting a Planner agent node back through MCP
 
-My one-sentence guess (without looking at the doc): "Pipes is a shared
+My one-sentence guess (without looking at the doc): "Looper is a shared
 system map I draw once, and any agent I hand a token to reads the same map
 my team does."
 
@@ -68,15 +68,15 @@ File: `src/app/(marketing)/page.tsx`.
 - Proof block exists: yes (`#see-it-in-action`, lines 262-292).
 - h2 reads exactly "It already knows my system." - yes, line 270.
 - Six beats render verbatim and in order from `MAGIC_BEATS` (lines 26-57):
-  01 Open an empty Pipes canvas, 02 Press slash pick Agent, 03 Type one
+  01 Open an empty Looper canvas, 02 Press slash pick Agent, 03 Type one
   sentence, 04 Click Connect Agent, 05 Paste once into Claude, 06 Ask
   Claude. Bodies match `docs/magic-moment.md` beats 1-6 in order, in voice.
 - Above-the-fold frame: `HeroFrame()` at line 134 renders a Claude window
-  with "via pipes (MCP)" chip, the user prompt "what is in my Pipes
+  with "via pipes (MCP)" chip, the user prompt "what is in my Looper
   system?", and Claude quoting back the Planner agent node, its
   description, and the token id. This matches the magic-moment "frame" spec
   (right half: Claude reading the system back through MCP). The left half
-  of the magic-moment frame (Pipes canvas with one Planner node) is not
+  of the magic-moment frame (Looper canvas with one Planner node) is not
   rendered - the page substitutes the headline + subhead + CTA on the left
   and the Claude frame on the right. This is a faithful condensation of the
   scene to a single hero frame, not a betrayal: beat 6 is the payoff and
@@ -103,10 +103,10 @@ Result: ZERO HITS across all twelve words. PASS.
 |---|---|---|---|
 | homepage `/` | One map your team and your agents both read. | yes | yes (HeroFrame, Claude/MCP) |
 | `/protocol` | Your map, behind a Bearer token. | yes | none |
-| `/use-cases` | Teams shipping multi-agent systems on Pipes. | yes | none |
+| `/use-cases` | Teams shipping multi-agent systems on Looper. | yes | none |
 | `/use-cases/[slug]` | {entry.title} (dynamic) | yes (entry.fit) | none in hero (ScreenshotPlaceholder appears later in body, not hero) |
-| `/compare` | Pipes vs the alternatives. | yes | none |
-| `/compare/[slug]` | Pipes vs {competitorName}. | yes | none |
+| `/compare` | Looper vs the alternatives. | yes | none |
+| `/compare/[slug]` | Looper vs {competitorName}. | yes | none |
 | `/templates` | Forkable systems your team has already shipped. | yes | none |
 | `/pricing` | Per seat. Per workspace. Decide later. | yes | none |
 | `/docs` | Docs for the staff engineer wiring this up. | yes | none |
@@ -126,7 +126,7 @@ Result: PASS.
 Setup: two staff engineers see only the homepage hero block and the
 "see it in action" proof block, then the page is taken away.
 
-Predicted answer A: "Pipes is a shared system map. You draw the
+Predicted answer A: "Looper is a shared system map. You draw the
 architecture once, your team reviews it on a canvas, and any agent you give
 a token to can read the same system through MCP. It is for engineers
 shipping multi-agent systems who are sick of pasting architecture into
@@ -140,7 +140,7 @@ Locked positioning to compare against:
 - Headline: "One map your team and your agents both read."
 - Persona (audience.md): "The staff engineer shipping a multi-agent system
   to production who is tired of pasting architecture into every new chat."
-- 30-second answer (audience.md): "Pipes is the map of the system you are
+- 30-second answer (audience.md): "Looper is the map of the system you are
   shipping. You draw the nodes, ports, and pipes once. Your team reviews
   it. Your agents read it through one token-scoped protocol. The
   architecture stops drifting from the code, and you stop re-explaining
@@ -166,7 +166,7 @@ pages are on-voice with one idea each.
 
 The single biggest gap: the homepage hero frame shows only the right half
 of the magic-moment scene (Claude reading back) and skips the left half
-(Pipes canvas with one Planner node). A staff engineer reading the hero
+(Looper canvas with one Planner node). A staff engineer reading the hero
 sees the payoff but not the act that earns it. Fix in
 `src/app/(marketing)/page.tsx` `HeroFrame()` (lines 134-166) by splitting
 the frame into two panels: left, the canvas with the single Planner agent

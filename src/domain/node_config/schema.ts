@@ -1,4 +1,4 @@
-import type { NodeType } from "@/domain/pipes_schema_v1/schema";
+import type { NodeType } from "@/domain/looper_schema_v1/schema";
 
 export type ConfigFieldType = "text" | "textarea" | "number" | "select" | "boolean" | "url";
 

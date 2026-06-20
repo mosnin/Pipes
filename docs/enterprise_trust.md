@@ -2,7 +2,7 @@
 
 ## Enterprise auth posture (current)
 
-Pipes currently supports Clerk-based authentication with a bounded **SSO-readiness** settings model.
+Looper currently supports Clerk-based authentication with a bounded **SSO-readiness** settings model.
 
 - `mode=shared`: standard shared auth posture.
 - `mode=sso_ready`: workspace stores validated domain allowlist and intended SSO connection metadata.
@@ -18,7 +18,7 @@ Pipes currently supports Clerk-based authentication with a bounded **SSO-readine
 
 ## Export guarantees
 
-- Canonical system exports remain `pipes_schema_v1`.
+- Canonical system exports remain `looper_schema_v1`.
 - Workspace export is a bounded `workspace_manifest_v1` with:
   - `schemaVersion`
   - `exportedAt`

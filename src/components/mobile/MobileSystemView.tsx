@@ -110,7 +110,7 @@ export function MobileSystemView({ systemId, workspaceName }: MobileSystemViewPr
     const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
     if (typeof nav.share === "function") {
       try {
-        await nav.share({ title: data?.system.name ?? "Pipes", url });
+        await nav.share({ title: data?.system.name ?? "Looper", url });
         return;
       } catch {
         // fall through to clipboard
@@ -173,7 +173,7 @@ export function MobileSystemView({ systemId, workspaceName }: MobileSystemViewPr
   if (error) {
     return (
       <div className="min-h-screen flex flex-col">
-        <MobileTopBar workspaceName={workspaceName} systemName="Pipes" onShare={handleShare} />
+        <MobileTopBar workspaceName={workspaceName} systemName="Looper" onShare={handleShare} />
         <div className="flex-1 flex items-center justify-center p-6">
           <p className="t-label text-[#8E8E93]">{error}</p>
         </div>

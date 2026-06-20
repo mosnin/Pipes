@@ -1,4 +1,4 @@
-import { loadConfig, type PipesConfig } from "./config.js";
+import { loadConfig, type LooperConfig } from "./config.js";
 import { withSpan } from "./telemetry.js";
 
 export interface ApiResponse<T = unknown> {
@@ -29,13 +29,13 @@ function assertToken(token: string) {
   if (!token) {
     throw new ApiError(
       "AUTH_REQUIRED",
-      "No token found. Set PIPES_TOKEN, add it to .pipes.yml, or run: pipes init"
+      "No token found. Set LOOPER_TOKEN, add it to .looper.yml, or run: pipes init"
     );
   }
 }
 
-export class PipesClient {
-  constructor(private readonly cfg: PipesConfig) {}
+export class LooperClient {
+  constructor(private readonly cfg: LooperConfig) {}
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {
     return {
@@ -97,6 +97,6 @@ export class PipesClient {
 
 }
 
-export function makeClient(overrides: Partial<PipesConfig> = {}): PipesClient {
-  return new PipesClient(loadConfig(overrides));
+export function makeClient(overrides: Partial<LooperConfig> = {}): LooperClient {
+  return new LooperClient(loadConfig(overrides));
 }

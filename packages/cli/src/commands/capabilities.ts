@@ -1,14 +1,14 @@
 import { Command } from "commander";
 
 const MANIFEST = {
-  cli: "@pipes/cli",
+  cli: "@looper/cli",
   version: "0.1.0",
-  api_version: "pipes_schema_v1",
+  api_version: "looper_schema_v1",
   api_base: "/api/protocol",
   commands: [
     {
       command: "init",
-      description: "Create .pipes.yml config file in the current directory",
+      description: "Create .looper.yml config file in the current directory",
       required_capability: null,
       options: [
         { flag: "--api <url>", description: "Pipes API URL" },
@@ -45,7 +45,7 @@ const MANIFEST = {
     },
     {
       command: "schema export <systemId>",
-      description: "Export system as pipes_schema_v1 JSON (streamed)",
+      description: "Export system as looper_schema_v1 JSON (streamed)",
       required_capability: "schema:read",
       options: [
         { flag: "--out <file>", description: "Write output to a file instead of stdout" },
@@ -53,7 +53,7 @@ const MANIFEST = {
     },
     {
       command: "schema import <file>",
-      description: "Import a pipes_schema_v1 JSON file as a new system",
+      description: "Import a looper_schema_v1 JSON file as a new system",
       required_capability: "import:write",
       options: [
         { flag: "--name <name>", description: "Override system name from schema" },
@@ -168,7 +168,7 @@ const MANIFEST = {
       description: "Store content as a structured memory record (extracts metadata via OpenAI)",
       required_capability: "graph:write",
       options: [
-        { flag: "--system <id>", description: "Memory system ID (overrides PIPES_MEMORY_SYSTEM)" },
+        { flag: "--system <id>", description: "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)" },
         { flag: "--type <type>", description: "Content type hint: note, decision, fact, task, summary, reference, code, conversation" },
         { flag: "--topic <topic>", description: "Topic hint for extraction" },
         { flag: "--no-extract", description: "Skip LLM extraction, store with minimal metadata" },

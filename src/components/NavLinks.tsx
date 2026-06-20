@@ -37,7 +37,7 @@ const PRIMARY_SECTIONS: NavSection[] = [
 
 function adminNavEnabled(): boolean {
   if (typeof process === "undefined") return false;
-  return process.env.NEXT_PUBLIC_PIPES_ADMIN_NAV === "true";
+  return process.env.NEXT_PUBLIC_LOOPER_ADMIN_NAV === "true";
 }
 
 function buildOperateSection(showAdmin: boolean): NavSection {

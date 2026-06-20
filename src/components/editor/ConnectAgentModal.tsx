@@ -31,7 +31,7 @@ type Step = "capabilities" | "expiration" | "generate" | "reveal";
 
 const ALL_CAPABILITIES: Array<{ id: string; label: string; description: string; recommended: boolean }> = [
   { id: "systems:read", label: "systems:read", description: "List and read system metadata", recommended: true },
-  { id: "schema:read", label: "schema:read", description: "Read pipes_schema_v1 exports", recommended: true },
+  { id: "schema:read", label: "schema:read", description: "Read looper_schema_v1 exports", recommended: true },
   { id: "validation:read", label: "validation:read", description: "Run validation checks", recommended: true },
   { id: "templates:read", label: "templates:read", description: "Browse template catalog", recommended: false },
   { id: "templates:instantiate", label: "templates:instantiate", description: "Create systems from templates", recommended: false },

@@ -24,9 +24,9 @@ export function organizationJsonLd(): OrganizationJsonLd {
   return {
     "@context": SCHEMA_CONTEXT,
     "@type": "Organization",
-    name: "Pipes",
+    name: "Looper",
     url: canonicalUrl("/"),
-    logo: ogImageUrl({ title: "Pipes", variant: "default" }),
+    logo: ogImageUrl({ title: "Looper", variant: "default" }),
     description:
       "One map your team and your agents both read. Describe your system. Watch it build itself.",
     sameAs: [],
@@ -68,7 +68,7 @@ export function softwareApplicationJsonLd(
   return {
     "@context": SCHEMA_CONTEXT,
     "@type": "SoftwareApplication",
-    name: input.name ?? "Pipes",
+    name: input.name ?? "Looper",
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Web",
     url: input.url ?? canonicalUrl("/"),
@@ -163,14 +163,14 @@ export function articleJsonLd(article: ArticleInput): ArticleJsonLd {
     dateModified: article.dateModified ?? article.datePublished,
     author: {
       "@type": article.author ? "Person" : "Organization",
-      name: article.author ?? "Pipes",
+      name: article.author ?? "Looper",
     },
     publisher: {
       "@type": "Organization",
-      name: "Pipes",
+      name: "Looper",
       logo: {
         "@type": "ImageObject",
-        url: ogImageUrl({ title: "Pipes", variant: "default" }),
+        url: ogImageUrl({ title: "Looper", variant: "default" }),
       },
     },
     image:

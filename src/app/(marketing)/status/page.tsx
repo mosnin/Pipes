@@ -10,7 +10,7 @@ import {
 } from "@/lib/marketing/status-data";
 
 export const metadata = {
-  title: "Status - Pipes",
+  title: "Status - Looper",
   description:
     "Live status for the agent runner, the editor canvas, the public API, the database, webhook delivery, and authentication. Subscribe to updates.",
 };
@@ -79,7 +79,7 @@ export default function StatusPage() {
             </div>
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <a
-                href="mailto:status@pipes.dev?subject=Subscribe%20to%20status%20updates"
+                href="mailto:status@looper.dev?subject=Subscribe%20to%20status%20updates"
                 className="inline-flex h-12 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700"
               >
                 <Bell size={14} aria-hidden="true" />

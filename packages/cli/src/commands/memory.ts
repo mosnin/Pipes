@@ -21,10 +21,10 @@ interface SchemaData {
 }
 
 function getMemorySystemId(flagValue: string | undefined): string {
-  const id = flagValue ?? process.env["PIPES_MEMORY_SYSTEM"];
+  const id = flagValue ?? process.env["LOOPER_MEMORY_SYSTEM"];
   if (!id) {
     throw new Error(
-      "No memory system ID. Pass --system <id> or set PIPES_MEMORY_SYSTEM env var."
+      "No memory system ID. Pass --system <id> or set LOOPER_MEMORY_SYSTEM env var."
     );
   }
   return id;
@@ -51,7 +51,7 @@ export function registerMemory(program: Command): void {
   memory
     .command("add <content>")
     .description("Add a memory record to the memory system")
-    .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
+    .option("--system <id>", "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)")
     .option("--type <content_type>", "Content type (note, decision, fact, task, summary, reference, code, conversation)")
     .option("--topic <topic>", "Topic to associate with the memory")
     .option("--no-extract", "Skip LLM extraction and store raw content with minimal metadata")
@@ -175,7 +175,7 @@ export function registerMemory(program: Command): void {
   memory
     .command("search <query>")
     .description("Search memory records by relevance to a query")
-    .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
+    .option("--system <id>", "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)")
     .option("--type <content_type>", "Filter by content type")
     .option("--status <status>", "Filter by status (default: excludes archived)")
     .option("--limit <n>", "Maximum number of results (default: 5)", "5")
@@ -286,7 +286,7 @@ export function registerMemory(program: Command): void {
   memory
     .command("list")
     .description("List all memory records in the memory system")
-    .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
+    .option("--system <id>", "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)")
     .option("--type <content_type>", "Filter by content type")
     .option("--status <status>", "Filter by status (default: excludes archived)")
     .action(
@@ -368,7 +368,7 @@ export function registerMemory(program: Command): void {
   memory
     .command("get <nodeId>")
     .description("Get a specific memory record by node ID")
-    .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
+    .option("--system <id>", "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)")
     .action(async (nodeId: string, opts: { system?: string }) => {
       const global = program.optsWithGlobals<GlobalOpts>();
       const client = makeClient({ api: global.api, token: global.token });
@@ -431,7 +431,7 @@ export function registerMemory(program: Command): void {
     .description(
       "Link two memory records with a relation. Relation types: supports, contradicts, derives-from, supersedes, references"
     )
-    .option("--system <id>", "Memory system ID (overrides PIPES_MEMORY_SYSTEM)")
+    .option("--system <id>", "Memory system ID (overrides LOOPER_MEMORY_SYSTEM)")
     .requiredOption("--rel <relation>", "Relation type (supports, contradicts, derives-from, supersedes, references)")
     .option("--weight <weight>", "Relation strength 0.0-1.0 (default: 0.5)")
     .option("--supersedes", "Mark the source record as stale and record supersession timestamp")

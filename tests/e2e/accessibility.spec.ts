@@ -7,7 +7,7 @@ import AxeBuilder from "@axe-core/playwright";
  * Runs axe-core (WCAG 2.1 A + AA tags) against every reachable
  * marketing/public route and fails on any serious or critical violation.
  *
- * Mock mode (PIPES_USE_MOCKS=true) is required so that auth-gated routes are
+ * Mock mode (LOOPER_USE_MOCKS=true) is required so that auth-gated routes are
  * not hit and all marketing routes render without real services.
  */
 

@@ -9,7 +9,7 @@ import type { ComparisonGroup } from "@/components/marketing/PricingComparisonTa
 import type { FaqItem } from "@/components/marketing/PricingFaq";
 
 export const metadata = {
-  title: "Per seat. Per workspace. Decide later. - Pipes",
+  title: "Per seat. Per workspace. Decide later. - Looper",
   description:
     "Per-workspace pricing. Start free. Pay only when your team is ready to ship.",
 };
@@ -291,7 +291,7 @@ const EVERY_TIER = [
   },
   {
     title: "MCP-ready by design",
-    body: "Hand any agent a token. It reads through the Pipes Protocol. No bespoke client to ship.",
+    body: "Hand any agent a token. It reads through the Looper Protocol. No bespoke client to ship.",
   },
   {
     title: "Optimistic edits",
@@ -351,7 +351,7 @@ const FAQS: readonly FaqItem[] = [
   },
   {
     id: "faq-mcp",
-    question: "What is the Pipes Protocol?",
+    question: "What is the Looper Protocol?",
     answer:
       "A token-authenticated read and write surface for the same graph the agent built. MCP and REST. Every external agent and tool reads the same contract your team reviewed.",
   },
@@ -467,7 +467,7 @@ export default function PricingPage() {
       <section className="px-6 py-16 border-t border-black/[0.06]">
         <div className="mx-auto max-w-6xl">
           <p className="text-center t-overline text-[#8E8E93]">
-            Teams shipping multi-agent systems on Pipes
+            Teams shipping multi-agent systems on Looper
           </p>
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
             {LOGO_WORDS.map((word) => (

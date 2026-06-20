@@ -1,6 +1,6 @@
 # Product Overview
 
-Pipes now supports structured creation flows:
+Looper now supports structured creation flows:
 1. Generate draft systems from prompts (Builder-gated).
 2. Propose AI refactors for existing systems with selective per-change acceptance/rejection.
 3. Instantiate credible starter templates.
@@ -9,7 +9,7 @@ Pipes now supports structured creation flows:
 6. Show collaboration occupancy and review-state cues in the editor.
 7. Emit lightweight internal product signals for trust-sensitive editor flows.
 
-This keeps Pipes a structured design platform, not a chat or orchestration engine.
+This keeps Looper a structured design platform, not a chat or orchestration engine.
 
 
 ## Editor quality guarantees (current pass)
@@ -40,7 +40,7 @@ This keeps Pipes a structured design platform, not a chat or orchestration engin
 ## Post-launch learning surfaces
 - Internal insights dashboard at `/admin/insights` focuses on activation, retention, failure counts, and protocol usage summaries.
 - Internal support surface at `/admin` focuses on bounded inspection (workspace/user/system, audits, signals, token/invite state).
-- Operator authorization is explicit via `PIPES_ADMIN_ALLOWLIST` and is separate from workspace collaboration roles.
+- Operator authorization is explicit via `LOOPER_ADMIN_ALLOWLIST` and is separate from workspace collaboration roles.
 
 ## Enterprise trust readiness (current)
 - `/settings/trust` centralizes auth-readiness, retention defaults, workspace export manifest, and lifecycle posture.
@@ -92,12 +92,12 @@ Builder runs now show staged construction progress and specialist participation 
 - Agent co-building includes selective diff review with dependency safety, preview toggles, and affected region highlighting before trusted apply.
 
 ### Compounding builder memory
-- Pipes builder now carries continuity across runs by reusing bounded prior plan context, strategies, reusable subsystem patterns, and decision records.
+- Looper builder now carries continuity across runs by reusing bounded prior plan context, strategies, reusable subsystem patterns, and decision records.
 - Reused memory is visible in the agent panel to preserve trust and inspection.
 
 ## Trust-oriented learning loop
 
-Pipes now exposes run quality summaries and learning inputs directly in the builder surface: strategy effectiveness, skill outcomes, pattern promotion/demotion, and generated learning artifacts. Evaluation influences future recommendations but does not bypass review authority.
+Looper now exposes run quality summaries and learning inputs directly in the builder surface: strategy effectiveness, skill outcomes, pattern promotion/demotion, and generated learning artifacts. Evaluation influences future recommendations but does not bypass review authority.
 
 ## Team-ready collaborative builder
 
@@ -115,14 +115,14 @@ Operators can now inspect run traces, replay timelines, compare run outcomes, se
 
 ## Design-to-delivery bridge
 
-Accepted system designs can now produce reviewable, versioned implementation handoff packages suitable for human engineers and coding agents. This improves trust that a designed system can become a build-ready plan without turning Pipes into an execution engine.
+Accepted system designs can now produce reviewable, versioned implementation handoff packages suitable for human engineers and coding agents. This improves trust that a designed system can become a build-ready plan without turning Looper into an execution engine.
 
 
 ## Production-credible builder runtime
 
-Pipes now includes a real runtime posture for system-building agents: host-authoritative orchestration, policy-aware routing, optional Agents-SDK-backed harness execution, and Modal-backed bounded worker/sandbox execution. This improves runtime credibility while preserving Convex/mock persisted truth and review-safe mutation boundaries.
+Looper now includes a real runtime posture for system-building agents: host-authoritative orchestration, policy-aware routing, optional Agents-SDK-backed harness execution, and Modal-backed bounded worker/sandbox execution. This improves runtime credibility while preserving Convex/mock persisted truth and review-safe mutation boundaries.
 
 
 ## Inspectable sandbox artifact workflows
 
-Pipes now makes sandbox-backed worker outputs materially useful: operators can inspect sessions, bundles, generated artifacts, preview outputs, and normalization status before trusting results. This improves confidence in worker execution without introducing a second state authority.
+Looper now makes sandbox-backed worker outputs materially useful: operators can inspect sessions, bundles, generated artifacts, preview outputs, and normalization status before trusting results. This improves confidence in worker execution without introducing a second state authority.

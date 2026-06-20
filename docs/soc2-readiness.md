@@ -1,6 +1,6 @@
 # SOC2 readiness
 
-Internal map of where Pipes meets SOC2 Trust Services Criteria today, what
+Internal map of where Looper meets SOC2 Trust Services Criteria today, what
 is missing, and who owns each gap. Not a submission. The auditor reads
 this; engineers fix the gaps before signing the engagement letter.
 
@@ -44,7 +44,7 @@ Status legend: `done` (control in production), `gap` (work to do), `n/a`
 | Audit trail | done | `audit_events` table + SIEM forwarding (`SIEM_WEBHOOK_URL`) for auth and budget rejections. | Platform |
 | Tool call cap | done | 30 tool calls per turn, hard-capped server-side. See `TOOL_CALL_CAP` in build route. | Agent |
 | Wall-clock cap | done | 60 s per turn. See `WALL_CLOCK_CAP_MS` in build route. | Agent |
-| Schema versioning | done | `pipes_schema_v1` is the canonical export; migration map in `src/domain/pipes_schema_v1/migration.ts`. | Platform |
+| Schema versioning | done | `looper_schema_v1` is the canonical export; migration map in `src/domain/looper_schema_v1/migration.ts`. | Platform |
 
 ## C1 Confidentiality
 
@@ -53,7 +53,7 @@ Status legend: `done` (control in production), `gap` (work to do), `n/a`
 | Data classification | gap | We treat all workspace data as confidential. No formal classification matrix yet. | Platform |
 | Workspace isolation | done | Every Convex query filters by `workspaceId`. See `docs/multi-tenancy.md`. | Platform |
 | Tenant data deletion | gap | Delete-account flow does not yet purge `agent_turns` and `metrics_samples`. | Platform |
-| Access matrix | done | Roles: Owner, Admin, Editor, Commenter, Viewer in `src/domain/pipes_schema_v1/schema.ts`. | Platform |
+| Access matrix | done | Roles: Owner, Admin, Editor, Commenter, Viewer in `src/domain/looper_schema_v1/schema.ts`. | Platform |
 | Vendor management | gap | Vendor list (Clerk, Convex, OpenAI, Anthropic, Modal, Resend, Creem, Sentry, Upstash) needs a DPA inventory. | Platform |
 
 ## P1-P8 Privacy

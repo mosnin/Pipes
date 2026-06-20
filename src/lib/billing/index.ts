@@ -1,5 +1,5 @@
 import { getEntitlements } from "@/domain/templates/plans";
-import type { Plan } from "@/domain/pipes_schema_v1/schema";
+import type { Plan } from "@/domain/looper_schema_v1/schema";
 import { env, runtimeFlags } from "@/lib/env";
 import crypto from "node:crypto";
 

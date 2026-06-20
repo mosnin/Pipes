@@ -20,7 +20,7 @@ export type NpsPromptProps = {
   onDismiss: () => void;
 };
 
-const TOAST_ID = "pipes-nps-prompt";
+const TOAST_ID = "looper-nps-prompt";
 
 export function NpsPrompt({ onDismiss }: NpsPromptProps) {
   const firedRef = useRef(false);
@@ -82,7 +82,7 @@ function NpsToastBody({ onClose }: { onClose: () => void }) {
   return (
     <div className="bg-white border border-black/[0.08] shadow-md-token rounded-2xl p-3 w-[300px] flex flex-col gap-2">
       <p className="t-label text-[#111] font-medium">
-        How likely are you to recommend Pipes?
+        How likely are you to recommend Looper?
       </p>
       <div className="flex items-center gap-2">
         <Input

@@ -28,7 +28,7 @@ import {
 import type { EditorGraphAction, GraphNode, GraphPipe } from "@/components/editor/editor_state";
 import { type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { getConfigSchema } from "@/domain/node_config/schema";
-import type { NodeType } from "@/domain/pipes_schema_v1/schema";
+import type { NodeType } from "@/domain/looper_schema_v1/schema";
 
 export type InspectorTab = "config" | "advanced";
 
@@ -758,7 +758,7 @@ export function EditorInspector({
                 />
               </Field>
               <HelpText>
-                Reference: <InlineCode>pipes_schema_v1</InlineCode>
+                Reference: <InlineCode>looper_schema_v1</InlineCode>
               </HelpText>
             </section>
           </div>

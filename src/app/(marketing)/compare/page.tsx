@@ -6,9 +6,9 @@ import { CompareHero } from "@/components/marketing/CompareHero";
 import { CompareCard } from "@/components/marketing/CompareCard";
 
 export const metadata = {
-  title: "Pipes vs the alternatives - Pipes",
+  title: "Looper vs the alternatives - Looper",
   description:
-    "Pipes vs Figma, Miro, Lucidchart, and AI-generated diagrams. Honest, head-to-head.",
+    "Looper vs Figma, Miro, Lucidchart, and AI-generated diagrams. Honest, head-to-head.",
 };
 
 export default function CompareIndexPage() {
@@ -27,7 +27,7 @@ export default function CompareIndexPage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {comparisons.map((item) => {
-              const competitor = item.title.replace(/^Pipes vs\.?\s*/i, "").trim();
+              const competitor = item.title.replace(/^Looper vs\.?\s*/i, "").trim();
               return (
                 <CompareCard
                   key={item.slug}

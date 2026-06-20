@@ -138,7 +138,7 @@ function prefersReducedMotion(): boolean {
 function PlaygroundNode({ data }: { data: { title: string; subtitle?: string; arrived?: boolean } }) {
   return (
     <div
-      className={data.arrived ? "pipes-node-arrival" : undefined}
+      className={data.arrived ? "looper-node-arrival" : undefined}
       style={{
         border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: 8,
@@ -573,7 +573,7 @@ function ConversationStrip({
               className={m.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}
             >
               <span className="t-caption text-[#8E8E93] mb-0.5 px-1">
-                {m.role === "user" ? "You" : "Pipes"}
+                {m.role === "user" ? "You" : "Looper"}
               </span>
               <div
                 className={

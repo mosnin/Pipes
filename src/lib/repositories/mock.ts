@@ -1,5 +1,5 @@
 import { store } from "@/lib/convex/store";
-import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
 import { aggregateAll, seedMockSamples } from "@/lib/observability/metrics-aggregation";
 

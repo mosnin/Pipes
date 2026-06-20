@@ -498,7 +498,7 @@ export async function POST(request: Request): Promise<Response> {
           }
 
           // Production mode: forward to the Modal endpoint.
-          const endpoint = env.PIPES_AGENT_ENDPOINT_URL;
+          const endpoint = env.LOOPER_AGENT_ENDPOINT_URL;
           if (!endpoint) {
             await emitTerminalError("internal", "Agent endpoint not configured.", false);
             return;

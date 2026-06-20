@@ -35,9 +35,9 @@ export async function extractMetadata(
   content: string,
   hints: { content_type?: string; topic?: string } = {}
 ): Promise<MemoryRecord> {
-  const budget = process.env["PIPES_TOKEN_BUDGET"] ? parseInt(process.env["PIPES_TOKEN_BUDGET"], 10) : null;
+  const budget = process.env["LOOPER_TOKEN_BUDGET"] ? parseInt(process.env["LOOPER_TOKEN_BUDGET"], 10) : null;
   if (budget !== null && _sessionTokensUsed >= budget) {
-    throw new Error(`Token budget exceeded: used ${_sessionTokensUsed} of ${budget} tokens this session. Set PIPES_TOKEN_BUDGET to increase.`);
+    throw new Error(`Token budget exceeded: used ${_sessionTokensUsed} of ${budget} tokens this session. Set LOOPER_TOKEN_BUDGET to increase.`);
   }
 
   const apiKey = process.env["OPENAI_API_KEY"];

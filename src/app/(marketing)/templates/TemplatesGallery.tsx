@@ -118,7 +118,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
               <MetricCard
                 label="Total starters"
                 value={templates.length}
-                footer="Curated by the Pipes team"
+                footer="Curated by the Looper team"
               />
               <MetricCard
                 label="Simple"

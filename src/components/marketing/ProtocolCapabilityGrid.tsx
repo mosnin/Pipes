@@ -45,7 +45,7 @@ const CAPABILITIES: ReadonlyArray<Capability> = [
   {
     scope: "schema:read",
     title: "Export schema",
-    description: "Read the canonical pipes_schema_v1 export of any system. The same format the editor round-trips.",
+    description: "Read the canonical looper_schema_v1 export of any system. The same format the editor round-trips.",
     scopeExamples: ["schema:read", "systems:read"],
     exampleTool: "export_system_schema",
     exampleInput: '{ "systemId": "sys_8a72" }',
@@ -101,7 +101,7 @@ const CAPABILITIES: ReadonlyArray<Capability> = [
   {
     scope: "import:write",
     title: "Import raw schema",
-    description: "Create a system directly from a pipes_schema_v1 payload. The validator runs before any write.",
+    description: "Create a system directly from a looper_schema_v1 payload. The validator runs before any write.",
     scopeExamples: ["import:write", "systems:write"],
     exampleTool: "create_system_from_schema",
     exampleInput: '{ "canonical": { "version": "1", ... } }',

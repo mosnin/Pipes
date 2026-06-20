@@ -5,9 +5,9 @@ import { SectionBadge } from "@/components/marketing/SectionBadge";
 import { UseCaseGrid, type UseCaseCard } from "@/components/marketing/UseCaseGrid";
 
 export const metadata = {
-  title: "Teams shipping multi-agent systems - Pipes",
+  title: "Teams shipping multi-agent systems - Looper",
   description:
-    "Teams shipping multi-agent systems, automation flows, and support operations on Pipes.",
+    "Teams shipping multi-agent systems, automation flows, and support operations on Looper.",
 };
 
 // Persona + company placeholders, paired to the slugs in lib/public/content.
@@ -92,7 +92,7 @@ export default function UseCasesPage() {
                 fontWeight: 700,
               }}
             >
-              Teams shipping multi-agent systems on Pipes.
+              Teams shipping multi-agent systems on Looper.
             </h1>
             <p className="mt-6 t-body text-[#3C3C43] mx-auto max-w-xl leading-relaxed">
               Built in conversation, not on a whiteboard. Five teams. Five

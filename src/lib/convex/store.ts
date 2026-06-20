@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { sampleData } from "@/lib/convex/mockData";
-import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Node, Pipe, Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
@@ -135,7 +135,7 @@ function seed(): DbShape {
   const system = sampleData.systems[0];
   return {
     users: [{ id: "usr_1", externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera", createdAt: new Date().toISOString() }],
-    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Pipes Lab", slug: "pipes-lab", plan: "Pro", createdAt: new Date().toISOString() }],
+    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Looper Lab", slug: "looper-lab", plan: "Pro", createdAt: new Date().toISOString() }],
     memberships: [{ id: "mem_1", workspaceId: "wks_1", userId: "usr_1", role: "Owner", createdAt: new Date().toISOString() }],
     systems: [{
       id: system.id,

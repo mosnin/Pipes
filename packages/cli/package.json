@@ -1,10 +1,10 @@
 {
-  "name": "@pipes/cli",
+  "name": "@looper/cli",
   "version": "0.1.0",
   "description": "CLI for Pipes — build and manage agent systems from your terminal",
   "type": "module",
   "bin": {
-    "pipes": "./dist/index.js"
+    "looper": "./dist/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -16,10 +16,10 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "bundle:linux": "bun build --compile --target=bun-linux-x64 src/index.ts --outfile dist/pipes-linux-x64",
-    "bundle:mac": "bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile dist/pipes-macos-arm64",
-    "bundle:mac-x64": "bun build --compile --target=bun-darwin-x64 src/index.ts --outfile dist/pipes-macos-x64",
-    "bundle:win": "bun build --compile --target=bun-windows-x64 src/index.ts --outfile dist/pipes-win-x64.exe",
+    "bundle:linux": "bun build --compile --target=bun-linux-x64 src/index.ts --outfile dist/looper-linux-x64",
+    "bundle:mac": "bun build --compile --target=bun-darwin-arm64 src/index.ts --outfile dist/looper-macos-arm64",
+    "bundle:mac-x64": "bun build --compile --target=bun-darwin-x64 src/index.ts --outfile dist/looper-macos-x64",
+    "bundle:win": "bun build --compile --target=bun-windows-x64 src/index.ts --outfile dist/looper-win-x64.exe",
     "bundle:all": "npm run bundle:linux && npm run bundle:mac && npm run bundle:mac-x64 && npm run bundle:win"
   },
   "dependencies": {

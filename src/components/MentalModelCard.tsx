@@ -31,12 +31,12 @@ const SCREENS: ScreenContent[] = [
   {
     illustration: <EmptyCanvas size={120} />,
     headline: "A node is one step in your system.",
-    body: "It could be an agent, a tool, a guard step, anything that does one job. Pipes does not care what kind. You name it. You describe what it does. The agent reads the name and the description and works out the rest.",
+    body: "It could be an agent, a tool, a guard step, anything that does one job. Looper does not care what kind. You name it. You describe what it does. The agent reads the name and the description and works out the rest.",
   },
   {
     illustration: <EmptyCanvas size={120} />,
     headline: "A connection is the flow between two steps.",
-    body: "When you connect one node to another you say: when this finishes, that runs. Pipes does not care if it is data, an event, or a control signal. You decide. The agent reads the shape of the flow.",
+    body: "When you connect one node to another you say: when this finishes, that runs. Looper does not care if it is data, an event, or a control signal. You decide. The agent reads the shape of the flow.",
   },
   {
     illustration: <EmptyTemplates size={120} />,

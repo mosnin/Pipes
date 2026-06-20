@@ -34,7 +34,7 @@ endpoint returned 502". 30 s wall-clock timeouts spike.
    announce in the in-app status banner and wait.
 2. If Modal is healthy, restart the executor app:
    `modal app stop pipes-executor && modal deploy agents/executor.py`.
-3. If the deploy fails, flip `PIPES_AGENT_ENDPOINT_URL` to an empty
+3. If the deploy fails, flip `LOOPER_AGENT_ENDPOINT_URL` to an empty
    string in Vercel env. The route will return a clean error to clients
    instead of hanging on the timeout. Users can still browse and edit
    manually.
@@ -73,7 +73,7 @@ notifications "Failed to save" appear in the editor.
 ### Immediate mitigation
 
 1. Check Convex status page.
-2. If Convex is degraded, flip `PIPES_USE_MOCKS=true` only as a last
+2. If Convex is degraded, flip `LOOPER_USE_MOCKS=true` only as a last
    resort - this drops all writes to the in-memory store and is data
    loss for that period. Default is to wait Convex out.
 3. If only writes are failing, queue them client-side. The editor's
@@ -145,7 +145,7 @@ Sign-in page loops or shows generic "Authentication required."
 | Editor hangs | Convex status | Wait, flip banner |
 | Repeated 401 | Clerk keys | Re-verify env, redeploy |
 | Slow but working | OTEL p95 chart | Inspect upstream provider latency |
-| Banner of last resort | Vercel env | Flip `PIPES_AGENT_ENDPOINT_URL=""` |
+| Banner of last resort | Vercel env | Flip `LOOPER_AGENT_ENDPOINT_URL=""` |
 
 The runbook is short on purpose. The first hour is detection and
 mitigation; analysis comes after the bleeding stops.

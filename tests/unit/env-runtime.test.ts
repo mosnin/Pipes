@@ -5,7 +5,7 @@ describe("runtime env parsing", () => {
   it("treats blank optional values as missing instead of throwing", () => {
     const parsed = buildEnv({
       NODE_ENV: "production",
-      PIPES_USE_MOCKS: "false",
+      LOOPER_USE_MOCKS: "false",
       NEXT_PUBLIC_APP_URL: "",
       CLERK_SECRET_KEY: "",
       CLERK_PUBLISHABLE_KEY: "",

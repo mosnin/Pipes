@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
-import { pipesService } from "@/domain/services";
+import { looperService } from "@/domain/services";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
@@ -13,26 +13,26 @@ describe("bounded service business rules", () => {
   });
 
   it("provisions user and workspace", async () => {
-    const ctx = await pipesService.ensureProvisioned(identity);
+    const ctx = await looperService.ensureProvisioned(identity);
     expect(ctx.workspaceId).toBeTruthy();
     expect(ctx.role).toBe("Owner");
   });
 
   it("enforces system creation limit for free plan", async () => {
-    const ctx = await pipesService.ensureProvisioned({ externalId: "mock|new-user", email: "new@pipes.local", name: "New User" });
-    await pipesService.createSystem(ctx, { name: "A" });
-    await pipesService.createSystem(ctx, { name: "B" });
-    await pipesService.createSystem(ctx, { name: "C" });
-    await expect(pipesService.createSystem(ctx, { name: "D" })).rejects.toThrow("Plan limit reached");
+    const ctx = await looperService.ensureProvisioned({ externalId: "mock|new-user", email: "new@pipes.local", name: "New User" });
+    await looperService.createSystem(ctx, { name: "A" });
+    await looperService.createSystem(ctx, { name: "B" });
+    await looperService.createSystem(ctx, { name: "C" });
+    await expect(looperService.createSystem(ctx, { name: "D" })).rejects.toThrow("Plan limit reached");
   });
 
   it("creates and restores versions", async () => {
-    const ctx = await pipesService.ensureProvisioned(identity);
-    const systemId = (await pipesService.listSystems(ctx))[0].id;
-    await pipesService.createVersion(ctx, systemId, "before");
-    const versions = await pipesService.listVersions(ctx, systemId);
+    const ctx = await looperService.ensureProvisioned(identity);
+    const systemId = (await looperService.listSystems(ctx))[0].id;
+    await looperService.createVersion(ctx, systemId, "before");
+    const versions = await looperService.listVersions(ctx, systemId);
     expect(versions.length).toBeGreaterThan(0);
-    await pipesService.restoreVersion(ctx, systemId, versions[0].id);
-    expect((await pipesService.listVersions(ctx, systemId)).length).toBeGreaterThanOrEqual(1);
+    await looperService.restoreVersion(ctx, systemId, versions[0].id);
+    expect((await looperService.listVersions(ctx, systemId)).length).toBeGreaterThanOrEqual(1);
   });
 });

@@ -39,10 +39,10 @@ export function CompareHero({ comparisonCount }: CompareHeroProps) {
           <div className="relative flex flex-col gap-5 max-w-2xl">
             <span className="t-overline text-[#8E8E93]">For staff engineers</span>
             <h1 className="t-display text-[#111]">
-              Pipes vs the alternatives.
+              Looper vs the alternatives.
             </h1>
             <p className="t-body text-[#3C3C43] max-w-xl">
-              Pipes is the only one where you describe the system in plain English. Here is the honest read on the other {comparisonCount}.
+              Looper is the only one where you describe the system in plain English. Here is the honest read on the other {comparisonCount}.
             </p>
           </div>
         </motion.div>

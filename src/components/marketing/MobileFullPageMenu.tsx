@@ -98,7 +98,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
             <Link
               href="/"
               onClick={onClose}
-              aria-label="Pipes home"
+              aria-label="Looper home"
               className="focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
             >
               <Wordmark size="lg" />

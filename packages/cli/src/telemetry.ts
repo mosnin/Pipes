@@ -14,7 +14,7 @@ export function initTelemetry(): void {
 
     const provider = new NodeTracerProvider({
       resource: resourceFromAttributes({
-        "service.name": "@pipes/cli",
+        "service.name": "@looper/cli",
         "service.version": "0.1.0",
       }),
       spanProcessors: [
@@ -23,7 +23,7 @@ export function initTelemetry(): void {
     });
 
     provider.register();
-    _tracer = trace.getTracer("@pipes/cli", "0.1.0");
+    _tracer = trace.getTracer("@looper/cli", "0.1.0");
   })();
 }
 

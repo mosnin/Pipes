@@ -4,7 +4,7 @@
 // resume where they left off. We persist their selections in localStorage
 // under a single namespaced key. Pure helpers. Every read is SSR-safe.
 
-export const ONBOARDING_KEY = "pipes-onboarding-state";
+export const ONBOARDING_KEY = "looper-onboarding-state";
 
 export const ROLE_IDS = [
   "multi-agent-systems",

@@ -280,7 +280,7 @@ export function MobileSystemCanvas({
         </defs>
         <rect width="100%" height="100%" fill="url(#mobile-canvas-grid)" />
         <g transform={transform} style={{ transition }}>
-          {/* Pipes first so nodes render on top. */}
+          {/* Connections rendered first so nodes render on top. */}
           {resolvedPipes.map(({ from, to }, i) => {
             const x1 = from.position.x + NODE_WIDTH;
             const y1 = from.position.y + NODE_HEIGHT / 2;
