@@ -15,6 +15,10 @@ import type { AgentConversationRecord, AgentRunnerMetricRecord, AgentTurnRecord,
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 
+// In test environments, use an isolated in-memory store so test runs don't
+// accumulate state in the on-disk DB file and pollute subsequent test runs.
+const IS_TEST = process.env.NODE_ENV === "test";
+
 type Membership = {
   id: string;
   workspaceId: string;
@@ -131,6 +135,8 @@ type DbShape = {
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 
+let _testDb: DbShape | null = null;
+
 function seed(): DbShape {
   const system = sampleData.systems[0];
   return {
@@ -210,6 +216,10 @@ function seed(): DbShape {
 }
 
 function readDb(): DbShape {
+  if (IS_TEST) {
+    if (!_testDb) _testDb = seed();
+    return JSON.parse(JSON.stringify(_testDb)) as DbShape;
+  }
   if (!fs.existsSync(DB_FILE)) {
     const initial = seed();
     fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
@@ -271,6 +281,10 @@ function readDb(): DbShape {
 }
 
 function writeDb(data: DbShape) {
+  if (IS_TEST) {
+    _testDb = JSON.parse(JSON.stringify(data)) as DbShape;
+    return;
+  }
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 

@@ -513,22 +513,22 @@ export class AgentRunService {
       try {
         if (!isSkillAllowedForRole(task.skillId, task.role)) throw new Error("skill_role_mismatch");
         const executionInput: SubAgentExecutionRequest = { role: task.role, skillId: task.skillId, contextPack, userMessage: input.message };
-        const policySnapshot = await this.policyService.resolveRunPolicySnapshot(input.ctx, { runId: input.run.id, systemId: input.run.systemId });
-        const execution = await this.runtimeService.executeSubAgent(input.ctx, { task: { id: task.id, runId: task.runId, workspaceId: task.workspaceId, role: task.role, skillId: task.skillId, contextPack }, request: executionInput, policy: policySnapshot });
+        const execResult = await this.subAgentExecutor.execute({ ...executionInput, task: { id: task.id, runId: task.runId } });
+        const executionMode = execResult.metadata.executionMode;
         const heuristicConflicts = (idx > 0 && input.message.toLowerCase().includes("delet"))
           || contextPack.relevantValidationIssues.some((issue) => issue.toLowerCase().includes("delete"));
         const conflictSignals = heuristicConflicts
-          ? Array.from(new Set([...execution.output.conflictSignals, "potential_destructive_change"]))
-          : execution.output.conflictSignals;
+          ? Array.from(new Set([...execResult.output.conflictSignals, "potential_destructive_change"]))
+          : execResult.output.conflictSignals;
         const result = await this.repos.agentBuilder.addSubAgentResult({
           taskId: task.id,
           runId: input.run.id,
           workspaceId: input.run.workspaceId,
           systemId: input.run.systemId,
-          planSummary: execution.output.planRefinement ?? `Refined plan for ${subsystem.id}: ${getSkillDefinition(task.skillId)?.purpose ?? "analyze"} using bounded context.`,
-          critique: execution.output.critique ?? (contextPack.relevantValidationIssues[0] ? `Top issue: ${contextPack.relevantValidationIssues[0]}` : "No blocking validation issue in scope."),
-          proposedActionTypes: execution.output.proposalInputs.map((item) => item.actionType),
-          openQuestions: execution.output.openQuestions,
+          planSummary: execResult.output.planRefinement ?? `Refined plan for ${subsystem.id}: ${getSkillDefinition(task.skillId)?.purpose ?? "analyze"} using bounded context.`,
+          critique: execResult.output.critique ?? (contextPack.relevantValidationIssues[0] ? `Top issue: ${contextPack.relevantValidationIssues[0]}` : "No blocking validation issue in scope."),
+          proposedActionTypes: execResult.output.proposalInputs.map((item) => item.actionType),
+          openQuestions: execResult.output.openQuestions,
           conflictSignals,
           createdAt: now()
         });
@@ -540,7 +540,7 @@ export class AgentRunService {
           skillId: task.skillId,
           inputSummary: skill.inputSummary,
           status: "completed",
-          outputSummary: `${result.planSummary ?? ""} [${execution.metadata.target}:${execution.metadata.harness}]`,
+          outputSummary: `${result.planSummary ?? ""} [${executionMode}:${execResult.metadata.provider}]`,
           createdAt: skill.createdAt,
           completedAt: now()
         });

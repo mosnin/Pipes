@@ -1124,6 +1124,13 @@ export function createMockRepositories(): RepositorySet {
     agentMemory: {
       async addMemoryEntry(input) {
         const db = store.readDb();
+        const existingIdx = db.memoryEntries.findIndex((e) => e.workspaceId === input.workspaceId && e.title === input.title);
+        if (existingIdx >= 0) {
+          const updated = { ...db.memoryEntries[existingIdx], ...input };
+          db.memoryEntries[existingIdx] = updated;
+          store.writeDb(db);
+          return updated;
+        }
         const row = { ...input, id: store.createId("memr") };
         db.memoryEntries.push(row);
         store.writeDb(db);
