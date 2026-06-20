@@ -123,6 +123,26 @@ export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = 
     { key: "format", label: "Output format", type: "select", options: [{ value: "text", label: "Plain text" }, { value: "json", label: "JSON" }, { value: "markdown", label: "Markdown" }, { value: "stream", label: "Streaming" }], defaultValue: "text" },
     { key: "destination", label: "Destination hint", type: "text", placeholder: "UI, webhook, file" },
   ],
+  Action: [
+    { key: "actionType", label: "Action type", type: "select", options: [{ value: "transform", label: "Transform" }, { value: "side_effect", label: "Side effect" }, { value: "notify", label: "Notify" }, { value: "custom", label: "Custom" }], defaultValue: "transform" },
+    { key: "expression", label: "Expression / handler", type: "textarea", placeholder: "output = transform(input)" },
+    { key: "idempotent", label: "Idempotent", type: "boolean", defaultValue: true },
+  ],
+  Condition: [
+    { key: "expression", label: "Condition expression", type: "text", placeholder: "input.score >= 0.8", required: true },
+    { key: "onTrue", label: "On true", type: "text", placeholder: "Label of the true branch" },
+    { key: "onFalse", label: "On false", type: "text", placeholder: "Label of the false branch" },
+  ],
+  Queue: [
+    { key: "name", label: "Queue name", type: "text", placeholder: "work-items", required: true },
+    { key: "delivery", label: "Delivery", type: "select", options: [{ value: "fifo", label: "FIFO" }, { value: "lifo", label: "LIFO" }, { value: "priority", label: "Priority" }], defaultValue: "fifo" },
+    { key: "maxSize", label: "Max size", type: "number", placeholder: "1000" },
+    { key: "deadLetter", label: "Dead-letter on failure", type: "boolean", defaultValue: true },
+  ],
+  Environment: [
+    { key: "name", label: "Environment", type: "select", options: [{ value: "development", label: "Development" }, { value: "staging", label: "Staging" }, { value: "production", label: "Production" }], defaultValue: "production" },
+    { key: "variables", label: "Variables (KEY=value, one per line)", type: "textarea", placeholder: "API_BASE=https://api.example.com" },
+  ],
   // Loop-native step types
   LoopControl: [
     { key: "maxIterations", label: "Max iterations", type: "number", placeholder: "10", defaultValue: 10, required: true },
