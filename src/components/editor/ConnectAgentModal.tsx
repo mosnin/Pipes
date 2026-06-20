@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Button,
   Dialog,
@@ -357,18 +358,18 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
               </HelpText>
             )}
             <div className="flex items-center justify-between gap-2 pt-1">
-              <a
+              <Link
                 href="/docs"
                 className="inline-flex items-center gap-1 t-caption text-indigo-600 hover:text-indigo-700"
               >
                 Full setup guide <ExternalLink size={11} />
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/settings/tokens"
                 className="inline-flex items-center gap-1 t-caption text-[#3C3C43] hover:text-[#111]"
               >
                 <Zap size={11} /> Manage tokens
-              </a>
+              </Link>
             </div>
           </section>
         )}
