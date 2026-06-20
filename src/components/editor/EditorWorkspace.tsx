@@ -925,13 +925,15 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 Publish
               </button>
             ) : (
-              <button
-                onClick={() => toast.info("Upgrade to Pro to publish to the marketplace.", { description: "Marketplace selling requires the Pro plan." })}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#F5F5F7] text-[#8E8E93] border border-black/[0.06] cursor-pointer hover:bg-[#EBEBED] transition-colors"
-                title="Upgrade to Pro to publish"
-              >
-                Publish
-              </button>
+              <Tooltip content="Upgrade to Pro to publish to marketplace">
+                <button
+                  disabled
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#C7C7CC] text-white border border-[#C7C7CC] cursor-not-allowed opacity-60"
+                  title="Publish to Marketplace"
+                >
+                  Publish
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
