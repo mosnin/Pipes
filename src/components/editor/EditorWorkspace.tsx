@@ -5,7 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, Textarea, Select, Tooltip, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
-import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Terminal, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { EditorTutorial } from "@/components/editor/EditorTutorial";
 import { getTutorialSeen } from "@/lib/feedback/storage";
@@ -19,7 +19,6 @@ import { type InsertContext, groupByCategory, nodeLibraryCatalog, rankLibraryEnt
 import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContract, type ContractType, type FieldContract, type NodeDefinition, validateNodeDefinition } from "@/components/editor/node_definition";
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
-import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
 import { AgentConnectPanel } from "@/components/editor/AgentConnectPanel";
 import { ConversationDrawer } from "@/components/editor/ConversationDrawer";
 import { TurnDiffDialog } from "@/components/editor/TurnDiffDialog";
@@ -161,7 +160,6 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
   const [agentViewLoading, setAgentViewLoading] = useState(false);
   const [showNewBanner, setShowNewBanner] = useState(false);
-  const [showAgentChat, setShowAgentChat] = useState(false);
   const [promptFocusSignal, setPromptFocusSignal] = useState(0);
   const [libraryExpanded, setLibraryExpanded] = useState(false);
   const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
@@ -970,7 +968,6 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           </Button>
           <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={14} /> Simulate</Button>
           <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={14} /> AI</Button>
-          <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={14} /> Chat</Button>
           <Dropdown>
             <DropdownTrigger>
               <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={14} /></Button>
@@ -1121,7 +1118,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
         <div className="relative min-h-[60vh] flex flex-col">
         <LoopProposalBanner
           proposals={reviewPreviewItems}
-          onOpenAgentChat={() => setShowAgentChat(true)}
+          onOpenAgentChat={() => setPromptFocusSignal((n) => n + 1)}
           onDismiss={() => setReviewPreviewItems([])}
         />
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
@@ -1636,23 +1633,6 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             )}
           </Panel>
         </EditorErrorBoundary>
-        )}
-        {showAgentChat && (
-          <EditorErrorBoundary area="Agent Chat" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-            <AgentChatPanel
-              systemId={systemId}
-              systemName={data.system.name}
-              systemDescription={data.system.description}
-              onPreviewChange={(preview) => setReviewPreviewItems(preview as ReviewPreviewItem[])}
-              onRegionFocus={(region) => {
-                setReviewRegion(region as ReviewRegion | null);
-                if (region?.nodeIds?.length) {
-                  setSelectedNodeIds(region.nodeIds);
-                  setFrameRequest((count) => count + 1);
-                }
-              }}
-            />
-          </EditorErrorBoundary>
         )}
       </div>
       {paletteOpen ? (
