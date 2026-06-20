@@ -31,9 +31,11 @@ import { PortAffordance, type PortAffordanceData } from "@/components/editor/Por
 import { LoopProposalBanner } from "@/components/editor/LoopProposalBanner";
 import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
 import type { CommandItem } from "@/components/editor/CommandPalette";
+import { LoopVisibilityToggle } from "@/components/editor/LoopVisibilityToggle";
+import { PublishToMarketplaceModal } from "@/components/editor/PublishToMarketplaceModal";
 
 type SystemPayload = {
-  system: { id: string; name: string; description: string };
+  system: { id: string; name: string; description: string; visibility?: "public" | "private" };
   nodes: GraphNode[];
   pipes: GraphPipe[];
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; createdAt: string }>;
@@ -47,7 +49,7 @@ type ReviewRegion = { batchId: string; runId: string; nodeIds: string[]; pipeIds
 
 function normalizeBundle(bundle: any): SystemPayload {
   return {
-    system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description },
+    system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description, visibility: bundle.system.visibility },
     nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
@@ -150,6 +152,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [reviewPreviewItems, setReviewPreviewItems] = useState<ReviewPreviewItem[]>([]);
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [activeSystemPanel, setActiveSystemPanel] = useState<SystemPanel | null>(null);
   const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
   const [agentViewLoading, setAgentViewLoading] = useState(false);
@@ -905,6 +908,18 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           <div className="flex items-center gap-2 shrink-0">
             <AvatarStack names={data.presence.map((p) => p.name)} />
             <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
+            <LoopVisibilityToggle
+              systemId={systemId}
+              currentVisibility={data.system.visibility ?? "public"}
+              canSetPrivate={true}
+            />
+            <button
+              onClick={() => setShowPublishModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#4F46E5] text-white border border-[#4338CA] hover:bg-[#4338CA] transition-colors"
+              title="Publish to Marketplace"
+            >
+              Publish
+            </button>
           </div>
         </div>
 
@@ -1648,6 +1663,13 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           systemId={systemId}
           systemName={data.system.name}
           onClose={() => setShowConnectModal(false)}
+        />
+      )}
+      {showPublishModal && (
+        <PublishToMarketplaceModal
+          systemId={systemId}
+          systemName={data.system.name}
+          onClose={() => setShowPublishModal(false)}
         />
       )}
       <PortAffordance

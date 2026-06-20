@@ -37,8 +37,8 @@ This pass adds:
 ## Run in mock mode
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=true
-# NEXT_PUBLIC_PIPES_USE_MOCKS=true
+# LOOPER_USE_MOCKS=true
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=true
 npm install
 npm run dev
 ```
@@ -46,8 +46,8 @@ npm run dev
 ## Run in real provider mode
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=false
-# NEXT_PUBLIC_PIPES_USE_MOCKS=false
+# LOOPER_USE_MOCKS=false
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=false
 # CONVEX_URL=...
 # NEXT_PUBLIC_CONVEX_URL=...
 # OPENAI_API_KEY=...
@@ -77,7 +77,7 @@ npm run test
 - internal operator support surface: `/admin`
 - internal insights surface: `/admin/insights`
 - richer audit filtering + CSV export: `/settings/audit`
-- internal operator auth model: `PIPES_ADMIN_ALLOWLIST` (mock fallback: `owner@pipes.local`)
+- internal operator auth model: `LOOPER_ADMIN_ALLOWLIST` (mock fallback: `owner@looper.local`)
 
 ## Enterprise trust and scale pass
 - workspace trust settings: `/settings/trust`

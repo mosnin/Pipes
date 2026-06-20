@@ -37,6 +37,7 @@ type PersistedSystem = {
   updatedAt: string;
   archivedAt?: string;
   isFavorite?: boolean;
+  visibility?: "public" | "private";
 };
 
 type CommentRecord = {

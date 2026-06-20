@@ -413,7 +413,7 @@ function useGlobalPaletteItems(opts: {
       },
       {
         id: "nav.templates",
-        label: "Templates",
+        label: "Loop starters",
         section: "navigation",
         run: () => go("/templates"),
       },

@@ -31,6 +31,7 @@ export type SystemRecord = {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string;
+  visibility?: "public" | "private";
 };
 
 export type NodeRecord = { id: string; systemId: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[] };
@@ -69,6 +70,7 @@ export interface SystemsRepository {
   getBundle(systemId: string): Promise<SystemBundle>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
+  setVisibility(systemId: string, visibility: "public" | "private"): Promise<void>;
 }
 
 export interface GraphRepository {

@@ -84,6 +84,10 @@ export function createConvexRepositories(): RepositorySet {
       async restore(systemId) {
         const client = getConvexHttpClient();
         await client.mutation((api as any).app.restoreSystem, { systemId: systemId as never });
+      },
+      async setVisibility(systemId, visibility) {
+        // TODO: wire up Convex mutation when real DB is available
+        void systemId; void visibility;
       }
     },
     graph: {

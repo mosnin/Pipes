@@ -19,7 +19,7 @@ const isProtectedRoute = createRouteMatcher([
   "/api/governance(.*)"
 ]);
 
-const isMockMode = process.env.PIPES_USE_MOCKS === "true";
+const isMockMode = process.env.LOOPER_USE_MOCKS === "true" || process.env.PIPES_USE_MOCKS === "true";
 const hasClerk = Boolean(
   process.env.CLERK_SECRET_KEY &&
     (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.CLERK_PUBLISHABLE_KEY)

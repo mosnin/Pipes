@@ -47,6 +47,18 @@ function PriceTag({ price }: { price: number }) {
   );
 }
 
+async function handleUseLoop(listingId: string, name: string) {
+  const res = await fetch("/api/marketplace/import", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ listingId, name }),
+  });
+  if (res.ok) {
+    const body = await res.json() as { data: { systemId: string } };
+    window.location.href = `/systems/${body.data.systemId}`;
+  }
+}
+
 function ListingCard({ listing }: { listing: MarketplaceListing }) {
   return (
     <article className="flex flex-col rounded-2xl border border-black/[0.08] bg-white p-5 gap-4 hover:border-indigo-200 hover:shadow-sm transition-all">
@@ -85,15 +97,23 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
           <StarRating rating={listing.rating} count={listing.ratingCount} />
           <InstallCount count={listing.installCount} />
         </div>
-        <TrackedLink
-          href="/signup"
-          event="marketplace_install_clicked"
-          metadata={{ listingId: listing.id, price: listing.price }}
-        >
-          <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#111] text-white t-caption font-semibold hover:bg-indigo-700 transition-colors">
-            Install
-          </span>
-        </TrackedLink>
+        <div className="flex items-center gap-2">
+          <TrackedLink
+            href="/signup"
+            event="marketplace_install_clicked"
+            metadata={{ listingId: listing.id, price: listing.price }}
+          >
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#111] text-white t-caption font-semibold hover:bg-indigo-700 transition-colors">
+              Install
+            </span>
+          </TrackedLink>
+          <button
+            onClick={() => handleUseLoop(listing.id, listing.title)}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4F46E5] text-white t-caption font-semibold hover:bg-[#4338CA] transition-colors"
+          >
+            Use this loop
+          </button>
+        </div>
       </div>
     </article>
   );

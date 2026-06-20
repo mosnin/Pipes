@@ -144,6 +144,14 @@ export function createMockRepositories(): RepositorySet {
         delete system.archivedAt;
         system.updatedAt = now();
         store.writeDb(db);
+      },
+      async setVisibility(systemId, visibility) {
+        const db = store.readDb();
+        const idx = db.systems.findIndex((s) => s.id === systemId);
+        if (idx >= 0) {
+          db.systems[idx] = { ...db.systems[idx], visibility, updatedAt: now() };
+          store.writeDb(db);
+        }
       }
     },
     graph: {
