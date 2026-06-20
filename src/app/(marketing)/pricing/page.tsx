@@ -378,18 +378,6 @@ const EVERY_TIER = [
   },
 ] as const;
 
-// ─── Customer logos (text-only placeholders) ──────────────────────────────────
-
-const LOGO_WORDS = [
-  "Northwind",
-  "Cascade Labs",
-  "Halo Robotics",
-  "Quay & Co",
-  "Lumen Health",
-  "Arc Systems",
-  "Telegraph AI",
-  "Glasshouse",
-] as const;
 
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 
@@ -538,23 +526,22 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ── 5. CUSTOMER LOGOS STRIP ─────────────────────────────────────── */}
+      {/* ── 5. CTA STRIP ────────────────────────────────────────────────── */}
       <section className="px-6 py-16 border-t border-black/[0.06]">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-center t-overline text-[#8E8E93]">
-            Teams shipping multi-agent systems on Looper
+        <div className="mx-auto max-w-2xl text-center flex flex-col items-center gap-4">
+          <p className="t-overline text-[#8E8E93]">Ready to build?</p>
+          <h3 className="text-[28px] font-bold leading-tight text-[#111]" style={{ letterSpacing: "-0.02em" }}>
+            Join builders shipping agent loops with Looper.
+          </h3>
+          <p className="t-body text-[#3C3C43] max-w-md">
+            Free to start. No card required. Describe your first loop in one sentence.
           </p>
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6 items-center">
-            {LOGO_WORDS.map((word) => (
-              <span
-                key={word}
-                className="text-center t-label font-semibold text-[#8E8E93] tracking-tight"
-                style={{ letterSpacing: "-0.02em" }}
-              >
-                {word}
-              </span>
-            ))}
-          </div>
+          <a
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-[#111] text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-[#222] transition-colors"
+          >
+            Start building free
+          </a>
         </div>
       </section>
 

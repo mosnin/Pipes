@@ -323,23 +323,49 @@ export default function TokensSettingsPage() {
         )}
       </CardShell>
 
-      {/* ── Example usage card ────────────────────────────────────────────── */}
+      {/* ── How to use card ───────────────────────────────────────────────── */}
       <CardShell>
         <CardHeader bordered>
-          <h2 className="t-title text-[#111]">Example usage</h2>
+          <h2 className="t-title text-[#111]">How to use your token</h2>
           <p className="mt-1 t-caption text-[#8E8E93]">
-            Pass your token as a Bearer token in the Authorization header.
+            Paste this token into any agent to give it read/write access to your loops.
           </p>
         </CardHeader>
-        <CardBody className="space-y-3">
-          <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
-            <code className="t-mono text-[12px] text-[#7DD3FC]">
-              Authorization: Bearer ptk_your_token_here
-            </code>
+        <CardBody className="space-y-6">
+          {/* Claude Projects / Claude Code */}
+          <div className="space-y-2">
+            <p className="t-label font-semibold text-[#111]">Claude Projects or Claude Code</p>
+            <p className="t-caption text-[#3C3C43]">
+              In Claude Projects, open the Project settings and add this under &quot;MCP Servers&quot;. In Claude Code, add it to your <InlineCode>.claude/settings.json</InlineCode> MCP config.
+            </p>
+            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-1">
+              <code className="block t-mono text-[12px] text-[#86EFAC]">{`{ "authorization": "Bearer ptk_your_token_here" }`}</code>
+            </div>
           </div>
-          <HelpText>
-            For MCP, set the same header in your client&apos;s connection config under <InlineCode>Authorization</InlineCode>.
-          </HelpText>
+          {/* Any HTTP client */}
+          <div className="space-y-2">
+            <p className="t-label font-semibold text-[#111]">Any HTTP client or agent framework</p>
+            <p className="t-caption text-[#3C3C43]">
+              Pass the token as a Bearer token in the <InlineCode>Authorization</InlineCode> header on every request to <InlineCode>/api/protocol/mcp</InlineCode>.
+            </p>
+            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
+              <code className="t-mono text-[12px] text-[#7DD3FC]">
+                Authorization: Bearer ptk_your_token_here
+              </code>
+            </div>
+          </div>
+          {/* MCP endpoint */}
+          <div className="space-y-2">
+            <p className="t-label font-semibold text-[#111]">MCP endpoint</p>
+            <p className="t-caption text-[#3C3C43]">
+              Point your agent at this endpoint. It serves 15 tools covering systems, graphs, templates, versions, validation, and blueprints.
+            </p>
+            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
+              <code className="t-mono text-[12px] text-[#7DD3FC]">
+                POST /api/protocol/mcp
+              </code>
+            </div>
+          </div>
         </CardBody>
       </CardShell>
 

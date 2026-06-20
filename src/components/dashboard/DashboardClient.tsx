@@ -606,6 +606,104 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   // Render
   // -------------------------------------------------------------------------
 
+  const isEmptyWorkspace = library.rows.length === 0 && !query && filter === "all" && !loading;
+
+  if (isEmptyWorkspace) {
+    return (
+      <>
+        <div className="grid-bg min-h-[75vh] flex items-center justify-center rounded-[16px] border border-black/[0.06]">
+          <div className="flex flex-col items-center text-center gap-6 w-full max-w-[660px] px-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="t-h2 text-[#111]">Your workspace is empty.</h2>
+              <p className="t-body text-[#3C3C43]">Describe your first loop and watch it appear on the canvas.</p>
+            </div>
+            <div className="w-full">
+              <ConversationInput
+                ref={heroInputRef}
+                value={heroPrompt}
+                onChange={setHeroPrompt}
+                onSend={() => void startSystemFromPrompt(heroPrompt)}
+                onStop={() => {}}
+                isRunning={heroSubmitting}
+                hasError={false}
+                placeholderHint={heroSubmitting ? "building" : "idle"}
+                size="hero"
+                placeholder="Describe your first loop."
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {DASHBOARD_STARTERS.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => {
+                    setHeroPrompt(chip.prompt);
+                    heroInputRef.current?.focus();
+                  }}
+                  className="t-label text-[#3C3C43] hover:text-[#111] bg-white border border-black/[0.08] hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 t-caption text-[#8E8E93]">
+              <button
+                type="button"
+                onClick={() => router.push("/templates")}
+                className="hover:text-indigo-700 transition-colors"
+              >
+                or start from a template
+              </button>
+              <span aria-hidden>·</span>
+              <button
+                type="button"
+                onClick={createSystem}
+                className="hover:text-indigo-700 transition-colors"
+              >
+                Start blank
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Import dialog (accessible even from zero state) */}
+        <Dialog
+          open={showImport}
+          onOpenChange={(o) => {
+            setShowImport(o);
+            if (!o) setImportText("");
+          }}
+          title="Import loop"
+          description="Paste a looper_schema_v1 JSON document. A new loop will be created with its contents."
+          size="md"
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onPress={() => setShowImport(false)} isDisabled={importing}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onPress={handleImport} isDisabled={importing || !importText.trim()}>
+                {importing ? <Spinner size="xs" /> : <Upload size={14} />}
+                {importing ? "Importing..." : "Import"}
+              </Button>
+            </>
+          }
+        >
+          <Textarea
+            aria-label="Schema JSON"
+            rows={10}
+            placeholder='{ "looper_schema_v1": { ... } }'
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            className="font-mono"
+          />
+          <p className="t-caption text-[#8E8E93] mt-2">
+            Validation runs after import. Errors will be shown in the editor.
+          </p>
+        </Dialog>
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* One-shot mental model card. Fires once per browser on first dashboard
@@ -721,108 +819,45 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               </div>
             </div>
           ) : visibleRows.length === 0 ? (
-            library.rows.length === 0 && !query && filter !== "archived" ? (
-              <div className="grid-bg min-h-[70vh] flex items-center justify-center rounded-[12px]">
-                <div className="flex flex-col items-center text-center gap-5 w-full max-w-[640px] px-6">
-                  <h2 className="t-h2 text-[#111]">Build your loop. Your agent builds with you.</h2>
-                  <p className="t-body text-[#3C3C43]">Describe a loop. Watch it appear on the canvas.</p>
-                  <div className="w-full">
-                    <ConversationInput
-                      ref={heroInputRef}
-                      value={heroPrompt}
-                      onChange={setHeroPrompt}
-                      onSend={() => void startSystemFromPrompt(heroPrompt)}
-                      onStop={() => {}}
-                      isRunning={heroSubmitting}
-                      hasError={false}
-                      placeholderHint={heroSubmitting ? "building" : "idle"}
-                      size="hero"
-                      placeholder="Describe your loop."
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    {DASHBOARD_STARTERS.map((chip) => (
-                      <button
-                        key={chip.id}
-                        type="button"
-                        onClick={() => {
-                          setHeroPrompt(chip.prompt);
-                          heroInputRef.current?.focus();
-                        }}
-                        className="t-label text-[#3C3C43] hover:text-[#111] bg-white border border-black/[0.08] hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-3 t-caption text-[#8E8E93]">
-                    <button
-                      type="button"
-                      onClick={() => router.push("/templates")}
-                      className="hover:text-indigo-700 transition-colors"
-                    >
-                      or start from a template
-                    </button>
-                    <span aria-hidden>·</span>
-                    <button
-                      type="button"
-                      onClick={createSystem}
-                      className="hover:text-indigo-700 transition-colors"
-                    >
-                      Start blank
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <EmptyState
-                illustration={<EmptyCanvas size={96} />}
-                title={
-                  query
-                    ? `No loops match "${query}"`
-                    : filter === "archived"
-                      ? "Nothing archived"
-                      : filter === "favorites"
-                        ? "No favorites yet"
-                        : "No loops yet"
-                }
-                description={
-                  query
-                    ? "Try a different search or clear the filter."
-                    : filter === "archived"
-                      ? "Archived loops live here. They are hidden from the default view."
-                      : filter === "favorites"
-                        ? "Favorite loops for quick access from the toolbar."
-                        : "Describe your loop. Watch it appear on the canvas."
-                }
-                action={
-                  query ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onPress={() => setQuery("")}
-                    >
-                      Clear search
+            <EmptyState
+              illustration={<EmptyCanvas size={96} />}
+              title={
+                query
+                  ? `No loops match "${query}"`
+                  : filter === "archived"
+                    ? "Nothing archived"
+                    : filter === "favorites"
+                      ? "No favorites yet"
+                      : "No loops yet"
+              }
+              description={
+                query
+                  ? "Try a different search or clear the filter."
+                  : filter === "archived"
+                    ? "Archived loops live here. They are hidden from the default view."
+                    : filter === "favorites"
+                      ? "Favorite loops for quick access from the toolbar."
+                      : "Describe your loop. Watch it appear on the canvas."
+              }
+              action={
+                query ? (
+                  <Button variant="ghost" size="sm" onPress={() => setQuery("")}>
+                    Clear search
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onPress={() => setShowImport(true)}>
+                      <Upload size={14} />
+                      Import schema
                     </Button>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onPress={() => setShowImport(true)}
-                      >
-                        <Upload size={14} />
-                        Import schema
-                      </Button>
-                      <Button variant="primary" size="sm" onPress={createSystem}>
-                        <Plus size={14} />
-                        New System
-                      </Button>
-                    </div>
-                  )
-                }
-              />
-            )
+                    <Button variant="primary" size="sm" onPress={createSystem}>
+                      <Plus size={14} />
+                      New System
+                    </Button>
+                  </div>
+                )
+              }
+            />
           ) : view === "grid" ? (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { publicContentService } from "@/domain/services/public";
 import { starterTemplates } from "@/domain/templates/catalog";
+import { nodeTypeValues } from "@/domain/looper_schema_v1/schema";
 import { useCases } from "@/lib/public/content";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { HeroScrollDemo } from "@/components/marketing/HeroScrollDemo";
@@ -50,11 +51,11 @@ export default function HomePage() {
   // Pick three real catalog starters that map to distinct categories.
   const showcaseStarters = pickShowcaseStarters();
 
-  // Build customer quotes from the real use-cases data.
+  // Build use-case examples. These are illustrative examples, not customer testimonials.
   const quotes = useCases.slice(0, 3).map((uc) => ({
     title: uc.title,
     body: uc.fit,
-    attribution: titleToTeam(uc.title),
+    attribution: `Example use case · ${uc.title}`,
   }));
 
   return (
@@ -160,16 +161,12 @@ export default function HomePage() {
         metrics={[
           {
             value: starterTemplates.length,
-            label: "starters in the catalog",
+            label: "starter templates in the catalog",
             suffix: "",
           },
-          { value: 11, label: "MCP capabilities you can scope" },
-          { value: 31, label: "step types you can wire" },
-          {
-            value: 2,
-            label: "seconds from sentence to loop",
-            suffix: "s",
-          },
+          { value: nodeTypeValues.length, label: "node types to wire any loop" },
+          { value: 11, label: "MCP capability scopes" },
+          { value: 15, label: "MCP tools for any agent" },
         ]}
       />
 
@@ -299,11 +296,11 @@ export default function HomePage() {
           SECTION 5 — How teams ship with Looper. Rotating quotes.
           rounded-[40px]
          ─────────────────────────────────────────────────────────────────── */}
-      <ScrollSection tone="white" radius={40} ariaLabel="How teams ship with Looper">
+      <ScrollSection tone="white" radius={40} ariaLabel="What you can build with Looper">
         <div className="mx-auto max-w-4xl">
           <RevealStack className="mb-10 flex flex-col gap-3 text-center">
             <RevealItem as="span" className="t-overline text-indigo-700">
-              How teams build loops with Looper
+              What teams build with Looper
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
               <span
@@ -319,6 +316,9 @@ export default function HomePage() {
             </RevealItem>
           </RevealStack>
           <QuoteRotator quotes={quotes} />
+          <p className="mt-6 text-center t-caption text-[#8E8E93]">
+            Illustrative use cases — not customer testimonials.
+          </p>
         </div>
       </ScrollSection>
 
@@ -399,11 +399,6 @@ function pickShowcaseStarters() {
     .filter((t): t is (typeof starterTemplates)[number] => Boolean(t));
   if (picked.length === 3) return picked;
   return starterTemplates.slice(0, 3);
-}
-
-function titleToTeam(title: string): string {
-  // Render a believable "team — title" attribution without inventing names.
-  return `A ${title.toLowerCase()} team shipping today`;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */

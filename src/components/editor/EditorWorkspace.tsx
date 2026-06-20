@@ -936,8 +936,8 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           </div>
         </div>
 
-        {/* Primary toolbar: only what every session needs */}
-        <div className="flex items-center gap-1">
+        {/* Single toolbar row: all actions collapsed */}
+        <div className="flex items-center gap-1 flex-wrap">
           <Button variant="ghost" size="sm" onClick={undo} isDisabled={history.undo.length === 0}><Undo2 size={14} /> Undo</Button>
           <Button variant="ghost" size="sm" onClick={redo} isDisabled={history.redo.length === 0}><Redo2 size={14} /> Redo</Button>
           <Separator orientation="vertical" className="h-5 mx-1" />
@@ -964,27 +964,12 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           >
             <Shield size={14} /> Validate{validationReport.issues.filter((i) => i.severity === "error").length > 0 ? ` (${validationReport.issues.filter((i) => i.severity === "error").length})` : ""}
           </Button>
-          <Separator orientation="vertical" className="h-5 mx-1" />
-          <Button
-            variant={activeSystemPanel === "agent" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); }}
-            className={`font-semibold ${activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}`}
-          >
-            <Bot size={14} /> Agent View
-          </Button>
-        </div>
-
-        {/* Secondary toolbar: 3 primary actions + overflow */}
-        <div className="flex items-center gap-1 border-t border-black/[0.05] pt-1">
-          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={13} /> Simulate</Button>
-          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={13} /> AI</Button>
-          <Separator orientation="vertical" className="h-4 mx-0.5" />
-          <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={13} /> Chat</Button>
-          <Separator orientation="vertical" className="h-4 mx-0.5" />
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={14} /> Simulate</Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={14} /> AI</Button>
+          <Button variant={showAgentChat ? "secondary" : "ghost"} size="sm" onClick={() => setShowAgentChat((v) => !v)} className={showAgentChat ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Terminal size={14} /> Chat</Button>
           <Dropdown>
             <DropdownTrigger>
-              <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={13} /> More</Button>
+              <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={14} /></Button>
             </DropdownTrigger>
             <Dropdown.Popover>
               <DropdownMenu aria-label="More actions">
@@ -997,6 +982,15 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
               </DropdownMenu>
             </Dropdown.Popover>
           </Dropdown>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button
+            variant={activeSystemPanel === "agent" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => { setAgentViewJson(null); toggleSystemPanel("agent"); }}
+            className={`font-semibold ${activeSystemPanel === "agent" ? "text-indigo-700" : "text-indigo-600 hover:text-indigo-700"}`}
+          >
+            <Bot size={14} /> Agent View
+          </Button>
         </div>
 
       </div>
