@@ -48,17 +48,43 @@ function PriceTag({ price }: { price: number }) {
   );
 }
 
-async function handleUseLoop(listingId: string, name: string, category: string) {
-  const toastId = toast.loading("Importing loop...");
+type ImportResult = { ok: boolean; data?: { systemId: string }; error?: string };
+
+async function postImport(listingId: string, name: string, payment?: string): Promise<Response> {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (payment) headers["x-payment"] = payment;
+  return fetch("/api/marketplace/import", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ listingId, name }),
+  });
+}
+
+async function handleUseLoop(listingId: string, name: string, price: number) {
+  const toastId = toast.loading(price > 0 ? "Starting checkout..." : "Importing loop...");
   try {
-    const res = await fetch("/api/marketplace/import", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ listingId, name, category }),
-    });
-    const body = await res.json() as { ok: boolean; data?: { systemId: string }; error?: string };
+    let res = await postImport(listingId, name);
+
+    // 402 Payment Required: settle via x402, then retry with the payment.
+    if (res.status === 402) {
+      toast.loading(`Paying $${price} with x402...`, { id: toastId });
+      const payRes = await fetch("/api/marketplace/pay", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ listingId }),
+      });
+      const payBody = (await payRes.json()) as { ok: boolean; data?: { payment: string }; error?: string };
+      if (!payRes.ok || !payBody.ok || !payBody.data) {
+        toast.error(payBody.error ?? "Payment could not be completed.", { id: toastId });
+        return;
+      }
+      toast.loading("Installing your loop...", { id: toastId });
+      res = await postImport(listingId, name, payBody.data.payment);
+    }
+
+    const body = (await res.json()) as ImportResult;
     if (res.ok && body.ok && body.data) {
-      toast.success("Loop imported!", { id: toastId });
+      toast.success(price > 0 ? "Purchased and installed!" : "Loop imported!", { id: toastId });
       window.location.href = `/systems/${body.data.systemId}`;
     } else {
       toast.error(body.error ?? "Import failed", { id: toastId });
@@ -117,10 +143,10 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
             </span>
           </TrackedLink>
           <button
-            onClick={() => handleUseLoop(listing.id, listing.title, listing.category)}
+            onClick={() => handleUseLoop(listing.id, listing.title, listing.price)}
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4F46E5] text-white t-caption font-semibold hover:bg-[#4338CA] transition-colors"
           >
-            Use this loop
+            {listing.price > 0 ? `Buy $${listing.price}` : "Use this loop"}
           </button>
         </div>
       </div>

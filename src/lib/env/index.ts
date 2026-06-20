@@ -27,6 +27,12 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: optionalString,
   OPENROUTER_MODEL: optionalString,
   OPENROUTER_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().default("https://openrouter.ai/api/v1")),
+  CREEM_PRODUCT_PRO: optionalString,
+  CREEM_PRODUCT_BUILDER: optionalString,
+  X402_FACILITATOR_URL: optionalUrl,
+  X402_PAY_TO_ADDRESS: optionalString,
+  X402_NETWORK: optionalString,
+  X402_ASSET_ADDRESS: optionalString,
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
   LOOPER_AGENT_ENDPOINT_URL: optionalUrl,
@@ -47,6 +53,7 @@ export const runtimeFlags = {
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
   hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
+  hasX402Facilitator: Boolean(env.X402_FACILITATOR_URL),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL),
   hasAgentRunner: Boolean(env.LOOPER_AGENT_ENDPOINT_URL)
 };

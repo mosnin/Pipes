@@ -1,42 +1,37 @@
 import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
+import { getListing } from "@/lib/marketplace/catalog";
+import { buildPaymentRequirements, paymentRequiredResponse, verifyPayment } from "@/lib/payments/x402";
 
-// Maps marketplace listing IDs → starter template IDs from the catalog.
-// Falls back to a category-based default when no exact match exists.
-const LISTING_TO_TEMPLATE: Record<string, string> = {
-  "deep-research-loop": "multi-agent-research",
-  "support-triage-loop": "customer-support-triage",
-  "code-review-loop": "code-review-assistant",
-  "sales-outreach-loop": "automation-workflow",
-  "data-pipeline-loop": "automation-workflow",
-  "content-gen-loop": "multi-agent-handoff",
-  "security-scan-loop": "code-review-assistant",
-  "devops-deploy-loop": "automation-workflow",
-};
-
-const CATEGORY_TO_TEMPLATE: Record<string, string> = {
-  Research: "multi-agent-research",
-  Support: "customer-support-triage",
-  Code: "code-review-assistant",
-  Sales: "automation-workflow",
-  Data: "automation-workflow",
-  Content: "multi-agent-handoff",
-  Security: "code-review-assistant",
-  DevOps: "automation-workflow",
-};
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const { services, ctx } = await getServerApp();
-  const { listingId, name, category } = await req.json() as { listingId: string; name: string; category?: string };
-  try {
-    const templateId =
-      LISTING_TO_TEMPLATE[listingId] ??
-      (category ? CATEGORY_TO_TEMPLATE[category] : null) ??
-      "multi-agent-handoff";
+  const { listingId, name } = (await req.json()) as { listingId: string; name: string };
 
-    // Instantiate the matching starter template so the user gets a real loop,
-    // not a blank canvas.
-    const systemId = await services.templates.instantiate(ctx, templateId, `${name} (from marketplace)`);
+  const listing = getListing(listingId);
+  if (!listing) {
+    return NextResponse.json({ ok: false, error: "Listing not found." }, { status: 404 });
+  }
+
+  // Paid listings require an x402 payment; free listings import directly.
+  // No valid X-PAYMENT header -> answer 402 with the payment requirements an
+  // agent or wallet needs to pay, then retry.
+  if (listing.price > 0) {
+    const requirements = buildPaymentRequirements({
+      priceUsd: listing.price,
+      resource: `marketplace:${listing.id}`,
+      description: `Install "${listing.title}" from the Looper marketplace`,
+    });
+    const payment = await verifyPayment(req.headers.get("x-payment"), requirements);
+    if (!payment.ok) {
+      return paymentRequiredResponse(requirements, payment.error);
+    }
+  }
+
+  try {
+    // Instantiate the listing's starter template so the user gets a real loop.
+    const systemId = await services.templates.instantiate(ctx, listing.templateId, `${name} (from marketplace)`);
     return NextResponse.json({ ok: true, data: { systemId } });
   } catch (err) {
     return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 400 });

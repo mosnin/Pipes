@@ -44,24 +44,37 @@ class MockBillingService implements BillingService {
 class CreemBillingService implements BillingService {
   private base = "https://api.creem.io/v1";
 
+  // Map a Looper plan to its Creem product id. Configured per environment so
+  // the same code runs against test and live Creem products.
+  private productFor(plan: Plan): string | undefined {
+    if (plan === "Pro") return env.CREEM_PRODUCT_PRO;
+    if (plan === "Builder" || plan === "Team") return env.CREEM_PRODUCT_BUILDER;
+    return undefined;
+  }
+
   async createCheckoutSession(input: { workspaceId: string; plan: Plan; successUrl: string; cancelUrl: string }) {
-    const response = await fetch(`${this.base}/checkout/sessions`, {
+    const productId = this.productFor(input.plan);
+    const response = await fetch(`${this.base}/checkouts`, {
       method: "POST",
-      headers: { "authorization": `Bearer ${env.CREEM_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ workspaceId: input.workspaceId, plan: input.plan, successUrl: input.successUrl, cancelUrl: input.cancelUrl })
+      headers: { "x-api-key": env.CREEM_API_KEY ?? "", "content-type": "application/json" },
+      body: JSON.stringify({
+        product_id: productId,
+        success_url: input.successUrl,
+        metadata: { workspaceId: input.workspaceId, plan: input.plan },
+      })
     });
-    const body = await response.json();
-    return { checkoutUrl: body.url ?? input.successUrl };
+    const body = await response.json().catch(() => ({}));
+    return { checkoutUrl: body.checkout_url ?? body.url ?? input.successUrl };
   }
 
   async createPortalSession(input: { workspaceId: string; returnUrl: string }) {
-    const response = await fetch(`${this.base}/billing/portal-sessions`, {
+    const response = await fetch(`${this.base}/customers/billing`, {
       method: "POST",
-      headers: { "authorization": `Bearer ${env.CREEM_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ workspaceId: input.workspaceId, returnUrl: input.returnUrl })
+      headers: { "x-api-key": env.CREEM_API_KEY ?? "", "content-type": "application/json" },
+      body: JSON.stringify({ metadata: { workspaceId: input.workspaceId }, return_url: input.returnUrl })
     });
-    const body = await response.json();
-    return { portalUrl: body.url ?? input.returnUrl };
+    const body = await response.json().catch(() => ({}));
+    return { portalUrl: body.customer_portal_link ?? body.url ?? input.returnUrl };
   }
 
   async parseWebhook(request: Request): Promise<PlanStateEvent | null> {
