@@ -9,6 +9,7 @@ test-results
 
 .pipes-db.json
 tsconfig.tsbuildinfo
+.claude/
 
 # clerk configuration (can include secrets)
 /.clerk/
@@ -21,3 +22,6 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+
+# CLI build artifacts
+packages/cli/dist/
