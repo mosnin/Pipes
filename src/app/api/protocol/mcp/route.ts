@@ -118,6 +118,34 @@ export async function POST(request: Request) {
       const data = await new PatternLearningService(repositories).listPatterns(ctx, input.systemId);
       return NextResponse.json({ ok: true, data, requestId });
     }
+    // propose_loop_edit: agents propose canvas steps for human review without
+    // immediately committing them. Returns a proposal batch the human can
+    // accept (via apply_graph_actions) or dismiss. Each step renders on the
+    // canvas as a ghost node pending review.
+    if (payload.tool === "propose_loop_edit") {
+      requireCapability(ctx, "graph:write", input.systemId);
+      const steps: Array<{ type: string; title: string; description?: string; rationale?: string; x?: number; y?: number }> = Array.isArray(input.steps) ? input.steps : [];
+      if (steps.length === 0) throw new ProtocolError("VALIDATION_ERROR", "steps must be a non-empty array.", 400);
+      const batchId = crypto.randomUUID();
+      const proposalItems = steps.map((step, idx) => ({
+        diffId: `${batchId}_${idx}`,
+        entityType: step.type ?? "Node",
+        entityId: `proposed_${batchId}_${idx}`,
+        changeType: "addition",
+        previewKind: "addition",
+        emphasis: "pending_review" as const,
+        title: step.title,
+        description: step.description,
+        rationale: step.rationale,
+        x: step.x,
+        y: step.y,
+      }));
+      // Store as a comment tagged [loop_proposal] so the editor can surface it.
+      const proposalJson = JSON.stringify({ batchId, steps: proposalItems });
+      await services.comments.add(ctx, { systemId: input.systemId, body: `[loop_proposal] ${proposalJson}` });
+      await services.protocol.writeAudit(ctx, { action: "protocol.loop.propose", targetType: "system", targetId: input.systemId, systemId: input.systemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool, stepCount: steps.length }) });
+      return NextResponse.json({ ok: true, data: { batchId, stepCount: steps.length, proposalItems, message: "Proposals queued for human review on the canvas." }, requestId });
+    }
     if (payload.tool === "describe_tools") {
       const tools = [
         { name: "list_systems", capability: "systems:read", description: "List all systems in the workspace." },
@@ -130,6 +158,7 @@ export async function POST(request: Request) {
         { name: "apply_graph_actions", capability: "graph:write", description: "Apply one or many graph mutations (actions: addNode|updateNode|deleteNode|addPipe|deletePipe). Accepts single action or actions[] array." },
         { name: "add_comment", capability: "comments:write", description: "Add a comment to a system or node." },
         { name: "get_validation_report", capability: "validation:read", description: "Get node/pipe count and basic validation for a system." },
+        { name: "propose_loop_edit", capability: "graph:write", description: "Propose canvas steps for human review. Steps appear as ghost nodes on the canvas. The human accepts via apply_graph_actions or dismisses. Input: { systemId, steps: [{ type, title, description?, rationale?, x?, y? }] }." },
         { name: "export_subsystem_blueprint", capability: "graph:write", description: "Export a subsystem node as a reusable blueprint." },
         { name: "list_blueprints", capability: "systems:read", description: "List all saved subsystem blueprints in the workspace." },
         { name: "instantiate_blueprint", capability: "graph:write", description: "Instantiate a saved subsystem blueprint into a target system." },

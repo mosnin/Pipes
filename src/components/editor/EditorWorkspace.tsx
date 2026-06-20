@@ -28,6 +28,7 @@ import { getConfigSchema } from "@/domain/node_config/schema";
 import type { NodeType } from "@/domain/looper_schema_v1/schema";
 import { register as registerShortcut } from "@/lib/keyboard/registry";
 import { PortAffordance, type PortAffordanceData } from "@/components/editor/PortAffordance";
+import { LoopProposalBanner } from "@/components/editor/LoopProposalBanner";
 import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
 import type { CommandItem } from "@/components/editor/CommandPalette";
 
@@ -1091,7 +1092,12 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             </button>
           </aside>
         )}
-        <div className="relative min-h-[60vh]">
+        <div className="relative min-h-[60vh] flex flex-col">
+        <LoopProposalBanner
+          proposals={reviewPreviewItems}
+          onOpenAgentChat={() => setShowAgentChat(true)}
+          onDismiss={() => setReviewPreviewItems([])}
+        />
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           {nodes.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>

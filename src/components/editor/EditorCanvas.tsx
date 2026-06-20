@@ -359,16 +359,23 @@ export function EditorCanvas({
               position: "absolute",
               left: item.x,
               top: item.y,
-              border: `1px dashed ${TOKEN_INDIGO_500}`,
-              color: TOKEN_INDIGO_600,
-              background: "rgba(99,102,241,0.08)",
-              borderRadius: 6,
-              padding: "4px 6px",
+              border: `1.5px dashed ${TOKEN_INDIGO_500}`,
+              background: "rgba(99,102,241,0.06)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              minWidth: 140,
               pointerEvents: "none",
               zIndex: 6,
+              boxShadow: "0 2px 8px rgba(99,102,241,0.12)",
             }}
           >
-            preview add
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TOKEN_INDIGO_500, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 600, color: TOKEN_INDIGO_600, letterSpacing: "0.04em" }}>
+                {item.entityType || "Step"}
+              </span>
+            </div>
+            <p style={{ fontSize: 10, color: TOKEN_INDIGO_600, marginTop: 2, opacity: 0.7 }}>proposed</p>
           </div>
         ))}
       {guide.x !== undefined ? (
