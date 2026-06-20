@@ -57,6 +57,9 @@ export type ConversationDrawerProps = {
   // Called once when the agent finishes a turn with at least one mutation.
   // The editor uses (turnId, prompt) to label rail dots and the diff dialog.
   onTurnCompleted?: (turnId: string, prompt: string) => void;
+  // Incremented by the editor (e.g. from the empty-canvas CTA) to expand and
+  // focus the prompt input. Lets the canvas lead with "describe your loop".
+  focusSignal?: number;
 };
 
 export const STARTER_CHIPS: Array<{ id: string; label: string; prompt: string }> = [
@@ -97,6 +100,7 @@ export function ConversationDrawer({
   onShowLatestDiff,
   latestDiffAvailable,
   onTurnCompleted,
+  focusSignal,
 }: ConversationDrawerProps) {
   const [text, setText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
@@ -190,6 +194,15 @@ export function ConversationDrawer({
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt]);
+
+  // Editor-driven focus: the empty-canvas CTA bumps focusSignal to bring the
+  // user straight to the prompt input.
+  useEffect(() => {
+    if (!focusSignal) return;
+    setCollapsed(false);
+    const id = window.setTimeout(() => inputRef.current?.focus(), 16);
+    return () => window.clearTimeout(id);
+  }, [focusSignal]);
 
   const isRunning = agent.state === "connecting" || agent.state === "running";
   const hasError = agent.state === "error";

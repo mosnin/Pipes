@@ -162,6 +162,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [agentViewLoading, setAgentViewLoading] = useState(false);
   const [showNewBanner, setShowNewBanner] = useState(false);
   const [showAgentChat, setShowAgentChat] = useState(false);
+  const [promptFocusSignal, setPromptFocusSignal] = useState(0);
   const [libraryExpanded, setLibraryExpanded] = useState(false);
   const [showAllInspectorTabs, setShowAllInspectorTabs] = useState(false);
   const [leftPaneOpen, setLeftPaneOpen] = useState(false);
@@ -1126,7 +1127,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           {nodes.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
-              <div className="pointer-events-auto text-center space-y-5 max-w-xs">
+              <div className="pointer-events-auto text-center space-y-5 max-w-sm">
                 <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
                   <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
                   <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
@@ -1135,16 +1136,25 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                   <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
                 </div>
                 <div>
-                  <p className="t-title font-bold text-[#111]">Start with a node</p>
-                  <p className="t-label text-[#8E8E93] mt-1">Add the first component of your system.</p>
+                  <p className="t-title font-bold text-[#111]">Describe your loop</p>
+                  <p className="t-label text-[#8E8E93] mt-1">Type one sentence below. Your agent builds it on the canvas.</p>
                 </div>
                 <Button
                   variant="primary"
-                  onClick={() => openInsertPalette({ mode: "canvas" })}
+                  onClick={() => setPromptFocusSignal((n) => n + 1)}
                   className="h-10 px-6 font-semibold"
                 >
-                  <Plus size={14} /> Insert node
+                  <Bot size={14} /> Describe your loop
                 </Button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => openInsertPalette({ mode: "canvas" })}
+                    className="t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                  >
+                    or add a node manually
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -1242,6 +1252,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           }
           latestDiffAvailable={completedTurns.length > 1}
           onTurnCompleted={handleTurnCompleted}
+          focusSignal={promptFocusSignal}
         />
         {diffTurnId ? (() => {
           const turn = completedTurns.find((t) => t.turnId === diffTurnId);

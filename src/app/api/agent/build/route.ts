@@ -6,7 +6,8 @@ import { env, runtimeFlags } from "@/lib/env";
 import { getServerApp } from "@/lib/composition/server";
 import { acquireSlot, checkRateLimit, releaseSlot } from "@/lib/agent/rate-limit";
 import { buildPersonalizationPayload, type PersonalizationPayload } from "@/lib/agent/personalization";
-import { runOpenRouterBuild } from "@/lib/ai/openrouter";
+import { runOpenRouterBuild, type AgentLoopContext, type AgentLoopEvent } from "@/lib/ai/openrouter";
+import { runHeuristicBuild } from "@/lib/ai/heuristic_build";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -142,19 +143,19 @@ function substituteRuntime(
   return replaced;
 }
 
-async function loadFixture(prompt: string): Promise<FixtureFrame[]> {
+// Load a fixture pinned to this exact prompt (used by curated demos and tests).
+// Returns null when there is no specific fixture, so the caller falls through to
+// the prompt-tailored heuristic builder instead of a generic canned graph.
+async function loadSpecificFixture(prompt: string): Promise<FixtureFrame[] | null> {
   const hash = crypto.createHash("sha256").update(prompt).digest("hex").slice(0, 12);
   const candidate = path.join(FIXTURES_DIR, `${hash}.json`);
-  const fallback = path.join(FIXTURES_DIR, "_default.json");
-  for (const file of [candidate, fallback]) {
-    try {
-      const raw = await fs.readFile(file, "utf8");
-      return JSON.parse(raw) as FixtureFrame[];
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
+  try {
+    const raw = await fs.readFile(candidate, "utf8");
+    return JSON.parse(raw) as FixtureFrame[];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    return null;
   }
-  throw new Error("Default agent build fixture is missing.");
 }
 
 function isMockMode(): boolean {
@@ -451,37 +452,29 @@ export async function POST(request: Request): Promise<Response> {
           // SSE ordering invariants.
           send("meta", { personalization });
 
-          // Real provider: OpenRouter agentic loop. Preferred whenever an
-          // OpenRouter key is configured, ahead of fixtures or the Modal
-          // endpoint. The loop reasons, calls graph tools one at a time, and
-          // self-corrects via validate. Honors planOnly by stopping after the
-          // first narration with no applied actions.
-          if (runtimeFlags.hasOpenRouter && !body.planOnly && !body.executeSteps) {
-            let existingNodes: Array<{ id: string; type: string; title: string }> = [];
-            let existingPipes: Array<{ fromNodeId: string; toNodeId: string }> = [];
+          // Resolve the current graph so a generator can extend, not duplicate.
+          const loadGraphContext = async (): Promise<Pick<AgentLoopContext, "existingNodes" | "existingPipes">> => {
             try {
               const bundle = await repositories.systems.getBundle(body.systemId);
-              existingNodes = bundle.nodes.map((n: { id: string; type: string; title: string }) => ({ id: n.id, type: n.type, title: n.title }));
-              existingPipes = bundle.pipes
-                .map((p: { fromNodeId?: string; toNodeId?: string }) => ({ fromNodeId: p.fromNodeId ?? "", toNodeId: p.toNodeId ?? "" }))
-                .filter((p) => p.fromNodeId && p.toNodeId);
+              return {
+                existingNodes: bundle.nodes.map((n: { id: string; type: string; title: string }) => ({ id: n.id, type: n.type, title: n.title })),
+                existingPipes: bundle.pipes
+                  .map((p: { fromNodeId?: string; toNodeId?: string }) => ({ fromNodeId: p.fromNodeId ?? "", toNodeId: p.toNodeId ?? "" }))
+                  .filter((p) => p.fromNodeId && p.toNodeId),
+              };
             } catch {
-              existingNodes = [];
-              existingPipes = [];
+              return { existingNodes: [], existingPipes: [] };
             }
+          };
 
+          // Shared event -> SSE mapper for both the OpenRouter loop and the
+          // keyless heuristic builder. Drives the stream to a terminal state.
+          const streamLoop = async (gen: AsyncGenerator<AgentLoopEvent>): Promise<void> => {
             const pendingCalls = new Map<string, ToolCallPayload>();
             try {
-              for await (const ev of runOpenRouterBuild({
-                systemId: body.systemId,
-                prompt: body.prompt,
-                systemName: personalization.systemName || system.name,
-                existingNodes,
-                existingPipes,
-              })) {
+              for await (const ev of gen) {
                 if (cancelled) break;
                 if (!(await checkCaps())) return;
-
                 if (ev.kind === "status") {
                   send("status", { state: ev.state, tool_name: ev.tool });
                 } else if (ev.kind === "message") {
@@ -505,15 +498,47 @@ export async function POST(request: Request): Promise<Response> {
               }
               if (!cancelled) send("done", { conversationId, turnId: turn.id });
               await finish();
-              return;
             } catch (err) {
               await emitTerminalError("internal", (err as Error).message ?? "Agent build failed.", true);
-              return;
             }
+          };
+
+          // Real provider: OpenRouter agentic loop. Preferred whenever an
+          // OpenRouter key is configured, ahead of fixtures or the Modal
+          // endpoint.
+          if (runtimeFlags.hasOpenRouter && !body.planOnly && !body.executeSteps) {
+            const graph = await loadGraphContext();
+            await streamLoop(runOpenRouterBuild({
+              systemId: body.systemId,
+              prompt: body.prompt,
+              systemName: personalization.systemName || system.name,
+              ...graph,
+            }));
+            return;
           }
 
           if (isMockMode()) {
-            const fixture = await loadFixture(body.prompt);
+            const fixture = await loadSpecificFixture(body.prompt);
+
+            // No curated fixture for this prompt: build a prompt-tailored loop
+            // with the keyless heuristic builder instead of a canned graph.
+            if (!fixture && !body.planOnly && !body.executeSteps) {
+              const graph = await loadGraphContext();
+              await streamLoop(runHeuristicBuild({
+                systemId: body.systemId,
+                prompt: body.prompt,
+                systemName: personalization.systemName || system.name,
+                ...graph,
+              }));
+              return;
+            }
+
+            // Curated demo / test fixture (or plan-only): replay it frame by frame.
+            if (!fixture) {
+              send("done", { conversationId, turnId: turn.id });
+              await finish();
+              return;
+            }
             const pendingCalls = new Map<string, ToolCallPayload>();
             for (const frame of fixture) {
               if (cancelled) break;
