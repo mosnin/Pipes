@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle, Download, Star } from "lucide-react";
+import { toast } from "sonner";
 import { Button, EmptyState, SearchInput } from "@/components/ui";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
 import type { MarketplaceListing } from "./page";
@@ -48,17 +49,22 @@ function PriceTag({ price }: { price: number }) {
 }
 
 async function handleUseLoop(listingId: string, name: string, category: string) {
-  const res = await fetch("/api/marketplace/import", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ listingId, name, category }),
-  });
-  if (res.ok) {
-    const body = await res.json() as { data: { systemId: string } };
-    window.location.href = `/systems/${body.data.systemId}`;
-  } else {
-    const body = await res.json() as { error?: string };
-    console.error("Failed to import loop:", body.error);
+  const toastId = toast.loading("Importing loop...");
+  try {
+    const res = await fetch("/api/marketplace/import", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ listingId, name, category }),
+    });
+    const body = await res.json() as { ok: boolean; data?: { systemId: string }; error?: string };
+    if (res.ok && body.ok && body.data) {
+      toast.success("Loop imported!", { id: toastId });
+      window.location.href = `/systems/${body.data.systemId}`;
+    } else {
+      toast.error(body.error ?? "Import failed", { id: toastId });
+    }
+  } catch {
+    toast.error("Import failed. Please try again.", { id: toastId });
   }
 }
 
