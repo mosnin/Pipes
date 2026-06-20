@@ -24,6 +24,9 @@ const envSchema = z.object({
   OPENAI_API_KEY: optionalString,
   OPENAI_MODEL: optionalString,
   OPENAI_AGENTS_MODEL: optionalString,
+  OPENROUTER_API_KEY: optionalString,
+  OPENROUTER_MODEL: optionalString,
+  OPENROUTER_BASE_URL: z.preprocess(emptyToUndefined, z.string().url().default("https://openrouter.ai/api/v1")),
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
   LOOPER_AGENT_ENDPOINT_URL: optionalUrl,
@@ -43,9 +46,12 @@ export const runtimeFlags = {
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
+  hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL),
   hasAgentRunner: Boolean(env.LOOPER_AGENT_ENDPOINT_URL)
 };
+
+export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-flash";
 
 export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 

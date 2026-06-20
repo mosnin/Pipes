@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { env, runtimeFlags } from "@/lib/env";
+import { env, runtimeFlags, DEFAULT_OPENROUTER_MODEL } from "@/lib/env";
 
 export const AiDraftNodeSchema = z.object({ id: z.string(), type: z.string(), title: z.string(), description: z.string().optional(), x: z.number(), y: z.number() });
 export const AiDraftPipeSchema = z.object({ fromNodeId: z.string(), toNodeId: z.string() });
@@ -90,7 +90,55 @@ class OpenAiService implements AiService {
   }
 }
 
+// OpenRouter-backed draft generation. Reuses the OpenAI-compatible chat
+// completions API with JSON output, so a single structured call returns a
+// full system draft. Preferred whenever an OpenRouter key is configured.
+class OpenRouterAiService implements AiService {
+  private model = env.OPENROUTER_MODEL ?? DEFAULT_OPENROUTER_MODEL;
+
+  private async complete(systemPrompt: string, userPrompt: string): Promise<string> {
+    const res = await fetch(`${env.OPENROUTER_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "content-type": "application/json",
+        "X-Title": "Looper",
+        "HTTP-Referer": env.NEXT_PUBLIC_APP_URL,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+    if (!res.ok) throw new Error(`openrouter_${res.status}`);
+    const body = await res.json();
+    return body?.choices?.[0]?.message?.content ?? "{}";
+  }
+
+  async generateSystemFromPrompt(input: GenerateSystemRequest) {
+    const text = await this.complete(
+      "You output strict JSON matching this shape: { systemName: string, description: string, nodes: [{ id: string, type: string, title: string, description?: string, x: number, y: number }], pipes: [{ fromNodeId: string, toNodeId: string }], assumptions: string[], warnings: string[] }. Build a complete agent loop with at least 3 nodes, a clear entry and exit, laid out left to right.",
+      `Build an agent loop for: ${input.prompt}`,
+    );
+    return AiSystemDraftSchema.parse(JSON.parse(text));
+  }
+
+  async suggestSystemEdits(input: { prompt: string; systemSummary: string; nodes: Array<{ id: string; title: string; type: string }> }) {
+    const text = await this.complete(
+      "You output strict JSON: { summary: string, changes: [{ action: 'addNode'|'updateNode'|'deleteNode'|'addPipe'|'deletePipe', nodeId?: string, pipeId?: string, payload?: object }], assumptions: string[], warnings: string[] }.",
+      `Request: ${input.prompt}. System: ${input.systemSummary}. Nodes: ${JSON.stringify(input.nodes)}`,
+    );
+    return AiEditSuggestionSchema.parse(JSON.parse(text));
+  }
+}
+
 export function getAiService(): AiService {
-  if (runtimeFlags.useMocks || !runtimeFlags.hasOpenAI) return new MockAiService();
-  return new OpenAiService();
+  if (runtimeFlags.hasOpenRouter) return new OpenRouterAiService();
+  if (!runtimeFlags.useMocks && runtimeFlags.hasOpenAI) return new OpenAiService();
+  return new MockAiService();
 }

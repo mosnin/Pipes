@@ -6,6 +6,7 @@ import { env, runtimeFlags } from "@/lib/env";
 import { getServerApp } from "@/lib/composition/server";
 import { acquireSlot, checkRateLimit, releaseSlot } from "@/lib/agent/rate-limit";
 import { buildPersonalizationPayload, type PersonalizationPayload } from "@/lib/agent/personalization";
+import { runOpenRouterBuild } from "@/lib/ai/openrouter";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -449,6 +450,67 @@ export async function POST(request: Request): Promise<Response> {
           // non-terminal event; it does not change the contract's required
           // SSE ordering invariants.
           send("meta", { personalization });
+
+          // Real provider: OpenRouter agentic loop. Preferred whenever an
+          // OpenRouter key is configured, ahead of fixtures or the Modal
+          // endpoint. The loop reasons, calls graph tools one at a time, and
+          // self-corrects via validate. Honors planOnly by stopping after the
+          // first narration with no applied actions.
+          if (runtimeFlags.hasOpenRouter && !body.planOnly && !body.executeSteps) {
+            let existingNodes: Array<{ id: string; type: string; title: string }> = [];
+            let existingPipes: Array<{ fromNodeId: string; toNodeId: string }> = [];
+            try {
+              const bundle = await repositories.systems.getBundle(body.systemId);
+              existingNodes = bundle.nodes.map((n: { id: string; type: string; title: string }) => ({ id: n.id, type: n.type, title: n.title }));
+              existingPipes = bundle.pipes
+                .map((p: { fromNodeId?: string; toNodeId?: string }) => ({ fromNodeId: p.fromNodeId ?? "", toNodeId: p.toNodeId ?? "" }))
+                .filter((p) => p.fromNodeId && p.toNodeId);
+            } catch {
+              existingNodes = [];
+              existingPipes = [];
+            }
+
+            const pendingCalls = new Map<string, ToolCallPayload>();
+            try {
+              for await (const ev of runOpenRouterBuild({
+                systemId: body.systemId,
+                prompt: body.prompt,
+                systemName: personalization.systemName || system.name,
+                existingNodes,
+                existingPipes,
+              })) {
+                if (cancelled) break;
+                if (!(await checkCaps())) return;
+
+                if (ev.kind === "status") {
+                  send("status", { state: ev.state, tool_name: ev.tool });
+                } else if (ev.kind === "message") {
+                  finalMessage = ev.text;
+                  send("message", { role: "assistant", text: ev.text });
+                } else if (ev.kind === "tool_call") {
+                  const callPayload: ToolCallPayload = { id: ev.id, tool_name: ev.tool, arguments: ev.args };
+                  const cap = await handleToolCall(callPayload);
+                  if (!cap.allowed) return;
+                  pendingCalls.set(ev.id, callPayload);
+                  send("tool_call", callPayload);
+                } else if (ev.kind === "tool_result") {
+                  const resultPayload: ToolResultPayload = { id: ev.id, ok: ev.ok, action: ev.action as Record<string, unknown> | undefined, data: ev.data as Record<string, unknown> | undefined };
+                  persistToolCall(resultPayload, pendingCalls.get(ev.id));
+                  pendingCalls.delete(ev.id);
+                  send("tool_result", resultPayload);
+                } else if (ev.kind === "error") {
+                  await emitTerminalError(ev.retryable ? "model_unavailable" : "internal", ev.message, ev.retryable);
+                  return;
+                }
+              }
+              if (!cancelled) send("done", { conversationId, turnId: turn.id });
+              await finish();
+              return;
+            } catch (err) {
+              await emitTerminalError("internal", (err as Error).message ?? "Agent build failed.", true);
+              return;
+            }
+          }
 
           if (isMockMode()) {
             const fixture = await loadFixture(body.prompt);
