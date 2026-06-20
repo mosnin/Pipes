@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { failure, success } from "@/lib/api/response";
 import { getServerApp } from "@/lib/composition/server";
+import { getEntitlements } from "@/domain/templates/plans";
 
 type Params = { params: Promise<{ systemId: string }> };
 
@@ -10,7 +11,16 @@ export async function GET(_: Request, { params }: Params) {
     const { systemId } = await params;
     await services.library.markOpened(ctx, systemId);
     const data = await services.systems.getBundle(ctx, systemId);
-    return NextResponse.json(success(data));
+    const entitlements = getEntitlements(ctx.plan);
+    return NextResponse.json(success({
+      ...data,
+      entitlements: {
+        privateLoops: entitlements.privateLoops,
+        marketplaceSelling: entitlements.marketplaceSelling,
+        mcpReadWrite: entitlements.mcpReadWrite,
+        aiGeneration: entitlements.aiGeneration,
+      },
+    }));
   } catch (error) {
     return NextResponse.json(failure((error as Error).message), { status: 404 });
   }

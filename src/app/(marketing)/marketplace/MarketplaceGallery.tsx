@@ -47,15 +47,18 @@ function PriceTag({ price }: { price: number }) {
   );
 }
 
-async function handleUseLoop(listingId: string, name: string) {
+async function handleUseLoop(listingId: string, name: string, category: string) {
   const res = await fetch("/api/marketplace/import", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ listingId, name }),
+    body: JSON.stringify({ listingId, name, category }),
   });
   if (res.ok) {
     const body = await res.json() as { data: { systemId: string } };
     window.location.href = `/systems/${body.data.systemId}`;
+  } else {
+    const body = await res.json() as { error?: string };
+    console.error("Failed to import loop:", body.error);
   }
 }
 
@@ -108,7 +111,7 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
             </span>
           </TrackedLink>
           <button
-            onClick={() => handleUseLoop(listing.id, listing.title)}
+            onClick={() => handleUseLoop(listing.id, listing.title, listing.category)}
             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4F46E5] text-white t-caption font-semibold hover:bg-[#4338CA] transition-colors"
           >
             Use this loop

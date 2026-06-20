@@ -33,6 +33,7 @@ import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/li
 import type { CommandItem } from "@/components/editor/CommandPalette";
 import { LoopVisibilityToggle } from "@/components/editor/LoopVisibilityToggle";
 import { PublishToMarketplaceModal } from "@/components/editor/PublishToMarketplaceModal";
+import { toast } from "sonner";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string; visibility?: "public" | "private" };
@@ -41,6 +42,7 @@ type SystemPayload = {
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; createdAt: string }>;
   versions: Array<{ id: string; name: string; authorId: string; createdAt: string }>;
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
+  entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean };
 };
 
 type QueuedAction = { action: EditorGraphAction; id: string; retries: number; turnId?: string };
@@ -54,7 +56,8 @@ function normalizeBundle(bundle: any): SystemPayload {
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
-    presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined }))
+    presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined })),
+    entitlements: bundle.entitlements ?? undefined,
   };
 }
 
@@ -911,15 +914,25 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             <LoopVisibilityToggle
               systemId={systemId}
               currentVisibility={data.system.visibility ?? "public"}
-              canSetPrivate={true}
+              canSetPrivate={data.entitlements?.privateLoops ?? false}
             />
-            <button
-              onClick={() => setShowPublishModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#4F46E5] text-white border border-[#4338CA] hover:bg-[#4338CA] transition-colors"
-              title="Publish to Marketplace"
-            >
-              Publish
-            </button>
+            {data.entitlements?.marketplaceSelling ? (
+              <button
+                onClick={() => setShowPublishModal(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#4F46E5] text-white border border-[#4338CA] hover:bg-[#4338CA] transition-colors"
+                title="Publish to Marketplace"
+              >
+                Publish
+              </button>
+            ) : (
+              <button
+                onClick={() => toast.info("Upgrade to Pro to publish to the marketplace.", { description: "Marketplace selling requires the Pro plan." })}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#F5F5F7] text-[#8E8E93] border border-black/[0.06] cursor-pointer hover:bg-[#EBEBED] transition-colors"
+                title="Upgrade to Pro to publish"
+              >
+                Publish
+              </button>
+            )}
           </div>
         </div>
 
@@ -1470,6 +1483,38 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 ) : (
                   <p className="t-label text-[#8E8E93] py-2">Loading…</p>
                 )}
+                {/* ── Connect to any agent ── */}
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 space-y-2.5">
+                  <p className="t-label font-semibold text-indigo-900">Connect to any agent</p>
+                  <div className="space-y-1.5">
+                    <p className="t-caption text-[#3C3C43]">MCP endpoint:</p>
+                    <div className="flex items-center gap-1.5">
+                      <code className="flex-1 bg-white border border-indigo-100 rounded-md px-2 py-1 t-caption font-mono text-indigo-700 truncate">
+                        {typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}
+                      </code>
+                      <button
+                        onClick={() => { void navigator.clipboard.writeText(`${window.location.origin}/api/protocol/mcp`); toast.success("Endpoint copied"); }}
+                        className="shrink-0 px-2 py-1 rounded-md bg-indigo-100 hover:bg-indigo-200 t-caption font-medium text-indigo-700 transition-colors"
+                      >
+                        <Copy size={11} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="t-caption text-[#3C3C43]">How to use:</p>
+                    <ul className="space-y-0.5 t-caption text-[#3C3C43]">
+                      <li>• <strong>Claude Projects:</strong> Add MCP server with your token</li>
+                      <li>• <strong>GPT Actions:</strong> Bearer auth with your token</li>
+                      <li>• <strong>Any agent:</strong> <code className="font-mono text-indigo-700">Authorization: Bearer &lt;token&gt;</code></li>
+                    </ul>
+                  </div>
+                  <a
+                    href="/settings/tokens"
+                    className="inline-flex items-center gap-1 t-caption font-semibold text-indigo-700 hover:text-indigo-800 underline-offset-2 hover:underline"
+                  >
+                    {data?.entitlements?.mcpReadWrite ? "Manage MCP tokens →" : "Generate an MCP token →"}
+                  </a>
+                </div>
               </div>
             )}
             {!activeSystemPanel && (

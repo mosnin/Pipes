@@ -13,12 +13,14 @@ const GROUPS: readonly ComparisonGroup[] = [
         feature: "Builds per month",
         detail: "One build = one prompt the agent acts on.",
         starter: "50",
+        pro: "Unlimited",
         team: "Unlimited",
         enterprise: "Unlimited",
       },
       {
         feature: "Comments",
         starter: false,
+        pro: true,
         team: true,
         enterprise: true,
       },
@@ -30,7 +32,8 @@ const GROUPS: readonly ComparisonGroup[] = [
       {
         feature: "Capability-scoped tokens",
         starter: false,
-        team: { kind: "limited", label: "Limited" },
+        pro: { kind: "limited", label: "Limited" },
+        team: true,
         enterprise: true,
       },
     ],
@@ -38,10 +41,11 @@ const GROUPS: readonly ComparisonGroup[] = [
 ] as const;
 
 describe("PricingComparisonTable", () => {
-  it("renders the three tier columns", () => {
+  it("renders the four tier columns", () => {
     render(<PricingComparisonTable groups={GROUPS} />);
     expect(screen.getByText("Free")).toBeTruthy();
     expect(screen.getByText("Pro")).toBeTruthy();
+    expect(screen.getByText("Team")).toBeTruthy();
     expect(screen.getByText("Enterprise")).toBeTruthy();
   });
 

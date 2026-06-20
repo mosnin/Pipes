@@ -66,6 +66,24 @@ export class SystemService {
     }
     await this.repos.systems.setVisibility(systemId, visibility);
   }
+
+  async publishListing(ctx: AppContext, systemId: string, input: { description: string; price: number }) {
+    this.access.ensureCanEdit(ctx);
+    const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!limits.marketplaceSelling) throw new Error("Marketplace selling requires Pro. Upgrade to publish your loop.");
+    const bundle = await this.repos.systems.getBundle(systemId);
+    return this.repos.marketplaceListings.create({
+      systemId,
+      workspaceId: ctx.workspaceId,
+      title: bundle.system.name,
+      description: input.description,
+      price: input.price,
+    });
+  }
+
+  async getListings(ctx: AppContext) {
+    return this.repos.marketplaceListings.listByWorkspace(ctx.workspaceId);
+  }
 }
 
 export class GraphService {

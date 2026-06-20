@@ -1129,6 +1129,23 @@ export function createMockRepositories(): RepositorySet {
         return { ...row };
       }
     },
+    marketplaceListings: {
+      async create(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("mpl"), createdAt: now() };
+        (db as any).marketplaceListings = [...((db as any).marketplaceListings ?? []), row];
+        store.writeDb(db);
+        return row.id;
+      },
+      async listByWorkspace(workspaceId) {
+        const db = store.readDb();
+        return ((db as any).marketplaceListings ?? []).filter((r: any) => r.workspaceId === workspaceId);
+      },
+      async get(listingId) {
+        const db = store.readDb();
+        return ((db as any).marketplaceListings ?? []).find((r: any) => r.id === listingId) ?? null;
+      },
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const db = store.readDb();

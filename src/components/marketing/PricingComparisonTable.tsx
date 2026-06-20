@@ -19,11 +19,11 @@ export type ComparisonRow = {
   feature: string;
   detail?: string;
   starter: ComparisonCellValue;
+  pro: ComparisonCellValue;
   team: ComparisonCellValue;
   enterprise: ComparisonCellValue;
-  // Alias fields accepted from new pricing structure
+  // Legacy alias
   free?: ComparisonCellValue;
-  pro?: ComparisonCellValue;
 };
 
 export type ComparisonGroup = {
@@ -85,41 +85,32 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
               <th
                 scope="col"
                 className="px-6 py-5 t-overline text-[#8E8E93]"
-                style={{ width: "40%" }}
+                style={{ width: "34%" }}
               >
                 Feature
               </th>
-              <th
-                scope="col"
-                className="px-4 py-5 text-center t-label font-semibold text-[#111]"
-              >
+              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-[#111]">
                 <div className="flex flex-col items-center gap-0.5">
                   <span>Free</span>
-                  <span className="t-caption font-normal text-[#8E8E93]">
-                    $0
-                  </span>
+                  <span className="t-caption font-normal text-[#8E8E93]">$0</span>
                 </div>
               </th>
-              <th
-                scope="col"
-                className="px-4 py-5 text-center t-label font-semibold text-indigo-700 bg-indigo-50/40"
-              >
+              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-indigo-700 bg-indigo-50/40">
                 <div className="flex flex-col items-center gap-0.5">
                   <span>Pro</span>
-                  <span className="t-caption font-normal text-indigo-700/80">
-                    $29 / mo
-                  </span>
+                  <span className="t-caption font-normal text-indigo-700/80">$29 / mo</span>
                 </div>
               </th>
-              <th
-                scope="col"
-                className="px-4 py-5 text-center t-label font-semibold text-[#111]"
-              >
+              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-[#111]">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span>Team</span>
+                  <span className="t-caption font-normal text-[#8E8E93]">$99 / mo</span>
+                </div>
+              </th>
+              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-[#111]">
                 <div className="flex flex-col items-center gap-0.5">
                   <span>Enterprise</span>
-                  <span className="t-caption font-normal text-[#8E8E93]">
-                    Custom
-                  </span>
+                  <span className="t-caption font-normal text-[#8E8E93]">Custom</span>
                 </div>
               </th>
             </tr>
@@ -129,7 +120,7 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
               <Fragment key={group.title}>
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className={[
                       "px-6 pt-7 pb-3 t-overline text-[#3C3C43]",
                       gIdx === 0 ? "" : "border-t border-black/[0.06]",
@@ -153,13 +144,16 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-4 text-center align-middle">
+                    <td className="px-3 py-4 text-center align-middle">
                       <Cell value={row.starter} />
                     </td>
-                    <td className="px-4 py-4 text-center align-middle bg-indigo-50/20">
+                    <td className="px-3 py-4 text-center align-middle bg-indigo-50/20">
+                      <Cell value={row.pro} />
+                    </td>
+                    <td className="px-3 py-4 text-center align-middle">
                       <Cell value={row.team} />
                     </td>
-                    <td className="px-4 py-4 text-center align-middle">
+                    <td className="px-3 py-4 text-center align-middle">
                       <Cell value={row.enterprise} />
                     </td>
                   </tr>

@@ -867,6 +867,11 @@ export function createConvexRepositories(): RepositorySet {
         };
       }
     },
+    marketplaceListings: {
+      async create(_input) { throw new Error("TODO: implement Convex marketplace listings"); },
+      async listByWorkspace(_workspaceId) { return []; },
+      async get(_listingId) { return null; },
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const client = getConvexHttpClient();

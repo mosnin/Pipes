@@ -374,6 +374,11 @@ export type RepositorySet = {
   agentConversations: AgentConversationsRepository;
   agentRunnerMetrics: AgentRunnerMetricsRepository;
   metrics: MetricsRepository;
+  marketplaceListings: {
+    create(input: { systemId: string; workspaceId: string; title: string; description: string; price: number }): Promise<string>;
+    listByWorkspace(workspaceId: string): Promise<Array<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string }>>;
+    get(listingId: string): Promise<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string } | null>;
+  };
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;
