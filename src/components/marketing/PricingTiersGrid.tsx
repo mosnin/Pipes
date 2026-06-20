@@ -12,7 +12,7 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import type { BillingPeriod } from "./PricingBillingToggle";
 
 export type PricingTier = {
-  id: "starter" | "team" | "enterprise";
+  id: "starter" | "pro" | "team" | "enterprise";
   name: string;
   description: string;
   monthlyPrice: string;

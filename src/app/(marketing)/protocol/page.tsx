@@ -10,9 +10,9 @@ import { SectionBadge } from "@/components/marketing/SectionBadge";
 import { ProtocolReadingProgress } from "@/components/marketing/ProtocolReadingProgress";
 
 export const metadata = {
-  title: "One token. Read your map. - Looper Protocol",
+  title: "One token. Every agent reads the loop. - Looper Loop API",
   description:
-    "Looper speaks MCP. Hand any agent a Bearer token and it reads the system the way your team does.",
+    "Looper speaks MCP. Hand any agent a Bearer token and it reads the loop — steps, connections, evaluators — exactly the way your team does.",
 };
 
 // ───────────────────────────────────────────────────────────────────────────

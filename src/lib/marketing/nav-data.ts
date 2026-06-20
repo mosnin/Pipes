@@ -86,7 +86,7 @@ const productMenu: ProductMenu = {
     {
       heading: "Connect",
       links: [
-        { href: "/protocol", label: "Protocol", description: "One MCP endpoint" },
+        { href: "/protocol", label: "Loop API", description: "One MCP endpoint" },
         { href: "/docs/tokens", label: "Tokens", description: "Hand any agent a key" },
         { href: "/docs/import-export", label: "Import and export", description: "Read your graph anywhere" },
       ],
@@ -101,9 +101,9 @@ const productMenu: ProductMenu = {
     },
     {
       href: "/protocol",
-      eyebrow: "Protocol",
-      title: "Read the same graph from any agent",
-      body: "Hand a token to Claude. It reads the same nodes, ports, and pipes you do.",
+      eyebrow: "Loop API",
+      title: "Every agent reads the same loop",
+      body: "Hand a token to Claude, LangGraph, or AutoGen. They all read the same loop definition you built.",
     },
   ],
 };
@@ -127,7 +127,7 @@ const docsMenu: DocsMenu = {
     { href: "/docs", label: "Get started", description: "Type a sentence, watch it draw" },
     { href: "/docs/editor", label: "Editor tour", description: "Drag, edit, undo" },
     { href: "/docs/schema", label: "Schema reference", description: "Every node type" },
-    { href: "/protocol", label: "Protocol", description: "Hand a token to an agent" },
+    { href: "/protocol", label: "Loop API", description: "Hand a token to any agent" },
   ],
   whatsNew: [
     { href: "/changelog", label: "Changelog", description: "Every week, one short note" },

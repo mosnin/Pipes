@@ -16,7 +16,7 @@ const FOOTER_COLUMNS = [
       { href: "/pricing",     label: "Pricing"      },
       { href: "/templates",   label: "Starters"     },
       { href: "/changelog",   label: "Changelog"    },
-      { href: "/protocol",    label: "Protocol"     },
+      { href: "/protocol",    label: "Loop API"     },
     ],
   },
   {
@@ -32,7 +32,7 @@ const FOOTER_COLUMNS = [
     heading: "Resources",
     links: [
       { href: "/docs",     label: "Documentation" },
-      { href: "/protocol", label: "API reference" },
+      { href: "/protocol", label: "Loop API reference" },
       { href: "/blog",     label: "Blog"          },
       { href: "/status",   label: "System status" },
     ],

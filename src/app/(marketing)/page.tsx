@@ -15,9 +15,9 @@ import { FeatureGrid } from "@/components/marketing/FeatureGrid";
 import { CompareStrip } from "@/components/marketing/CompareStrip";
 import { StarterShowcase, QuoteRotator } from "@/components/marketing/StarterShowcase";
 
-const HOMEPAGE_TITLE = "Describe your system. Watch it build itself.";
+const HOMEPAGE_TITLE = "Build agent loops, visually.";
 const HOMEPAGE_SUBTITLE =
-  "Type one sentence. The agent draws the nodes, ports, and pipes on the canvas in front of you.";
+  "Describe a loop. Watch it appear on the canvas. Refine it with your agent. Share or sell it.";
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {
@@ -91,7 +91,7 @@ export default function HomePage() {
                   aria-hidden="true"
                   className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500"
                 />
-                A canvas built for agents
+                Co-author loops with your agent
               </span>
               <h1
                 className="mt-6 text-[#111]"
@@ -102,7 +102,7 @@ export default function HomePage() {
                   fontWeight: 700,
                 }}
               >
-                Describe your system. Watch it build itself.
+                Build agent loops, visually.
               </h1>
               <p
                 className="mt-7 max-w-2xl t-body text-[#3C3C43]"
@@ -164,10 +164,10 @@ export default function HomePage() {
             suffix: "",
           },
           { value: 11, label: "MCP capabilities you can scope" },
-          { value: 27, label: "node types you can wire" },
+          { value: 31, label: "step types you can wire" },
           {
             value: 2,
-            label: "seconds from sentence to graph",
+            label: "seconds from sentence to loop",
             suffix: "s",
           },
         ]}
@@ -184,7 +184,7 @@ export default function HomePage() {
               as="span"
               className="t-overline text-indigo-700"
             >
-              Stop drawing. Start describing.
+              Your agent builds with you.
             </RevealItem>
             <RevealItem
               as="h2"
@@ -198,12 +198,12 @@ export default function HomePage() {
                   fontWeight: 700,
                 }}
               >
-                You wrote the sentence. The graph is the same one your team reviews.
+                Describe the loop. Watch it appear. Refine it together.
               </span>
             </RevealItem>
             <RevealItem as="p" className="t-body text-[#3C3C43]">
               <span style={{ fontSize: 17, lineHeight: 1.55 }}>
-                The chat is the input. The canvas is the output. The agent draws first; you correct it the way you correct a teammate.
+                Type one sentence. Your agent draws the loop on the canvas. Drag a step and it adapts. The same loop your team reviews is the one your agents read.
               </span>
             </RevealItem>
             <RevealItem as="div">
@@ -213,7 +213,7 @@ export default function HomePage() {
                 metadata={{ location: "describe_section" }}
               >
                 <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-700 hover:text-indigo-800">
-                  Browse starters
+                  Browse loop templates
                   <ArrowRight size={14} aria-hidden="true" />
                 </span>
               </TrackedLink>
@@ -234,11 +234,11 @@ export default function HomePage() {
           SECTION 3 — Every system is a starter. Auto-rotating showcase.
           rounded-[40px], indigo-50.
          ─────────────────────────────────────────────────────────────────── */}
-      <ScrollSection tone="indigo" radius={40} ariaLabel="Every system is a starter">
+      <ScrollSection tone="indigo" radius={40} ariaLabel="Every loop is a starter">
         <div className="mb-10 flex flex-col gap-3">
           <RevealStack className="flex flex-col gap-3">
             <RevealItem as="span" className="t-overline text-indigo-700">
-              Every system is a starter
+              Every loop is a starter
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
               <span
@@ -249,7 +249,7 @@ export default function HomePage() {
                   fontWeight: 700,
                 }}
               >
-                Start from a sentence we already know how to draw.
+                Start from a loop pattern we already know how to draw.
               </span>
             </RevealItem>
           </RevealStack>
@@ -265,7 +265,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <RevealStack className="flex flex-col gap-5">
             <RevealItem as="span" className="t-overline text-indigo-300">
-              The whole agent in your pocket
+              One loop, any agent
             </RevealItem>
             <RevealItem as="h2">
               <span
@@ -277,7 +277,7 @@ export default function HomePage() {
                   fontWeight: 700,
                 }}
               >
-                Read your system from the airport. Hand off without a laptop.
+                Claude, LangGraph, AutoGen, CrewAI. One token. One loop.
               </span>
             </RevealItem>
             <RevealItem as="p">
@@ -285,7 +285,7 @@ export default function HomePage() {
                 className="text-[#C7C7CC]"
                 style={{ fontSize: 17, lineHeight: 1.55 }}
               >
-                The same graph. The same token. The conversation continues on the device you happen to be holding.
+                Export one MCP token. Paste it into any agent. It reads the full loop definition live — steps, connections, evaluators, and all.
               </span>
             </RevealItem>
           </RevealStack>
@@ -303,7 +303,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-4xl">
           <RevealStack className="mb-10 flex flex-col gap-3 text-center">
             <RevealItem as="span" className="t-overline text-indigo-700">
-              How teams ship with Looper
+              How teams build loops with Looper
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
               <span
@@ -314,7 +314,7 @@ export default function HomePage() {
                   fontWeight: 700,
                 }}
               >
-                One sentence in. One graph the whole team and every agent reads.
+                One sentence in. One loop your whole team and every agent reads.
               </span>
             </RevealItem>
           </RevealStack>
@@ -342,7 +342,7 @@ export default function HomePage() {
                 fontWeight: 700,
               }}
             >
-              Describe your system. Watch it build itself.
+              Build your loop. Ship your agent.
             </span>
           </RevealItem>
           <RevealItem as="p">
@@ -350,7 +350,7 @@ export default function HomePage() {
               className="text-indigo-100"
               style={{ fontSize: 18, lineHeight: 1.55 }}
             >
-              Type one sentence. Press return. Read your system back in Claude in under a minute.
+              Describe the loop. Your agent draws it. You refine it. Any agent reads it via MCP. Share or sell it on the marketplace.
             </span>
           </RevealItem>
           <RevealItem

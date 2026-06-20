@@ -21,6 +21,9 @@ export type ComparisonRow = {
   starter: ComparisonCellValue;
   team: ComparisonCellValue;
   enterprise: ComparisonCellValue;
+  // Alias fields accepted from new pricing structure
+  free?: ComparisonCellValue;
+  pro?: ComparisonCellValue;
 };
 
 export type ComparisonGroup = {
@@ -91,9 +94,9 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
                 className="px-4 py-5 text-center t-label font-semibold text-[#111]"
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <span>Starter</span>
+                  <span>Free</span>
                   <span className="t-caption font-normal text-[#8E8E93]">
-                    Free
+                    $0
                   </span>
                 </div>
               </th>
@@ -102,9 +105,9 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
                 className="px-4 py-5 text-center t-label font-semibold text-indigo-700 bg-indigo-50/40"
               >
                 <div className="flex flex-col items-center gap-0.5">
-                  <span>Team</span>
+                  <span>Pro</span>
                   <span className="t-caption font-normal text-indigo-700/80">
-                    $12 / seat
+                    $29 / mo
                   </span>
                 </div>
               </th>
