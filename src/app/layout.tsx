@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
   try {
-    var t = localStorage.getItem('pipes-theme');
+    var t = localStorage.getItem('looper-theme');
     var d = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
     document.documentElement.setAttribute('data-color-scheme', d ? 'dark' : 'light');
   } catch(e) {}

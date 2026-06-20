@@ -108,7 +108,7 @@ export function ConversationDrawer({
   const [planFirstToggle, setPlanFirstToggle] = useState<boolean>(false);
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem("pipes-plan-first");
+      const stored = window.localStorage.getItem("looper-plan-first");
       if (stored === "true") setPlanFirstToggle(true);
     } catch {
       // localStorage unavailable; keep default off.
@@ -118,7 +118,7 @@ export function ConversationDrawer({
     setPlanFirstToggle((prev) => {
       const next = !prev;
       try {
-        window.localStorage.setItem("pipes-plan-first", next ? "true" : "false");
+        window.localStorage.setItem("looper-plan-first", next ? "true" : "false");
       } catch {
         // ignore
       }
