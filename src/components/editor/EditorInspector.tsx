@@ -402,9 +402,9 @@ export function EditorInspector({
 
             <div className="border-t border-black/[0.06]" />
 
-            {/* Ports — Inputs */}
+            {/* Inputs */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Ports — Inputs</p>
+              <p className="t-overline text-[#8E8E93]">Inputs</p>
               <HelpText>Schema: {summarizeContract(safeDefinition.input)}</HelpText>
               <Field label="Port type">
                 <Select
@@ -511,9 +511,9 @@ export function EditorInspector({
 
             <div className="border-t border-black/[0.06]" />
 
-            {/* Ports — Outputs */}
+            {/* Outputs */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Ports — Outputs</p>
+              <p className="t-overline text-[#8E8E93]">Outputs</p>
               <HelpText>Schema: {summarizeContract(safeDefinition.output)}</HelpText>
               <Field label="Port type">
                 <Select

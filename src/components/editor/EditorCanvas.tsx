@@ -52,18 +52,45 @@ const TOKEN_DANGER = "#DC2626";
 const TOKEN_INK_3 = "#8E8E93";
 const TOKEN_INK_2 = "#3C3C43";
 
+// Visual accent for loop-native step types.
+type LoopNodeAccent = {
+  bg: string;
+  border: string;
+  radius: number;
+  label: string;
+  labelColor: string;
+};
+
+function getLoopAccent(type: string): LoopNodeAccent | null {
+  switch (type) {
+    case "LoopControl":
+      return { bg: "#EEF2FF", border: "1.5px dashed #6366F1", radius: 12, label: "loop", labelColor: "#6366F1" };
+    case "Evaluator":
+      return { bg: "#FFFBEB", border: "1.5px solid #D97706", radius: 8, label: "eval", labelColor: "#D97706" };
+    case "HumanReview":
+      return { bg: "#F0F9FF", border: "1.5px dashed #0EA5E9", radius: 8, label: "review", labelColor: "#0EA5E9" };
+    case "Checkpoint":
+      return { bg: "#F0FDF4", border: "1.5px solid #16A34A", radius: 8, label: "save", labelColor: "#16A34A" };
+    case "SubLoop":
+      return { bg: "#EEF2FF", border: "2px solid #4F46E5", radius: 10, label: "sub-loop", labelColor: "#4F46E5" };
+    default:
+      return null;
+  }
+}
+
 const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
   const classes: string[] = [];
   if (data.arrived) classes.push("looper-node-arrival");
   if (data.pulsing) classes.push("looper-node-pulsing");
   const className = classes.length > 0 ? classes.join(" ") : undefined;
+  const accent = getLoopAccent(data.type);
   return (
     <div
       className={className}
       style={{
-        border: `1px solid ${TOKEN_INK_LINE_LIGHT}`,
-        borderRadius: 8,
-        background: "#FFFFFF",
+        border: accent ? accent.border : `1px solid ${TOKEN_INK_LINE_LIGHT}`,
+        borderRadius: accent ? accent.radius : 8,
+        background: accent ? accent.bg : "#FFFFFF",
         padding: 10,
         minWidth: 184,
         boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
@@ -74,7 +101,14 @@ const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
         position={Position.Left}
         style={{ background: TOKEN_INDIGO_500, width: 10, height: 10, border: "2px solid #FFFFFF" }}
       />
-      <strong style={{ color: "#111", fontSize: 13, lineHeight: 1.2 }}>{data.title}</strong>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 4 }}>
+        <strong style={{ color: "#111", fontSize: 13, lineHeight: 1.2 }}>{data.title}</strong>
+        {accent && (
+          <span style={{ fontSize: 9, fontWeight: 600, color: accent.labelColor, letterSpacing: "0.06em", textTransform: "uppercase", flexShrink: 0 }}>
+            {accent.label}
+          </span>
+        )}
+      </div>
       {!data.compact && data.subtitle ? (
         <div style={{ color: TOKEN_INK_3, fontSize: 11, marginTop: 2 }}>{data.subtitle}</div>
       ) : null}
@@ -518,7 +552,12 @@ export function EditorCanvas({
             border: `1px solid ${TOKEN_INK_LINE_LIGHT}`,
             borderRadius: 8,
           }}
-          nodeColor={(node) => (node.data?.type === "Subsystem" ? TOKEN_INDIGO_600 : TOKEN_INDIGO_500)}
+          nodeColor={(node) => {
+            const t = node.data?.type as string | undefined;
+            if (t === "LoopControl" || t === "SubLoop") return TOKEN_INDIGO_600;
+            if (t === "Evaluator" || t === "HumanReview" || t === "Checkpoint") return "#D97706";
+            return TOKEN_INDIGO_500;
+          }}
           maskColor="rgba(255,255,255,0.55)"
         />
         <Controls

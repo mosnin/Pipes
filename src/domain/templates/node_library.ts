@@ -140,7 +140,7 @@ export function rankLibraryEntries(input: {
 }
 
 export function groupByCategory(entries: NodeLibraryEntry[]): Array<{ category: NodeLibraryCategory; entries: NodeLibraryEntry[] }> {
-  const categories: NodeLibraryCategory[] = ["Core", "Reasoning", "Control", "Data", "I/O"];
+  const categories: NodeLibraryCategory[] = ["Loop", "Core", "Reasoning", "Control", "Data", "I/O"];
   return categories
     .map((category) => ({ category, entries: entries.filter((entry) => entry.category === category) }))
     .filter((group) => group.entries.length > 0);

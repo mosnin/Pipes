@@ -40,8 +40,8 @@ const GROUPS: readonly ComparisonGroup[] = [
 describe("PricingComparisonTable", () => {
   it("renders the three tier columns", () => {
     render(<PricingComparisonTable groups={GROUPS} />);
-    expect(screen.getByText("Starter")).toBeTruthy();
-    expect(screen.getByText("Team")).toBeTruthy();
+    expect(screen.getByText("Free")).toBeTruthy();
+    expect(screen.getByText("Pro")).toBeTruthy();
     expect(screen.getByText("Enterprise")).toBeTruthy();
   });
 

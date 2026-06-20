@@ -7,7 +7,7 @@ import {
   SegmentedControl,
   Tooltip,
 } from "@/components/ui";
-import { type InsertContext, nodeLibraryCatalog } from "@/domain/templates/node_library";
+import { type InsertContext, legacyNodeLibraryCatalog, nodeLibraryCatalog } from "@/domain/templates/node_library";
 import type { GraphPipe } from "@/components/editor/editor_state";
 import { computeSubsystemBoundary, type Subsystem } from "@/components/editor/structure_model";
 
@@ -108,6 +108,17 @@ export function EditorLeftPane({
     if (fallback) onInsertEntry(fallback);
   };
 
+  const loopSteps = legacyNodeLibraryCatalog.filter((e) => e.category === "Loop" && e.promoted);
+
+  // Accent dot color per loop step type.
+  const LOOP_STEP_COLOR: Record<string, string> = {
+    LoopControl: "#6366F1",
+    Evaluator: "#D97706",
+    HumanReview: "#0EA5E9",
+    Checkpoint: "#16A34A",
+    SubLoop: "#4F46E5",
+  };
+
   return (
     <aside className="w-[260px] shrink-0 border-r border-black/[0.08] bg-white flex flex-col">
       <div className="p-2 border-b border-black/[0.06] flex items-center gap-1">
@@ -143,6 +154,25 @@ export function EditorLeftPane({
           >
             <Plus size={14} /> Add step
           </Button>
+          {/* Loop-native quick tiles */}
+          <div className="space-y-1">
+            <p className="t-overline text-[#8E8E93] px-1">Loop steps</p>
+            <div className="space-y-0.5">
+              {loopSteps.map((entry) => (
+                <button
+                  key={entry.nodeType}
+                  onClick={() => onInsertEntry(entry)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: LOOP_STEP_COLOR[entry.nodeType] ?? "#8E8E93" }}
+                  />
+                  <span className="t-label text-[#111] flex-1 truncate">{entry.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           {recentTitles.length > 0 && (
             <div className="space-y-1">
               <p className="t-overline text-[#8E8E93] px-1">Recents</p>
