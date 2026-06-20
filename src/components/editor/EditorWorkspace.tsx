@@ -1301,6 +1301,9 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             )}
             {activeSystemPanel === "simulation" && (
               <div className="space-y-2">
+                <p className="t-caption text-[#8E8E93] mb-1">
+                  Static dry run. Traces the path one input would take and flags unreached nodes. It does not execute node logic.
+                </p>
                 <div className="t-label text-[#8E8E93] space-y-0.5 mb-2">
                   <p>Status: {sim.status}</p>
                   <p>Steps: {sim.steps.length}</p>
