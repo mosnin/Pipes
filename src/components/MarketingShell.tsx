@@ -13,10 +13,11 @@ const FOOTER_COLUMNS = [
   {
     heading: "Product",
     links: [
-      { href: "/pricing",     label: "Pricing"      },
-      { href: "/templates",   label: "Starters"     },
-      { href: "/changelog",   label: "Changelog"    },
-      { href: "/protocol",    label: "Loop API"     },
+      { href: "/pricing",      label: "Pricing"      },
+      { href: "/marketplace",  label: "Marketplace"  },
+      { href: "/templates",    label: "Starters"     },
+      { href: "/changelog",    label: "Changelog"    },
+      { href: "/protocol",     label: "Loop API"     },
     ],
   },
   {

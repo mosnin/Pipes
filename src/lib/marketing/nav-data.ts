@@ -166,6 +166,7 @@ const customersMenu: CustomersMenu = {
 export const navItems: readonly NavItem[] = [
   { id: "product", label: "Product", menu: productMenu },
   { id: "use-cases", label: "Use cases", menu: useCasesMenu },
+  { id: "marketplace", label: "Marketplace", menu: { kind: "direct", href: "/marketplace" } },
   { id: "pricing", label: "Pricing", menu: { kind: "direct", href: "/pricing" } },
   { id: "docs", label: "Docs", menu: docsMenu },
   { id: "customers", label: "Customers", menu: customersMenu },
