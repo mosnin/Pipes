@@ -203,6 +203,16 @@ export class CollaborationService {
       metadata: JSON.stringify({ fromRole: target.role, toRole: role })
     });
   }
+  async removeMember(ctx: AppContext, userId: string) {
+    this.access.ensureCanManageMembers(ctx);
+    const members = await this.repos.memberships.list(ctx.workspaceId);
+    const target = members.find((m) => m.userId === userId);
+    if (!target) throw new Error("Member not found.");
+    if (target.role === "Owner") throw new Error("Cannot remove the workspace owner.");
+    if (ctx.userId === userId) throw new Error("Cannot remove yourself from the workspace.");
+    await this.repos.memberships.remove(ctx.workspaceId, userId);
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "governance.member_removed", targetType: "membership", targetId: userId, outcome: "success" });
+  }
 }
 
 export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing`, customerId: state.externalCustomerId }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }

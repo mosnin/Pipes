@@ -113,6 +113,11 @@ export function createMockRepositories(): RepositorySet {
         if (!row) throw new Error("Membership not found.");
         row.role = role;
         store.writeDb(db);
+      },
+      async remove(workspaceId, userId) {
+        const db = store.readDb();
+        db.memberships = db.memberships.filter((m) => !(m.workspaceId === workspaceId && m.userId === userId));
+        store.writeDb(db);
       }
     },
     systems: {

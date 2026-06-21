@@ -62,6 +62,7 @@ export interface MembershipsRepository {
   add(workspaceId: string, userId: string, role: Role): Promise<void>;
   list(workspaceId: string): Promise<Array<{ userId: string; role: Role }>>;
   updateRole(workspaceId: string, userId: string, role: Role): Promise<void>;
+  remove(workspaceId: string, userId: string): Promise<void>;
 }
 
 export interface SystemsRepository {

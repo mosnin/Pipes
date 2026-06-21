@@ -56,6 +56,10 @@ export function createConvexRepositories(): RepositorySet {
       async updateRole(workspaceId, userId, role) {
         const client = getConvexHttpClient();
         await client.mutation(api.app.updateMemberRole, { workspaceId: workspaceId as never, userId: userId as never, role });
+      },
+      async remove(workspaceId, userId) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.removeMember, { workspaceId: workspaceId as never, userId: userId as never });
       }
     },
     systems: {

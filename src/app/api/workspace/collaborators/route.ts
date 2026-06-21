@@ -35,3 +35,16 @@ export async function PUT(request: Request) {
     return NextResponse.json(failure((error as Error).message), { status: 400 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const { ctx, services } = await getServerApp();
+    const body = await request.json() as { userId: string; remove?: boolean };
+    if (body.remove) {
+      await services.collaboration.removeMember(ctx, body.userId);
+    }
+    return NextResponse.json(success({ ok: true }));
+  } catch (error) {
+    return NextResponse.json(failure((error as Error).message), { status: 400 });
+  }
+}
