@@ -1731,11 +1731,25 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 {selectedNode ? (
                   <Card>
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
-                    {/* Inspector header: Config label + small "More" overflow.
-                        Ports moved to canvas, Notes folded into Config, Validation
-                        moved to a tooltip + dialog, Docs moved to a link. */}
+                    {/* Inspector tabs: Config (node params) + Contract (port types). */}
                     <div className="flex items-center justify-between gap-2 pb-2 mb-3 border-b border-black/[0.06]">
-                      <span className="t-caption font-semibold text-[#111] uppercase tracking-wide">Config</span>
+                      <div className="flex gap-1">
+                        {(["config", "advanced"] as InspectorTab[]).map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setInspectorTab(tab)}
+                            className={[
+                              "px-2 py-0.5 rounded t-caption font-semibold uppercase tracking-wide transition-colors",
+                              inspectorTab === tab
+                                ? "bg-indigo-50 text-indigo-700"
+                                : "text-[#8E8E93] hover:text-[#111]",
+                            ].join(" ")}
+                          >
+                            {tab === "config" ? "Config" : "Contract"}
+                          </button>
+                        ))}
+                      </div>
                       <div className="flex items-center gap-2">
                         <Tooltip content={
                           validationReport.issues.filter((i) => i.severity === "error").length === 0
@@ -1757,7 +1771,66 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                         </Dropdown>
                       </div>
                     </div>
-                    {selectedDefinition ? (
+                    {inspectorTab === "advanced" && selectedDefinition ? (
+                      <div className="space-y-4">
+                        {(["input", "output"] as Array<"input" | "output">).map((side) => (
+                          <div key={side} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">{side}</p>
+                              <select
+                                value={selectedDefinition[side].portType}
+                                onChange={(e) => updateNodeDefinition(selectedNode.id, (cur) => ({ ...cur, [side]: { ...cur[side], portType: e.target.value as ContractType } }))}
+                                className="h-7 rounded border border-black/[0.08] bg-white px-1.5 t-caption text-[#111] outline-none focus:border-indigo-400"
+                              >
+                                {(["string","number","boolean","json","event","file","any"] as ContractType[]).map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {selectedDefinition[side].fields.map((field) => (
+                              <div key={field.id} className="flex items-center gap-1.5 group">
+                                <Input
+                                  value={field.key}
+                                  onChange={(e) => updateDefinitionField(side, field.id, { key: e.target.value })}
+                                  placeholder="field_name"
+                                  className="flex-1 text-[11px]"
+                                />
+                                <select
+                                  value={field.type}
+                                  onChange={(e) => updateDefinitionField(side, field.id, { type: e.target.value as ContractType })}
+                                  className="h-8 rounded border border-black/[0.08] bg-white px-1 t-caption text-[#111] outline-none focus:border-indigo-400"
+                                >
+                                  {(["string","number","boolean","json","event","file","any"] as ContractType[]).map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                  ))}
+                                </select>
+                                <label className="flex items-center gap-0.5 t-caption text-[#8E8E93] shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={field.required}
+                                    onChange={(e) => updateDefinitionField(side, field.id, { required: e.target.checked })}
+                                    className="rounded border-black/[0.12]"
+                                  />
+                                  req
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => removeDefinitionField(side, field.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#C7C7CC] hover:text-red-500"
+                                  aria-label="Remove field"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ))}
+                            <Button variant="ghost" size="sm" onClick={() => addDefinitionField(side)}>
+                              <Plus size={12} /> Add {side} field
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    {inspectorTab === "config" && selectedDefinition ? (
                       <div className="space-y-4">
                         {/* Identity inline at the top: title + description. */}
                         <div className="space-y-2">
