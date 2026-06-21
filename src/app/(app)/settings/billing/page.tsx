@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { PLAN_FEATURES, PLAN_PRICING } from "@/lib/billing/plans";
+import { PLAN_DISPLAY_NAME, PLAN_FEATURES, PLAN_PRICING } from "@/lib/billing/plans";
 import { UsageInfraCard } from "@/components/billing/UsageInfraCard";
 import {
   CheckCircle2,
@@ -492,7 +492,7 @@ export default function BillingSettingsPage() {
                 className="border border-[var(--color-line)] rounded-[var(--radius-card)] p-4 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="t-title text-[#111]">{plan}</span>
+                  <span className="t-title text-[#111]">{PLAN_DISPLAY_NAME[plan]}</span>
                   <span className="t-label font-semibold text-[#111]">{details.price}</span>
                 </div>
                 <ul className="space-y-1.5">
@@ -510,7 +510,7 @@ export default function BillingSettingsPage() {
                   className="flex items-center justify-center gap-1.5"
                 >
                   {checkoutLoading === plan && <Spinner size="sm" />}
-                  Upgrade to {plan}
+                  Upgrade to {PLAN_DISPLAY_NAME[plan]}
                 </Button>
               </div>
             );
