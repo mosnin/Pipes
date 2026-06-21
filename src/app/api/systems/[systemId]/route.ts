@@ -19,6 +19,7 @@ export async function GET(_: Request, { params }: Params) {
         marketplaceSelling: entitlements.marketplaceSelling,
         mcpReadWrite: entitlements.mcpReadWrite,
         aiGeneration: entitlements.aiGeneration,
+        versionHistory: entitlements.versionHistory,
       },
     }));
   } catch (error) {

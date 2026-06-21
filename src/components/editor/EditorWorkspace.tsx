@@ -43,7 +43,7 @@ type SystemPayload = {
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; createdAt: string }>;
   versions: Array<{ id: string; name: string; authorId: string; createdAt: string }>;
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
-  entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean };
+  entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean; versionHistory: boolean };
 };
 
 type QueuedAction = { action: EditorGraphAction; id: string; retries: number; turnId?: string };
@@ -1377,9 +1377,15 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             )}
             {activeSystemPanel === "versions" && (
               <div className="space-y-2">
-                <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
-                <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
-                <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="t-label text-[#3C3C43]">{v.name}</span></div>)}</div>
+                {data?.entitlements?.versionHistory === false ? (
+                  <LoopUpgradeGate reason="version_history" />
+                ) : (
+                  <>
+                    <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
+                    <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
+                    <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="t-label text-[#3C3C43]">{v.name}</span></div>)}</div>
+                  </>
+                )}
               </div>
             )}
             {activeSystemPanel === "ai" && (

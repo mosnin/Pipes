@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
 
+function entitlementStatus(error: Error) {
+  return (error.message ?? "").includes("requires Pro") ? 403 : 400;
+}
+
 export async function GET() {
   try {
     const { ctx, services } = await getServerApp();
     const tokens = await services.protocol.listTokens(ctx);
     return NextResponse.json(success(tokens));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    const e = error as Error;
+    return NextResponse.json(failure(e.message), { status: entitlementStatus(e) });
   }
 }
 
@@ -25,6 +30,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(success({ ...created, authHeaderExample: `Authorization: Bearer ${created.secret}` }));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    const e = error as Error;
+    return NextResponse.json(failure(e.message), { status: entitlementStatus(e) });
   }
 }
