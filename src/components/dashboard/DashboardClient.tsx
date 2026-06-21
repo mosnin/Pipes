@@ -22,6 +22,8 @@ import {
   Upload,
   Trash2,
   Copy,
+  Tag,
+  X,
 } from "lucide-react";
 import {
   Button,
@@ -139,6 +141,7 @@ type SystemCardProps = {
   onEdit: () => void;
   onRename: () => void;
   onDuplicate: () => void;
+  onManageTags: () => void;
 };
 
 function SystemCard({
@@ -152,6 +155,7 @@ function SystemCard({
   onEdit,
   onRename,
   onDuplicate,
+  onManageTags,
 }: SystemCardProps) {
   return (
     <div
@@ -214,6 +218,12 @@ function SystemCard({
                   <span className="flex items-center gap-2 t-label">
                     <Copy size={14} />
                     Duplicate
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="tags" onAction={onManageTags}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Tag size={14} />
+                    Manage tags
                   </span>
                 </DropdownItem>
                 <DropdownItem id="edit" onAction={onEdit}>
@@ -316,6 +326,10 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [renameTarget, setRenameTarget] = useState<LibraryRow | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [tagTarget, setTagTarget] = useState<LibraryRow | null>(null);
+  const [tagDraft, setTagDraft] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [savingTags, setSavingTags] = useState(false);
 
   const refreshListings = useCallback(async () => {
     try {
@@ -546,6 +560,40 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     }
   };
 
+  const openManageTags = (row: LibraryRow) => {
+    setTagTarget(row);
+    setTagDraft([...row.tags]);
+    setTagInput("");
+  };
+
+  const handleTagsConfirmed = async () => {
+    if (!tagTarget) return;
+    setSavingTags(true);
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "tags", systemId: tagTarget.id, tags: tagDraft }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Tags updated");
+      setTagTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to update tags");
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const addTag = (tag: string) => {
+    const t = tag.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 32);
+    if (t && !tagDraft.includes(t)) setTagDraft((prev) => [...prev, t]);
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => setTagDraft((prev) => prev.filter((t) => t !== tag));
+
   const handleExport = async (row: LibraryRow) => {
     const res = await fetch(`/api/systems/${row.id}/export`);
     if (!res.ok) {
@@ -704,6 +752,12 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 <span className="flex items-center gap-2 t-label">
                   <Copy size={14} />
                   Duplicate
+                </span>
+              </DropdownItem>
+              <DropdownItem id="tags" onAction={() => openManageTags(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Tag size={14} />
+                  Manage tags
                 </span>
               </DropdownItem>
               <DropdownItem
@@ -1023,6 +1077,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onEdit={() => router.push(`/systems/${row.id}`)}
                     onRename={() => { setRenameTarget(row); setRenameDraft(row.name); }}
                     onDuplicate={() => handleDuplicate(row)}
+                    onManageTags={() => openManageTags(row)}
                   />
                 ))}
               </div>
@@ -1152,6 +1207,98 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         <p className="t-caption text-[#8E8E93]">
           To recover the system later, restore it first before deleting.
         </p>
+      </Dialog>
+
+      {/* Manage tags dialog */}
+      <Dialog
+        open={!!tagTarget}
+        onOpenChange={(o) => { if (!o) setTagTarget(null); }}
+        title="Manage tags"
+        description={`Add or remove tags for "${tagTarget?.name ?? ""}".`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setTagTarget(null)} isDisabled={savingTags}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onPress={handleTagsConfirmed} isDisabled={savingTags}>
+              {savingTags ? <Spinner size="sm" /> : null}
+              {savingTags ? "Saving..." : "Save tags"}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {/* Current tags */}
+          <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+            {tagDraft.length === 0 ? (
+              <p className="t-caption text-[#C7C7CC] italic">No tags yet — add one below.</p>
+            ) : (
+              tagDraft.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 t-caption text-indigo-700"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="hover:text-red-600 transition-colors"
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+          {/* Available tags from workspace */}
+          {library.availableTags.filter((t) => !tagDraft.includes(t)).length > 0 && (
+            <div className="flex flex-col gap-1">
+              <p className="t-caption text-[#8E8E93]">Existing tags in your workspace:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {library.availableTags
+                  .filter((t) => !tagDraft.includes(t))
+                  .map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F5F5F7] border border-black/[0.08] t-caption text-[#3C3C43] hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
+                    >
+                      <Plus size={10} />
+                      {tag}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+          {/* New tag input */}
+          <div className="flex gap-2">
+            <Input
+              aria-label="New tag"
+              placeholder="Type a new tag..."
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  addTag(tagInput);
+                }
+              }}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => addTag(tagInput)}
+              isDisabled={!tagInput.trim()}
+            >
+              Add
+            </Button>
+          </div>
+          <p className="t-caption text-[#C7C7CC]">Press Enter or comma to add. Tags are lowercase.</p>
+        </div>
       </Dialog>
 
       {/* Import dialog */}
