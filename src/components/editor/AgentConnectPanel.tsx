@@ -8,7 +8,7 @@ interface AgentConnectPanelProps {
   mcpReadWrite?: boolean;
 }
 
-export function AgentConnectPanel({ systemId: _systemId, mcpReadWrite }: AgentConnectPanelProps) {
+export function AgentConnectPanel({ systemId: _systemId, mcpReadWrite: _mcpReadWrite }: AgentConnectPanelProps) {
   const mcpEndpoint = typeof window !== "undefined"
     ? `${window.location.origin}/api/protocol/mcp`
     : "/api/protocol/mcp";
@@ -40,9 +40,9 @@ export function AgentConnectPanel({ systemId: _systemId, mcpReadWrite }: AgentCo
       </div>
       <a
         href="/settings/tokens"
-        className="inline-flex items-center gap-1 t-caption font-semibold text-indigo-700 hover:text-indigo-800 underline-offset-2 hover:underline"
+        className="inline-flex items-center gap-1 t-caption text-indigo-600 hover:text-indigo-700 underline-offset-2 hover:underline"
       >
-        {mcpReadWrite ? "Manage MCP tokens ->" : "Generate an MCP token ->"}
+        Manage all tokens →
       </a>
     </div>
   );
