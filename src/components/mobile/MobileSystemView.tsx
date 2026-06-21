@@ -73,6 +73,7 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [building, setBuilding] = useState<boolean>(Boolean(initialPrompt));
+  const [buildError, setBuildError] = useState(false);
   const focusFnRef = useRef<((nodeId: string) => void) | null>(null);
   const builtRef = useRef(false);
 
@@ -89,6 +90,29 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
     return normalized;
   }, [systemId]);
 
+  // Server-side build for the prompt the user arrived with. Surfaces failures
+  // with a retry instead of leaving an empty canvas and no explanation.
+  const runGenerate = useCallback(async () => {
+    if (!initialPrompt) return;
+    setBuildError(false);
+    setBuilding(true);
+    try {
+      const res = await fetch(`/api/systems/${systemId}/generate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ prompt: initialPrompt }),
+      });
+      const body = await res.json().catch(() => ({ ok: false }));
+      if (!res.ok || !body.ok) throw new Error(body.error ?? "build_failed");
+      const rebuilt = await load();
+      if (rebuilt) setData(rebuilt);
+    } catch {
+      setBuildError(true);
+    } finally {
+      setBuilding(false);
+    }
+  }, [initialPrompt, systemId, load]);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -102,7 +126,6 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
         // then reload to show the finished loop.
         if (initialPrompt && !builtRef.current && loaded.nodes.length === 0) {
           builtRef.current = true;
-          setBuilding(true);
           if (typeof window !== "undefined") {
             const url = new URL(window.location.href);
             if (url.searchParams.has("prompt")) {
@@ -110,19 +133,7 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
               window.history.replaceState({}, "", url.toString());
             }
           }
-          try {
-            await fetch(`/api/systems/${systemId}/generate`, {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ prompt: initialPrompt }),
-            });
-            const rebuilt = await load();
-            if (!cancelled && rebuilt) setData(rebuilt);
-          } catch {
-            /* leave the empty canvas; user can retry on desktop */
-          } finally {
-            if (!cancelled) setBuilding(false);
-          }
+          if (!cancelled) await runGenerate();
         } else {
           setBuilding(false);
         }
@@ -136,7 +147,7 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
     return () => {
       cancelled = true;
     };
-  }, [systemId, initialPrompt, load]);
+  }, [systemId, initialPrompt, load, runGenerate]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -253,6 +264,19 @@ export function MobileSystemView({ systemId, workspaceName, initialPrompt }: Mob
             <div className="flex items-center gap-2 t-label text-[#3C3C43] bg-white/90 px-4 py-2 rounded-full border border-black/[0.06] shadow-sm">
               <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
               Building your loop...
+            </div>
+          </div>
+        ) : buildError ? (
+          <div className="absolute inset-0 flex items-center justify-center px-6">
+            <div className="flex flex-col items-center gap-3 text-center bg-white/95 px-5 py-4 rounded-2xl border border-black/[0.06] shadow-sm max-w-[280px]">
+              <p className="t-label text-[#3C3C43]">Could not build your loop.</p>
+              <button
+                type="button"
+                onClick={() => void runGenerate()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-2 t-label font-semibold text-white"
+              >
+                Try again
+              </button>
             </div>
           </div>
         ) : data.nodes.length === 0 ? (

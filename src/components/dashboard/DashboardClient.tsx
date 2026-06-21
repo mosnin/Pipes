@@ -285,12 +285,18 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const refreshLibrary = useCallback(
     async (q?: string) => {
       setLoading(true);
-      const params = new URLSearchParams({ status: "all", sort: "recent_activity" });
-      if (q ?? query) params.set("q", q ?? query);
-      const res = await fetch(`/api/library?${params}`);
-      const data = await res.json();
-      if (data.ok) setLibrary(data.data);
-      setLoading(false);
+      try {
+        const params = new URLSearchParams({ status: "all", sort: "recent_activity" });
+        if (q ?? query) params.set("q", q ?? query);
+        const res = await fetch(`/api/library?${params}`);
+        const data = await res.json();
+        if (data.ok) setLibrary(data.data);
+        else toast.error(data.error ?? "Could not load your systems.");
+      } catch {
+        toast.error("Could not load your systems. Check your connection.");
+      } finally {
+        setLoading(false);
+      }
     },
     [query],
   );

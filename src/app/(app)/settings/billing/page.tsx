@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -114,16 +114,29 @@ const PLAN_DETAILS: Record<"Pro" | "Builder", { price: string; features: string[
 
 export default function BillingSettingsPage() {
   const [summary, setSummary] = useState<BillingSummary | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  useEffect(() => {
+  const loadSummary = useCallback(() => {
+    setLoadError(false);
     fetch("/api/billing/status")
-      .then((r) => r.json())
-      .then((d: { data?: BillingSummary }) => setSummary(d.data ?? null));
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
+      .then((d: { data?: BillingSummary }) => {
+        if (!d.data) throw new Error("no_data");
+        setSummary(d.data);
+      })
+      .catch(() => setLoadError(true));
   }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
 
   const startCheckout = async (plan: "Pro" | "Builder") => {
     setCheckoutLoading(plan);
@@ -242,7 +255,16 @@ export default function BillingSettingsPage() {
         }
       />
 
-      {summary == null ? (
+      {loadError ? (
+        <CardShell>
+          <CardBody>
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <p className="t-label text-[#3C3C43]">We could not load your billing details.</p>
+              <Button variant="outline" size="sm" onPress={loadSummary}>Try again</Button>
+            </div>
+          </CardBody>
+        </CardShell>
+      ) : summary == null ? (
         <CardShell>
           <CardBody>
             <div className="flex items-center justify-center py-12">
