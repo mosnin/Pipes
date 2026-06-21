@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Upload,
   Trash2,
+  Copy,
 } from "lucide-react";
 import {
   Button,
@@ -137,6 +138,7 @@ type SystemCardProps = {
   onExport: () => void;
   onEdit: () => void;
   onRename: () => void;
+  onDuplicate: () => void;
 };
 
 function SystemCard({
@@ -149,6 +151,7 @@ function SystemCard({
   onExport,
   onEdit,
   onRename,
+  onDuplicate,
 }: SystemCardProps) {
   return (
     <div
@@ -205,6 +208,12 @@ function SystemCard({
                   <span className="flex items-center gap-2 t-label">
                     <Edit size={14} />
                     Rename
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="duplicate" onAction={onDuplicate}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Copy size={14} />
+                    Duplicate
                   </span>
                 </DropdownItem>
                 <DropdownItem id="edit" onAction={onEdit}>
@@ -500,6 +509,23 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     }
   };
 
+  const handleDuplicate = async (row: LibraryRow) => {
+    const id = toast.loading(`Duplicating ${row.name}...`);
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "duplicate" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Failed");
+      toast.success(`${row.name} duplicated`, { id });
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to duplicate ${row.name}`, { id });
+    }
+  };
+
   const handleRenameConfirmed = async () => {
     if (!renameTarget || !renameDraft.trim()) return;
     setRenaming(true);
@@ -672,6 +698,12 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 <span className="flex items-center gap-2 t-label">
                   <Edit size={14} />
                   Rename
+                </span>
+              </DropdownItem>
+              <DropdownItem id="duplicate" onAction={() => handleDuplicate(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Copy size={14} />
+                  Duplicate
                 </span>
               </DropdownItem>
               <DropdownItem
@@ -990,6 +1022,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onExport={() => handleExport(row)}
                     onEdit={() => router.push(`/systems/${row.id}`)}
                     onRename={() => { setRenameTarget(row); setRenameDraft(row.name); }}
+                    onDuplicate={() => handleDuplicate(row)}
                   />
                 ))}
               </div>

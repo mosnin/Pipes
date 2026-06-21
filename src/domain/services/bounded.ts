@@ -59,6 +59,24 @@ export class SystemService {
   async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
   async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
   async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.delete(systemId); }
+  async duplicate(ctx: AppContext, systemId: string): Promise<string> {
+    this.access.ensureCanEdit(ctx);
+    const bundle = await this.repos.systems.getBundle(systemId);
+    const newId = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: `${bundle.system.name} Copy`, description: bundle.system.description });
+    const nodeIdMap = new Map<string, string>();
+    for (const node of bundle.nodes) {
+      const newNodeId = await this.repos.graph.addNode({ systemId: newId, type: node.type, title: node.title, description: node.description, x: node.position.x, y: node.position.y });
+      nodeIdMap.set(node.id, newNodeId);
+    }
+    for (const pipe of bundle.pipes) {
+      const fromNodeId = pipe.fromNodeId ? nodeIdMap.get(pipe.fromNodeId) : undefined;
+      const toNodeId = pipe.toNodeId ? nodeIdMap.get(pipe.toNodeId) : undefined;
+      if (fromNodeId && toNodeId) {
+        await this.repos.graph.addPipe({ systemId: newId, fromNodeId, toNodeId });
+      }
+    }
+    return newId;
+  }
   async rename(ctx: AppContext, systemId: string, name: string) {
     this.access.ensureCanEdit(ctx);
     const trimmed = name.trim().slice(0, 120);
