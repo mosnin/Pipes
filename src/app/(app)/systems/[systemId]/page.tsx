@@ -13,7 +13,7 @@ export default async function SystemEditorPage({ params, searchParams }: Props) 
   const rawPrompt = Array.isArray(sp.prompt) ? sp.prompt[0] : sp.prompt;
   const initialPrompt = rawPrompt ? decodeURIComponent(rawPrompt) : undefined;
   return (
-    <MobileGate mobile={<MobileSystemView systemId={systemId} />}>
+    <MobileGate mobile={<MobileSystemView systemId={systemId} initialPrompt={initialPrompt} />}>
       <EditorWorkspace systemId={systemId} initialPrompt={initialPrompt} />
     </MobileGate>
   );

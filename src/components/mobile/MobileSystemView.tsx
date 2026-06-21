@@ -65,44 +65,78 @@ function normalizePipe(pipe: RawPipe, index: number, systemId: string): GraphPip
 export type MobileSystemViewProps = {
   systemId: string;
   workspaceName?: string;
+  initialPrompt?: string;
 };
 
-export function MobileSystemView({ systemId, workspaceName }: MobileSystemViewProps): React.ReactElement {
+export function MobileSystemView({ systemId, workspaceName, initialPrompt }: MobileSystemViewProps): React.ReactElement {
   const [data, setData] = useState<SystemData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [building, setBuilding] = useState<boolean>(Boolean(initialPrompt));
   const focusFnRef = useRef<((nodeId: string) => void) | null>(null);
+  const builtRef = useRef(false);
+
+  const load = useCallback(async (): Promise<SystemData | null> => {
+    const res = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
+    const body = await res.json();
+    if (!res.ok || !body.ok) throw new Error("Could not load system.");
+    const raw = body.data as { system: RawSystem; nodes: RawNode[]; pipes: RawPipe[] };
+    const normalized: SystemData = {
+      system: { id: raw.system.id ?? systemId, name: raw.system.name, description: raw.system.description ?? "" },
+      nodes: raw.nodes.map(normalizeNode),
+      pipes: raw.pipes.map((p, i) => normalizePipe(p, i, raw.system.id ?? systemId)),
+    };
+    return normalized;
+  }, [systemId]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
-        const body = await res.json();
-        if (cancelled) return;
-        if (!res.ok || !body.ok) {
-          setError("Could not load system.");
-          return;
+        const loaded = await load();
+        if (cancelled || !loaded) return;
+        setData(loaded);
+
+        // Mobile magic moment: if we arrived with a prompt and the canvas is
+        // empty, build it server-side (read-only mobile can't apply locally),
+        // then reload to show the finished loop.
+        if (initialPrompt && !builtRef.current && loaded.nodes.length === 0) {
+          builtRef.current = true;
+          setBuilding(true);
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            if (url.searchParams.has("prompt")) {
+              url.searchParams.delete("prompt");
+              window.history.replaceState({}, "", url.toString());
+            }
+          }
+          try {
+            await fetch(`/api/systems/${systemId}/generate`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ prompt: initialPrompt }),
+            });
+            const rebuilt = await load();
+            if (!cancelled && rebuilt) setData(rebuilt);
+          } catch {
+            /* leave the empty canvas; user can retry on desktop */
+          } finally {
+            if (!cancelled) setBuilding(false);
+          }
+        } else {
+          setBuilding(false);
         }
-        const raw = body.data as { system: RawSystem; nodes: RawNode[]; pipes: RawPipe[] };
-        const normalized: SystemData = {
-          system: {
-            id: raw.system.id ?? systemId,
-            name: raw.system.name,
-            description: raw.system.description ?? "",
-          },
-          nodes: raw.nodes.map(normalizeNode),
-          pipes: raw.pipes.map((p, i) => normalizePipe(p, i, raw.system.id ?? systemId)),
-        };
-        setData(normalized);
       } catch {
-        if (!cancelled) setError("Could not load system.");
+        if (!cancelled) {
+          setError("Could not load system.");
+          setBuilding(false);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [systemId]);
+  }, [systemId, initialPrompt, load]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -214,10 +248,17 @@ export function MobileSystemView({ systemId, workspaceName }: MobileSystemViewPr
           onEmptyTap={() => setSelectedNodeId(null)}
           registerFocus={registerFocus}
         />
-        {data.nodes.length === 0 ? (
+        {building ? (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="t-label text-[#8E8E93] bg-white/80 px-3 py-1.5 rounded-full border border-black/[0.06]">
-              Empty system. Open on desktop to start building.
+            <div className="flex items-center gap-2 t-label text-[#3C3C43] bg-white/90 px-4 py-2 rounded-full border border-black/[0.06] shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              Building your loop...
+            </div>
+          </div>
+        ) : data.nodes.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="t-label text-[#8E8E93] bg-white/80 px-3 py-1.5 rounded-full border border-black/[0.06] text-center max-w-[260px]">
+              Empty loop. Describe one from the dashboard, or open on desktop to edit by hand.
             </p>
           </div>
         ) : null}
