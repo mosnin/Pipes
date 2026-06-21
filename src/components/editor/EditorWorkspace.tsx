@@ -1380,10 +1380,34 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
           <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
             {activeSystemPanel === "validation" && (
               <div className="space-y-2">
-                {validationReport.issues.length === 0
-                  ? <p className="t-label text-[#8E8E93] py-2">No issues found.</p>
-                  : validationReport.issues.map((issue) => <Card key={issue.id}><ValidationBadge severity={issue.severity} /><p>{issue.message}</p></Card>)
-                }
+                {validationReport.issues.length === 0 ? (
+                  <p className="t-label text-[#8E8E93] py-2">No issues found.</p>
+                ) : (
+                  validationReport.issues.map((issue) => {
+                    const canNavigate = !!issue.nodeId;
+                    const inner = (
+                      <div className="flex items-start gap-2">
+                        <ValidationBadge severity={issue.severity} />
+                        <div className="flex-1 min-w-0">
+                          <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+                          {canNavigate && <p className="t-caption text-indigo-600 mt-0.5">Click to go to node</p>}
+                        </div>
+                      </div>
+                    );
+                    return canNavigate ? (
+                      <button
+                        key={issue.id}
+                        type="button"
+                        className="w-full text-left border border-black/[0.08] hover:border-indigo-300 rounded-lg p-2 transition-colors cursor-pointer"
+                        onClick={() => { setSelectedNodeIds([issue.nodeId!]); setActiveSystemPanel(null); }}
+                      >
+                        {inner}
+                      </button>
+                    ) : (
+                      <Card key={issue.id}>{inner}</Card>
+                    );
+                  })
+                )}
               </div>
             )}
             {activeSystemPanel === "simulation" && (
@@ -2000,9 +2024,16 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             <p className="t-label text-[#8E8E93]">No issues found.</p>
           ) : (
             validationReport.issues.map((issue) => (
-              <div key={issue.id} className="flex items-start gap-2 p-2 border border-black/[0.06] rounded-md">
+              <div
+                key={issue.id}
+                className={["flex items-start gap-2 p-2 border border-black/[0.06] rounded-md", issue.nodeId ? "cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors" : ""].join(" ")}
+                onClick={issue.nodeId ? () => { setSelectedNodeIds([issue.nodeId!]); setValidationDialogOpen(false); } : undefined}
+              >
                 <ValidationBadge severity={issue.severity} />
-                <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+                  {issue.nodeId && <p className="t-caption text-indigo-600 mt-0.5">Click to select node</p>}
+                </div>
               </div>
             ))
           )}
