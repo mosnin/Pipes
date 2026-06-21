@@ -49,8 +49,9 @@ export default defineSchema({
     payer: v.string(),
     scheme: v.string(),
     txHash: v.optional(v.string()),
+    idempotencyKey: v.optional(v.string()),
     createdAt: v.string()
-  }).index("by_workspace", ["workspaceId"]),
+  }).index("by_workspace", ["workspaceId"]).index("by_idempotency", ["idempotencyKey"]),
   usage_events: defineTable({
     workspaceId: v.id("workspaces"),
     meter: v.string(),

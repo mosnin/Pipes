@@ -889,8 +889,8 @@ export function createConvexRepositories(): RepositorySet {
     payments: {
       async recordSettlement(input) {
         const client = getConvexHttpClient();
-        const id = await client.mutation((api as any).app.recordPaymentSettlement, { workspaceId: input.workspaceId as never, resourceId: input.resourceId, amountUsd: input.amountUsd, payer: input.payer, scheme: input.scheme, txHash: input.txHash });
-        return String(id);
+        const result = await client.mutation((api as any).app.recordPaymentSettlement, { workspaceId: input.workspaceId as never, resourceId: input.resourceId, amountUsd: input.amountUsd, payer: input.payer, scheme: input.scheme, txHash: input.txHash, idempotencyKey: input.idempotencyKey });
+        return { id: String(result?.id ?? result), replayed: Boolean(result?.replayed) };
       },
       async listSettlements(workspaceId) {
         const client = getConvexHttpClient();

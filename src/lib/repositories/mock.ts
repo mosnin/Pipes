@@ -1149,10 +1149,14 @@ export function createMockRepositories(): RepositorySet {
     payments: {
       async recordSettlement(input) {
         const db = store.readDb();
+        const existing = input.idempotencyKey
+          ? ((db as any).paymentSettlements ?? []).find((r: any) => r.idempotencyKey === input.idempotencyKey)
+          : undefined;
+        if (existing) return { id: existing.id, replayed: true };
         const row = { ...input, id: store.createId("pay"), createdAt: now() };
         (db as any).paymentSettlements = [...((db as any).paymentSettlements ?? []), row];
         store.writeDb(db);
-        return row.id;
+        return { id: row.id, replayed: false };
       },
       async listSettlements(workspaceId) {
         const db = store.readDb();

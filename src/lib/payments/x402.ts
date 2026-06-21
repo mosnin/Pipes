@@ -86,6 +86,12 @@ function devVoucherKey(): string {
   return env.PADDLE_WEBHOOK_SECRET ?? env.X402_PAY_TO_ADDRESS ?? "looper-x402-dev";
 }
 
+// A stable id for an X-PAYMENT payload, used to make settlement idempotent so a
+// retried payment never charges or provisions twice.
+export function paymentId(header: string): string {
+  return crypto.createHash("sha256").update(header).digest("hex").slice(0, 32);
+}
+
 // The X-PAYMENT-RESPONSE header value the server returns on a settled request,
 // per the x402 spec: a base64 receipt the caller can record.
 export function settlementResponseHeader(result: PaymentResult): string | null {

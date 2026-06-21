@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   buildPaymentRequirements,
+  paymentId,
   paymentRequiredResponse,
   verifyPayment,
   type PaymentRequirements,
@@ -18,7 +19,7 @@ import { getMeter, meterResourceId, usageCost } from "@/lib/payments/meters";
 // ---------------------------------------------------------------------------
 
 export type X402GateResult =
-  | { ok: true; payer: string; settlement: PaymentResult; requirements: PaymentRequirements; amountUsd: number }
+  | { ok: true; payer: string; settlement: PaymentResult; requirements: PaymentRequirements; amountUsd: number; paymentId: string | null }
   | { ok: false; response: NextResponse };
 
 export type X402GateOptions = {
@@ -36,6 +37,7 @@ export async function gateX402(req: Request, opts: X402GateOptions): Promise<X40
       settlement: { ok: true, payer: "free", settlement: "dev_voucher" },
       requirements: buildPaymentRequirements({ priceUsd: 0, resource: opts.resource, description: opts.description }),
       amountUsd: 0,
+      paymentId: null,
     };
   }
   const requirements = buildPaymentRequirements({
@@ -43,11 +45,12 @@ export async function gateX402(req: Request, opts: X402GateOptions): Promise<X40
     resource: opts.resource,
     description: opts.description,
   });
-  const settlement = await verifyPayment(req.headers.get("x-payment"), requirements);
+  const header = req.headers.get("x-payment");
+  const settlement = await verifyPayment(header, requirements);
   if (!settlement.ok) {
     return { ok: false, response: paymentRequiredResponse(requirements, settlement.error) };
   }
-  return { ok: true, payer: settlement.payer, settlement, requirements, amountUsd: opts.priceUsd };
+  return { ok: true, payer: settlement.payer, settlement, requirements, amountUsd: opts.priceUsd, paymentId: header ? paymentId(header) : null };
 }
 
 // Usage-based variant: prices `units` of a registered meter and gates on it.

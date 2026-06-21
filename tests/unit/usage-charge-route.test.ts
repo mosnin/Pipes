@@ -15,11 +15,17 @@ type SettleCall = { resourceId: string; amountUsd: number; payer: string };
 
 function buildApp() {
   const usage: UsageCall[] = [];
-  const settlements: SettleCall[] = [];
+  const settlements: Array<SettleCall & { idempotencyKey?: string }> = [];
+  const seenKeys = new Set<string>();
   const repositories = {
     payments: {
       recordUsage: vi.fn(async (i: UsageCall) => { usage.push(i); }),
-      recordSettlement: vi.fn(async (i: SettleCall) => { settlements.push(i); return "pay_1"; }),
+      recordSettlement: vi.fn(async (i: SettleCall & { idempotencyKey?: string }) => {
+        if (i.idempotencyKey && seenKeys.has(i.idempotencyKey)) return { id: "pay_existing", replayed: true };
+        if (i.idempotencyKey) seenKeys.add(i.idempotencyKey);
+        settlements.push(i);
+        return { id: `pay_${settlements.length}`, replayed: false };
+      }),
     },
   };
   mockedServer.mockResolvedValue({ ctx: { workspaceId: "ws_1" }, repositories });
@@ -62,6 +68,22 @@ describe("POST /api/usage/charge", () => {
     expect(settlements).toHaveLength(1);
     expect(settlements[0].amountUsd).toBeCloseTo(amount);
     expect(res.headers.get("x-payment-response")).toBeTruthy();
+  });
+
+  it("is idempotent: a replayed payment does not double-meter or double-settle", async () => {
+    const { usage, settlements } = buildApp();
+    const amount = usageCost("protocol_call", 10);
+    const reqs = buildPaymentRequirements({ priceUsd: amount, resource: meterResourceId("protocol_call"), description: "x" });
+    const voucher = signDevVoucher(reqs.resource, reqs.maxAmountRequired, "looper:ws_1");
+
+    const first = await charge({ meter: "protocol_call", units: 10 }, voucher);
+    expect((await first.json()).data.replayed).toBe(false);
+    const second = await charge({ meter: "protocol_call", units: 10 }, voucher);
+    expect((await second.json()).data.replayed).toBe(true);
+
+    // Same payment -> usage and settlement recorded exactly once.
+    expect(usage).toHaveLength(1);
+    expect(settlements).toHaveLength(1);
   });
 
   it("rejects an unknown meter", async () => {

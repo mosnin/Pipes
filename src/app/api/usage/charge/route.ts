@@ -22,21 +22,25 @@ export async function POST(req: Request) {
   if (!gate.ok) return gate.response;
 
   const resourceId = meterResourceId(meter);
-  await repositories.payments.recordUsage({ workspaceId: ctx.workspaceId, meter, units: unitCount, resourceId }).catch(() => undefined);
+  // Reserve the payment first; a replayed X-PAYMENT must not double-meter.
+  let replayed = false;
   if (gate.amountUsd > 0) {
-    await repositories.payments
-      .recordSettlement({
-        workspaceId: ctx.workspaceId,
-        resourceId,
-        amountUsd: gate.amountUsd,
-        payer: gate.payer,
-        scheme: gate.settlement.ok ? gate.settlement.settlement : "unknown",
-        txHash: gate.settlement.ok ? gate.settlement.txHash : undefined,
-      })
-      .catch(() => undefined);
+    const settle = await repositories.payments.recordSettlement({
+      workspaceId: ctx.workspaceId,
+      resourceId,
+      amountUsd: gate.amountUsd,
+      payer: gate.payer,
+      scheme: gate.settlement.ok ? gate.settlement.settlement : "unknown",
+      txHash: gate.settlement.ok ? gate.settlement.txHash : undefined,
+      idempotencyKey: gate.paymentId ?? undefined,
+    });
+    replayed = settle.replayed;
+  }
+  if (!replayed) {
+    await repositories.payments.recordUsage({ workspaceId: ctx.workspaceId, meter, units: unitCount, resourceId }).catch(() => undefined);
   }
 
-  const res = NextResponse.json({ ok: true, data: { meter, units: unitCount, amountUsd: gate.amountUsd } });
+  const res = NextResponse.json({ ok: true, data: { meter, units: unitCount, amountUsd: gate.amountUsd, replayed } });
   const receipt = settlementResponseHeader(gate.settlement);
   if (gate.amountUsd > 0 && receipt) res.headers.set("x-payment-response", receipt);
   return res;

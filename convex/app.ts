@@ -197,8 +197,18 @@ export const getMarketplaceListing = query({
 });
 
 export const recordPaymentSettlement = mutation({
-  args: { workspaceId: v.id("workspaces"), resourceId: v.string(), amountUsd: v.number(), payer: v.string(), scheme: v.string(), txHash: v.optional(v.string()) },
-  handler: async (ctx, args) => ctx.db.insert("payment_settlements", { ...args, createdAt: now() })
+  args: { workspaceId: v.id("workspaces"), resourceId: v.string(), amountUsd: v.number(), payer: v.string(), scheme: v.string(), txHash: v.optional(v.string()), idempotencyKey: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (args.idempotencyKey) {
+      const existing = await ctx.db
+        .query("payment_settlements")
+        .withIndex("by_idempotency", (q) => q.eq("idempotencyKey", args.idempotencyKey))
+        .first();
+      if (existing) return { id: existing._id, replayed: true };
+    }
+    const id = await ctx.db.insert("payment_settlements", { ...args, createdAt: now() });
+    return { id, replayed: false };
+  }
 });
 
 export const listPaymentSettlements = query({
