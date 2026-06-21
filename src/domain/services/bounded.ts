@@ -176,7 +176,7 @@ export class CollaborationService {
   }
 }
 
-export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing` }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
+export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing`, customerId: state.externalCustomerId }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
 
 export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
 
@@ -722,7 +722,7 @@ export class ReleaseReviewService {
     const signal = (event: string) => audits.filter((row) => row.action === `signal.${event}`).length;
     const runtime = resolveRuntimeMode();
     return {
-      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.CLERK_SECRET_KEY, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
+      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.CLERK_SECRET_KEY, billingConfigured: !!env.PADDLE_API_KEY, aiConfigured: !!(env.OPENAI_API_KEY || env.OPENROUTER_API_KEY) } },
       checklist: {
         criticalFlows: [
           { key: "signup_onboarding", route: "/signup -> /onboarding", status: "review" },

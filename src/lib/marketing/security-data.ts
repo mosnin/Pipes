@@ -154,7 +154,7 @@ export const securityControls: ReadonlyArray<SecurityControl> = [
     title: "Vendor security",
     category: "Audit",
     body:
-      "Subprocessors are reviewed annually. The current list: Vercel, Convex, Modal, Clerk, OpenAI, Anthropic, Resend, Creem, Sentry, Upstash. A DPA inventory is published at /security/subprocessors.",
+      "Subprocessors are reviewed annually. The current list: Vercel, Convex, Modal, Clerk, OpenAI, Anthropic, Resend, Paddle, Sentry, Upstash. A DPA inventory is published at /security/subprocessors.",
     evidence: "Vendor review log, /security/subprocessors",
   },
   {

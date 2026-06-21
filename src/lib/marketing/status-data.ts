@@ -92,7 +92,7 @@ export const services: ReadonlyArray<UptimeService> = [
   {
     id: "webhook-delivery",
     name: "Webhook delivery",
-    description: "Outbound notifications, Creem billing events, audit log forwarding.",
+    description: "Outbound notifications, Paddle billing events, audit log forwarding.",
     status: "operational",
     uptime90d: 99.88,
     history: buildHistory(19),

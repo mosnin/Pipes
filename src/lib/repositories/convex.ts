@@ -168,7 +168,7 @@ export function createConvexRepositories(): RepositorySet {
       async getPlanState(workspaceId) {
         const client = getConvexHttpClient();
         const row = await client.query(api.app.getPlanState, { workspaceId: workspaceId as never });
-        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing" };
+        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing", externalCustomerId: row?.externalCustomerId, externalSubscriptionId: row?.externalSubscriptionId };
       },
       async upsertPlanState(input) {
         const client = getConvexHttpClient();

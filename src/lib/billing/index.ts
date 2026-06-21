@@ -19,18 +19,21 @@ export type PlanStateEvent = {
   externalSubscriptionId?: string;
 };
 
+export type CheckoutInput = { workspaceId: string; plan: Plan; successUrl: string; cancelUrl: string };
+export type PortalInput = { workspaceId: string; returnUrl: string; customerId?: string };
+
 export interface BillingService {
-  createCheckoutSession(input: { workspaceId: string; plan: Plan; successUrl: string; cancelUrl: string }): Promise<{ checkoutUrl: string }>;
-  createPortalSession(input: { workspaceId: string; returnUrl: string }): Promise<{ portalUrl: string }>;
+  createCheckoutSession(input: CheckoutInput): Promise<{ checkoutUrl: string }>;
+  createPortalSession(input: PortalInput): Promise<{ portalUrl: string }>;
   parseWebhook(request: Request): Promise<PlanStateEvent | null>;
 }
 
 class MockBillingService implements BillingService {
-  async createCheckoutSession(input: { workspaceId: string; plan: Plan; successUrl: string }) {
+  async createCheckoutSession(input: CheckoutInput) {
     return { checkoutUrl: `${input.successUrl}?mockBilling=success&plan=${input.plan}&workspaceId=${input.workspaceId}` };
   }
 
-  async createPortalSession(input: { returnUrl: string }) {
+  async createPortalSession(input: PortalInput) {
     return { portalUrl: `${input.returnUrl}?mockBilling=portal` };
   }
 
@@ -41,62 +44,101 @@ class MockBillingService implements BillingService {
   }
 }
 
-class CreemBillingService implements BillingService {
-  private base = "https://api.creem.io/v1";
+// Maps a Paddle subscription status to our internal billing status.
+function mapPaddleStatus(status: string | undefined): BillingStatus {
+  switch (status) {
+    case "active":
+      return "active";
+    case "trialing":
+      return "trialing";
+    case "past_due":
+      return "past_due";
+    case "canceled":
+    case "paused":
+      return "canceled";
+    default:
+      return "active";
+  }
+}
 
-  // Map a Looper plan to its Creem product id. Configured per environment so
-  // the same code runs against test and live Creem products.
-  private productFor(plan: Plan): string | undefined {
-    if (plan === "Pro") return env.CREEM_PRODUCT_PRO;
-    if (plan === "Builder" || plan === "Team") return env.CREEM_PRODUCT_BUILDER;
+export class PaddleBillingService implements BillingService {
+  // Paddle Billing API. Sandbox unless PADDLE_ENVIRONMENT=production.
+  private base = env.PADDLE_ENVIRONMENT === "production" ? "https://api.paddle.com" : "https://sandbox-api.paddle.com";
+
+  private headers() {
+    return { authorization: `Bearer ${env.PADDLE_API_KEY ?? ""}`, "content-type": "application/json" };
+  }
+
+  // Map a Looper plan to its Paddle price id (set per environment).
+  private priceFor(plan: Plan): string | undefined {
+    if (plan === "Pro") return env.PADDLE_PRICE_PRO;
+    if (plan === "Builder" || plan === "Team") return env.PADDLE_PRICE_BUILDER;
     return undefined;
   }
 
-  async createCheckoutSession(input: { workspaceId: string; plan: Plan; successUrl: string; cancelUrl: string }) {
-    const productId = this.productFor(input.plan);
-    const response = await fetch(`${this.base}/checkouts`, {
+  async createCheckoutSession(input: CheckoutInput) {
+    const priceId = this.priceFor(input.plan);
+    // Create a transaction; Paddle returns a hosted checkout URL on it.
+    const response = await fetch(`${this.base}/transactions`, {
       method: "POST",
-      headers: { "x-api-key": env.CREEM_API_KEY ?? "", "content-type": "application/json" },
+      headers: this.headers(),
       body: JSON.stringify({
-        product_id: productId,
-        success_url: input.successUrl,
-        metadata: { workspaceId: input.workspaceId, plan: input.plan },
-      })
+        items: priceId ? [{ price_id: priceId, quantity: 1 }] : [],
+        custom_data: { workspaceId: input.workspaceId, plan: input.plan },
+        checkout: { url: input.successUrl },
+      }),
     });
-    const body = await response.json().catch(() => ({}));
-    return { checkoutUrl: body.checkout_url ?? body.url ?? input.successUrl };
+    const body = await response.json().catch(() => ({} as any));
+    return { checkoutUrl: body?.data?.checkout?.url ?? input.successUrl };
   }
 
-  async createPortalSession(input: { workspaceId: string; returnUrl: string }) {
-    const response = await fetch(`${this.base}/customers/billing`, {
+  async createPortalSession(input: PortalInput) {
+    // Paddle portal sessions are keyed by customer id, captured from the
+    // subscription webhook. Without one yet, fall back to the billing page.
+    if (!input.customerId) return { portalUrl: input.returnUrl };
+    const response = await fetch(`${this.base}/customers/${input.customerId}/portal-sessions`, {
       method: "POST",
-      headers: { "x-api-key": env.CREEM_API_KEY ?? "", "content-type": "application/json" },
-      body: JSON.stringify({ metadata: { workspaceId: input.workspaceId }, return_url: input.returnUrl })
+      headers: this.headers(),
+      body: JSON.stringify({}),
     });
-    const body = await response.json().catch(() => ({}));
-    return { portalUrl: body.customer_portal_link ?? body.url ?? input.returnUrl };
+    const body = await response.json().catch(() => ({} as any));
+    return { portalUrl: body?.data?.urls?.general?.overview ?? input.returnUrl };
   }
 
   async parseWebhook(request: Request): Promise<PlanStateEvent | null> {
-    const signature = request.headers.get("creem-signature");
+    const signatureHeader = request.headers.get("paddle-signature");
     const raw = await request.text();
-    if (env.CREEM_WEBHOOK_SECRET && signature) {
-      const computed = crypto.createHmac("sha256", env.CREEM_WEBHOOK_SECRET).update(raw).digest("hex");
-      if (computed !== signature) throw new Error("Invalid webhook signature.");
+    // Paddle signs as "ts=<unix>;h1=<hmac-sha256 of `${ts}:${rawBody}`>".
+    if (env.PADDLE_WEBHOOK_SECRET && signatureHeader) {
+      const parts = Object.fromEntries(
+        signatureHeader.split(";").map((p) => {
+          const [k, v] = p.split("=");
+          return [k?.trim(), v?.trim()];
+        }),
+      ) as { ts?: string; h1?: string };
+      if (!parts.ts || !parts.h1) throw new Error("Malformed Paddle signature.");
+      const computed = crypto.createHmac("sha256", env.PADDLE_WEBHOOK_SECRET).update(`${parts.ts}:${raw}`).digest("hex");
+      const a = Buffer.from(computed);
+      const b = Buffer.from(parts.h1);
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) throw new Error("Invalid webhook signature.");
     }
     const payload = JSON.parse(raw || "{}");
-    if (!payload?.workspaceId || !payload?.plan) return null;
+    const data = payload?.data ?? {};
+    const custom = data.custom_data ?? {};
+    const workspaceId = custom.workspaceId;
+    const plan = custom.plan as Plan | undefined;
+    if (!workspaceId || !plan) return null;
     return {
-      workspaceId: payload.workspaceId,
-      plan: payload.plan,
-      status: payload.status ?? "active",
-      externalCustomerId: payload.customerId,
-      externalSubscriptionId: payload.subscriptionId
+      workspaceId,
+      plan,
+      status: mapPaddleStatus(data.status),
+      externalCustomerId: data.customer_id,
+      externalSubscriptionId: data.id ?? data.subscription_id,
     };
   }
 }
 
 export function getBillingService(): BillingService {
-  if (runtimeFlags.useMocks || !runtimeFlags.hasCreem) return new MockBillingService();
-  return new CreemBillingService();
+  if (runtimeFlags.useMocks || !runtimeFlags.hasPaddle) return new MockBillingService();
+  return new PaddleBillingService();
 }

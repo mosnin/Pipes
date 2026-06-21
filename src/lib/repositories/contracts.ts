@@ -107,7 +107,7 @@ export interface PresenceRepository {
 
 export interface EntitlementsRepository {
   getPlan(workspaceId: string): Promise<Plan>;
-  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus }>;
+  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }>;
   upsertPlanState(input: { workspaceId: string; plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }): Promise<void>;
 }
 

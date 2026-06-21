@@ -83,7 +83,7 @@ export function paymentRequiredResponse(requirements: PaymentRequirements, messa
 // (or a fixed dev key), so it cannot be forged across resources but requires no
 // wallet. Replaced by real settlement the moment X402_FACILITATOR_URL is set.
 function devVoucherKey(): string {
-  return env.CREEM_WEBHOOK_SECRET ?? env.X402_PAY_TO_ADDRESS ?? "looper-x402-dev";
+  return env.PADDLE_WEBHOOK_SECRET ?? env.X402_PAY_TO_ADDRESS ?? "looper-x402-dev";
 }
 
 export function signDevVoucher(resource: string, atomicAmount: string, payer: string): string {
