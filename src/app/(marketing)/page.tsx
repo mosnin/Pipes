@@ -12,6 +12,8 @@ import {
   RevealItem,
 } from "@/components/marketing/ScrollSection";
 import { MetricsStrip } from "@/components/marketing/MetricsStrip";
+import { AGENT_CAPABILITIES } from "@/lib/protocol/tokens";
+import { MCP_TOOL_COUNT } from "@/lib/protocol/mcp-tools";
 import { FeatureGrid } from "@/components/marketing/FeatureGrid";
 import { CompareStrip } from "@/components/marketing/CompareStrip";
 import { StarterShowcase, QuoteRotator } from "@/components/marketing/StarterShowcase";
@@ -165,8 +167,8 @@ export default function HomePage() {
             suffix: "",
           },
           { value: nodeTypeValues.length, label: "node types to wire any loop" },
-          { value: 11, label: "MCP capability scopes" },
-          { value: 15, label: "MCP tools for any agent" },
+          { value: AGENT_CAPABILITIES.length, label: "MCP capability scopes" },
+          { value: MCP_TOOL_COUNT, label: "MCP tools for any agent" },
         ]}
       />
 

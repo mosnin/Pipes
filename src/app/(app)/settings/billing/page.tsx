@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { PLAN_FEATURES, PLAN_PRICING } from "@/lib/billing/plans";
 import { UsageInfraCard } from "@/components/billing/UsageInfraCard";
 import {
   CheckCircle2,
@@ -96,19 +97,12 @@ function formatUsd(value?: number): string {
 
 const PLAN_DETAILS: Record<"Pro" | "Builder", { price: string; features: string[] }> = {
   Pro: {
-    price: "$12 / mo",
-    features: ["Up to 20 systems", "Team collaboration", "Version history", "API & MCP access"],
+    price: `${PLAN_PRICING.Pro.displayPrice} / mo`,
+    features: PLAN_FEATURES.Pro,
   },
   Builder: {
-    price: "$39 / mo",
-    features: [
-      "Unlimited systems",
-      "Team collaboration",
-      "Version history",
-      "AI generation",
-      "API & MCP access",
-      "Priority support",
-    ],
+    price: `${PLAN_PRICING.Builder.displayPrice} / mo`,
+    features: PLAN_FEATURES.Builder,
   },
 };
 

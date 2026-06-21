@@ -24,7 +24,7 @@ export function PublishToMarketplaceModal({ systemId, systemName, onClose }: Pro
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           description,
-          price: price === "free" ? 0 : parseFloat(priceDollars) * 100,
+          price: price === "free" ? 0 : parseFloat(priceDollars),
         }),
       });
       if (!res.ok) {
