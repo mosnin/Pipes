@@ -411,33 +411,48 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
   const handleToggleFavorite = async (row: LibraryRow) => {
     const next = !row.favorite;
-    await fetch("/api/library", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: next }),
-    });
-    toast.success(next ? "Added to favorites" : "Removed from favorites");
-    void refreshLibrary();
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: next }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(next ? "Added to favorites" : "Removed from favorites");
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to update favorites");
+    }
   };
 
   const handleArchive = async (row: LibraryRow) => {
-    await fetch(`/api/systems/${row.id}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "archive" }),
-    });
-    toast.success(`${row.name} archived`);
-    void refreshLibrary();
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "archive" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${row.name} archived`);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to archive ${row.name}`);
+    }
   };
 
   const handleRestore = async (row: LibraryRow) => {
-    await fetch(`/api/systems/${row.id}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "restore" }),
-    });
-    toast.success(`${row.name} restored`);
-    void refreshLibrary();
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "restore" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${row.name} restored`);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to restore ${row.name}`);
+    }
   };
 
   const handleExport = async (row: LibraryRow) => {

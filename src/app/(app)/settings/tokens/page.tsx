@@ -169,6 +169,8 @@ export default function TokensSettingsPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast.success("Copied to clipboard");
+    }).catch(() => {
+      toast.error("Could not copy — please select and copy manually");
     });
   };
 
@@ -565,8 +567,11 @@ export default function TokensSettingsPage() {
                       type="button"
                       onClick={() => {
                         const url = `${window.location.origin}/api/protocol/mcp`;
-                        void navigator.clipboard.writeText(url);
-                        toast.success("Endpoint copied");
+                        navigator.clipboard.writeText(url).then(() => {
+                          toast.success("Endpoint copied");
+                        }).catch(() => {
+                          toast.error("Could not copy — please select and copy manually");
+                        });
                       }}
                       className="shrink-0 px-2 py-1 rounded bg-[#F5F5F7] hover:bg-[#EBEBEB] t-caption text-[#3C3C43] transition-colors"
                       aria-label="Copy MCP endpoint"
