@@ -145,6 +145,15 @@ export function createMockRepositories(): RepositorySet {
         system.updatedAt = now();
         store.writeDb(db);
       },
+      async delete(systemId) {
+        const db = store.readDb();
+        db.systems = db.systems.filter((s) => s.id !== systemId);
+        db.nodes = db.nodes.filter((n) => n.systemId !== systemId);
+        db.pipes = db.pipes.filter((p) => p.systemId !== systemId);
+        db.comments = db.comments.filter((c) => c.systemId !== systemId);
+        db.versions = db.versions.filter((v) => v.systemId !== systemId);
+        store.writeDb(db);
+      },
       async setVisibility(systemId, visibility) {
         const db = store.readDb();
         const idx = db.systems.findIndex((s) => s.id === systemId);

@@ -20,6 +20,7 @@ import {
   Edit,
   RotateCcw,
   Upload,
+  Trash2,
 } from "lucide-react";
 import {
   Button,
@@ -282,6 +283,8 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [importing, setImporting] = useState(false);
   const [page, setPage] = useState(1);
   const [myListings, setMyListings] = useState<Array<{ id: string; title: string; price: number; systemId: string; createdAt: string }>>([]);
+  const [deleteTarget, setDeleteTarget] = useState<LibraryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const refreshListings = useCallback(async () => {
     try {
@@ -455,6 +458,26 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     }
   };
 
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/systems/${deleteTarget.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${deleteTarget.name} deleted permanently`);
+      setDeleteTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to delete ${deleteTarget.name}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleExport = async (row: LibraryRow) => {
     const res = await fetch(`/api/systems/${row.id}/export`);
     if (!res.ok) {
@@ -616,12 +639,20 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 </span>
               </DropdownItem>
               {row.archivedAt ? (
-                <DropdownItem id="restore" onAction={() => handleRestore(row)}>
-                  <span className="flex items-center gap-2 t-label">
-                    <RotateCcw size={14} />
-                    Restore
-                  </span>
-                </DropdownItem>
+                <>
+                  <DropdownItem id="restore" onAction={() => handleRestore(row)}>
+                    <span className="flex items-center gap-2 t-label">
+                      <RotateCcw size={14} />
+                      Restore
+                    </span>
+                  </DropdownItem>
+                  <DropdownItem id="delete" onAction={() => setDeleteTarget(row)}>
+                    <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                      <Trash2 size={14} />
+                      Delete permanently
+                    </span>
+                  </DropdownItem>
+                </>
               ) : (
                 <DropdownItem id="archive" onAction={() => handleArchive(row)}>
                   <span className="flex items-center gap-2 t-label text-[#991B1B]">
@@ -974,6 +1005,36 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           </div>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        title="Delete permanently?"
+        description={`This will permanently delete "${deleteTarget?.name ?? ""}" and all its nodes, pipes, and version history. This cannot be undone.`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setDeleteTarget(null)} isDisabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleDeleteConfirmed}
+              isDisabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+            >
+              {deleting ? <Spinner size="xs" /> : <Trash2 size={14} />}
+              {deleting ? "Deleting..." : "Delete permanently"}
+            </Button>
+          </>
+        }
+      >
+        <p className="t-caption text-[#8E8E93]">
+          To recover the system later, restore it first before deleting.
+        </p>
+      </Dialog>
 
       {/* Import dialog */}
       <Dialog

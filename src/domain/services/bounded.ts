@@ -58,6 +58,7 @@ export class SystemService {
   async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
   async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
   async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
+  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.delete(systemId); }
   async rename(ctx: AppContext, systemId: string, name: string) {
     this.access.ensureCanEdit(ctx);
     const trimmed = name.trim().slice(0, 120);
