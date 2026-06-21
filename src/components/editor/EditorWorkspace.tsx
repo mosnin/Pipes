@@ -32,6 +32,7 @@ import { LoopProposalBanner } from "@/components/editor/LoopProposalBanner";
 import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
 import type { CommandItem } from "@/components/editor/CommandPalette";
 import { LoopVisibilityToggle } from "@/components/editor/LoopVisibilityToggle";
+import { LoopUpgradeGate } from "@/components/editor/LoopUpgradeGate";
 import { PublishToMarketplaceModal } from "@/components/editor/PublishToMarketplaceModal";
 import { toast } from "sonner";
 
@@ -1383,7 +1384,9 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             )}
             {activeSystemPanel === "ai" && (
               <div className="space-y-3">
-                {!pendingSuggestion ? (
+                {data?.entitlements?.aiGeneration === false ? (
+                  <LoopUpgradeGate reason="ai_generation" />
+                ) : !pendingSuggestion ? (
                   <>
                     <p className="t-caption text-[#8E8E93] leading-relaxed">
                       Describe a change and AI will draft it for you to review.
