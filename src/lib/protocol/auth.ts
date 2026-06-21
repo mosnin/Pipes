@@ -28,6 +28,7 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
   const repositories = createRepositories();
   const token = await repositories.agentTokens.findByHash(hashAgentToken(bearer));
   if (!token || token.revokedAt) throw new ProtocolError("AUTH_INVALID", "Invalid protocol token.", 401);
+  if (token.expiresAt && new Date(token.expiresAt) < new Date()) throw new ProtocolError("AUTH_EXPIRED", "Protocol token has expired.", 401);
   await repositories.agentTokens.touchLastUsed(token.id);
   const plan = await repositories.entitlements.getPlan(token.workspaceId);
   const ctx: AppContext = {

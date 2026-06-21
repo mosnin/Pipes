@@ -186,11 +186,14 @@ export class ProtocolService {
     if (ctx.actorType === "agent") throw new Error("Agent tokens cannot manage tokens.");
     this.access.ensureCanManageMembers(ctx);
   }
-  async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string }) {
+  async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string; expiresInDays?: number | null }) {
     this.ensureCanManageTokens(ctx);
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
+    const expiresAt = input.expiresInDays != null
+      ? new Date(Date.now() + input.expiresInDays * 86_400_000).toISOString()
+      : undefined;
     const created = await this.repos.agentTokens.create({
       workspaceId: ctx.workspaceId,
       name: input.name,
@@ -198,7 +201,8 @@ export class ProtocolService {
       systemId: input.systemId,
       tokenHash,
       tokenPreview,
-      createdByUserId: ctx.userId
+      createdByUserId: ctx.userId,
+      expiresAt
     });
     await this.repos.audits.add({
       actorType: ctx.actorType,

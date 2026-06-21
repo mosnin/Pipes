@@ -382,7 +382,8 @@ export function createMockRepositories(): RepositorySet {
           tokenHash: input.tokenHash,
           tokenPreview: input.tokenPreview,
           createdByUserId: input.createdByUserId,
-          createdAt: now()
+          createdAt: now(),
+          expiresAt: input.expiresAt
         });
         store.writeDb(db);
         return { id };
@@ -399,7 +400,8 @@ export function createMockRepositories(): RepositorySet {
             createdByUserId: token.createdByUserId,
             createdAt: token.createdAt,
             lastUsedAt: token.lastUsedAt,
-            revokedAt: token.revokedAt
+            revokedAt: token.revokedAt,
+            expiresAt: token.expiresAt
           }));
       },
       async revoke(id) {
@@ -419,7 +421,8 @@ export function createMockRepositories(): RepositorySet {
           capabilities: token.capabilities,
           systemId: token.systemId,
           createdByUserId: token.createdByUserId,
-          revokedAt: token.revokedAt
+          revokedAt: token.revokedAt,
+          expiresAt: token.expiresAt
         };
       },
       async touchLastUsed(id) {

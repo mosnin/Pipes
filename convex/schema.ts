@@ -115,7 +115,8 @@ export default defineSchema({
     createdByUserId: v.id("users"),
     createdAt: v.string(),
     lastUsedAt: v.optional(v.string()),
-    revokedAt: v.optional(v.string())
+    revokedAt: v.optional(v.string()),
+    expiresAt: v.optional(v.string())
   }).index("by_workspace", ["workspaceId"]).index("by_token_hash", ["tokenHash"]),
   audit_events: defineTable({
     actorType: v.union(v.literal("user"), v.literal("agent")),

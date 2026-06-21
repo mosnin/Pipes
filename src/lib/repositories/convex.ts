@@ -305,7 +305,8 @@ export function createConvexRepositories(): RepositorySet {
           systemId: input.systemId as never,
           tokenHash: input.tokenHash,
           tokenPreview: input.tokenPreview,
-          createdByUserId: input.createdByUserId as never
+          createdByUserId: input.createdByUserId as never,
+          expiresAt: input.expiresAt
         });
         return { id: String(id) };
       },
@@ -321,7 +322,8 @@ export function createConvexRepositories(): RepositorySet {
           createdByUserId: String(row.createdByUserId),
           createdAt: row.createdAt,
           lastUsedAt: row.lastUsedAt,
-          revokedAt: row.revokedAt
+          revokedAt: row.revokedAt,
+          expiresAt: row.expiresAt
         }));
       },
       async revoke(id) {
@@ -339,7 +341,8 @@ export function createConvexRepositories(): RepositorySet {
           capabilities: row.capabilities ?? [],
           systemId: row.systemId ? String(row.systemId) : undefined,
           createdByUserId: String(row.createdByUserId),
-          revokedAt: row.revokedAt
+          revokedAt: row.revokedAt,
+          expiresAt: row.expiresAt
         };
       },
       async touchLastUsed(id) {

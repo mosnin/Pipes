@@ -16,10 +16,12 @@ export async function POST(request: Request) {
   try {
     const { ctx, services } = await getServerApp();
     const body = await request.json();
+    const expiresInDays = body.expiresInDays != null ? Number(body.expiresInDays) : null;
     const created = await services.protocol.createToken(ctx, {
       name: body.name,
       capabilities: body.capabilities ?? [],
-      systemId: body.systemId
+      systemId: body.systemId,
+      expiresInDays: Number.isFinite(expiresInDays) && expiresInDays! > 0 ? expiresInDays : null
     });
     return NextResponse.json(success({ ...created, authHeaderExample: `Authorization: Bearer ${created.secret}` }));
   } catch (error) {

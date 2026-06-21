@@ -335,7 +335,8 @@ export const createAgentToken = mutation({
     systemId: v.optional(v.id("systems")),
     tokenHash: v.string(),
     tokenPreview: v.string(),
-    createdByUserId: v.id("users")
+    createdByUserId: v.id("users"),
+    expiresAt: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     return ctx.db.insert("agent_tokens", {
@@ -346,7 +347,8 @@ export const createAgentToken = mutation({
       tokenHash: args.tokenHash,
       tokenPreview: args.tokenPreview,
       createdByUserId: args.createdByUserId,
-      createdAt: now()
+      createdAt: now(),
+      expiresAt: args.expiresAt
     });
   }
 });

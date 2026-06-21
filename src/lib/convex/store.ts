@@ -79,7 +79,7 @@ type DbShape = {
   invites: Array<{ id: string; workspaceId: string; email: string; role: Role; token: string; status: "pending" | "accepted" | "canceled" | "expired"; createdAt: string; expiresAt: string; invitedBy?: string; acceptedBy?: string; acceptedAt?: string; canceledAt?: string }>;
   presence: PresenceRecord[];
   planState: Array<{ workspaceId: string; plan: Plan; status: "active" | "canceled" | "past_due" | "trialing"; updatedAt: string; externalCustomerId?: string; externalSubscriptionId?: string }>;
-  agentTokens: Array<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string }>;
+  agentTokens: Array<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string; expiresAt?: string }>;
   audits: Array<{ id: string; actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string; createdAt: string }>;
   idempotency: Array<{ id: string; workspaceId: string; actorId: string; route: string; key: string; requestHash: string; responseJson: string; statusCode: number; createdAt: string }>;
   rateLimits: Array<{ id: string; bucket: string; windowStart: string; count: number; updatedAt: string }>;

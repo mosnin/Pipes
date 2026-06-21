@@ -268,10 +268,10 @@ export type RepositorySet = {
   entitlements: EntitlementsRepository;
   feedback: FeedbackRepository;
   agentTokens: {
-    create(input: { workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string }): Promise<{ id: string }>;
-    list(workspaceId: string): Promise<Array<{ id: string; name: string; capabilities: string[]; systemId?: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string }>>;
+    create(input: { workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; expiresAt?: string }): Promise<{ id: string }>;
+    list(workspaceId: string): Promise<Array<{ id: string; name: string; capabilities: string[]; systemId?: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string; expiresAt?: string }>>;
     revoke(id: string): Promise<void>;
-    findByHash(tokenHash: string): Promise<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; createdByUserId: string; revokedAt?: string } | null>;
+    findByHash(tokenHash: string): Promise<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; createdByUserId: string; revokedAt?: string; expiresAt?: string } | null>;
     touchLastUsed(id: string): Promise<void>;
   };
   audits: {
