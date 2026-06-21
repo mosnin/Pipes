@@ -75,7 +75,7 @@ function CopyButton({ text }: { text: string }) {
 export function ConnectAgentModal({ systemId, systemName, open = true, onClose }: Props) {
   const [step, setStep] = useState<Step>("capabilities");
   const [capabilities, setCapabilities] = useState<string[]>(["systems:read", "schema:read", "validation:read"]);
-  const [expiration, setExpiration] = useState<string>("30d");
+  const [expiration, setExpiration] = useState<string>("30");
   const [generating, setGenerating] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -95,29 +95,26 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch("/api/agent-tokens", {
+      const expiresInDays = expiration === "never" ? null : parseInt(expiration, 10);
+      const res = await fetch("/api/settings/tokens", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           systemId,
           capabilities,
-          expiresIn: expiration,
-          name: `${systemName} agent token`,
+          expiresInDays,
+          name: `${systemName} agent`,
         }),
       });
       const body = await res.json();
       if (!res.ok || !body.ok) {
-        // Fallback: synthesize a placeholder token to keep UX flow alive in mock environments
-        const placeholder = `ptk_${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
-        setToken(placeholder);
-        setError(body.error ? String(body.error) : null);
+        setError(body.error ? String(body.error) : "Failed to generate token");
+        setStep("reveal");
       } else {
-        setToken(String(body.data?.token ?? body.data?.value ?? body.data ?? ""));
+        setToken(String(body.data?.secret ?? ""));
+        setStep("reveal");
       }
-      setStep("reveal");
     } catch (err) {
-      const placeholder = `ptk_${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 12)}`;
-      setToken(placeholder);
       setError(String(err));
       setStep("reveal");
     } finally {
@@ -250,11 +247,11 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
               </p>
             </div>
             <Select value={expiration} onChange={(e) => setExpiration(e.target.value)}>
-              <option value="1d">1 day</option>
-              <option value="7d">7 days</option>
-              <option value="30d">30 days (default)</option>
-              <option value="90d">90 days</option>
-              <option value="365d">1 year</option>
+              <option value="1">1 day</option>
+              <option value="7">7 days</option>
+              <option value="30">30 days (default)</option>
+              <option value="90">90 days</option>
+              <option value="365">1 year</option>
               <option value="never">Never (not recommended)</option>
             </Select>
             <HelpText tone={expiration === "never" ? "error" : "muted"}>
@@ -284,7 +281,9 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="t-caption text-[#8E8E93]">Lifetime</span>
-                <span className="t-label text-[#111]">{expiration}</span>
+                <span className="t-label text-[#111]">
+                  {expiration === "never" ? "No expiration" : expiration === "1" ? "1 day" : expiration === "7" ? "7 days" : expiration === "365" ? "1 year" : `${expiration} days`}
+                </span>
               </div>
               <div className="flex items-start justify-between gap-3">
                 <span className="t-caption text-[#8E8E93]">Capabilities</span>
@@ -304,11 +303,15 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
         {step === "reveal" && (
           <section className="space-y-3">
             <div className="flex items-start gap-2">
-              <Shield size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <Shield size={16} className={token ? "text-amber-600" : "text-red-500"} aria-hidden />
               <div>
-                <h3 className="t-label font-semibold text-[#111]">Copy your token now</h3>
+                <h3 className="t-label font-semibold text-[#111]">
+                  {token ? "Copy your token now" : "Token generation failed"}
+                </h3>
                 <p className="t-caption text-[#8E8E93] mt-0.5">
-                  This secret will not be shown again. Store it in your agent secrets.
+                  {token
+                    ? "This secret will not be shown again. Store it in your agent secrets."
+                    : "Check Settings > Developer for manual token creation."}
                 </p>
               </div>
             </div>
@@ -352,9 +355,9 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
 }`}
               </pre>
             </div>
-            {error && (
+            {error && !token && (
               <HelpText tone="error">
-                {error}. Showing local placeholder for preview.
+                {error}
               </HelpText>
             )}
             <div className="flex items-center justify-between gap-2 pt-1">

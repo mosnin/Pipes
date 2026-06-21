@@ -30,11 +30,13 @@ export interface BillingService {
 
 class MockBillingService implements BillingService {
   async createCheckoutSession(input: CheckoutInput) {
-    return { checkoutUrl: `${input.successUrl}?mockBilling=success&plan=${input.plan}&workspaceId=${input.workspaceId}` };
+    const base = env.NEXT_PUBLIC_APP_URL ?? "";
+    const params = new URLSearchParams({ plan: String(input.plan), workspaceId: input.workspaceId, returnUrl: input.successUrl });
+    return { checkoutUrl: `${base}/api/billing/mock-confirm?${params.toString()}` };
   }
 
   async createPortalSession(input: PortalInput) {
-    return { portalUrl: `${input.returnUrl}?mockBilling=portal` };
+    return { portalUrl: `${input.returnUrl}?upgrade=portal` };
   }
 
   async parseWebhook(request: Request): Promise<PlanStateEvent | null> {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { UsageInfraCard } from "@/components/billing/UsageInfraCard";
 import {
@@ -114,6 +115,7 @@ const PLAN_DETAILS: Record<"Pro" | "Builder", { price: string; features: string[
 // ── page ──────────────────────────────────────────────────────────────────
 
 export default function BillingSettingsPage() {
+  const searchParams = useSearchParams();
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
@@ -138,6 +140,25 @@ export default function BillingSettingsPage() {
   useEffect(() => {
     loadSummary();
   }, [loadSummary]);
+
+  useEffect(() => {
+    const upgrade = searchParams.get("upgrade");
+    const plan = searchParams.get("plan");
+    if (upgrade === "success" && plan) {
+      toast.success(`Upgraded to ${plan} — welcome!`);
+      loadSummary();
+      // Clean the URL so a refresh doesn't re-toast.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      url.searchParams.delete("plan");
+      window.history.replaceState({}, "", url.toString());
+    } else if (upgrade === "portal") {
+      toast.success("Billing portal session ended.");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams, loadSummary]);
 
   const startCheckout = async (plan: "Pro" | "Builder") => {
     setCheckoutLoading(plan);
