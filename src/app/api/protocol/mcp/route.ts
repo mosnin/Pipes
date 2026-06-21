@@ -9,8 +9,12 @@ export async function POST(request: Request) {
   const requestId = crypto.randomUUID();
   try {
     const payload = (await request.json()) as MCPRequest;
-    const { ctx, services } = await getProtocolContext(request);
+    const { ctx, services, repositories } = await getProtocolContext(request);
     await services.guards.consumeRateLimit(ctx, "mcp", `tool:${payload.tool}`, 120, 60);
+    // Meter the protocol call for usage accounting (non-blocking).
+    void repositories.payments
+      ?.recordUsage({ workspaceId: ctx.workspaceId, meter: "protocol_call", units: 1, resourceId: "usage:protocol_call" })
+      ?.catch(() => undefined);
     const input = payload.input ?? {};
 
     if (payload.tool === "list_systems") {

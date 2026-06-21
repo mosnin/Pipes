@@ -19,10 +19,11 @@ function readBearer(request: Request) {
   return header.slice(7).trim();
 }
 
-export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices> }> {
+export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices>; repositories: ReturnType<typeof createRepositories> }> {
   const bearer = readBearer(request);
   if (!bearer) {
-    return getServerApp();
+    const app = await getServerApp();
+    return { ctx: app.ctx, services: app.services, repositories: app.repositories };
   }
   const repositories = createRepositories();
   const token = await repositories.agentTokens.findByHash(hashAgentToken(bearer));
@@ -39,7 +40,7 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
     capabilities: token.capabilities,
     systemScope: token.systemId
   };
-  return { ctx, services: createBoundedServices(repositories) };
+  return { ctx, services: createBoundedServices(repositories), repositories };
 }
 
 export function requireCapability(ctx: AppContext, capability: AgentCapability, systemId?: string) {

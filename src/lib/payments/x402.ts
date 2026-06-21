@@ -86,6 +86,14 @@ function devVoucherKey(): string {
   return env.PADDLE_WEBHOOK_SECRET ?? env.X402_PAY_TO_ADDRESS ?? "looper-x402-dev";
 }
 
+// The X-PAYMENT-RESPONSE header value the server returns on a settled request,
+// per the x402 spec: a base64 receipt the caller can record.
+export function settlementResponseHeader(result: PaymentResult): string | null {
+  if (!result.ok) return null;
+  const receipt = { success: true, payer: result.payer, transaction: result.txHash ?? null, settlement: result.settlement };
+  return Buffer.from(JSON.stringify(receipt)).toString("base64");
+}
+
 export function signDevVoucher(resource: string, atomicAmount: string, payer: string): string {
   const mac = crypto
     .createHmac("sha256", devVoucherKey())

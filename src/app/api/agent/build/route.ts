@@ -357,6 +357,11 @@ export async function POST(request: Request): Promise<Response> {
       .incrementMonthly({ userId: ctx.userId, workspaceId: ctx.workspaceId, monthKey, delta: 1 })
       .catch(() => undefined);
 
+    // Meter the build for usage accounting (one unit per turn).
+    void repositories.payments
+      ?.recordUsage({ workspaceId: ctx.workspaceId, meter: "agent_build", units: 1, resourceId: "usage:agent_build" })
+      ?.catch(() => undefined);
+
     const runtimeValues = { conversationId, turnId: turn.id, systemId: body.systemId };
 
     const stream = new ReadableStream<Uint8Array>({

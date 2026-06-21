@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { getListing } from "@/lib/marketplace/catalog";
 import { gateX402 } from "@/lib/payments/middleware";
+import { settlementResponseHeader } from "@/lib/payments/x402";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,10 @@ export async function POST(req: Request) {
         })
         .catch(() => undefined);
     }
-    return NextResponse.json({ ok: true, data: { systemId } });
+    const res = NextResponse.json({ ok: true, data: { systemId } });
+    const receipt = settlementResponseHeader(gate.settlement);
+    if (gate.amountUsd > 0 && receipt) res.headers.set("x-payment-response", receipt);
+    return res;
   } catch (err) {
     return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 400 });
   }
