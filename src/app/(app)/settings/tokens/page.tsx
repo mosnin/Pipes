@@ -551,6 +551,37 @@ export default function TokensSettingsPage() {
                 </CardFooter>
               </div>
             )}
+
+            <div className="border-t border-black/[0.06] pt-3 space-y-2">
+              <div className="t-label font-semibold text-[#111]">Next step: connect an agent</div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-[80px] t-caption text-[#8E8E93] shrink-0">Endpoint</div>
+                  <div className="flex-1 flex items-center gap-1.5">
+                    <code className="flex-1 bg-[#F5F5F7] border border-black/[0.06] rounded px-2 py-1 t-caption font-mono text-indigo-700 truncate">
+                      {typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${window.location.origin}/api/protocol/mcp`;
+                        void navigator.clipboard.writeText(url);
+                        toast.success("Endpoint copied");
+                      }}
+                      className="shrink-0 px-2 py-1 rounded bg-[#F5F5F7] hover:bg-[#EBEBEB] t-caption text-[#3C3C43] transition-colors"
+                      aria-label="Copy MCP endpoint"
+                    >
+                      <Copy size={11} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[#F5F5F7] rounded-lg p-3 space-y-1.5 t-caption text-[#3C3C43]">
+                <div><strong className="text-[#111]">Claude Projects:</strong> Settings → Project → Add MCP server → paste URL + auth header</div>
+                <div><strong className="text-[#111]">GPT Actions:</strong> Configure → Authentication → Bearer Token → paste token</div>
+                <div><strong className="text-[#111]">Any agent:</strong> <code className="font-mono text-indigo-700">Authorization: Bearer &lt;token&gt;</code> on each request</div>
+              </div>
+            </div>
           </div>
         )}
       </Dialog>

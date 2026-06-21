@@ -6,6 +6,7 @@ import { createMockRepositories } from "@/lib/repositories/mock";
 import { hashAgentToken, hasCapability, type AgentCapability } from "@/lib/protocol/tokens";
 import { getServerApp } from "@/lib/composition/server";
 import { ProtocolError } from "@/lib/protocol/errors";
+import { getEntitlements } from "@/domain/templates/plans";
 
 function createRepositories() {
   return !runtimeFlags.useMocks && runtimeFlags.hasConvex
@@ -31,6 +32,9 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
   if (token.expiresAt && new Date(token.expiresAt) < new Date()) throw new ProtocolError("AUTH_EXPIRED", "Protocol token has expired.", 401);
   await repositories.agentTokens.touchLastUsed(token.id);
   const plan = await repositories.entitlements.getPlan(token.workspaceId);
+  if (!getEntitlements(plan).apiMcpAccess) {
+    throw new ProtocolError("PLAN_LIMIT", "MCP access requires a Pro or higher plan.", 403);
+  }
   const ctx: AppContext = {
     userId: token.createdByUserId,
     workspaceId: token.workspaceId,

@@ -22,6 +22,7 @@ import {
   type StatusBadgeTone,
 } from "@/components/ui";
 import { EmptyMembers } from "@/components/illustrations";
+import { LoopUpgradeGate } from "@/components/editor/LoopUpgradeGate";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -118,6 +119,7 @@ export default function CollaborationSettingsPage() {
   const [query, setQuery]           = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [loading, setLoading]       = useState(true);
+  const [collaboration, setCollaboration] = useState<boolean | null>(null);
 
   // ── Invite dialog ─────────────────────────────────────────────────────────
   const [inviteOpen, setInviteOpen]         = useState(false);
@@ -146,14 +148,23 @@ export default function CollaborationSettingsPage() {
     if (query) params.set("q", query);
     if (roleFilter && roleFilter !== "all") params.set("role", roleFilter);
     setLoading(true);
-    fetch(`/api/workspace/collaborators?${params.toString()}`)
-      .then((r) => r.json())
-      .then((d: { data?: CollaboratorsData }) =>
-        setRows(d.data ?? { members: [], invites: [] }),
-      )
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [query, roleFilter]);
+    Promise.all([
+      fetch(`/api/workspace/collaborators?${params.toString()}`)
+        .then((r) => r.json())
+        .then((d: { data?: CollaboratorsData }) =>
+          setRows(d.data ?? { members: [], invites: [] }),
+        )
+        .catch(() => {}),
+      collaboration === null
+        ? fetch("/api/billing/status")
+            .then((r) => r.json())
+            .then((d: { data?: { entitlements?: { collaboration?: boolean } } }) => {
+              setCollaboration(d.data?.entitlements?.collaboration ?? false);
+            })
+            .catch(() => { setCollaboration(true); })
+        : Promise.resolve(),
+    ]).finally(() => setLoading(false));
+  }, [query, roleFilter, collaboration]);
 
   useEffect(() => {
     const timer = setTimeout(() => load(), 220);
@@ -375,16 +386,22 @@ export default function CollaborationSettingsPage() {
         title="Members and teams"
         subtitle="Manage who can view, comment on, and edit this workspace."
         actions={
-          <Button
-            variant="primary"
-            onPress={() => setInviteOpen(true)}
-            className="flex items-center gap-1.5"
-          >
-            <UserPlus size={14} />
-            Invite member
-          </Button>
+          collaboration !== false ? (
+            <Button
+              variant="primary"
+              onPress={() => setInviteOpen(true)}
+              className="flex items-center gap-1.5"
+            >
+              <UserPlus size={14} />
+              Invite member
+            </Button>
+          ) : undefined
         }
       />
+
+      {collaboration === false && (
+        <LoopUpgradeGate reason="collaboration" />
+      )}
 
       {/* ── Members ────────────────────────────────────────────────────────── */}
       <CardShell>
