@@ -281,6 +281,17 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
   const [page, setPage] = useState(1);
+  const [myListings, setMyListings] = useState<Array<{ id: string; title: string; price: number; systemId: string; createdAt: string }>>([]);
+
+  const refreshListings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/marketplace/listings");
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.data)) setMyListings(data.data);
+    } catch {
+      // non-critical; silently skip
+    }
+  }, []);
 
   const refreshLibrary = useCallback(
     async (q?: string) => {
@@ -303,6 +314,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
   useEffect(() => {
     void refreshLibrary("");
+    void refreshListings();
     setPage(1);
   }, []);
 
@@ -917,6 +929,36 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           )}
         </div>
       </div>
+
+      {/* Published to marketplace */}
+      {myListings.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-indigo-100 bg-indigo-50/40 px-6 py-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="t-label font-semibold text-indigo-900">Published to marketplace</h2>
+            <a href="/marketplace" className="t-caption text-indigo-600 hover:text-indigo-700 hover:underline">
+              Browse marketplace →
+            </a>
+          </div>
+          <div className="flex flex-col gap-2">
+            {myListings.map((listing) => (
+              <div key={listing.id} className="flex items-center justify-between gap-3 bg-white rounded-xl border border-indigo-100 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="t-label font-medium text-[#111] truncate">{listing.title}</p>
+                  <p className="t-caption text-[#8E8E93]">
+                    {listing.price === 0 ? "Free" : `$${listing.price}/mo`} · Under review
+                  </p>
+                </div>
+                <a
+                  href={`/systems/${listing.systemId}`}
+                  className="t-caption text-indigo-600 hover:text-indigo-700 shrink-0"
+                >
+                  Edit loop →
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Import dialog */}
       <Dialog

@@ -55,12 +55,15 @@ export function PublishToMarketplaceModal({ systemId, systemName, onClose }: Pro
         </div>
 
         {done ? (
-          <div className="text-center py-6">
+          <div className="text-center py-6 flex flex-col gap-3">
             <p className="t-body text-[#3C3C43]">
-              <strong>{systemName}</strong> is now listed on the Looper Marketplace.
+              <strong>{systemName}</strong> has been submitted to the marketplace.
             </p>
-            <a href="/marketplace" className="mt-4 inline-block text-[#4F46E5] t-label hover:underline">
-              View marketplace &rarr;
+            <p className="t-caption text-[#8E8E93]">
+              Your listing will be reviewed before it appears publicly. You can track it from your dashboard.
+            </p>
+            <a href="/dashboard" className="mt-2 inline-block text-[#4F46E5] t-label hover:underline">
+              Back to dashboard &rarr;
             </a>
           </div>
         ) : (
