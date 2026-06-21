@@ -348,10 +348,12 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       setHeroSubmitting(true);
       const id = toast.loading("Creating system...");
       try {
+        const words = text.split(/\s+/).filter(Boolean);
+        const systemName = words.slice(0, 6).join(" ").slice(0, 48) || "New Loop";
         const res = await fetch("/api/systems", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name: "Untitled System" }),
+          body: JSON.stringify({ name: systemName }),
         });
         const data = await res.json();
         if (data.ok) {

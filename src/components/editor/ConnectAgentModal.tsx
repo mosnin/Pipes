@@ -251,7 +251,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
             <HelpText tone={expiration === "never" ? "error" : "muted"}>
               {expiration === "never"
                 ? "Long-lived tokens increase blast radius if leaked. Prefer 30 days."
-                : "We will warn you 7 days before expiry."}
+                : "Expired tokens are rejected automatically. Rotate from Settings > Tokens."}
             </HelpText>
           </section>
         )}
