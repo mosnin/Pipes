@@ -127,6 +127,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
   const [versionName, setVersionName] = useState("checkpoint");
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [aiEditPrompt, setAiEditPrompt] = useState("Improve reliability and add guardrails.");
@@ -1377,9 +1378,54 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
             )}
             {activeSystemPanel === "comments" && (
               <div className="space-y-2">
-                <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add comment" />
-                <Button onClick={async () => { await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) }); setComment(""); reload(); }}>Post Comment</Button>
-                <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+                <Input
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && comment.trim() && !postingComment) {
+                      e.preventDefault();
+                      void (async () => {
+                        setPostingComment(true);
+                        try {
+                          const res = await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment.trim(), nodeId: selectedNodeId }) });
+                          if (!res.ok) throw new Error();
+                          setComment("");
+                          reload();
+                        } catch {
+                          toast.error("Failed to post comment");
+                        } finally {
+                          setPostingComment(false);
+                        }
+                      })();
+                    }
+                  }}
+                  placeholder={selectedNodeId ? "Comment on this node… (Enter to post)" : "Comment on this system… (Enter to post)"}
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  isDisabled={postingComment || !comment.trim()}
+                  onClick={async () => {
+                    setPostingComment(true);
+                    try {
+                      const res = await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment.trim(), nodeId: selectedNodeId }) });
+                      if (!res.ok) throw new Error();
+                      setComment("");
+                      reload();
+                    } catch {
+                      toast.error("Failed to post comment");
+                    } finally {
+                      setPostingComment(false);
+                    }
+                  }}
+                >
+                  {postingComment ? <Spinner size="sm" /> : "Post"}
+                </Button>
+                {data.comments.length === 0 ? (
+                  <p className="t-caption text-[#8E8E93] text-center py-4">No comments yet. {selectedNodeId ? "Comment on the selected node." : "Select a node to comment on it, or post a system-level comment."}</p>
+                ) : (
+                  <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+                )}
               </div>
             )}
             {activeSystemPanel === "versions" && (
