@@ -15,6 +15,7 @@ describe("audit filtering", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|audit", email: "audit@pipes.local", name: "Audit" });
+    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Team", status: "active" });
     const systemId = await services.systems.create(ctx, { name: "S1", description: "" });
 
     await services.protocol.writeAudit(ctx, { action: "protocol.graph.addNode", targetType: "system", targetId: systemId, systemId, outcome: "success", metadata: JSON.stringify({ transport: "rest" }) });

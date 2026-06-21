@@ -23,6 +23,8 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(success(audits));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    const e = error as Error;
+    const status = (e.message ?? "").includes("requires") ? 403 : 400;
+    return NextResponse.json(failure(e.message), { status });
   }
 }

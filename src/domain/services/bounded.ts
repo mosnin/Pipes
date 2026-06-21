@@ -260,6 +260,8 @@ export class ProtocolService {
   }
   async listAudits(ctx: AppContext, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }) {
     this.access.ensureCanManageMembers(ctx);
+    const ent = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!ent.auditLog) throw new Error("Audit log requires Team or Enterprise plan.");
     return this.repos.audits.list(ctx.workspaceId, filter);
   }
   async writeAudit(ctx: AppContext, input: { action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; systemId?: string; metadata?: string }) {
