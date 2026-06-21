@@ -77,7 +77,7 @@ const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
 type InspectorTab = "config" | "advanced";
-type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent";
+type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent" | "settings";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
 
 // Best-effort inverse for a composite turn. Reverses the action list and
@@ -179,6 +179,8 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
   const [renamingSystem, setRenamingSystem] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
   // Tutorial-related state. `tutorialSeen` is hydrated from localStorage on
   // first mount; `tutorialPromptStarted` flips the moment the user types in
   // the conversation input; `tutorialAgentViewSeen` flips when the user opens
@@ -204,6 +206,17 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     });
     reload();
   }, [renameValue, data?.system.name, systemId, reload]);
+
+  const commitDescription = useCallback(async () => {
+    setEditingDescription(false);
+    if (descriptionDraft === (data?.system.description ?? "")) return;
+    await fetch(`/api/systems/${systemId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ description: descriptionDraft.trim() }),
+    });
+    reload();
+  }, [descriptionDraft, data?.system.description, systemId, reload]);
 
   useEffect(() => {
     if (!data) return;
@@ -950,7 +963,29 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 {data.system.name}
               </h1>
             )}
-            {data.system.description && <p className="t-caption text-[#8E8E93] truncate">{data.system.description}</p>}
+            {editingDescription ? (
+              <input
+                type="text"
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                onBlur={() => void commitDescription()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void commitDescription();
+                  if (e.key === "Escape") setEditingDescription(false);
+                }}
+                placeholder="Add a description..."
+                className="t-caption text-[#3C3C43] bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-sm"
+                autoFocus
+              />
+            ) : (
+              <p
+                className="t-caption text-[#8E8E93] truncate cursor-pointer hover:text-[#3C3C43] transition-colors"
+                title="Click to edit description"
+                onClick={() => { setDescriptionDraft(data.system.description ?? ""); setEditingDescription(true); }}
+              >
+                {data.system.description || <span className="italic opacity-60">Add description...</span>}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <AvatarStack names={data.presence.map((p) => p.name)} />

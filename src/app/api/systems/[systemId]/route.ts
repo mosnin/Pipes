@@ -49,8 +49,9 @@ export async function PATCH(request: Request, { params }: Params) {
   try {
     const { ctx, services } = await getServerApp();
     const { systemId } = await params;
-    const body = await request.json() as { name?: string };
+    const body = await request.json() as { name?: string; description?: string };
     if (body.name !== undefined) await services.systems.rename(ctx, systemId, body.name);
+    if (body.description !== undefined) await services.systems.updateDescription(ctx, systemId, body.description);
     return NextResponse.json(success({ systemId }));
   } catch (error) {
     return NextResponse.json(failure((error as Error).message), { status: 400 });

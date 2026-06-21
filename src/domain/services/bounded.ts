@@ -83,6 +83,10 @@ export class SystemService {
     if (!trimmed) throw new Error("Name cannot be empty.");
     await this.repos.systems.rename(systemId, trimmed);
   }
+  async updateDescription(ctx: AppContext, systemId: string, description: string) {
+    this.access.ensureCanEdit(ctx);
+    await this.repos.systems.updateDescription(systemId, description.trim().slice(0, 500));
+  }
   async setVisibility(ctx: AppContext, systemId: string, visibility: "public" | "private") {
     this.access.ensureCanEdit(ctx);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);

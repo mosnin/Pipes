@@ -96,6 +96,10 @@ export function createConvexRepositories(): RepositorySet {
       async rename(systemId, name) {
         const client = getConvexHttpClient();
         await client.mutation((api as any).app.renameSystem, { systemId: systemId as never, name });
+      },
+      async updateDescription(systemId, description) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.updateSystemDescription, { systemId: systemId as never, description });
       }
     },
     graph: {

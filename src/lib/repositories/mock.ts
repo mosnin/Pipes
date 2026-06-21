@@ -169,6 +169,14 @@ export function createMockRepositories(): RepositorySet {
         system.name = name;
         system.updatedAt = now();
         store.writeDb(db);
+      },
+      async updateDescription(systemId, description) {
+        const db = store.readDb();
+        const system = db.systems.find((s) => s.id === systemId);
+        if (!system) throw new Error("System not found.");
+        system.description = description;
+        system.updatedAt = now();
+        store.writeDb(db);
       }
     },
     graph: {
