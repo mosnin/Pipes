@@ -20,8 +20,9 @@ describe("ai + template + import/export", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|a", email: "a@pipes.local", name: "A" });
-    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Pro", status: "active" });
-    await expect(services.ai.generateDraft(ctx, { prompt: "build" })).rejects.toThrow("Builder");
+    // Free plan has no AI generation — Pro and above do.
+    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Free", status: "active" });
+    await expect(services.ai.generateDraft(ctx, { prompt: "build" })).rejects.toThrow();
   });
 
   it("supports generate draft then commit integration flow", async () => {

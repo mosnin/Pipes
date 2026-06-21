@@ -582,8 +582,7 @@ export default function PricingPage() {
               Start free. Pay only when you scale.
             </h2>
             <p className="mt-5 mx-auto max-w-lg t-body text-[#C7C7CC]">
-              Describe your system. Watch it build itself. The first 50 builds
-              are on us.
+              Start with 3 public loops for free. AI-assisted builds unlock on Pro.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <TrackedLink

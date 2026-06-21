@@ -48,7 +48,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     advancedValidation: true,
     simulation: true,
     apiMcpAccess: true,
-    aiGeneration: false,
+    aiGeneration: true,
     sso: false,
     auditLog: false,
     privateRegistry: false,
