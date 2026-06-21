@@ -1529,16 +1529,22 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
                 ) : (
                   <p className="t-label text-[#8E8E93] py-2">Loading…</p>
                 )}
-                <AgentConnectPanel systemId={systemId} mcpReadWrite={data?.entitlements?.mcpReadWrite} />
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setShowConnectModal(true)}
-                  className="w-full flex items-center justify-center gap-1.5"
-                >
-                  <Zap size={13} />
-                  Generate access token
-                </Button>
+                {data?.entitlements?.mcpReadWrite === false ? (
+                  <LoopUpgradeGate reason="mcp_access" />
+                ) : (
+                  <>
+                    <AgentConnectPanel systemId={systemId} mcpReadWrite={data?.entitlements?.mcpReadWrite} />
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setShowConnectModal(true)}
+                      className="w-full flex items-center justify-center gap-1.5"
+                    >
+                      <Zap size={13} />
+                      Generate access token
+                    </Button>
+                  </>
+                )}
               </div>
             )}
             {!activeSystemPanel && (

@@ -8,7 +8,7 @@ import { Lock, Zap } from "lucide-react";
 import Link from "next/link";
 
 interface LoopUpgradeGateProps {
-  reason: "private_loops" | "loop_limit" | "marketplace_selling" | "mcp_write" | "ai_generation";
+  reason: "private_loops" | "loop_limit" | "marketplace_selling" | "mcp_write" | "ai_generation" | "mcp_access";
   current?: number;
   limit?: number;
 }
@@ -33,6 +33,10 @@ const REASON_COPY: Record<LoopUpgradeGateProps["reason"], { title: string; body:
   ai_generation: {
     title: "AI-assisted editing requires Pro",
     body: "Describe a change and AI drafts it on the canvas for you. Available on the Pro plan and above.",
+  },
+  mcp_access: {
+    title: "MCP tokens require Pro",
+    body: "Generate a scoped token and paste it into Claude, GPT, or any agent. The same loop your team reviews is what any agent reads. Available on Pro and above.",
   },
 };
 

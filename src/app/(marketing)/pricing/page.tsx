@@ -315,7 +315,7 @@ const COMPARISON: readonly ComparisonGroup[] = [
         feature: "SAML SSO",
         starter: false,
         pro: false,
-        team: false,
+        team: true,
         enterprise: true,
       },
       {
@@ -392,13 +392,13 @@ const FAQS: readonly FaqItem[] = [
     id: "faq-cap",
     question: "What happens if I exceed my monthly builds?",
     answer:
-      "On Starter, the agent pauses for the rest of the cycle. Your work persists. Manual editing keeps working. Upgrade to Team and builds restart immediately, with no lost state.",
+      "On Free, AI-assisted builds are not included — manual editing always works. Upgrade to Pro and builds restart immediately, with no lost state.",
   },
   {
     id: "faq-keys",
     question: "Can I bring my own model keys?",
     answer:
-      "On Team and Enterprise, yes. Drop in your OpenAI or Anthropic key per workspace. Bills land on your provider, not on us. Starter uses our shared key with a monthly cap.",
+      "On Team and Enterprise, yes. Drop in your OpenAI or Anthropic key per workspace. Bills land on your provider, not on us. Free uses our shared key; Pro includes unlimited AI builds on our key.",
   },
   {
     id: "faq-trial",
