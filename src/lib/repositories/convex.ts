@@ -886,6 +886,27 @@ export function createConvexRepositories(): RepositorySet {
         return { id: String(r._id), systemId: String(r.systemId), workspaceId: String(r.workspaceId), title: r.title, description: r.description, price: r.price, createdAt: r.createdAt };
       },
     },
+    payments: {
+      async recordSettlement(input) {
+        const client = getConvexHttpClient();
+        const id = await client.mutation((api as any).app.recordPaymentSettlement, { workspaceId: input.workspaceId as never, resourceId: input.resourceId, amountUsd: input.amountUsd, payer: input.payer, scheme: input.scheme, txHash: input.txHash });
+        return String(id);
+      },
+      async listSettlements(workspaceId) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listPaymentSettlements, { workspaceId: workspaceId as never });
+        return rows.map((r: any) => ({ id: String(r._id), workspaceId: String(r.workspaceId), resourceId: r.resourceId, amountUsd: r.amountUsd, payer: r.payer, scheme: r.scheme, txHash: r.txHash, createdAt: r.createdAt }));
+      },
+      async recordUsage(input) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.recordUsageEvent, { workspaceId: input.workspaceId as never, meter: input.meter, units: input.units, resourceId: input.resourceId });
+      },
+      async getUsageTotal(input) {
+        const client = getConvexHttpClient();
+        const total = await client.query((api as any).app.getUsageTotal, { workspaceId: input.workspaceId as never, meter: input.meter, sinceIso: input.sinceIso });
+        return { units: typeof total === "number" ? total : (total?.units ?? 0) };
+      },
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const client = getConvexHttpClient();

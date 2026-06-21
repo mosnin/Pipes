@@ -379,6 +379,12 @@ export type RepositorySet = {
     listByWorkspace(workspaceId: string): Promise<Array<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string }>>;
     get(listingId: string): Promise<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string } | null>;
   };
+  payments: {
+    recordSettlement(input: { workspaceId: string; resourceId: string; amountUsd: number; payer: string; scheme: string; txHash?: string }): Promise<string>;
+    listSettlements(workspaceId: string): Promise<Array<{ id: string; workspaceId: string; resourceId: string; amountUsd: number; payer: string; scheme: string; txHash?: string; createdAt: string }>>;
+    recordUsage(input: { workspaceId: string; meter: string; units: number; resourceId: string }): Promise<void>;
+    getUsageTotal(input: { workspaceId: string; meter: string; sinceIso?: string }): Promise<{ units: number }>;
+  };
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;
     listMemoryEntries(input: { workspaceId: string; systemId?: string; sessionId?: string; runId?: string; status?: MemoryEntry["status"]; type?: MemoryEntry["type"] }): Promise<MemoryEntry[]>;

@@ -196,6 +196,30 @@ export const getMarketplaceListing = query({
   handler: async (ctx, args) => ctx.db.get(args.listingId)
 });
 
+export const recordPaymentSettlement = mutation({
+  args: { workspaceId: v.id("workspaces"), resourceId: v.string(), amountUsd: v.number(), payer: v.string(), scheme: v.string(), txHash: v.optional(v.string()) },
+  handler: async (ctx, args) => ctx.db.insert("payment_settlements", { ...args, createdAt: now() })
+});
+
+export const listPaymentSettlements = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => ctx.db.query("payment_settlements").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect()
+});
+
+export const recordUsageEvent = mutation({
+  args: { workspaceId: v.id("workspaces"), meter: v.string(), units: v.number(), resourceId: v.string() },
+  handler: async (ctx, args) => ctx.db.insert("usage_events", { ...args, createdAt: now() })
+});
+
+export const getUsageTotal = query({
+  args: { workspaceId: v.id("workspaces"), meter: v.string(), sinceIso: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db.query("usage_events").withIndex("by_workspace_meter", (q) => q.eq("workspaceId", args.workspaceId).eq("meter", args.meter)).collect();
+    const filtered = args.sinceIso ? rows.filter((r) => r.createdAt >= args.sinceIso) : rows;
+    return { units: filtered.reduce((sum, r) => sum + (r.units ?? 0), 0) };
+  }
+});
+
 export const upsertPresence = mutation({
   args: { systemId: v.id("systems"), userId: v.id("users"), sessionId: v.string(), selectedNodeId: v.optional(v.id("system_nodes")), editingTarget: v.optional(v.string()), cursorX: v.optional(v.number()), cursorY: v.optional(v.number()) },
   handler: async (ctx, args) => {

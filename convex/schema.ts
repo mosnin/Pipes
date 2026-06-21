@@ -42,6 +42,22 @@ export default defineSchema({
     price: v.number(),
     createdAt: v.string()
   }).index("by_workspace", ["workspaceId"]),
+  payment_settlements: defineTable({
+    workspaceId: v.id("workspaces"),
+    resourceId: v.string(),
+    amountUsd: v.number(),
+    payer: v.string(),
+    scheme: v.string(),
+    txHash: v.optional(v.string()),
+    createdAt: v.string()
+  }).index("by_workspace", ["workspaceId"]),
+  usage_events: defineTable({
+    workspaceId: v.id("workspaces"),
+    meter: v.string(),
+    units: v.number(),
+    resourceId: v.string(),
+    createdAt: v.string()
+  }).index("by_workspace_meter", ["workspaceId", "meter"]),
   system_nodes: defineTable({
     systemId: v.id("systems"),
     type: v.string(),

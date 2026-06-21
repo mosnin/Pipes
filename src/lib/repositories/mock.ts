@@ -1146,6 +1146,35 @@ export function createMockRepositories(): RepositorySet {
         return ((db as any).marketplaceListings ?? []).find((r: any) => r.id === listingId) ?? null;
       },
     },
+    payments: {
+      async recordSettlement(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("pay"), createdAt: now() };
+        (db as any).paymentSettlements = [...((db as any).paymentSettlements ?? []), row];
+        store.writeDb(db);
+        return row.id;
+      },
+      async listSettlements(workspaceId) {
+        const db = store.readDb();
+        return ((db as any).paymentSettlements ?? []).filter((r: any) => r.workspaceId === workspaceId);
+      },
+      async recordUsage(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("use"), createdAt: now() };
+        (db as any).usageEvents = [...((db as any).usageEvents ?? []), row];
+        store.writeDb(db);
+      },
+      async getUsageTotal(input) {
+        const db = store.readDb();
+        const rows = ((db as any).usageEvents ?? []).filter(
+          (r: any) =>
+            r.workspaceId === input.workspaceId &&
+            r.meter === input.meter &&
+            (!input.sinceIso || r.createdAt >= input.sinceIso),
+        );
+        return { units: rows.reduce((sum: number, r: any) => sum + (r.units ?? 0), 0) };
+      },
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const db = store.readDb();

@@ -25,7 +25,7 @@ describe("PaddleBillingService", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("creates a checkout transaction and returns the hosted checkout url", async () => {
-    const fetchMock = vi.fn(async () => ({
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => ({
       json: async () => ({ data: { checkout: { url: "https://sandbox-checkout.paddle.com/txn_1" } } }),
     }) as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);
