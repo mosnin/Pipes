@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PLAN_FEATURES, PLAN_PRICING } from "@/lib/billing/plans";
@@ -106,10 +106,33 @@ const PLAN_DETAILS: Record<"Pro" | "Builder", { price: string; features: string[
   },
 };
 
+// ── upgrade notifier (isolated to satisfy Next.js Suspense requirement) ────
+
+function UpgradeNotifier({ onSuccess }: { onSuccess: () => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const upgrade = searchParams.get("upgrade");
+    const plan = searchParams.get("plan");
+    if (upgrade === "success" && plan) {
+      toast.success(`Upgraded to ${plan} — welcome!`);
+      onSuccess();
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      url.searchParams.delete("plan");
+      window.history.replaceState({}, "", url.toString());
+    } else if (upgrade === "portal") {
+      toast.success("Billing portal session ended.");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams, onSuccess]);
+  return null;
+}
+
 // ── page ──────────────────────────────────────────────────────────────────
 
 export default function BillingSettingsPage() {
-  const searchParams = useSearchParams();
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
@@ -135,24 +158,6 @@ export default function BillingSettingsPage() {
     loadSummary();
   }, [loadSummary]);
 
-  useEffect(() => {
-    const upgrade = searchParams.get("upgrade");
-    const plan = searchParams.get("plan");
-    if (upgrade === "success" && plan) {
-      toast.success(`Upgraded to ${plan} — welcome!`);
-      loadSummary();
-      // Clean the URL so a refresh doesn't re-toast.
-      const url = new URL(window.location.href);
-      url.searchParams.delete("upgrade");
-      url.searchParams.delete("plan");
-      window.history.replaceState({}, "", url.toString());
-    } else if (upgrade === "portal") {
-      toast.success("Billing portal session ended.");
-      const url = new URL(window.location.href);
-      url.searchParams.delete("upgrade");
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, [searchParams, loadSummary]);
 
   const startCheckout = async (plan: "Pro" | "Builder") => {
     setCheckoutLoading(plan);
@@ -253,6 +258,9 @@ export default function BillingSettingsPage() {
 
   return (
     <div className="space-y-8">
+      <Suspense fallback={null}>
+        <UpgradeNotifier onSuccess={loadSummary} />
+      </Suspense>
       <PageHeader
         title="Workspace"
         subtitle="Plan, billing, and workspace defaults."

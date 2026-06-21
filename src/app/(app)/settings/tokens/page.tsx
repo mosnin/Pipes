@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Copy, Plus, Trash2 } from "lucide-react";
 import { AGENT_CAPABILITIES, type AgentCapability } from "@/lib/protocol/tokens";
+import { MCP_TOOL_COUNT } from "@/lib/protocol/mcp-tools";
 import {
   Button,
   CardShell,
@@ -358,7 +359,7 @@ export default function TokensSettingsPage() {
           <div className="space-y-2">
             <p className="t-label font-semibold text-[#111]">MCP endpoint</p>
             <p className="t-caption text-[#3C3C43]">
-              Point your agent at this endpoint. It serves 15 tools covering systems, graphs, templates, versions, validation, and blueprints.
+              Point your agent at this endpoint. It serves {MCP_TOOL_COUNT} tools covering systems, graphs, templates, versions, validation, and blueprints.
             </p>
             <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
               <code className="t-mono text-[12px] text-[#7DD3FC]">
@@ -524,11 +525,20 @@ export default function TokensSettingsPage() {
             {authHeader && (
               <div className="space-y-1.5">
                 <div className="t-label font-medium text-[#111]">Authorization header</div>
-                <div className="rounded-lg bg-[#0B0B0F] px-3 py-2">
-                  <code className="t-mono text-[12px] text-[#7DD3FC] break-all">
+                <CardFooter className="bg-[#0B0B0F] rounded-lg border-0 px-3 py-2 flex items-center justify-between">
+                  <code className="flex-1 t-mono text-[12px] text-[#7DD3FC] break-all">
                     {authHeader}
                   </code>
-                </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => handleCopy(authHeader)}
+                    className="text-white hover:bg-white/10 ml-2"
+                    aria-label="Copy authorization header"
+                  >
+                    {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                  </Button>
+                </CardFooter>
               </div>
             )}
           </div>
