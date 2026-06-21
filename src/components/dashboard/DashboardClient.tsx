@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import {
   Button,
+  Input,
   Textarea,
   MetricCard,
   Toolbar,
@@ -135,6 +136,7 @@ type SystemCardProps = {
   onDelete: () => void;
   onExport: () => void;
   onEdit: () => void;
+  onRename: () => void;
 };
 
 function SystemCard({
@@ -146,6 +148,7 @@ function SystemCard({
   onDelete,
   onExport,
   onEdit,
+  onRename,
 }: SystemCardProps) {
   return (
     <div
@@ -196,6 +199,12 @@ function SystemCard({
                   <span className="flex items-center gap-2 t-label">
                     <Star size={14} />
                     {row.favorite ? "Unfavorite" : "Favorite"}
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="rename" onAction={onRename}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Edit size={14} />
+                    Rename
                   </span>
                 </DropdownItem>
                 <DropdownItem id="edit" onAction={onEdit}>
@@ -295,6 +304,9 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [myListings, setMyListings] = useState<Array<{ id: string; title: string; price: number; systemId: string; createdAt: string }>>([]);
   const [deleteTarget, setDeleteTarget] = useState<LibraryRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<LibraryRow | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   const refreshListings = useCallback(async () => {
     try {
@@ -488,6 +500,26 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     }
   };
 
+  const handleRenameConfirmed = async () => {
+    if (!renameTarget || !renameDraft.trim()) return;
+    setRenaming(true);
+    try {
+      const res = await fetch(`/api/systems/${renameTarget.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: renameDraft.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Renamed");
+      setRenameTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to rename");
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   const handleExport = async (row: LibraryRow) => {
     const res = await fetch(`/api/systems/${row.id}/export`);
     if (!res.ok) {
@@ -631,6 +663,15 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 <span className="flex items-center gap-2 t-label">
                   <Star size={14} />
                   {row.favorite ? "Unfavorite" : "Favorite"}
+                </span>
+              </DropdownItem>
+              <DropdownItem
+                id="rename"
+                onAction={() => { setRenameTarget(row); setRenameDraft(row.name); }}
+              >
+                <span className="flex items-center gap-2 t-label">
+                  <Edit size={14} />
+                  Rename
                 </span>
               </DropdownItem>
               <DropdownItem
@@ -948,6 +989,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onDelete={() => setDeleteTarget(row)}
                     onExport={() => handleExport(row)}
                     onEdit={() => router.push(`/systems/${row.id}`)}
+                    onRename={() => { setRenameTarget(row); setRenameDraft(row.name); }}
                   />
                 ))}
               </div>
@@ -1016,6 +1058,38 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           </div>
         </div>
       )}
+
+      {/* Rename dialog */}
+      <Dialog
+        open={!!renameTarget}
+        onOpenChange={(o) => { if (!o) setRenameTarget(null); }}
+        title="Rename loop"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setRenameTarget(null)} isDisabled={renaming}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleRenameConfirmed}
+              isDisabled={renaming || !renameDraft.trim() || renameDraft.trim() === renameTarget?.name}
+            >
+              {renaming ? <Spinner size="xs" /> : null}
+              {renaming ? "Saving..." : "Save"}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          aria-label="New name"
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleRenameConfirmed(); }}
+          autoFocus
+        />
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog
