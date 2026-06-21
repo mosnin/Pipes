@@ -63,7 +63,12 @@ export const getSystemBundle = query({
       ctx.db.query("system_versions").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect(),
       ctx.db.query("system_presence").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect()
     ]);
-    return { system, nodes, pipes, comments, versions, presence };
+    // Look up the workspace plan so the client can compute entitlements.
+    const planState = system
+      ? await ctx.db.query("plan_state").withIndex("by_workspace", (q) => q.eq("workspaceId", system.workspaceId)).first()
+      : null;
+    const plan = planState?.plan ?? "Free";
+    return { system, nodes, pipes, comments, versions, presence, plan };
   }
 });
 

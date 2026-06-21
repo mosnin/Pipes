@@ -34,6 +34,7 @@ import type { CommandItem } from "@/components/editor/CommandPalette";
 import { LoopVisibilityToggle } from "@/components/editor/LoopVisibilityToggle";
 import { LoopUpgradeGate } from "@/components/editor/LoopUpgradeGate";
 import { PublishToMarketplaceModal } from "@/components/editor/PublishToMarketplaceModal";
+import { getEntitlements } from "@/domain/templates/plans";
 import { toast } from "sonner";
 
 type SystemPayload = {
@@ -51,6 +52,11 @@ type ReviewPreviewItem = { diffId: string; entityType: string; entityId: string;
 type ReviewRegion = { batchId: string; runId: string; nodeIds: string[]; pipeIds: string[]; subsystemIds: string[]; status: "pending_review" | "applied" };
 
 function normalizeBundle(bundle: any): SystemPayload {
+  // Convex path returns `plan` instead of `entitlements`; compute them here.
+  const entitlements = bundle.entitlements ?? (bundle.plan ? (() => {
+    const e = getEntitlements(bundle.plan);
+    return { privateLoops: e.privateLoops, marketplaceSelling: e.marketplaceSelling, mcpReadWrite: e.mcpReadWrite, aiGeneration: e.aiGeneration, versionHistory: e.versionHistory };
+  })() : undefined);
   return {
     system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description, visibility: bundle.system.visibility },
     nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
@@ -58,7 +64,7 @@ function normalizeBundle(bundle: any): SystemPayload {
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
     presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined })),
-    entitlements: bundle.entitlements ?? undefined,
+    entitlements,
   };
 }
 
