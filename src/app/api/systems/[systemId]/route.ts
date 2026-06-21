@@ -38,3 +38,15 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json(failure((error as Error).message), { status: 400 });
   }
 }
+
+export async function PATCH(request: Request, { params }: Params) {
+  try {
+    const { ctx, services } = await getServerApp();
+    const { systemId } = await params;
+    const body = await request.json() as { name?: string };
+    if (body.name !== undefined) await services.systems.rename(ctx, systemId, body.name);
+    return NextResponse.json(success({ systemId }));
+  } catch (error) {
+    return NextResponse.json(failure((error as Error).message), { status: 400 });
+  }
+}

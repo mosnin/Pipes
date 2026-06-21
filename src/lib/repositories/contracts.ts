@@ -71,6 +71,7 @@ export interface SystemsRepository {
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
   setVisibility(systemId: string, visibility: "public" | "private"): Promise<void>;
+  rename(systemId: string, name: string): Promise<void>;
 }
 
 export interface GraphRepository {

@@ -58,6 +58,12 @@ export class SystemService {
   async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
   async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
   async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
+  async rename(ctx: AppContext, systemId: string, name: string) {
+    this.access.ensureCanEdit(ctx);
+    const trimmed = name.trim().slice(0, 120);
+    if (!trimmed) throw new Error("Name cannot be empty.");
+    await this.repos.systems.rename(systemId, trimmed);
+  }
   async setVisibility(ctx: AppContext, systemId: string, visibility: "public" | "private") {
     this.access.ensureCanEdit(ctx);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);

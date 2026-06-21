@@ -88,6 +88,10 @@ export function createConvexRepositories(): RepositorySet {
       async setVisibility(systemId, visibility) {
         const client = getConvexHttpClient();
         await client.mutation((api as any).app.setSystemVisibility, { systemId: systemId as never, visibility });
+      },
+      async rename(systemId, name) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.renameSystem, { systemId: systemId as never, name });
       }
     },
     graph: {

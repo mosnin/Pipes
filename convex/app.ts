@@ -122,6 +122,11 @@ export const setSystemVisibility = mutation({
   handler: async (ctx, args) => ctx.db.patch(args.systemId, { visibility: args.visibility, updatedAt: now() })
 });
 
+export const renameSystem = mutation({
+  args: { systemId: v.id("systems"), name: v.string() },
+  handler: async (ctx, args) => ctx.db.patch(args.systemId, { name: args.name, updatedAt: now() })
+});
+
 // Restore a system to a saved looper_schema_v1 snapshot. Replaces the system's
 // nodes and pipes with the snapshot's, remapping pipe port references (the
 // export connects ports, not nodes) to freshly inserted node ids.

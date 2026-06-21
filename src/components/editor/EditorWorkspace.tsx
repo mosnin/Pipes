@@ -168,6 +168,8 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [portAffordance, setPortAffordance] = useState<{ anchor: { x: number; y: number }; port: PortAffordanceData } | null>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [metadataDialogOpen, setMetadataDialogOpen] = useState(false);
+  const [renamingSystem, setRenamingSystem] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   // Tutorial-related state. `tutorialSeen` is hydrated from localStorage on
   // first mount; `tutorialPromptStarted` flips the moment the user types in
   // the conversation input; `tutorialAgentViewSeen` flips when the user opens
@@ -181,6 +183,18 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
     await fetch("/api/editor/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event, metadata }) });
   }, []);
+
+  const commitRename = useCallback(async () => {
+    const name = renameValue.trim();
+    setRenamingSystem(false);
+    if (!name || name === data?.system.name) return;
+    await fetch(`/api/systems/${systemId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    reload();
+  }, [renameValue, data?.system.name, systemId, reload]);
 
   useEffect(() => {
     if (!data) return;
@@ -905,7 +919,28 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
         {/* Header: name + save state — no duplicate agent button */}
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="t-label font-bold text-[#111] truncate">{data.system.name}</h1>
+            {renamingSystem ? (
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => { void commitRename(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.currentTarget.blur(); }
+                  if (e.key === "Escape") { setRenamingSystem(false); }
+                }}
+                className="t-label font-bold text-[#111] bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-xs"
+                autoFocus
+              />
+            ) : (
+              <h1
+                className="t-label font-bold text-[#111] truncate cursor-pointer hover:text-[#4F46E5] transition-colors"
+                title="Click to rename"
+                onClick={() => { setRenameValue(data.system.name); setRenamingSystem(true); }}
+              >
+                {data.system.name}
+              </h1>
+            )}
             {data.system.description && <p className="t-caption text-[#8E8E93] truncate">{data.system.description}</p>}
           </div>
           <div className="flex items-center gap-2 shrink-0">

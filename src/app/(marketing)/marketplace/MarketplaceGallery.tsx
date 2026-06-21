@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle, Download, Star } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button, EmptyState, SearchInput } from "@/components/ui";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
@@ -13,22 +13,15 @@ type CategoryFilter = string;
 
 const CATEGORY_ORDER = ["Research", "Support", "Code", "Sales", "Data", "Content", "Security", "DevOps"] as const;
 
-function StarRating({ rating, count }: { rating: number; count: number }) {
+function ComplexityBadge({ complexity }: { complexity: "simple" | "standard" | "advanced" }) {
+  const styles = {
+    simple: "bg-emerald-50 text-emerald-700 border-emerald-100",
+    standard: "bg-blue-50 text-blue-700 border-blue-100",
+    advanced: "bg-orange-50 text-orange-700 border-orange-100",
+  };
   return (
-    <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
-      <Star size={11} className="fill-amber-400 text-amber-400" aria-hidden />
-      <span className="font-medium text-[#111]">{rating.toFixed(1)}</span>
-      <span>({count})</span>
-    </span>
-  );
-}
-
-function InstallCount({ count }: { count: number }) {
-  const label = count >= 1000 ? `${(count / 1000).toFixed(1)}k` : String(count);
-  return (
-    <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
-      <Download size={11} aria-hidden />
-      <span>{label}</span>
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 t-caption font-medium capitalize ${styles[complexity]}`}>
+      {complexity}
     </span>
   );
 }
@@ -128,9 +121,8 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t border-black/[0.04]">
-        <div className="flex items-center gap-3">
-          <StarRating rating={listing.rating} count={listing.ratingCount} />
-          <InstallCount count={listing.installCount} />
+        <div className="flex items-center gap-2">
+          <ComplexityBadge complexity={listing.complexity} />
         </div>
         <div className="flex items-center gap-2">
           <TrackedLink
