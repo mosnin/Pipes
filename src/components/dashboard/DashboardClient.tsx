@@ -132,6 +132,7 @@ type SystemCardProps = {
   onToggleFavorite: () => void;
   onArchive: () => void;
   onRestore: () => void;
+  onDelete: () => void;
   onExport: () => void;
   onEdit: () => void;
 };
@@ -142,6 +143,7 @@ function SystemCard({
   onToggleFavorite,
   onArchive,
   onRestore,
+  onDelete,
   onExport,
   onEdit,
 }: SystemCardProps) {
@@ -209,12 +211,20 @@ function SystemCard({
                   </span>
                 </DropdownItem>
                 {row.archivedAt ? (
-                  <DropdownItem id="restore" onAction={onRestore}>
-                    <span className="flex items-center gap-2 t-label">
-                      <RotateCcw size={14} />
-                      Restore
-                    </span>
-                  </DropdownItem>
+                  <>
+                    <DropdownItem id="restore" onAction={onRestore}>
+                      <span className="flex items-center gap-2 t-label">
+                        <RotateCcw size={14} />
+                        Restore
+                      </span>
+                    </DropdownItem>
+                    <DropdownItem id="delete" onAction={onDelete}>
+                      <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                        <Trash2 size={14} />
+                        Delete permanently
+                      </span>
+                    </DropdownItem>
+                  </>
                 ) : (
                   <DropdownItem id="archive" onAction={onArchive}>
                     <span className="flex items-center gap-2 t-label text-[#991B1B]">
@@ -935,6 +945,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     onToggleFavorite={() => handleToggleFavorite(row)}
                     onArchive={() => handleArchive(row)}
                     onRestore={() => handleRestore(row)}
+                    onDelete={() => setDeleteTarget(row)}
                     onExport={() => handleExport(row)}
                     onEdit={() => router.push(`/systems/${row.id}`)}
                   />
