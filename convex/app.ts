@@ -117,6 +117,85 @@ export const addVersion = mutation({
   handler: async (ctx, args) => ctx.db.insert("system_versions", { ...args, createdAt: now() })
 });
 
+export const setSystemVisibility = mutation({
+  args: { systemId: v.id("systems"), visibility: v.string() },
+  handler: async (ctx, args) => ctx.db.patch(args.systemId, { visibility: args.visibility, updatedAt: now() })
+});
+
+// Restore a system to a saved looper_schema_v1 snapshot. Replaces the system's
+// nodes and pipes with the snapshot's, remapping pipe port references (the
+// export connects ports, not nodes) to freshly inserted node ids.
+export const restoreVersionSnapshot = mutation({
+  args: { systemId: v.id("systems"), snapshot: v.string() },
+  handler: async (ctx, args) => {
+    const doc = JSON.parse(args.snapshot);
+    const data = doc.looper_schema_v1 ?? doc;
+    const snapNodes = (data.nodes ?? []).filter((n) => String(n.systemId) === String(args.systemId) || !n.systemId);
+    const snapPorts = data.ports ?? [];
+    const snapPipes = (data.pipes ?? []).filter((p) => String(p.systemId) === String(args.systemId) || !p.systemId);
+
+    // Wipe the current graph for this system.
+    const existingPipes = await ctx.db.query("system_pipes").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
+    for (const p of existingPipes) await ctx.db.delete(p._id);
+    const existingNodes = await ctx.db.query("system_nodes").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
+    for (const n of existingNodes) await ctx.db.delete(n._id);
+
+    // Re-insert nodes, mapping old node id -> new node id.
+    const nodeIdMap = new Map();
+    for (const n of snapNodes) {
+      const newId = await ctx.db.insert("system_nodes", {
+        systemId: args.systemId,
+        type: n.type,
+        title: n.title,
+        description: n.description,
+        position: n.position ?? { x: 0, y: 0 },
+        portIds: n.portIds ?? [],
+        config: n.config ?? {},
+        createdAt: now(),
+        updatedAt: now()
+      });
+      nodeIdMap.set(String(n.id), newId);
+    }
+
+    // portId -> old nodeId, from the ports array (falls back to node.portIds).
+    const portToNode = new Map();
+    for (const port of snapPorts) portToNode.set(String(port.id), String(port.nodeId));
+    for (const n of snapNodes) for (const pid of n.portIds ?? []) if (!portToNode.has(String(pid))) portToNode.set(String(pid), String(n.id));
+
+    for (const p of snapPipes) {
+      const fromOld = portToNode.get(String(p.fromPortId));
+      const toOld = portToNode.get(String(p.toPortId));
+      const fromNew = fromOld ? nodeIdMap.get(fromOld) : undefined;
+      const toNew = toOld ? nodeIdMap.get(toOld) : undefined;
+      if (!fromNew || !toNew) continue;
+      await ctx.db.insert("system_pipes", {
+        systemId: args.systemId,
+        fromNodeId: fromNew,
+        fromPortId: p.fromPortId,
+        toNodeId: toNew,
+        toPortId: p.toPortId,
+        createdAt: now(),
+        updatedAt: now()
+      });
+    }
+  }
+});
+
+export const createMarketplaceListing = mutation({
+  args: { systemId: v.id("systems"), workspaceId: v.id("workspaces"), title: v.string(), description: v.string(), price: v.number() },
+  handler: async (ctx, args) => ctx.db.insert("marketplace_listings", { ...args, createdAt: now() })
+});
+
+export const listMarketplaceListingsByWorkspace = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => ctx.db.query("marketplace_listings").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect()
+});
+
+export const getMarketplaceListing = query({
+  args: { listingId: v.id("marketplace_listings") },
+  handler: async (ctx, args) => ctx.db.get(args.listingId)
+});
+
 export const upsertPresence = mutation({
   args: { systemId: v.id("systems"), userId: v.id("users"), sessionId: v.string(), selectedNodeId: v.optional(v.id("system_nodes")), editingTarget: v.optional(v.string()), cursorX: v.optional(v.number()), cursorY: v.optional(v.number()) },
   handler: async (ctx, args) => {

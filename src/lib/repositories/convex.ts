@@ -86,8 +86,8 @@ export function createConvexRepositories(): RepositorySet {
         await client.mutation((api as any).app.restoreSystem, { systemId: systemId as never });
       },
       async setVisibility(systemId, visibility) {
-        // TODO: wire up Convex mutation when real DB is available
-        void systemId; void visibility;
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.setSystemVisibility, { systemId: systemId as never, visibility });
       }
     },
     graph: {
@@ -129,8 +129,9 @@ export function createConvexRepositories(): RepositorySet {
         const versions = await this.list(systemId);
         return versions.find((v) => v.id === versionId) ?? null;
       },
-      async restoreSnapshot() {
-        throw new Error("Version restore is currently supported in mock mode only.");
+      async restoreSnapshot(systemId, snapshot) {
+        const client = getConvexHttpClient();
+        await client.mutation((api as any).app.restoreVersionSnapshot, { systemId: systemId as never, snapshot });
       }
     },
     invites: {
@@ -868,9 +869,22 @@ export function createConvexRepositories(): RepositorySet {
       }
     },
     marketplaceListings: {
-      async create(_input) { throw new Error("TODO: implement Convex marketplace listings"); },
-      async listByWorkspace(_workspaceId) { return []; },
-      async get(_listingId) { return null; },
+      async create(input) {
+        const client = getConvexHttpClient();
+        const id = await client.mutation((api as any).app.createMarketplaceListing, { systemId: input.systemId as never, workspaceId: input.workspaceId as never, title: input.title, description: input.description, price: input.price });
+        return String(id);
+      },
+      async listByWorkspace(workspaceId) {
+        const client = getConvexHttpClient();
+        const rows = await client.query((api as any).app.listMarketplaceListingsByWorkspace, { workspaceId: workspaceId as never });
+        return rows.map((r: any) => ({ id: String(r._id), systemId: String(r.systemId), workspaceId: String(r.workspaceId), title: r.title, description: r.description, price: r.price, createdAt: r.createdAt }));
+      },
+      async get(listingId) {
+        const client = getConvexHttpClient();
+        const r = await client.query((api as any).app.getMarketplaceListing, { listingId: listingId as never });
+        if (!r) return null;
+        return { id: String(r._id), systemId: String(r.systemId), workspaceId: String(r.workspaceId), title: r.title, description: r.description, price: r.price, createdAt: r.createdAt };
+      },
     },
     agentMemory: {
       async addMemoryEntry(input) {

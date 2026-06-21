@@ -29,9 +29,18 @@ export default defineSchema({
     createdBy: v.id("users"),
     name: v.string(),
     description: v.string(),
+    visibility: v.optional(v.string()),
     archivedAt: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string()
+  }).index("by_workspace", ["workspaceId"]),
+  marketplace_listings: defineTable({
+    systemId: v.id("systems"),
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    description: v.string(),
+    price: v.number(),
+    createdAt: v.string()
   }).index("by_workspace", ["workspaceId"]),
   system_nodes: defineTable({
     systemId: v.id("systems"),
