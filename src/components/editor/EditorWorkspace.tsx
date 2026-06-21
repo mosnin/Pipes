@@ -128,6 +128,7 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [versionName, setVersionName] = useState("checkpoint");
+  const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [aiEditPrompt, setAiEditPrompt] = useState("Improve reliability and add guardrails.");
   const [pendingSuggestion, setPendingSuggestion] = useState<any | null>(null);
   const [acceptedChangeIds, setAcceptedChangeIds] = useState<string[]>([]);
@@ -1382,14 +1383,69 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
               </div>
             )}
             {activeSystemPanel === "versions" && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {data?.entitlements?.versionHistory === false ? (
                   <LoopUpgradeGate reason="version_history" />
                 ) : (
                   <>
-                    <Input value={versionName} onChange={(e) => setVersionName(e.target.value)} />
-                    <Button onClick={async () => { await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) }); reload(); }}>Save Version</Button>
-                    <div className="space-y-1 mt-2">{data.versions.map((v) => <div key={v.id} className="flex items-center gap-2"><span className="t-label text-[#3C3C43]">{v.name}</span></div>)}</div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={versionName}
+                        onChange={(e) => setVersionName(e.target.value)}
+                        placeholder="Version name"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isDisabled={!versionName.trim()}
+                        onClick={async () => {
+                          await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName.trim() }) });
+                          reload();
+                          toast.success("Version saved");
+                        }}
+                        className="shrink-0"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                    {data.versions.length === 0 ? (
+                      <p className="t-caption text-[#8E8E93] text-center py-4">No versions yet. Save a version to capture the current state.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {data.versions.slice().reverse().map((v) => (
+                          <div key={v.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg hover:bg-[#F5F5F7] group">
+                            <div className="min-w-0 flex-1">
+                              <p className="t-label font-medium text-[#111] truncate">{v.name}</p>
+                              <p className="t-caption text-[#8E8E93]">{new Date(v.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                            </div>
+                            {restoringVersionId === v.id ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <button
+                                type="button"
+                                className="t-caption text-indigo-600 hover:text-indigo-700 font-medium opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
+                                onClick={async () => {
+                                  if (!confirm(`Restore to "${v.name}"? The current graph will be saved as a checkpoint first.`)) return;
+                                  setRestoringVersionId(v.id);
+                                  try {
+                                    await fetch(`/api/systems/${systemId}/versions`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ versionId: v.id }) });
+                                    reload();
+                                    toast.success(`Restored to "${v.name}"`);
+                                  } catch {
+                                    toast.error("Restore failed");
+                                  } finally {
+                                    setRestoringVersionId(null);
+                                  }
+                                }}
+                              >
+                                Restore
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </>
                 )}
               </div>
