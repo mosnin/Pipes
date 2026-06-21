@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Copy, Plus, Trash2 } from "lucide-react";
 import { AGENT_CAPABILITIES, type AgentCapability } from "@/lib/protocol/tokens";
 import { MCP_TOOL_COUNT } from "@/lib/protocol/mcp-tools";
+import { LoopUpgradeGate } from "@/components/editor/LoopUpgradeGate";
 import {
   Button,
   CardShell,
@@ -75,8 +76,9 @@ function formatDate(value: string | null | undefined): string {
 // ── page ──────────────────────────────────────────────────────────────────
 
 export default function TokensSettingsPage() {
-  const [tokens, setTokens]     = useState<TokenRow[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [tokens, setTokens]         = useState<TokenRow[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [apiMcpAccess, setApiMcpAccess] = useState<boolean | null>(null);
 
   // ── Generate dialog state ─────────────────────────────────────────────────
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -100,10 +102,12 @@ export default function TokensSettingsPage() {
   // ── load ──────────────────────────────────────────────────────────────────
   function load() {
     setLoading(true);
-    return fetch("/api/settings/tokens")
-      .then((r) => r.json())
-      .then((d: { data?: TokenRow[] }) => setTokens(d.data ?? []))
-      .finally(() => setLoading(false));
+    return Promise.all([
+      fetch("/api/settings/tokens").then((r) => r.json()).then((d: { data?: TokenRow[] }) => setTokens(d.data ?? [])),
+      fetch("/api/billing/status").then((r) => r.json()).then((d: { data?: { entitlements?: { apiMcpAccess?: boolean } } }) => {
+        setApiMcpAccess(d.data?.entitlements?.apiMcpAccess ?? false);
+      }),
+    ]).finally(() => setLoading(false));
   }
 
   useEffect(() => {
@@ -268,14 +272,16 @@ export default function TokensSettingsPage() {
         title="Developer"
         subtitle="API tokens and integrations."
         actions={
-          <Button
-            variant="primary"
-            onPress={() => setGenerateOpen(true)}
-            className="flex items-center gap-1.5"
-          >
-            <Plus size={14} />
-            Generate token
-          </Button>
+          apiMcpAccess === false ? null : (
+            <Button
+              variant="primary"
+              onPress={() => setGenerateOpen(true)}
+              className="flex items-center gap-1.5"
+            >
+              <Plus size={14} />
+              Generate token
+            </Button>
+          )
         }
       />
 
@@ -301,6 +307,10 @@ export default function TokensSettingsPage() {
             <div className="flex items-center justify-center py-12">
               <Spinner size="md" />
             </div>
+          </CardBody>
+        ) : apiMcpAccess === false ? (
+          <CardBody>
+            <LoopUpgradeGate reason="mcp_access" />
           </CardBody>
         ) : tokens.length === 0 ? (
           <CardBody>
