@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button, EmptyState, SearchInput } from "@/components/ui";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
@@ -58,6 +58,13 @@ async function handleUseLoop(listingId: string, name: string, price: number) {
   try {
     let res = await postImport(listingId, name);
 
+    // Not signed in — send to signup with context so they land back here.
+    if (res.status === 401 || res.status === 403) {
+      toast.dismiss(toastId);
+      window.location.href = `/signup?next=/marketplace&listing=${listingId}`;
+      return;
+    }
+
     // 402 Payment Required: settle via x402, then retry with the payment.
     if (res.status === 402) {
       toast.loading(`Paying $${price} with x402...`, { id: toastId });
@@ -94,12 +101,7 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="t-label font-semibold text-[#111] truncate">{listing.title}</h3>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="t-caption text-[#8E8E93]">by {listing.creator.name}</span>
-            {listing.creator.verified && (
-              <CheckCircle size={11} className="text-indigo-500 shrink-0" aria-label="Verified creator" />
-            )}
-          </div>
+          <span className="t-caption text-[#8E8E93]">{listing.category}</span>
         </div>
         <PriceTag price={listing.price} />
       </div>
@@ -124,23 +126,12 @@ function ListingCard({ listing }: { listing: MarketplaceListing }) {
         <div className="flex items-center gap-2">
           <ComplexityBadge complexity={listing.complexity} />
         </div>
-        <div className="flex items-center gap-2">
-          <TrackedLink
-            href="/signup"
-            event="marketplace_install_clicked"
-            metadata={{ listingId: listing.id, price: listing.price }}
-          >
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#111] text-white t-caption font-semibold hover:bg-indigo-700 transition-colors">
-              Install
-            </span>
-          </TrackedLink>
-          <button
-            onClick={() => handleUseLoop(listing.id, listing.title, listing.price)}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4F46E5] text-white t-caption font-semibold hover:bg-[#4338CA] transition-colors"
-          >
-            {listing.price > 0 ? `Buy $${listing.price}` : "Use this loop"}
-          </button>
-        </div>
+        <button
+          onClick={() => handleUseLoop(listing.id, listing.title, listing.price)}
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#4F46E5] text-white t-caption font-semibold hover:bg-[#4338CA] transition-colors"
+        >
+          {listing.price > 0 ? `Get for $${listing.price}` : "Use this loop"}
+        </button>
       </div>
     </article>
   );
@@ -193,10 +184,10 @@ export function MarketplaceGallery({ listings }: { listings: MarketplaceListing[
             <div className="relative flex flex-col gap-5 max-w-2xl">
               <span className="t-overline text-[#8E8E93]">Marketplace</span>
               <h1 className="t-display text-[#111]">
-                Loops built by the community.
+                Ready-to-use starter loops.
               </h1>
               <p className="t-body text-[#3C3C43]">
-                Browse, install, and remix loops from creators. Free loops to get started. Premium loops from verified builders.
+                Curated loop templates for research, support, code review, sales, and more. Import any loop into your workspace in one click.
               </p>
             </div>
             <div className="relative mt-10 grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -298,14 +289,14 @@ export function MarketplaceGallery({ listings }: { listings: MarketplaceListing[
           {/* Sell CTA */}
           <div className="mt-16 rounded-[40px] bg-indigo-50 border border-indigo-100 px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1.5 max-w-md">
-              <h2 className="t-h3 text-[#111]">Sell your loop</h2>
+              <h2 className="t-h3 text-[#111]">Publish your own loop</h2>
               <p className="t-label text-[#3C3C43]">
-                Publish a loop you built. Set your price. Earn on every install. Pro plan required.
+                Build a loop, set a price, and share it here. Available on Pro. Marketplace publishing is in early access.
               </p>
             </div>
             <TrackedLink href="/signup" event="marketplace_sell_cta_clicked" metadata={{ location: "bottom_cta" }}>
               <Button variant="primary">
-                Start selling
+                Get early access
                 <ArrowRight size={14} className="ml-1.5" aria-hidden="true" />
               </Button>
             </TrackedLink>
