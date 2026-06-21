@@ -200,8 +200,6 @@ export default function BillingSettingsPage() {
       ? ["Builder"]
       : [];
 
-  const seatsUsed  = summary?.entitlements.seatsUsed  ?? 1;
-  const seatsTotal = summary?.entitlements.seatsTotal ?? summary?.entitlements.maxSystems ?? 1;
 
   const invoiceColumns: DataTableColumn<NonNullable<BillingSummary["invoices"]>[number]>[] = [
     {
@@ -299,10 +297,10 @@ export default function BillingSettingsPage() {
       ) : (
         <>
           {/* ── Plan summary metrics ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             <MetricCard
               label="Plan"
-              value={summary.plan}
+              value={PLAN_DISPLAY_NAME[summary.plan as "Pro" | "Builder"] ?? summary.plan}
               footer={
                 <div className="mt-1">
                   <StatusBadge tone={statusTone(summary.status)} pulse={summary.status === "active"}>
@@ -312,14 +310,9 @@ export default function BillingSettingsPage() {
               }
             />
             <MetricCard
-              label="Seats"
-              value={`${seatsUsed} / ${seatsTotal}`}
-              footer={`${Math.max(0, seatsTotal - seatsUsed)} available`}
-            />
-            <MetricCard
-              label="Systems limit"
-              value={summary.entitlements.maxSystems}
-              footer="Per workspace cap"
+              label="Systems"
+              value={summary.entitlements.maxSystems === -1 ? "Unlimited" : `up to ${summary.entitlements.maxSystems}`}
+              footer="Per workspace"
             />
             <MetricCard
               label="Next bill"

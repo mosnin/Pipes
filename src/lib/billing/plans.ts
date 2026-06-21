@@ -28,7 +28,7 @@ export const PLAN_FEATURES: Record<"Pro" | "Builder", string[]> = {
     "Unlimited systems",
     "Private loops",
     "AI-assisted builds",
-    "Team collaboration (up to 10 seats)",
+    "Team collaboration",
     "Version history",
     "API & MCP access",
     "Marketplace selling",
