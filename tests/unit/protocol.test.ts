@@ -20,6 +20,7 @@ describe("protocol token and hardening flow", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
+    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Pro", status: "active" });
 
     const created = await services.protocol.createToken(ctx, { name: "Automation", capabilities: ["systems:read"] });
     expect(created.secret.startsWith("ptk_")).toBe(true);
@@ -33,6 +34,15 @@ describe("protocol token and hardening flow", () => {
     await services.protocol.revokeToken(ctx, listed[0].id);
     const revoked = await repos.agentTokens.findByHash(hashAgentToken(created.secret));
     expect(revoked?.revokedAt).toBeTruthy();
+  });
+
+  it("blocks token creation for Free plan workspaces", async () => {
+    const repos = createMockRepositories();
+    const services = createBoundedServices(repos);
+    const ctx = await repos.users.provision({ externalId: "mock|usr_free", email: "free@pipes.local", name: "Free User" });
+    // workspace starts on Free plan — no upsertPlanState call
+    await expect(services.protocol.createToken(ctx, { name: "Token", capabilities: ["systems:read"] }))
+      .rejects.toThrow("MCP token management requires Pro or higher.");
   });
 
   it("enforces capability and system scope for agent context", () => {
@@ -62,6 +72,7 @@ describe("protocol token and hardening flow", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const userCtx = await repos.users.provision({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
+    await repos.entitlements.upsertPlanState({ workspaceId: userCtx.workspaceId, plan: "Pro", status: "active" });
     const token = await services.protocol.createToken(userCtx, { name: "Writer", capabilities: ["systems:write", "systems:read"] });
 
     const body = JSON.stringify({ name: "Idempotent System", description: "repeat safe" });
@@ -90,6 +101,7 @@ describe("protocol token and hardening flow", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const userCtx = await repos.users.provision({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
+    await repos.entitlements.upsertPlanState({ workspaceId: userCtx.workspaceId, plan: "Pro", status: "active" });
     const token = await services.protocol.createToken(userCtx, { name: "MCP Reader", capabilities: ["systems:read"] });
 
     const request = new Request("http://localhost/api/protocol/mcp", {

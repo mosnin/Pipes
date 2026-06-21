@@ -268,7 +268,7 @@ const defaultMatrix: ReadonlyArray<FeatureSpec> = [
 interface SwitchCopy {
   choosePipes: ReadonlyArray<string>;
   chooseOther: ReadonlyArray<string>;
-  quote: { text: string; author: string; role: string };
+  quote: { text: string };
 }
 
 const switchCopy: Record<string, SwitchCopy> = {
@@ -284,9 +284,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "You need pixel-perfect mocks, not a runnable graph.",
     ],
     quote: {
-      text: "We stopped pasting Figma frames into PRs. The graph is the source.",
-      author: "Sam P.",
-      role: "Staff engineer, infra team",
+      text: "Figma frames are pictures a runtime cannot read. Looper graphs are the source the runtime reads.",
     },
   },
   miro: {
@@ -301,9 +299,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "Brainstorming is the deliverable.",
     ],
     quote: {
-      text: "Miro is great for the meeting. Looper is what we ship out of it.",
-      author: "Priya R.",
-      role: "Director of engineering",
+      text: "Miro wins the meeting. Looper wins after it — when the artifact has to survive into code.",
     },
   },
   lucidchart: {
@@ -318,9 +314,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "The deliverable is a static diagram in a doc.",
     ],
     quote: {
-      text: "Lucid was where the picture lived. Looper is where the system lives.",
-      author: "Marcus T.",
-      role: "Principal engineer",
+      text: "A diagram is where the picture lives. Looper is where the system lives.",
     },
   },
   "ai-generated-diagrams": {
@@ -335,9 +329,7 @@ const switchCopy: Record<string, SwitchCopy> = {
       "There is no runtime that needs to consume it.",
     ],
     quote: {
-      text: "Looper is the difference between a screenshot and a system.",
-      author: "Riley K.",
-      role: "Tech lead, agents team",
+      text: "A generated diagram ends the conversation. Looper starts one that the runtime can finish.",
     },
   },
 };
@@ -354,9 +346,7 @@ const defaultSwitchCopy: SwitchCopy = {
     "No runtime has to consume the artifact.",
   ],
   quote: {
-    text: "Looper turned our architecture from a slide deck into a working system.",
-    author: "Alex H.",
-    role: "Staff engineer",
+    text: "Looper is the difference between an architecture slide and an architecture that runs.",
   },
 };
 
@@ -447,16 +437,8 @@ export default async function CompareDetailPage({
                   {copy.quote.text}
                 </p>
               </blockquote>
-              <figcaption className="mt-6 flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 t-label font-bold">
-                  {copy.quote.author.charAt(0)}
-                </span>
-                <div className="flex flex-col">
-                  <span className="t-label font-semibold text-[#111]">
-                    {copy.quote.author}
-                  </span>
-                  <span className="t-caption text-[#8E8E93]">{copy.quote.role}</span>
-                </div>
+              <figcaption className="mt-6">
+                <span className="t-caption text-[#8E8E93]">From the Looper team</span>
               </figcaption>
             </figure>
           </div>
@@ -472,7 +454,7 @@ export default async function CompareDetailPage({
                 See it for yourself.
               </h2>
               <p className="t-body text-white/85">
-                Open a fresh workspace. Describe your loop. Looper draws it in under two seconds.
+                Open a fresh workspace. Describe your loop. Looper draws it on the canvas.
               </p>
             </div>
             <TrackedLink

@@ -166,6 +166,8 @@ export async function POST(request: Request) {
         { name: "export_subsystem_blueprint", capability: "graph:write", description: "Export a subsystem node as a reusable blueprint." },
         { name: "list_blueprints", capability: "systems:read", description: "List all saved subsystem blueprints in the workspace." },
         { name: "instantiate_blueprint", capability: "graph:write", description: "Instantiate a saved subsystem blueprint into a target system." },
+        { name: "learn_patterns", capability: "versions:write", description: "Analyze a system and store recurring structural patterns as reusable memories." },
+        { name: "list_patterns", capability: "systems:read", description: "List stored structural patterns for the workspace or a specific system." },
         { name: "describe_tools", capability: null, description: "List all available MCP tools and their required capabilities." },
       ];
       return NextResponse.json({ ok: true, data: { tools }, requestId });

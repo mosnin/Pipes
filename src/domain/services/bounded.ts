@@ -187,13 +187,15 @@ export class BillingService { constructor(private readonly repos: RepositorySet,
 export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
 
 export class ProtocolService {
-  constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
-  private ensureCanManageTokens(ctx: AppContext) {
+  constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
+  private async ensureCanManageTokens(ctx: AppContext) {
     if (ctx.actorType === "agent") throw new Error("Agent tokens cannot manage tokens.");
     this.access.ensureCanManageMembers(ctx);
+    const ent = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!ent.apiMcpAccess) throw new Error("MCP token management requires Pro or higher.");
   }
   async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string; expiresInDays?: number | null }) {
-    this.ensureCanManageTokens(ctx);
+    await this.ensureCanManageTokens(ctx);
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
@@ -233,7 +235,7 @@ export class ProtocolService {
     return { id: created.id, secret };
   }
   async listTokens(ctx: AppContext) {
-    this.ensureCanManageTokens(ctx);
+    await this.ensureCanManageTokens(ctx);
     const [tokens, audits] = await Promise.all([
       this.repos.agentTokens.list(ctx.workspaceId),
       this.repos.audits.list(ctx.workspaceId, { actionPrefix: "protocol." })
@@ -244,7 +246,7 @@ export class ProtocolService {
     }));
   }
   async revokeToken(ctx: AppContext, tokenId: string) {
-    this.ensureCanManageTokens(ctx);
+    await this.ensureCanManageTokens(ctx);
     await this.repos.agentTokens.revoke(tokenId);
     await this.repos.audits.add({
       actorType: ctx.actorType,
@@ -934,7 +936,7 @@ export function createBoundedServices(repos: RepositorySet) {
     signals,
     ai: new AiGenerationService(systems, graph, versions, entitlements, signals, repos),
     importExport: new ImportExportService(systems, graph, versions, schema, signals),
-    protocol: new ProtocolService(repos, access)
+    protocol: new ProtocolService(repos, access, entitlements)
     ,guards: new ProtocolGuardService(repos)
   };
 }

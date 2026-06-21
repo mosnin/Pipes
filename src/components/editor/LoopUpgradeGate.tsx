@@ -27,8 +27,8 @@ const REASON_COPY: Record<LoopUpgradeGateProps["reason"], { title: string; body:
     body: "Publish loops to the marketplace and earn on every install. Available on the Pro plan and above.",
   },
   mcp_write: {
-    title: "MCP write access requires Pro",
-    body: "Agents can read your loop on the free plan. Upgrade to Pro to let agents write to the canvas via the Loop API.",
+    title: "MCP access requires Pro",
+    body: "Upgrade to Pro to generate a scoped token and let agents read or write to the canvas via the MCP endpoint.",
   },
   ai_generation: {
     title: "AI-assisted editing requires Pro",
