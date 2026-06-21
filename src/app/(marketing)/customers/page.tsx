@@ -1,37 +1,50 @@
 import Link from "next/link";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
-import { CustomerLogoWall } from "@/components/marketing/CustomerLogoWall";
-import { CustomerCaseStudyGrid } from "@/components/marketing/CustomerCaseStudyGrid";
-import { CustomerQuoteBlock } from "@/components/marketing/CustomerQuoteBlock";
-import { MetricsStrip, type Metric } from "@/components/marketing/MetricsStrip";
-import {
-  customerLogos,
-  customerStats,
-  caseStudies,
-  featuredQuote,
-} from "@/lib/marketing/customers-data";
+import { caseStudies } from "@/lib/marketing/customers-data";
 
 export const metadata = {
-  title: "Customers - Looper",
+  title: "Scenarios - Looper",
   description:
-    "Teams shipping multi-agent systems on Looper. Engineering, support, sales, data, and operations teams describe their systems and hand the graph to their agents.",
+    "Example scenarios showing how engineering, support, sales, data, and operations teams describe multi-agent systems with Looper.",
 };
 
-const STAT_METRICS: ReadonlyArray<Metric> = customerStats.map((stat) => ({
-  value: stat.value,
-  suffix: stat.suffix,
-  label: stat.label,
-  decimals: stat.value % 1 === 0 ? 0 : 1,
-}));
+const CATEGORY_ORDER = ["Engineering", "Support", "Sales", "Data", "Operations"] as const;
 
-export default function CustomersPage() {
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  Engineering: "Ship multi-agent architectures your team can read and your agents can run.",
+  Support: "Capture triage, routing, and escalation as a typed graph — not a doc.",
+  Sales: "Hand off a token, not a PDF. Clients read the same map their agent runs.",
+  Data: "Ingestion, enrichment, and audit checkpoints on one diagram.",
+  Operations: "On-call runbooks your agents and humans read the same way.",
+};
+
+type Category = (typeof CATEGORY_ORDER)[number];
+
+function CategoryIcon({ category }: { category: string }) {
+  const icons: Record<string, string> = {
+    Engineering: "⚙",
+    Support: "↗",
+    Sales: "◇",
+    Data: "≡",
+    Operations: "○",
+  };
+  return <span aria-hidden>{icons[category] ?? "·"}</span>;
+}
+
+export default function UseCasesPage() {
+  const byCategory = CATEGORY_ORDER.map((cat) => ({
+    category: cat,
+    description: CATEGORY_DESCRIPTIONS[cat],
+    studies: caseStudies.filter((s) => s.category === cat),
+  }));
+
   return (
     <div className="bg-white">
       {/* HERO */}
       <section className="px-6 pt-10">
         <div className="mx-auto max-w-6xl">
           <div className="surface-subtle rounded-[40px] border border-black/[0.06] px-6 py-24 text-center sm:py-32">
-            <SectionBadge label="Customers" />
+            <SectionBadge label="Scenarios" />
             <h1
               className="mx-auto mt-6 max-w-3xl text-[#111]"
               style={{
@@ -41,59 +54,60 @@ export default function CustomersPage() {
                 fontWeight: 700,
               }}
             >
-              Teams shipping multi-agent systems on Looper.
+              Five workloads. One typed graph.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl t-body leading-relaxed text-[#3C3C43]">
-              Five workloads. One typed graph their agents read. Pick the
-              team that looks like yours.
+              Example scenarios showing how different teams describe multi-agent systems with Looper.
+              Pick the discipline that looks like yours.
+            </p>
+            <p className="mt-4 t-caption text-[#8E8E93]">
+              Illustrative scenarios — not real customers or testimonials.
             </p>
           </div>
         </div>
       </section>
 
-      {/* LOGO WALL */}
-      <section className="px-6 pt-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 flex items-end justify-between gap-4">
-            <h2 className="t-h2 text-[#111]">Teams already shipping</h2>
-            <span className="t-caption text-[#8E8E93]">
-              Selected customers, with permission
-            </span>
+      {/* SCENARIO GRID */}
+      {byCategory.map(({ category, description, studies }) => (
+        <section key={category} className="px-6 pt-20">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-8 flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4F46E5]/10 text-[#4F46E5] text-lg">
+                <CategoryIcon category={category} />
+              </div>
+              <div>
+                <h2 className="t-h2 text-[#111]">{category}</h2>
+                <p className="mt-1 t-body text-[#3C3C43]">{description}</p>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {studies.map((study) => (
+                <div
+                  key={study.slug}
+                  className="surface-subtle rounded-2xl border border-black/[0.06] p-6 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center rounded-full bg-[#4F46E5]/10 px-2.5 py-0.5 text-xs font-medium text-[#4F46E5]">
+                      {category}
+                    </span>
+                    <span className="t-caption text-[#8E8E93]">Scenario</span>
+                  </div>
+                  <p className="t-label font-semibold text-[#111] leading-snug">{study.outcome}</p>
+                  <p className="t-body text-[#3C3C43] leading-relaxed flex-1">{study.story}</p>
+                  {study.useCaseSlug && (
+                    <Link
+                      href={`/use-cases/${study.useCaseSlug}`}
+                      className="t-caption font-medium text-[#4F46E5] hover:underline mt-1"
+                    >
+                      See this use case {"→"}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          <CustomerLogoWall logos={customerLogos} />
-        </div>
-      </section>
-
-      {/* STATS STRIP */}
-      <section className="pt-20">
-        <MetricsStrip metrics={STAT_METRICS} />
-      </section>
-
-      {/* CASE STUDY GRID */}
-      <section className="px-6 pt-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 max-w-2xl">
-            <SectionBadge label="Stories" />
-            <h2 className="mt-4 t-h1 text-[#111]">
-              How they describe their systems.
-            </h2>
-            <p className="mt-4 t-body leading-relaxed text-[#3C3C43]">
-              Pick a discipline. Read the team that ships in it. Hand the same
-              shape to your team next week.
-            </p>
-          </div>
-          <CustomerCaseStudyGrid studies={caseStudies} />
-        </div>
-      </section>
-
-      {/* FEATURED QUOTE */}
-      <section className="px-6 pt-32">
-        <div className="mx-auto max-w-6xl">
-          <div className="surface-subtle rounded-[40px] border border-black/[0.06] px-6 py-24 sm:px-16 sm:py-28">
-            <CustomerQuoteBlock quote={featuredQuote} />
-          </div>
-        </div>
-      </section>
+        </section>
+      ))}
 
       {/* CTA */}
       <section className="px-6 pt-24 pb-24">
@@ -112,22 +126,22 @@ export default function CustomersPage() {
                   fontWeight: 700,
                 }}
               >
-                Be the next story we tell.
+                Build the first real story.
               </h2>
               <p className="mt-4 max-w-lg t-body text-white/80">
-                Describe your system in a sentence. Ship the graph. Send us a
-                note when your team reads it the same way their agent does.
+                Describe your system in a sentence. Looper draws the graph. Your team and your agents
+                read the same map. Ship it and tell us how it went.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <Link
-                href="/signup?source=customers_cta"
+                href="/signup?source=use_cases_cta"
                 className="inline-flex h-12 items-center gap-1.5 rounded-full bg-white px-6 t-label font-semibold text-[#4F46E5] transition-colors hover:bg-white/90"
               >
                 Start free
               </Link>
               <Link
-                href="/contact?source=customers_contact"
+                href="/contact?source=use_cases_contact"
                 className="t-label font-semibold text-white/90 transition-colors hover:text-white"
               >
                 Talk to us {"→"}

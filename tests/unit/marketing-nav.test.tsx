@@ -71,7 +71,7 @@ describe("MarketingNav — pill nav", () => {
     render(<MarketingNav />);
     const mainNav = screen.getByLabelText("Main navigation");
     const productTrigger = within(mainNav).getByRole("button", { name: /product/i });
-    const customersTrigger = within(mainNav).getByRole("button", { name: /customers/i });
+    const customersTrigger = within(mainNav).getByRole("button", { name: /scenarios/i });
 
     fireEvent.mouseEnter(productTrigger);
     expect(productTrigger.getAttribute("aria-expanded")).toBe("true");

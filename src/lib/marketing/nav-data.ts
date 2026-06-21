@@ -169,5 +169,5 @@ export const navItems: readonly NavItem[] = [
   { id: "marketplace", label: "Marketplace", menu: { kind: "direct", href: "/marketplace" } },
   { id: "pricing", label: "Pricing", menu: { kind: "direct", href: "/pricing" } },
   { id: "docs", label: "Docs", menu: docsMenu },
-  { id: "customers", label: "Customers", menu: customersMenu },
+  { id: "customers", label: "Scenarios", menu: customersMenu },
 ] as const;
