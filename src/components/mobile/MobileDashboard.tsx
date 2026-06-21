@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowUp, Search, X } from "lucide-react";
+import { ArrowUp, Search, Star, X } from "lucide-react";
 
 // MobileDashboard — the mobile-first dashboard. Not a port of desktop; a
 // distinct surface for a touch user who wants to read or share what they
@@ -186,6 +186,36 @@ export function MobileDashboard({
     return () => cancelAnimationFrame(id);
   }, [expanded]);
 
+  const refreshLibrary = useCallback(async () => {
+    try {
+      const res = await fetch("/api/library?status=all&sort=recent_activity", { cache: "no-store" });
+      const body = await res.json();
+      if (body.ok) setLibrary(body.data);
+    } catch {
+      // best-effort
+    }
+  }, []);
+
+  const handleToggleFavorite = useCallback(
+    async (row: LibraryRow, e: React.MouseEvent) => {
+      e.stopPropagation();
+      const next = !row.favorite;
+      try {
+        const res = await fetch("/api/library", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: next }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success(next ? "Added to favorites" : "Removed from favorites");
+        void refreshLibrary();
+      } catch {
+        toast.error("Failed to update favorites");
+      }
+    },
+    [refreshLibrary],
+  );
+
   const startSystem = useCallback(
     async (prompt: string) => {
       const text = prompt.trim();
@@ -298,19 +328,54 @@ export function MobileDashboard({
             <ul className="flex flex-col gap-2" data-testid="mobile-dashboard-system-list">
               {rows.map((row) => (
                 <li key={row.id}>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/systems/${row.id}`)}
-                    className="w-full flex items-center gap-3 bg-white border border-black/[0.08] hover:border-indigo-300 active:bg-black/[0.02] rounded-xl px-3 py-3 min-h-[68px] text-left transition-colors"
-                  >
-                    <CardThumbnail seed={row.id} />
-                    <div className="min-w-0 flex-1">
-                      <p className="t-label font-semibold text-[#111] truncate">{row.name}</p>
-                      <p className="t-caption text-[#8E8E93] truncate">
-                        {row.description || "No description"}
-                      </p>
-                    </div>
-                  </button>
+                  <div className="w-full flex items-center gap-3 bg-white border border-black/[0.08] hover:border-indigo-300 rounded-xl px-3 py-3 min-h-[68px] transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/systems/${row.id}`)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-70"
+                      aria-label={`Open ${row.name}`}
+                    >
+                      <CardThumbnail seed={row.id} />
+                      <div className="min-w-0 flex-1">
+                        <p className="t-label font-semibold text-[#111] truncate">{row.name}</p>
+                        <p className="t-caption text-[#8E8E93] truncate">
+                          {row.description || "No description"}
+                        </p>
+                        {row.tags.length > 0 && (
+                          <div className="flex gap-1 mt-1 overflow-hidden">
+                            {row.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag}
+                                className="shrink-0 inline-block px-1.5 py-0 rounded-full bg-[#F5F5F7] t-caption text-[#8E8E93] text-[10px]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {row.tags.length > 3 && (
+                              <span className="shrink-0 t-caption text-[#C7C7CC] text-[10px]">
+                                +{row.tags.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => void handleToggleFavorite(row, e)}
+                      aria-label={row.favorite ? "Remove from favorites" : "Add to favorites"}
+                      className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors active:bg-black/[0.06]"
+                    >
+                      <Star
+                        size={18}
+                        className={
+                          row.favorite
+                            ? "text-[#3C3C43] fill-[#3C3C43]"
+                            : "text-[#C7C7CC]"
+                        }
+                      />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
