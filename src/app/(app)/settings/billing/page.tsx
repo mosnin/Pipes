@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { UsageInfraCard } from "@/components/billing/UsageInfraCard";
 import {
   CheckCircle2,
   ExternalLink,
@@ -361,6 +362,9 @@ export default function BillingSettingsPage() {
               )}
             </CardBody>
           </CardShell>
+
+          {/* ── Usage and metered x402 payments ── */}
+          <UsageInfraCard />
 
           {/* ── Payment method ── */}
           <CardShell>
