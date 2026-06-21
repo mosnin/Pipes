@@ -7,7 +7,7 @@ import { motion, useReducedMotion } from "framer-motion";
 /**
  * ProtocolCapabilityGrid
  *
- * Deep grid of the 11 MCP capabilities. Each card carries:
+ * Deep grid of the 12 MCP capabilities. Each card carries:
  *   - capability name (the token scope)
  *   - one-sentence description
  *   - example scope set

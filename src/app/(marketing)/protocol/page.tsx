@@ -461,7 +461,7 @@ export default function ProtocolPage() {
                     className="mt-4 t-h1 text-[#111]"
                     style={{ fontSize: 36, letterSpacing: "-0.025em" }}
                   >
-                    Eleven capabilities. One token. No surprises.
+                    Twelve capabilities. One token. No surprises.
                   </h2>
                   <p className="mt-3 t-body text-[#3C3C43]">
                     Capabilities are the unit of access. Pick the subset the

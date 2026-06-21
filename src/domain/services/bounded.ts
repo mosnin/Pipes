@@ -764,8 +764,8 @@ export class ReleaseReviewService {
         { label: "Admin support", href: "/admin" },
         { label: "Admin insights", href: "/admin/insights" },
         { label: "Admin issues", href: "/admin/issues" },
-        { label: "Settings audit", href: "/settings/audit" },
-        { label: "Settings trust", href: "/settings/trust" },
+        { label: "Settings billing", href: "/settings/billing" },
+        { label: "Settings tokens", href: "/settings/tokens" },
         { label: "QA checklist", href: "/docs" }
       ]
     };
