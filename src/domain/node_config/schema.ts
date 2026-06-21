@@ -176,6 +176,20 @@ export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = 
     { key: "passthrough", label: "Pass parent context", type: "boolean", defaultValue: true },
     { key: "maxIterations", label: "Max iterations override", type: "number", placeholder: "Inherit from sub-loop" },
   ],
+  Subsystem: [
+    { key: "systemId", label: "Looper system ID", type: "text", placeholder: "sys_abc123", required: true },
+    { key: "passContext", label: "Pass parent context", type: "boolean", defaultValue: true },
+    { key: "timeout", label: "Execution timeout (ms)", type: "number", placeholder: "60000", defaultValue: 60000 },
+    { key: "onError", label: "On sub-system error", type: "select", options: [{ value: "propagate", label: "Propagate error" }, { value: "fallback", label: "Use fallback output" }, { value: "skip", label: "Skip and continue" }], defaultValue: "propagate" },
+  ],
+  Reference: [
+    { key: "targetId", label: "Referenced node ID", type: "text", placeholder: "node_abc123", required: true },
+    { key: "label", label: "Reference label", type: "text", placeholder: "See: auth-flow" },
+  ],
+  Annotation: [
+    { key: "text", label: "Annotation text", type: "textarea", placeholder: "Describe this section of the loop...", required: true },
+    { key: "color", label: "Highlight color", type: "select", options: [{ value: "yellow", label: "Yellow" }, { value: "blue", label: "Blue" }, { value: "green", label: "Green" }, { value: "red", label: "Red" }, { value: "gray", label: "Gray" }], defaultValue: "yellow" },
+  ],
 };
 
 export function getConfigSchema(nodeType: NodeType): ConfigFieldDef[] {
