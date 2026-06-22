@@ -296,3 +296,34 @@ a { color: inherit; text-decoration: none; }
 .accent-warm-text   { color: var(--color-accent-warm-strong); }
 .accent-warm-border { border-color: var(--color-accent-warm-border); }
 
+/* ── Hero orb / aurora animations ─────────────────────────────────────────── */
+@keyframes looper-orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(3%, 2%) scale(1.04); }
+  66%      { transform: translate(-2%, 3%) scale(0.97); }
+}
+@keyframes looper-orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%      { transform: translate(-4%, -3%) scale(1.06); }
+  70%      { transform: translate(3%, 1%) scale(0.96); }
+}
+
+.looper-orb-1 {
+  animation: looper-orb-drift 14s ease-in-out infinite;
+}
+.looper-orb-2 {
+  animation: looper-orb-drift-2 18s ease-in-out infinite;
+}
+
+@keyframes looper-hero-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(0.3deg); }
+}
+.looper-hero-float-wrapper {
+  animation: looper-hero-float 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .looper-orb-1, .looper-orb-2, .looper-hero-float-wrapper {
+    animation: none;
+  }
+}

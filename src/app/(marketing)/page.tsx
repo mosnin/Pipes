@@ -17,6 +17,12 @@ import { MCP_TOOL_COUNT } from "@/lib/protocol/mcp-tools";
 import { FeatureGrid } from "@/components/marketing/FeatureGrid";
 import { CompareStrip } from "@/components/marketing/CompareStrip";
 import { StarterShowcase, QuoteRotator } from "@/components/marketing/StarterShowcase";
+import {
+  HeroAnimatedHeadline,
+  HeroAnimatedSubtitle,
+  HeroAnimatedCtas,
+  HeroAnimatedSide,
+} from "@/components/marketing/HeroAnimatedHeadline";
 
 const HOMEPAGE_TITLE = "Build agent loops, visually.";
 const HOMEPAGE_SUBTITLE =
@@ -72,6 +78,7 @@ export default function HomePage() {
         aria-label="Looper hero"
         className="relative flex min-h-[92vh] items-center overflow-hidden"
       >
+        {/* Gradient grid background */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.45]"
@@ -83,6 +90,31 @@ export default function HomePage() {
               "radial-gradient(ellipse 70% 50% at 50% 0%, #000 50%, transparent 100%)",
           }}
         />
+        {/* Floating gradient orbs — atmospheric depth */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="looper-orb-1 absolute rounded-full"
+            style={{
+              width: 680,
+              height: 680,
+              top: "-180px",
+              left: "-120px",
+              background: "radial-gradient(circle, rgba(99,102,241,0.13) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
+              filter: "blur(48px)",
+            }}
+          />
+          <div
+            className="looper-orb-2 absolute rounded-full"
+            style={{
+              width: 500,
+              height: 500,
+              top: "60px",
+              right: "-100px",
+              background: "radial-gradient(circle, rgba(79,70,229,0.10) 0%, rgba(99,102,241,0.05) 50%, transparent 70%)",
+              filter: "blur(60px)",
+            }}
+          />
+        </div>
         <div className="relative mx-auto w-full max-w-7xl px-6 pt-24 pb-12">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="lg:col-span-7">
@@ -96,54 +128,45 @@ export default function HomePage() {
                 />
                 Co-author loops with your agent
               </span>
-              <h1
-                className="mt-6 text-[#111]"
-                style={{
-                  fontSize: "clamp(44px, 7vw, 84px)",
-                  lineHeight: 1.02,
-                  letterSpacing: "-0.045em",
-                  fontWeight: 700,
-                }}
-              >
-                Build agent loops, visually.
-              </h1>
-              <p
-                className="mt-7 max-w-2xl t-body text-[#3C3C43]"
-                style={{ fontSize: 19, lineHeight: 1.55 }}
-              >
+              <HeroAnimatedHeadline />
+              <HeroAnimatedSubtitle>
                 {HOMEPAGE_SUBTITLE}
-              </p>
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <TrackedLink
-                  href={home.hero.primaryCta.href}
-                  event="homepage_cta_clicked"
-                  metadata={{ location: "hero_primary" }}
-                >
-                  <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-indigo-600 px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700">
-                    Start free
-                    <ArrowRight size={14} aria-hidden="true" />
-                  </span>
-                </TrackedLink>
-                <Link
-                  href="#scroll-demo"
-                  className="inline-flex h-12 items-center gap-1.5 rounded-full border border-black/10 bg-white px-6 t-label font-semibold text-[#111] transition-colors hover:border-black/30"
-                >
-                  Watch the demo
-                  <ArrowRight size={13} aria-hidden="true" />
-                </Link>
-              </div>
-              <div className="mt-6">
-                <Link
-                  href="/play"
-                  className="t-caption text-[#8E8E93] underline-offset-4 hover:text-[#3C3C43] hover:underline"
-                  style={{ fontSize: 12 }}
-                >
-                  Or try the live playground at /play
-                </Link>
-              </div>
+              </HeroAnimatedSubtitle>
+              <HeroAnimatedCtas>
+                <div className="mt-10 flex flex-wrap items-center gap-4">
+                  <TrackedLink
+                    href={home.hero.primaryCta.href}
+                    event="homepage_cta_clicked"
+                    metadata={{ location: "hero_primary" }}
+                  >
+                    <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-indigo-600 px-6 t-label font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98]">
+                      Start free
+                      <ArrowRight size={14} aria-hidden="true" />
+                    </span>
+                  </TrackedLink>
+                  <Link
+                    href="#scroll-demo"
+                    className="inline-flex h-12 items-center gap-1.5 rounded-full border border-black/10 bg-white px-6 t-label font-semibold text-[#111] transition-all hover:border-black/30 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Watch the demo
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                </div>
+                <div className="mt-6">
+                  <Link
+                    href="/play"
+                    className="t-caption text-[#8E8E93] underline-offset-4 hover:text-[#3C3C43] hover:underline"
+                    style={{ fontSize: 12 }}
+                  >
+                    Or try the live playground at /play
+                  </Link>
+                </div>
+              </HeroAnimatedCtas>
             </div>
             <div className="hidden lg:col-span-5 lg:block">
-              <HeroSidePreview />
+              <HeroAnimatedSide>
+                <HeroSidePreview />
+              </HeroAnimatedSide>
             </div>
           </div>
         </div>
