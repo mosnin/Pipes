@@ -1236,7 +1236,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         />
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
           {nodes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none" style={{ marginTop: 0 }}>
+            <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none" style={{ marginTop: 0 }}>
               <div className="pointer-events-auto text-center space-y-5 max-w-sm">
                 <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
                   <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
