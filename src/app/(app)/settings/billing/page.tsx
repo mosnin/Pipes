@@ -36,7 +36,7 @@ interface Entitlements {
   collaboration: boolean;
   versionHistory: boolean;
   aiGeneration?: boolean;
-  apiAccess?: boolean;
+  apiMcpAccess?: boolean;
   seatsUsed?: number;
   seatsTotal?: number;
 }
@@ -370,7 +370,7 @@ export default function BillingSettingsPage() {
                 <FeatureRow label="Collaboration" enabled={summary.entitlements.collaboration} />
                 <FeatureRow label="Version history" enabled={summary.entitlements.versionHistory} />
                 <FeatureRow label="AI generation" enabled={summary.entitlements.aiGeneration ?? false} />
-                <FeatureRow label="API and MCP access" enabled={summary.entitlements.apiAccess ?? false} />
+                <FeatureRow label="API and MCP access" enabled={summary.entitlements.apiMcpAccess ?? false} />
               </ul>
             </CardBody>
           </CardShell>
