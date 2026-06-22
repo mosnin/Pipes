@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronsLeft,
   ChevronsRight,
-  ChevronDown,
+  ChevronRight,
   Bell,
   LogOut,
   HelpCircle,
@@ -157,10 +157,10 @@ export function AppShellClient({
           </div>
 
           {!collapsed && (
-            <button
-              type="button"
+            <Link
+              href="/settings/workspace"
               className="mt-3 w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/70 transition-colors text-left"
-              aria-label="Switch workspace"
+              aria-label="Workspace settings"
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-black/[0.08] text-[10px] font-bold text-[#3C3C43] shrink-0">
                 {workspace.name.slice(0, 2).toUpperCase()}
@@ -170,11 +170,11 @@ export function AppShellClient({
                   {workspace.name}
                 </span>
                 <span className="block t-micro text-[#8E8E93] truncate leading-tight">
-                  {workspace.role} . {workspace.plan}
+                  {workspace.role} · {workspace.plan}
                 </span>
               </span>
-              <ChevronDown size={12} className="text-[#8E8E93] shrink-0" />
-            </button>
+              <ChevronRight size={12} className="text-[#8E8E93] shrink-0" />
+            </Link>
           )}
 
           {collapsed && (
