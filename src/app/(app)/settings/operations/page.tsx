@@ -18,7 +18,7 @@ interface BillingData {
     collaboration: boolean;
     versionHistory: boolean;
     aiGeneration?: boolean;
-    apiAccess?: boolean;
+    apiMcpAccess?: boolean;
   };
 }
 
@@ -86,7 +86,7 @@ export default function OperationsPage() {
                   {
                     label: "API access",
                     description: "MCP tokens and programmatic access to your loops",
-                    enabled: !!ent?.apiAccess,
+                    enabled: !!ent?.apiMcpAccess,
                   },
                   {
                     label: "Collaboration",
