@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ArrowRight } from "lucide-react";
+import { X, ArrowRight, LayoutDashboard } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Wordmark } from "@/components/Wordmark";
 import { navItems } from "@/lib/marketing/nav-data";
 import type { NavItem } from "@/lib/marketing/nav-data";
+import { clientRuntimeFlags } from "@/lib/env/client";
 
 // Full-page mobile drawer.
 //
@@ -21,6 +23,8 @@ export type MobileFullPageMenuProps = {
 };
 
 export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
+  const { isSignedIn } = useUser();
+  const showDashboard = clientRuntimeFlags.useMocks || Boolean(isSignedIn);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusableRef = useRef<HTMLAnchorElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -126,22 +130,36 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
           {/* Bottom actions */}
           <div className="border-t border-black/[0.06] px-5 py-5">
             <div className="flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={onClose}
-                className="flex h-12 items-center justify-center rounded-full border border-black/[0.08] t-label font-medium text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                Log in
-              </Link>
-              <Link
-                ref={lastFocusableRef}
-                href="/signup"
-                onClick={onClose}
-                className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                Start free
-                <ArrowRight size={14} aria-hidden="true" />
-              </Link>
+              {showDashboard ? (
+                <Link
+                  ref={lastFocusableRef}
+                  href="/dashboard"
+                  onClick={onClose}
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                  <LayoutDashboard size={14} aria-hidden="true" />
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={onClose}
+                    className="flex h-12 items-center justify-center rounded-full border border-black/[0.08] t-label font-medium text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    ref={lastFocusableRef}
+                    href="/signup"
+                    onClick={onClose}
+                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Start free
+                    <ArrowRight size={14} aria-hidden="true" />
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>

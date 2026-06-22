@@ -131,9 +131,9 @@ describe("MobileFullPageMenu — drawer", () => {
     for (const item of navItems) {
       expect(within(drawer).getAllByText(item.label).length).toBeGreaterThan(0);
     }
-    // Bottom auth actions present.
-    expect(within(drawer).getByRole("link", { name: /log in/i })).toBeTruthy();
-    expect(within(drawer).getByRole("link", { name: /start free/i })).toBeTruthy();
+    // In mock mode (NEXT_PUBLIC_LOOPER_USE_MOCKS !== "false"), the drawer shows
+    // a "Dashboard" link instead of the sign-in/sign-up pair.
+    expect(within(drawer).getByRole("link", { name: /dashboard/i })).toBeTruthy();
   });
 
   it("calls onClose when Escape is pressed", () => {
