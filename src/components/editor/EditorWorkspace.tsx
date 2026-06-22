@@ -943,6 +943,39 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         if (selectedNodeIds.length === 1) setMetadataDialogOpen(true);
       },
     });
+    const offInspector = registerShortcut({
+      id: "editor.toggle-inspector",
+      combo: "mod+e",
+      label: "Toggle inspector",
+      group: "editor",
+      scope: "editor",
+      handler: () => setInspectorOpen((v) => !v),
+    });
+    const offCheckpoint = registerShortcut({
+      id: "editor.save-checkpoint",
+      combo: "mod+shift+s",
+      label: "Save checkpoint",
+      group: "editor",
+      scope: "editor",
+      handler: async () => {
+        if (savingCheckpoint) return;
+        if (data?.entitlements?.versionHistory === false) {
+          toggleSystemPanel("versions");
+          return;
+        }
+        setSavingCheckpoint(true);
+        const name = `v${(data?.versions.length ?? 0) + 1} · ${new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+        try {
+          await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
+          reload();
+          toast.success(`Saved "${name}"`);
+        } catch {
+          toast.error("Failed to save checkpoint");
+        } finally {
+          setSavingCheckpoint(false);
+        }
+      },
+    });
     return () => {
       offUndo();
       offRedo();
@@ -950,8 +983,10 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
       offFit();
       offFrame();
       offMetadata();
+      offInspector();
+      offCheckpoint();
     };
-  }, [duplicateSelection, redo, selectedNodeIds, undo]);
+  }, [data, duplicateSelection, redo, reload, savingCheckpoint, selectedNodeIds, setSavingCheckpoint, systemId, toggleSystemPanel, undo]);
 
   // Publish the "Show node metadata" command into the global Command Palette
   // when exactly one node is selected. Cleared otherwise. The action opens
