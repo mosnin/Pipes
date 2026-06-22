@@ -43,7 +43,7 @@ type SystemPayload = {
   nodes: GraphNode[];
   pipes: GraphPipe[];
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; authorName?: string; createdAt: string }>;
-  versions: Array<{ id: string; name: string; authorId: string; createdAt: string }>;
+  versions: Array<{ id: string; name: string; authorId: string; createdAt: string; nodeCount?: number; nodeTypes?: string[] }>;
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
   entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean; versionHistory: boolean };
 };
@@ -63,7 +63,23 @@ function normalizeBundle(bundle: any): SystemPayload {
     nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), authorName: c.authorName ?? undefined, createdAt: c.createdAt })),
-    versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
+    versions: bundle.versions.map((v: any) => {
+      let nodeCount: number | undefined;
+      let nodeTypes: string[] | undefined;
+      if (v.snapshot) {
+        try {
+          const snap = JSON.parse(v.snapshot) as { nodes?: Array<{ type?: string }> };
+          if (Array.isArray(snap.nodes)) {
+            nodeCount = snap.nodes.length;
+            const seen = new Set<string>();
+            const types: string[] = [];
+            for (const n of snap.nodes) { if (n.type && !seen.has(n.type)) { seen.add(n.type); types.push(n.type); } }
+            nodeTypes = types.slice(0, 5);
+          }
+        } catch { /* snapshot parse failure is non-fatal */ }
+      }
+      return { id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt, nodeCount, nodeTypes };
+    }),
     presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined })),
     entitlements,
   };
@@ -1551,11 +1567,15 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                     ) : (
                       <div className="space-y-1">
                         {data.versions.slice().reverse().map((v) => (
-                          <div key={v.id} className="flex items-center justify-between gap-2 p-2.5 rounded-lg hover:bg-[#F5F5F7] group">
-                            <div className="min-w-0 flex-1">
-                              <p className="t-label font-medium text-[#111] truncate">{v.name}</p>
-                              <p className="t-caption text-[#8E8E93]">{new Date(v.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                            </div>
+                          <div key={v.id} className="p-2.5 rounded-lg hover:bg-[#F5F5F7] group">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="t-label font-medium text-[#111] truncate">{v.name}</p>
+                                <p className="t-caption text-[#8E8E93]">
+                                  {new Date(v.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                  {v.nodeCount !== undefined && <span className="ml-1.5">· {v.nodeCount} node{v.nodeCount !== 1 ? "s" : ""}</span>}
+                                </p>
+                              </div>
                             {restoringVersionId === v.id ? (
                               <Spinner size="sm" />
                             ) : (
@@ -1578,6 +1598,14 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                               >
                                 Restore
                               </button>
+                            )}
+                            </div>
+                            {v.nodeTypes && v.nodeTypes.length > 0 && (
+                              <div className="mt-1.5 flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {v.nodeTypes.map((t) => (
+                                  <span key={t} className="inline-block px-1.5 py-0.5 rounded text-[9px] font-mono bg-indigo-50 text-indigo-600 border border-indigo-100">{t}</span>
+                                ))}
+                              </div>
                             )}
                           </div>
                         ))}
