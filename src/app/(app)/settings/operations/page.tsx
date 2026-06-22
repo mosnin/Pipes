@@ -114,8 +114,11 @@ export default function OperationsPage() {
           </CardShell>
 
           <CardShell>
-            <CardHeader>Execution defaults</CardHeader>
+            <CardHeader>Platform limits</CardHeader>
             <CardBody>
+              <p className="t-caption text-[#8E8E93] mb-4">
+                These are fixed platform defaults that apply to all workspaces. They are not configurable per workspace.
+              </p>
               <div className="flex flex-col divide-y divide-black/[0.06]">
                 {[
                   { label: "Node execution timeout", value: "60 seconds" },
@@ -129,9 +132,6 @@ export default function OperationsPage() {
                   </div>
                 ))}
               </div>
-              <p className="t-caption text-[#C7C7CC] mt-4">
-                Per-node timeout overrides can be set in the node configuration panel in the editor.
-              </p>
             </CardBody>
           </CardShell>
         </>
