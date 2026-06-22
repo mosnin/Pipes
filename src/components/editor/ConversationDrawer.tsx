@@ -8,7 +8,8 @@
 // See docs/agent-product.md and docs/magic-moment.md.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, MessageSquare } from "lucide-react";
+import { ArrowRight, ChevronDown, MessageSquare } from "lucide-react";
+import Link from "next/link";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { ConversationMessages } from "@/components/editor/ConversationMessages";
 import { PlanEditor } from "@/components/editor/PlanEditor";
@@ -385,16 +386,30 @@ export function ConversationDrawer({
             onPick={handleStarter}
           />
         ) : null}
+        {hasError && agent.error?.code === "monthly_build_limit_exceeded" ? (
+          <div className="mb-2 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm">
+            <div className="flex-1 min-w-0">
+              <p className="t-label font-semibold text-amber-900">Monthly build limit reached</p>
+              <p className="t-caption text-amber-800 mt-0.5">You have used your 50 free builds this month. Upgrade to Pro for unlimited builds.</p>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-1 t-caption font-semibold text-indigo-700 hover:text-indigo-800 shrink-0"
+            >
+              Upgrade <ArrowRight size={12} />
+            </Link>
+          </div>
+        ) : null}
         <ConversationInput
           ref={inputRef}
           value={text}
           onChange={handleTextChange}
           onSend={handleSend}
           onStop={handleStop}
-          onRetry={hasError ? handleRetry : undefined}
+          onRetry={hasError && agent.error?.code !== "monthly_build_limit_exceeded" ? handleRetry : undefined}
           isRunning={isRunning}
-          hasError={hasError}
-          placeholderHint={agent.placeholderHint}
+          hasError={hasError && agent.error?.code !== "monthly_build_limit_exceeded"}
+          placeholderHint={hasError && agent.error?.code === "monthly_build_limit_exceeded" ? "idle" : agent.placeholderHint}
           activeToolLabel={activeToolLabel}
           placeholder={DEFAULT_HEADLINE}
         />

@@ -21,7 +21,7 @@ const TIERS: readonly PricingTier[] = [
     id: "starter",
     name: "Free",
     description:
-      "Build and share loops for free. No credit card. Public loops only.",
+      "Build loops with AI. 50 agent builds/month. Public loops only. No credit card.",
     monthlyPrice: "$0",
     yearlyPrice: "$0",
     monthlyPeriod: "free, forever",
@@ -34,7 +34,8 @@ const TIERS: readonly PricingTier[] = [
     ctaTone: "secondary",
     features: [
       "3 public loops",
-      "Loop canvas and manual editing",
+      "50 agent builds/month",
+      "Loop canvas and editing",
       "Validation and simulation",
       "Community loop starters",
       "JSON + Markdown export",
@@ -142,7 +143,7 @@ const COMPARISON: readonly ComparisonGroup[] = [
       {
         feature: "AI-assisted builds per month",
         detail: "One build = one prompt the agent acts on.",
-        starter: false,
+        starter: "50/month",
         pro: "Unlimited",
         team: "Unlimited",
         enterprise: "Unlimited",
@@ -392,7 +393,7 @@ const FAQS: readonly FaqItem[] = [
     id: "faq-cap",
     question: "What happens if I exceed my monthly builds?",
     answer:
-      "On Free, AI-assisted builds are not included — manual editing always works. Upgrade to Pro and builds restart immediately, with no lost state.",
+      "On Free, you get 50 AI-assisted builds per month. Manual canvas editing never counts toward the cap. Once you hit 50, upgrade to Pro and builds restart immediately with no lost state.",
   },
   {
     id: "faq-keys",
