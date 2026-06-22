@@ -39,9 +39,9 @@ type EditorNodeData = {
 // longer than the 300 ms keyframe so the animation fully completes before the
 // class is removed.
 const ARRIVAL_LIFETIME_MS = 350;
-// How long an "arrived" flag stays on an edge id. Matches the 180 ms keyframe
-// plus a small buffer.
-const EDGE_STREAM_LIFETIME_MS = 220;
+// How long an "arrived" flag stays on an edge id. Must exceed the 380 ms
+// draw-on animation so the dasharray resets cleanly once the class is removed.
+const EDGE_STREAM_LIFETIME_MS = 450;
 
 const ALIGN_THRESHOLD = 8;
 const TOKEN_INK_LINE = "rgba(0,0,0,0.14)";
@@ -89,11 +89,11 @@ const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
       className={className}
       style={{
         border: accent ? accent.border : `1px solid ${TOKEN_INK_LINE_LIGHT}`,
-        borderRadius: accent ? accent.radius : 8,
+        borderRadius: accent ? accent.radius : 12,
         background: accent ? accent.bg : "#FFFFFF",
-        padding: 10,
-        minWidth: 184,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+        padding: 12,
+        minWidth: 192,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.9)",
       }}
     >
       <Handle
@@ -123,6 +123,44 @@ const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
     </div>
   );
 });
+
+function EmptyCanvasHint() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+        zIndex: 5,
+      }}
+    >
+      <svg width="196" height="68" viewBox="0 0 196 68" fill="none" aria-hidden="true">
+        <line x1="62" y1="34" x2="90" y2="34" stroke="rgba(79,70,229,0.22)" strokeWidth="1.5" strokeDasharray="3 2.5" />
+        <line x1="106" y1="34" x2="134" y2="34" stroke="rgba(79,70,229,0.22)" strokeWidth="1.5" strokeDasharray="3 2.5" />
+        <rect x="6" y="18" width="56" height="32" rx="10" fill="white" stroke="rgba(0,0,0,0.09)" strokeWidth="1" />
+        <rect x="72" y="18" width="52" height="32" rx="10" fill="white" stroke="rgba(0,0,0,0.09)" strokeWidth="1" />
+        <rect x="134" y="18" width="56" height="32" rx="10" fill="#EEF2FF" stroke="rgba(79,70,229,0.35)" strokeWidth="1.5" />
+        <circle cx="12" cy="34" r="2" fill="rgba(79,70,229,0.45)" />
+        <circle cx="184" cy="34" r="2" fill="rgba(79,70,229,0.45)" />
+      </svg>
+      <p
+        style={{
+          marginTop: 14,
+          fontSize: 13,
+          color: "rgba(0,0,0,0.26)",
+          letterSpacing: "-0.01em",
+          fontWeight: 500,
+        }}
+      >
+        Describe your system in the chat to get started
+      </p>
+    </div>
+  );
+}
 
 function CanvasCommands({
   fitRequest,
@@ -350,6 +388,7 @@ export function EditorCanvas({
 
   return (
     <div ref={wrapRef} className="editor-canvas relative w-full h-full" style={{ position: "relative" }}>
+      {nodes.length === 0 && <EmptyCanvasHint />}
       {previewItems
         ?.filter((item) => item.previewKind === "addition" && item.x !== undefined && item.y !== undefined)
         .map((item) => (
@@ -546,10 +585,10 @@ export function EditorCanvas({
         />
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1.2}
-          color={TOKEN_INK_LINE}
-          style={{ background: "#FAFAFA" }}
+          gap={24}
+          size={1}
+          color="rgba(0,0,0,0.09)"
+          style={{ background: "#F8F7FC" }}
         />
         <MiniMap
           pannable
