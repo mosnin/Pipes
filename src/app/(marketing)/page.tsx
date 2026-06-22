@@ -78,18 +78,6 @@ export default function HomePage() {
         aria-label="Looper hero"
         className="relative flex min-h-[92vh] items-center overflow-hidden"
       >
-        {/* Gradient grid background */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.45]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-            maskImage:
-              "radial-gradient(ellipse 70% 50% at 50% 0%, #000 50%, transparent 100%)",
-          }}
-        />
         {/* Floating gradient orbs — atmospheric depth */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div

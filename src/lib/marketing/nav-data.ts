@@ -71,15 +71,15 @@ const productMenu: ProductMenu = {
       heading: "Build",
       links: [
         { href: "/templates", label: "Starters", description: "Real systems to remix" },
-        { href: "/docs/editor", label: "Editor", description: "Draw, drag, type" },
-        { href: "/docs/schema", label: "Schema", description: "27 typed node kinds" },
+        { href: "/features/editor", label: "Editor", description: "Draw, drag, type" },
+        { href: "/features/schema", label: "Schema", description: "27 typed node kinds" },
       ],
     },
     {
       heading: "Run",
       links: [
-        { href: "/docs/versions", label: "Versions", description: "Promote and roll back" },
-        { href: "/docs/review", label: "Review", description: "Comment on any node" },
+        { href: "/features/versions", label: "Versions", description: "Promote and roll back" },
+        { href: "/features/review", label: "Review", description: "Comment on any node" },
         { href: "/changelog", label: "Changelog", description: "What shipped this week" },
       ],
     },
@@ -87,8 +87,8 @@ const productMenu: ProductMenu = {
       heading: "Connect",
       links: [
         { href: "/protocol", label: "Loop API", description: "One MCP endpoint" },
-        { href: "/docs/tokens", label: "Tokens", description: "Hand any agent a key" },
-        { href: "/docs/import-export", label: "Import and export", description: "Read your graph anywhere" },
+        { href: "/features/tokens", label: "Tokens", description: "Hand any agent a key" },
+        { href: "/features/import-export", label: "Import and export", description: "Read your graph anywhere" },
       ],
     },
   ],
