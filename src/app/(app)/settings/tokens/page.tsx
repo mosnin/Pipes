@@ -482,7 +482,7 @@ export default function TokensSettingsPage() {
 
           <div className="flex flex-col gap-1.5">
             <span className="t-label font-medium text-[#111]">Capabilities</span>
-            <HelpText>Grant only what is needed.</HelpText>
+            <HelpText>Grant only what is needed. Select at least one.</HelpText>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 border border-[var(--color-line)] rounded-md p-2">
               {AGENT_CAPABILITIES.map((cap: AgentCapability) => {
                 const checked = capabilities.includes(cap);
@@ -507,6 +507,9 @@ export default function TokensSettingsPage() {
                 );
               })}
             </div>
+            {capabilities.length === 0 && (
+              <HelpText tone="error">Select at least one capability to generate a token.</HelpText>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
