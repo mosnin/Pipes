@@ -19,6 +19,7 @@ import {
   InlineCode,
   PageHeader,
   Spinner,
+  SkeletonSettingsSection,
   StatusBadge,
   type DataTableColumn,
 } from "@/components/ui";
@@ -326,9 +327,7 @@ export default function TokensSettingsPage() {
         </CardHeader>
         {loading ? (
           <CardBody>
-            <div className="flex items-center justify-center py-12">
-              <Spinner size="md" />
-            </div>
+            <SkeletonSettingsSection />
           </CardBody>
         ) : apiMcpAccess === false ? (
           <CardBody>

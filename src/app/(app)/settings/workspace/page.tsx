@@ -10,6 +10,7 @@ import {
   Input,
   PageHeader,
   Spinner,
+  SkeletonSettingsSection,
 } from "@/components/ui";
 
 interface WorkspaceData {
@@ -76,9 +77,11 @@ export default function WorkspaceSettingsPage() {
       />
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Spinner size="md" />
-        </div>
+        <CardShell>
+          <CardBody>
+            <SkeletonSettingsSection />
+          </CardBody>
+        </CardShell>
       ) : (
         <>
           <CardShell>
