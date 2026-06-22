@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CardShell, CardHeader, CardBody, HelpText, Spinner, StatusBadge } from "@/components/ui";
+import { RefreshCw } from "lucide-react";
 
 type MeterRow = { meter: string; label: string; unitPriceUsd: number; units: number; costUsd: number };
 type Settlement = { id: string; resourceId: string; amountUsd: number; payer: string; scheme: string; createdAt: string };
@@ -16,8 +17,11 @@ function usd(n: number): string {
 export function UsageInfraCard() {
   const [data, setData] = useState<UsageSummary | null>(null);
   const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    setError(false);
+    setData(null);
     fetch("/api/usage/summary")
       .then((r) => {
         if (!r.ok) throw new Error(String(r.status));
@@ -28,7 +32,7 @@ export function UsageInfraCard() {
         setData(d.data);
       })
       .catch(() => setError(true));
-  }, []);
+  }, [retryCount]);
 
   return (
     <CardShell>
@@ -45,7 +49,15 @@ export function UsageInfraCard() {
       </CardHeader>
       <CardBody>
         {error ? (
-          <HelpText>Usage data is unavailable right now.</HelpText>
+          <div className="flex flex-col items-start gap-3">
+            <HelpText>Usage data is unavailable right now.</HelpText>
+            <button
+              onClick={() => setRetryCount((n) => n + 1)}
+              className="inline-flex items-center gap-1.5 t-caption text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              <RefreshCw size={12} /> Retry
+            </button>
+          </div>
         ) : data == null ? (
           <div className="flex items-center justify-center py-8">
             <Spinner size="sm" />

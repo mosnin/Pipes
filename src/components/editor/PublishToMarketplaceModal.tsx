@@ -15,9 +15,11 @@ export function PublishToMarketplaceModal({ systemId, systemName, onClose }: Pro
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function submit() {
     setSubmitting(true);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/systems/${systemId}/publish`, {
         method: "POST",
@@ -34,7 +36,9 @@ export function PublishToMarketplaceModal({ systemId, systemName, onClose }: Pro
       setDone(true);
       toast.success("Loop published to marketplace!");
     } catch (err) {
-      toast.error((err as Error).message);
+      const msg = (err as Error).message;
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -117,6 +121,9 @@ export function PublishToMarketplaceModal({ systemId, systemName, onClose }: Pro
             >
               {submitting ? "Publishing..." : "Publish loop"}
             </button>
+            {errorMsg ? (
+              <p className="t-caption text-red-600 text-center">{errorMsg}</p>
+            ) : null}
           </>
         )}
       </div>
