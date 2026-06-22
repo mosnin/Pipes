@@ -1832,7 +1832,11 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         {agentViewJson}
                       </pre>
                       <button
-                        onClick={() => { void navigator.clipboard.writeText(agentViewJson); }}
+                        onClick={() => {
+                          void navigator.clipboard.writeText(agentViewJson).then(() => {
+                            toast.success("Agent view JSON copied");
+                          });
+                        }}
                         className="absolute top-2 right-2 flex items-center gap-1 t-caption font-medium text-[#9ca3af] hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors"
                       >
                         <Copy size={11} /> Copy
