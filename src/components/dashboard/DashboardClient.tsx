@@ -363,10 +363,16 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
     [query],
   );
 
+  const [buildUsage, setBuildUsage] = useState<{ used: number; limit: number; plan: string } | null>(null);
+
   useEffect(() => {
     void refreshLibrary("");
     void refreshListings();
     setPage(1);
+    fetch("/api/billing/usage")
+      .then((r) => r.json())
+      .then((body) => { if (body.ok) setBuildUsage(body.data as { used: number; limit: number; plan: string }); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -924,7 +930,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           mount. Manages its own SSR-safe localStorage gate and never re-shows. */}
       <MentalModelCard />
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <MetricCard
           label="Total systems"
           value={stats.total}
@@ -945,6 +951,34 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           value={stats.archived}
           footer="Hidden from default view"
         />
+        {buildUsage && (
+          <Link href="/settings/billing" className="block group">
+            <MetricCard
+              label="Builds this month"
+              value={buildUsage.limit === Number.POSITIVE_INFINITY || buildUsage.plan !== "Free" ? buildUsage.used : `${buildUsage.used} / ${buildUsage.limit}`}
+              footer={
+                buildUsage.plan === "Free" ? (
+                  <span
+                    className={
+                      buildUsage.used >= buildUsage.limit
+                        ? "text-red-600 font-medium"
+                        : buildUsage.used >= buildUsage.limit * 0.8
+                        ? "text-amber-600 font-medium"
+                        : undefined
+                    }
+                  >
+                    {buildUsage.used >= buildUsage.limit
+                      ? "Limit reached — upgrade"
+                      : `${buildUsage.limit - buildUsage.used} remaining`}
+                  </span>
+                ) : (
+                  "Unlimited on " + buildUsage.plan
+                )
+              }
+              className="group-hover:border-indigo-200 transition-colors h-full"
+            />
+          </Link>
+        )}
       </div>
 
       {/* Toolbar */}
