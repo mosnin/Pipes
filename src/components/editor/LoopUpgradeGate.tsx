@@ -8,7 +8,7 @@ import { Lock, Zap } from "lucide-react";
 import Link from "next/link";
 
 interface LoopUpgradeGateProps {
-  reason: "private_loops" | "loop_limit" | "marketplace_selling" | "mcp_write" | "ai_generation" | "mcp_access" | "version_history" | "collaboration";
+  reason: "private_loops" | "loop_limit" | "marketplace_selling" | "mcp_write" | "ai_generation" | "mcp_access" | "version_history" | "collaboration" | "loop_analytics";
   current?: number;
   limit?: number;
 }
@@ -45,6 +45,10 @@ const REASON_COPY: Record<LoopUpgradeGateProps["reason"], { title: string; body:
   collaboration: {
     title: "Team collaboration requires Pro",
     body: "Invite teammates, assign roles, and build loops together. Available on the Pro plan and above.",
+  },
+  loop_analytics: {
+    title: "Loop analytics require Pro",
+    body: "Track builds over time, node composition, and version history for each loop. Available on the Pro plan and above.",
   },
 };
 

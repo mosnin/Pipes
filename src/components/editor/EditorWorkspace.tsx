@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, Textarea, Select, Tooltip, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
-import { Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { BarChart2, Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { EditorTutorial } from "@/components/editor/EditorTutorial";
 import { getTutorialSeen } from "@/lib/feedback/storage";
@@ -45,7 +45,7 @@ type SystemPayload = {
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; authorName?: string; createdAt: string }>;
   versions: Array<{ id: string; name: string; authorId: string; createdAt: string; nodeCount?: number; nodeTypes?: string[] }>;
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
-  entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean; versionHistory: boolean };
+  entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean; versionHistory: boolean; loopAnalytics: boolean };
 };
 
 type QueuedAction = { action: EditorGraphAction; id: string; retries: number; turnId?: string };
@@ -56,7 +56,7 @@ function normalizeBundle(bundle: any): SystemPayload {
   // Convex path returns `plan` instead of `entitlements`; compute them here.
   const entitlements = bundle.entitlements ?? (bundle.plan ? (() => {
     const e = getEntitlements(bundle.plan);
-    return { privateLoops: e.privateLoops, marketplaceSelling: e.marketplaceSelling, mcpReadWrite: e.mcpReadWrite, aiGeneration: e.aiGeneration, versionHistory: e.versionHistory };
+    return { privateLoops: e.privateLoops, marketplaceSelling: e.marketplaceSelling, mcpReadWrite: e.mcpReadWrite, aiGeneration: e.aiGeneration, versionHistory: e.versionHistory, loopAnalytics: e.loopAnalytics };
   })() : undefined);
   return {
     system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description, visibility: bundle.system.visibility },
@@ -94,7 +94,7 @@ const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
 type InspectorTab = "config" | "advanced";
-type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent" | "settings";
+type SystemPanel = "validation" | "simulation" | "comments" | "versions" | "ai" | "import" | "agent" | "settings" | "analytics";
 type CompatibilityRow = { direction: "inbound" | "outbound"; nodeTitle: string; hint: ReturnType<typeof computeCompatibilityHint> };
 
 // Best-effort inverse for a composite turn. Reverses the action list and
@@ -185,6 +185,8 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
   const [activeSystemPanel, setActiveSystemPanel] = useState<SystemPanel | null>(null);
   const [agentViewJson, setAgentViewJson] = useState<string | null>(null);
   const [agentViewLoading, setAgentViewLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<{ nodeCount: number; pipeCount: number; versionCount: number; recentBuildCount: number; nodesByType: Record<string, number>; createdAt: string; updatedAt: string } | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [showNewBanner, setShowNewBanner] = useState(false);
   const [promptFocusSignal, setPromptFocusSignal] = useState(0);
   const [libraryExpanded, setLibraryExpanded] = useState(false);
@@ -284,6 +286,16 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
       .catch(() => setAgentViewJson("// Failed to load"))
       .finally(() => setAgentViewLoading(false));
   }, [activeSystemPanel, agentViewJson, systemId]);
+
+  useEffect(() => {
+    if (activeSystemPanel !== "analytics") return;
+    setAnalyticsLoading(true);
+    fetch(`/api/systems/${systemId}/analytics`)
+      .then((r) => r.json())
+      .then((body) => setAnalyticsData(body.data ?? null))
+      .catch(() => setAnalyticsData(null))
+      .finally(() => setAnalyticsLoading(false));
+  }, [activeSystemPanel, systemId]);
 
   useEffect(() => {
     fetch("/api/presence", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, selectedNodeId: selectedNodeIds[0] }) });
@@ -1092,6 +1104,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   {`Comments${data.comments.length > 0 ? ` (${data.comments.length})` : ""}`}
                 </DropdownItem>
                 <DropdownItem id="versions" onAction={() => toggleSystemPanel("versions")}>Versions</DropdownItem>
+                <DropdownItem id="analytics" onAction={() => toggleSystemPanel("analytics")}>Analytics</DropdownItem>
                 <DropdownItem id="export" onAction={() => toggleSystemPanel("import")}>Export / Import</DropdownItem>
               </DropdownMenu>
             </Dropdown.Popover>
@@ -1411,7 +1424,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           </aside>
         ) : (
         <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
+          <Panel title={activeSystemPanel === "agent" ? "Agent View" : activeSystemPanel === "analytics" ? "Loop Analytics" : activeSystemPanel ? (activeSystemPanel.charAt(0).toUpperCase() + activeSystemPanel.slice(1)) : "Inspector"}>
             {activeSystemPanel === "validation" && (
               <div className="space-y-2">
                 {validationReport.issues.length === 0 ? (
@@ -1785,6 +1798,79 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       Generate access token
                     </Button>
                   </>
+                )}
+              </div>
+            )}
+            {activeSystemPanel === "analytics" && (
+              <div className="space-y-3">
+                {data?.entitlements?.loopAnalytics === false ? (
+                  <LoopUpgradeGate reason="loop_analytics" />
+                ) : analyticsLoading ? (
+                  <p className="t-label text-[#8E8E93] py-2">Loading analytics…</p>
+                ) : analyticsData ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Card>
+                        <p className="t-caption text-[#8E8E93] mb-0.5">Total builds</p>
+                        <p className="text-2xl font-bold text-[#111] tabular-nums">{analyticsData.versionCount}</p>
+                        <p className="t-caption text-[#8E8E93] mt-0.5">{analyticsData.recentBuildCount} in last 30 days</p>
+                      </Card>
+                      <Card>
+                        <p className="t-caption text-[#8E8E93] mb-0.5">Current nodes</p>
+                        <p className="text-2xl font-bold text-[#111] tabular-nums">{analyticsData.nodeCount}</p>
+                        <p className="t-caption text-[#8E8E93] mt-0.5">{analyticsData.pipeCount} pipe{analyticsData.pipeCount !== 1 ? "s" : ""}</p>
+                      </Card>
+                    </div>
+                    <Card>
+                      <h5 className="t-label font-semibold text-[#3C3C43] mb-2 flex items-center gap-1.5"><BarChart2 size={13} className="text-indigo-500" /> Node breakdown</h5>
+                      {Object.keys(analyticsData.nodesByType).length === 0 ? (
+                        <p className="t-caption text-[#8E8E93]">No nodes yet.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {Object.entries(analyticsData.nodesByType)
+                            .sort(([, a], [, b]) => b - a)
+                            .slice(0, 8)
+                            .map(([type, count]) => {
+                              const pct = Math.round((count / analyticsData.nodeCount) * 100);
+                              return (
+                                <div key={type} className="flex items-center gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <span className="t-caption text-[#3C3C43] truncate">{type.replace(/_/g, " ")}</span>
+                                      <span className="t-caption text-[#8E8E93] shrink-0 ml-1">{count}</span>
+                                    </div>
+                                    <div className="h-1 rounded-full bg-[#F2F2F7] overflow-hidden">
+                                      <div className="h-full rounded-full bg-indigo-400" style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </Card>
+                    <Card>
+                      <h5 className="t-label font-semibold text-[#3C3C43] mb-2">Loop timeline</h5>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="t-caption text-[#8E8E93]">Created</span>
+                          <span className="t-caption text-[#3C3C43]">{(() => {
+                            const d = Math.floor((Date.now() - new Date(analyticsData.createdAt).getTime()) / 86400000);
+                            return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+                          })()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="t-caption text-[#8E8E93]">Last updated</span>
+                          <span className="t-caption text-[#3C3C43]">{(() => {
+                            const d = Math.floor((Date.now() - new Date(analyticsData.updatedAt).getTime()) / 86400000);
+                            return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
+                          })()}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  </>
+                ) : (
+                  <p className="t-caption text-[#8E8E93]">Could not load analytics.</p>
                 )}
               </div>
             )}

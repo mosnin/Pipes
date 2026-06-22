@@ -7,6 +7,7 @@ export type Entitlements = {
   privateLoops: boolean;
   marketplaceSelling: boolean;
   mcpReadWrite: boolean;
+  loopAnalytics: boolean;
   // Collaboration & ops
   collaboration: boolean;
   versionHistory: boolean;
@@ -27,6 +28,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     privateLoops: false,
     marketplaceSelling: false,
     mcpReadWrite: false,
+    loopAnalytics: false,
     collaboration: false,
     versionHistory: false,
     advancedValidation: false,
@@ -43,6 +45,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     privateLoops: true,
     marketplaceSelling: true,
     mcpReadWrite: true,
+    loopAnalytics: true,
     collaboration: true,
     versionHistory: true,
     advancedValidation: true,
@@ -59,6 +62,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     privateLoops: true,
     marketplaceSelling: true,
     mcpReadWrite: true,
+    loopAnalytics: true,
     collaboration: true,
     versionHistory: true,
     advancedValidation: true,
@@ -75,6 +79,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     privateLoops: true,
     marketplaceSelling: true,
     mcpReadWrite: true,
+    loopAnalytics: true,
     collaboration: true,
     versionHistory: true,
     advancedValidation: true,
@@ -92,6 +97,7 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     privateLoops: true,
     marketplaceSelling: true,
     mcpReadWrite: true,
+    loopAnalytics: true,
     collaboration: true,
     versionHistory: true,
     advancedValidation: true,

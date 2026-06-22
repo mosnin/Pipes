@@ -20,6 +20,7 @@ export async function GET(_: Request, { params }: Params) {
         mcpReadWrite: entitlements.mcpReadWrite,
         aiGeneration: entitlements.aiGeneration,
         versionHistory: entitlements.versionHistory,
+        loopAnalytics: entitlements.loopAnalytics,
       },
     }));
   } catch (error) {
