@@ -220,7 +220,9 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               <KbdHint keys={["Enter"]} /> to send
             </span>
           ) : null}
-          {isRunning ? (
+          {isRunning && trimmed.length > 0 ? (
+            <span className="t-caption text-[#C7C7CC]">Ready to send when done</span>
+          ) : isRunning ? (
             <span className="t-caption text-[#C7C7CC] inline-flex items-center gap-1.5">
               <KbdHint keys={["Esc"]} /> to stop
             </span>
