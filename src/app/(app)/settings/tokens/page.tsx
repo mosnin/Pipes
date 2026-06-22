@@ -28,6 +28,7 @@ import {
 interface TokenRow {
   id: string;
   name: string;
+  tokenPreview?: string;
   capabilities?: string[];
   createdAt?: string | null;
   lastUsedAt?: string | null;
@@ -187,7 +188,26 @@ export default function TokensSettingsPage() {
         key: "name",
         header: "Name",
         render: (row) => (
-          <span className="t-label font-medium text-[#111]">{row.name}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="t-label font-medium text-[#111]">{row.name}</span>
+            {row.tokenPreview && (
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(`Bearer ${row.tokenPreview!}`).then(() => {
+                    toast.success("Bearer token copied");
+                  });
+                }}
+                title="Copy Bearer token"
+                className="group inline-flex items-center gap-1 w-fit"
+              >
+                <code className="t-mono text-[11px] text-[#8E8E93] group-hover:text-indigo-600 transition-colors">
+                  {row.tokenPreview}&hellip;
+                </code>
+                <Copy size={10} className="text-[#C7C7CC] group-hover:text-indigo-500 transition-colors" />
+              </button>
+            )}
+          </div>
         ),
       },
       {

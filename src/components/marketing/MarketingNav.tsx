@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Menu, ArrowRight } from "lucide-react";
+import { ChevronDown, Menu, ArrowRight, LayoutDashboard } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Wordmark } from "@/components/Wordmark";
 import { MegaMenu } from "./MegaMenu";
 import { MobileFullPageMenu } from "./MobileFullPageMenu";
 import { navItems } from "@/lib/marketing/nav-data";
 import type { MenuPayload } from "@/lib/marketing/nav-data";
+import { clientRuntimeFlags } from "@/lib/env/client";
 
 // MarketingNav
 //
@@ -30,6 +32,9 @@ export function MarketingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const { isSignedIn } = useUser();
+  const showDashboard = clientRuntimeFlags.useMocks || Boolean(isSignedIn);
 
   const closeTimerRef = useRef<number | null>(null);
   const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -210,19 +215,31 @@ export function MarketingNav() {
 
             {/* Right: auth actions (desktop) + hamburger (mobile) */}
             <div className="flex items-center gap-1">
-              <Link
-                href="/login"
-                className="hidden md:inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              >
-                Start free
-                <ArrowRight size={13} aria-hidden="true" />
-              </Link>
+              {showDashboard ? (
+                <Link
+                  href="/dashboard"
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                >
+                  <LayoutDashboard size={13} aria-hidden="true" />
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="hidden md:inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  >
+                    Start free
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}

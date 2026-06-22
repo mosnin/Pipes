@@ -4,6 +4,11 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MobileFullPageMenu } from "@/components/marketing/MobileFullPageMenu";
 import { navItems } from "@/lib/marketing/nav-data";
 
+// Mock Clerk so useUser() works outside a real ClerkProvider in jsdom.
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ isLoaded: true, isSignedIn: false, user: null }),
+}));
+
 // Force jsdom into a desktop viewport so the desktop layout renders.
 function setDesktopViewport(): void {
   Object.defineProperty(window, "innerWidth", { value: 1280, configurable: true, writable: true });
@@ -28,8 +33,9 @@ describe("MarketingNav — pill nav", () => {
   it("renders the wordmark and the auth actions", () => {
     render(<MarketingNav />);
     expect(screen.getAllByText("Looper").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: /log in/i })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /start free/i })).toBeTruthy();
+    // In mock mode (NEXT_PUBLIC_LOOPER_USE_MOCKS !== "false"), the nav shows
+    // a "Dashboard" link instead of the sign-in/sign-up pair.
+    expect(screen.getByRole("link", { name: /dashboard/i })).toBeTruthy();
   });
 
   it("renders one trigger per nav item in the desktop bar", () => {
