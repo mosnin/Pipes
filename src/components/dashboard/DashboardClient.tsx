@@ -1066,6 +1066,17 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 ))}
               </div>
             </div>
+          ) : loading && library.rows.length > 0 ? (
+            <div className="relative">
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-indigo-100 overflow-hidden rounded-full">
+                <span className="absolute inset-y-0 left-0 w-1/3 bg-indigo-500/80 rounded-full pipes-progress-bar" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 opacity-60">
+                {library.rows.slice(0, 6).map((row) => (
+                  <SkeletonCard key={row.id} />
+                ))}
+              </div>
+            </div>
           ) : visibleRows.length === 0 ? (
             <EmptyState
               illustration={<EmptyCanvas size={96} />}
