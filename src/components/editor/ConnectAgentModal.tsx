@@ -80,6 +80,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
   const [token, setToken] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [testStatus, setTestStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
 
   useEffect(() => {
     if (typeof window !== "undefined") setOrigin(window.location.origin);
@@ -122,10 +123,26 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
     }
   };
 
+  const handleTestToken = async () => {
+    if (!token) return;
+    setTestStatus("testing");
+    try {
+      const res = await fetch("/api/protocol/mcp", {
+        method: "POST",
+        headers: { "content-type": "application/json", "authorization": `Bearer ${token}` },
+        body: JSON.stringify({ tool: "ping" }),
+      });
+      setTestStatus(res.ok ? "ok" : "error");
+    } catch {
+      setTestStatus("error");
+    }
+  };
+
   const handleClose = () => {
     setStep("capabilities");
     setToken(null);
     setError(null);
+    setTestStatus("idle");
     onClose();
   };
 
@@ -353,6 +370,30 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
               <HelpText tone="error">
                 {error}
               </HelpText>
+            )}
+            {token && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleTestToken()}
+                  disabled={testStatus === "testing"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] bg-white t-caption font-medium text-[#3C3C43] hover:bg-[#F5F5F7] disabled:opacity-60 transition-colors"
+                >
+                  {testStatus === "testing" ? (
+                    <Spinner size="xs" />
+                  ) : testStatus === "ok" ? (
+                    <CheckCircle2 size={12} className="text-emerald-500" />
+                  ) : testStatus === "error" ? (
+                    <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
+                  ) : (
+                    <Key size={12} />
+                  )}
+                  {testStatus === "testing" ? "Testing..." : testStatus === "ok" ? "Token verified" : testStatus === "error" ? "Test failed" : "Test connection"}
+                </button>
+                {testStatus === "error" && (
+                  <span className="t-caption text-red-600">Check token or capabilities</span>
+                )}
+              </div>
             )}
             <div className="flex items-center justify-between gap-2 pt-1">
               <Link

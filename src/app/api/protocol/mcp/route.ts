@@ -150,6 +150,9 @@ export async function POST(request: Request) {
       await services.protocol.writeAudit(ctx, { action: "protocol.loop.propose", targetType: "system", targetId: input.systemId, systemId: input.systemId, outcome: "success", metadata: JSON.stringify({ transport: "mcp", requestId, tool: payload.tool, stepCount: steps.length }) });
       return NextResponse.json({ ok: true, data: { batchId, stepCount: steps.length, proposalItems, message: "Proposals queued for human review on the canvas." }, requestId });
     }
+    if (payload.tool === "ping") {
+      return NextResponse.json({ ok: true, data: { authenticated: true, userId: ctx.userId }, requestId });
+    }
     if (payload.tool === "describe_tools") {
       const tools = [
         { name: "list_systems", capability: "systems:read", description: "List all systems in the workspace." },
