@@ -290,6 +290,35 @@ a { color: inherit; text-decoration: none; }
   border-radius: inherit;
 }
 
+/* ── Dashboard system card — gradient border on hover ──────────────────────── */
+/* Uses the mask-composite trick: 1px padding on ::before, clipped to border
+   area only. Opacity transitions on hover. No JS needed. */
+
+.system-card {
+  position: relative;
+  background: white;
+  isolation: isolate;
+}
+.system-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #4F46E5 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+.system-card:hover::before {
+  opacity: 1;
+}
+
 /* ── Warm secondary accent ─────────────────────────────────────────────────── */
 /* Use rarely. The "Most popular" pricing badge is the canonical first home. */
 .accent-warm-bg     { background-color: var(--color-accent-warm-light); }

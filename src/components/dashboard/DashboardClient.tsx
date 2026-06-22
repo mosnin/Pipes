@@ -27,6 +27,7 @@ import {
   X,
   Bot,
   ArrowRight,
+  Clock,
 } from "lucide-react";
 import {
   Button,
@@ -147,6 +148,23 @@ type SystemCardProps = {
   onManageTags: () => void;
 };
 
+function ownerColor(name: string): string {
+  const colors = [
+    "#4F46E5", "#7C3AED", "#0891B2", "#059669", "#D97706", "#DC2626",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function recencyDot(updatedAt: string): string | null {
+  const diff = Date.now() - new Date(updatedAt).getTime();
+  const hours = diff / 3_600_000;
+  if (hours < 1) return "#059669";
+  if (hours < 24) return "#4F46E5";
+  return null;
+}
+
 function SystemCard({
   row,
   onOpen,
@@ -160,28 +178,31 @@ function SystemCard({
   onDuplicate,
   onManageTags,
 }: SystemCardProps) {
+  const dot = recencyDot(row.updatedAt);
+  const avatarColor = ownerColor(row.createdBy);
   return (
     <div
       onClick={onOpen}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onOpen();
-      }}
-      className="group bg-white border border-black/[0.08] rounded-[12px] p-4 cursor-pointer hover-lift hover:border-indigo-300 transition-colors flex flex-col gap-3 min-h-[152px]"
+      onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}
+      className="system-card group border border-black/[0.08] rounded-[12px] p-4 cursor-pointer hover-lift transition-all duration-200 flex flex-col gap-3 min-h-[156px] hover:shadow-md-token"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
+            {dot && (
+              <span
+                className="shrink-0 w-1.5 h-1.5 rounded-full"
+                style={{ background: dot }}
+                aria-hidden
+              />
+            )}
             <h3 className="t-label font-semibold text-[#111] truncate group-hover:text-indigo-700 transition-colors">
               {row.name}
             </h3>
             {row.favorite && (
-              <Star
-                size={12}
-                className="text-[#3C3C43] fill-[#3C3C43] shrink-0"
-                aria-hidden="true"
-              />
+              <Star size={12} className="text-amber-400 fill-amber-400 shrink-0" aria-hidden="true" />
             )}
           </div>
           <p className="t-label text-[#8E8E93] line-clamp-2 leading-snug">
@@ -189,9 +210,7 @@ function SystemCard({
           </p>
         </div>
         <div className="flex items-start gap-1.5 shrink-0">
-          {row.archivedAt && (
-            <StatusBadge tone="warning">Archived</StatusBadge>
-          )}
+          {row.archivedAt && <StatusBadge tone="warning">Archived</StatusBadge>}
           <Dropdown>
             <DropdownTrigger>
               <button
@@ -273,22 +292,20 @@ function SystemCard({
       {row.tags.length > 0 && (
         <div className="flex gap-1 flex-wrap">
           {row.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} tone="neutral">
-              {tag}
-            </Badge>
+            <Badge key={tag} tone="neutral">{tag}</Badge>
           ))}
-          {row.tags.length > 3 && (
-            <Badge tone="neutral">+{row.tags.length - 3}</Badge>
-          )}
+          {row.tags.length > 3 && <Badge tone="neutral">+{row.tags.length - 3}</Badge>}
         </div>
       )}
 
       <div className="mt-auto flex items-center justify-between pt-1">
-        <span className="t-caption text-[#8E8E93]">
-          Updated {formatRelativeDate(row.updatedAt)}
+        <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
+          <Clock size={10} aria-hidden />
+          {formatRelativeDate(row.updatedAt)}
         </span>
         <span
-          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#F5F5F7] text-[#3C3C43] t-caption font-semibold"
+          className="inline-flex items-center justify-center w-6 h-6 rounded-full t-caption font-semibold text-white"
+          style={{ background: avatarColor }}
           title={row.createdBy}
           aria-label={`Owner ${row.createdBy}`}
         >
