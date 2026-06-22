@@ -123,14 +123,15 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
     return (
       <div
         className={cn(
-          "relative w-full flex flex-col bg-white border border-black/[0.08] rounded-2xl shadow-md-token transition-all overflow-hidden",
-          focused && !isRunning ? "ring-2 ring-indigo-100 border-indigo-300" : "",
+          "relative w-full flex flex-col bg-white border border-black/[0.08] rounded-2xl shadow-md-token transition-colors duration-150 overflow-hidden",
+          focused && !isRunning ? "border-indigo-300 looper-input-focused" : "",
+          isRunning ? "border-indigo-200" : "",
         )}
       >
         {isRunning ? (
           <div className="absolute top-0 left-0 right-0 flex items-center gap-2 px-3 pt-2">
-            <div className="flex-1 relative h-[3px] rounded-full bg-black/[0.06] overflow-hidden">
-              <span className="absolute inset-y-0 left-0 w-1/3 bg-indigo-500/80 rounded-full pipes-progress-bar" />
+            <div className="looper-progress-shimmer flex-1 relative h-[3px] rounded-full bg-black/[0.06] overflow-hidden">
+              <span className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-indigo-400 via-indigo-600 to-indigo-400 rounded-full pipes-progress-bar" />
             </div>
             {activeToolLabel ? (
               <span className="t-mono t-caption text-[#8E8E93] shrink-0">{activeToolLabel}</span>
@@ -169,7 +170,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               aria-label="Retry"
               className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition-colors"
             >
-              <RotateCw size={16} />
+              <RotateCw size={16} className="looper-icon-pop" />
             </button>
           ) : isRunning ? (
             <button
@@ -181,7 +182,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               {placeholderHint === "spinning_up" ? (
                 <Spinner size="xs" />
               ) : (
-                <Square size={14} fill="currentColor" />
+                <Square size={14} fill="currentColor" className="looper-icon-pop" />
               )}
             </button>
           ) : (
@@ -196,7 +197,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
                   : "bg-indigo-100 text-indigo-300 cursor-default",
               )}
             >
-              <ArrowUp size={16} />
+              <ArrowUp size={16} className="looper-icon-pop" />
             </button>
           )}
         </div>
