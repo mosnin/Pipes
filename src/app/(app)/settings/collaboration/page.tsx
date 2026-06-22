@@ -494,41 +494,6 @@ export default function CollaborationSettingsPage() {
         )}
       </CardShell>
 
-      {/* ── Teams ─────────────────────────────────────────────────────────── */}
-      <CardShell>
-        <CardHeader bordered>
-          <h2 className="t-title text-[#111]">Teams</h2>
-          <p className="mt-1 t-caption text-[#8E8E93]">
-            Group members for shared access patterns.
-          </p>
-        </CardHeader>
-        <CardBody>
-          {rows.teams && rows.teams.length > 0 ? (
-            <ul className="divide-y divide-[var(--color-line)]">
-              {rows.teams.map((team) => (
-                <li
-                  key={team.id}
-                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
-                >
-                  <div>
-                    <div className="t-label font-medium text-[#111]">{team.name}</div>
-                    <HelpText>
-                      {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
-                    </HelpText>
-                  </div>
-                  <Button variant="ghost">Manage</Button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState
-              title="No teams yet"
-              description="Teams let you grant access to groups instead of individuals. Coming soon."
-            />
-          )}
-        </CardBody>
-      </CardShell>
-
       {/* ── Invite dialog ─────────────────────────────────────────────────── */}
       <Dialog
         open={inviteOpen}
