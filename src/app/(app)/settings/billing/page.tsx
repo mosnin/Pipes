@@ -261,7 +261,7 @@ export default function BillingSettingsPage() {
         <UpgradeNotifier onSuccess={loadSummary} />
       </Suspense>
       <PageHeader
-        title="Workspace"
+        title="Billing"
         subtitle="Plan, billing, and workspace defaults."
         actions={
           summary && (
@@ -364,7 +364,7 @@ export default function BillingSettingsPage() {
             <CardBody>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
                 <FeatureRow
-                  label={`Up to ${summary.entitlements.maxSystems} systems`}
+                  label={summary.entitlements.maxSystems === -1 ? "Unlimited systems" : `Up to ${summary.entitlements.maxSystems} systems`}
                   enabled
                 />
                 <FeatureRow label="Collaboration" enabled={summary.entitlements.collaboration} />
