@@ -147,6 +147,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
   const [postingComment, setPostingComment] = useState(false);
   const [versionName, setVersionName] = useState("checkpoint");
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
+  const [savingCheckpoint, setSavingCheckpoint] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("Improve reliability and add guardrails.");
   const [pendingSuggestion, setPendingSuggestion] = useState<any | null>(null);
   const [acceptedChangeIds, setAcceptedChangeIds] = useState<string[]>([]);
@@ -1093,6 +1094,31 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           </Button>
           <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={14} /> Simulate</Button>
           <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={14} /> AI</Button>
+          <Tooltip content={data?.entitlements?.versionHistory === false ? "Version history requires Pro" : "Save a named checkpoint of the current canvas"}>
+            <Button
+              variant="ghost"
+              size="sm"
+              isDisabled={savingCheckpoint || data?.entitlements?.versionHistory === false}
+              onClick={async () => {
+                if (data?.entitlements?.versionHistory === false) { toggleSystemPanel("versions"); return; }
+                setSavingCheckpoint(true);
+                const name = `v${(data?.versions.length ?? 0) + 1} · ${new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+                try {
+                  await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
+                  reload();
+                  toast.success(`Saved "${name}"`);
+                } catch {
+                  toast.error("Failed to save checkpoint");
+                } finally {
+                  setSavingCheckpoint(false);
+                }
+              }}
+              className={data?.entitlements?.versionHistory === false ? "text-[#C7C7CC]" : "text-[#8E8E93] hover:text-[#3C3C43]"}
+            >
+              {savingCheckpoint ? <Spinner size="sm" /> : <History size={14} />}
+              {savingCheckpoint ? null : (data?.versions.length ?? 0) > 0 ? `Checkpoint (${data!.versions.length})` : "Checkpoint"}
+            </Button>
+          </Tooltip>
           <Dropdown>
             <DropdownTrigger>
               <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={14} /></Button>
