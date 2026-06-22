@@ -1327,15 +1327,20 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
                 </div>
                 <div>
-                  <p className="t-title font-bold text-[#111]">Describe your loop</p>
-                  <p className="t-label text-[#8E8E93] mt-1">Type one sentence below. Your agent builds it on the canvas.</p>
+                  <p className="t-title font-bold text-[#111]">What should this loop do?</p>
+                  <p className="t-label text-[#8E8E93] mt-1">
+                    Describe it in one sentence and your agent builds the graph.
+                  </p>
+                  <p className="t-caption text-[#C7C7CC] mt-2 italic">
+                    e.g. &ldquo;Watch GitHub for new PRs, summarize the diff, then post to Slack&rdquo;
+                  </p>
                 </div>
                 <Button
                   variant="primary"
                   onClick={() => setPromptFocusSignal((n) => n + 1)}
                   className="h-10 px-6 font-semibold"
                 >
-                  <Bot size={14} /> Describe your loop
+                  <Bot size={14} /> Start describing
                 </Button>
                 <div>
                   <button

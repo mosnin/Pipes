@@ -178,7 +178,11 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               aria-label="Stop"
               className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1f2937] text-white hover:bg-black transition-colors"
             >
-              <Square size={14} fill="currentColor" />
+              {placeholderHint === "spinning_up" ? (
+                <Spinner size="xs" />
+              ) : (
+                <Square size={14} fill="currentColor" />
+              )}
             </button>
           ) : (
             <button
