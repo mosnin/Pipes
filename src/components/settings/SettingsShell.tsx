@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   ScrollText,
+  Building2,
 } from "lucide-react";
 import { Breadcrumbs } from "@/components/ui";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     heading: "Workspace",
     items: [
+      { label: "General",          href: "/settings/workspace",     icon: Building2  },
       { label: "Billing",          href: "/settings/billing",       icon: CreditCard },
       { label: "Collaboration",    href: "/settings/collaboration", icon: Users      },
       { label: "Operations",       href: "/settings/operations",    icon: Sliders    },
@@ -133,7 +135,7 @@ export function SettingsShell({ children }: { children: ReactNode }) {
 
   const breadcrumbItems = activeLabel
     ? [
-        { label: "Settings", href: "/settings/billing" },
+        { label: "Settings", href: "/settings/workspace" },
         { label: activeLabel },
       ]
     : [{ label: "Settings" }];

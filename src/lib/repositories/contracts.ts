@@ -54,8 +54,18 @@ export interface UsersRepository {
   findByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
 }
 
+export interface WorkspaceRecord {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  description?: string;
+}
+
 export interface WorkspacesRepository {
   getPlan(workspaceId: string): Promise<Plan>;
+  get(workspaceId: string): Promise<WorkspaceRecord | null>;
+  update(workspaceId: string, patch: { name?: string; description?: string }): Promise<void>;
 }
 
 export interface MembershipsRepository {

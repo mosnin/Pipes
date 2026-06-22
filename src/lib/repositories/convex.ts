@@ -42,7 +42,17 @@ export function createConvexRepositories(): RepositorySet {
         const client = getConvexHttpClient();
         const row = await client.query(api.app.getPlanState, { workspaceId: workspaceId as never });
         return row?.plan ?? "Free";
-      }
+      },
+      async get(workspaceId) {
+        const client = getConvexHttpClient();
+        const row = await client.query(api.app.getPlanState, { workspaceId: workspaceId as never });
+        if (!row) return null;
+        return { id: workspaceId, name: row.workspaceName ?? workspaceId, slug: workspaceId, plan: row.plan ?? "Free", description: row.description };
+      },
+      async update(_workspaceId, _patch) {
+        // Workspace metadata updates via Convex mutations are not yet wired.
+        // When available, call the appropriate Convex mutation here.
+      },
     },
     memberships: {
       async add(workspaceId, userId, role) {

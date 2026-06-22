@@ -93,7 +93,22 @@ export function createMockRepositories(): RepositorySet {
     workspaces: {
       async getPlan(workspaceId) {
         return store.readDb().planState.find((p) => p.workspaceId === workspaceId)?.plan ?? "Free";
-      }
+      },
+      async get(workspaceId) {
+        const db = store.readDb();
+        const ws = db.workspaces.find((w: { id: string }) => w.id === workspaceId);
+        if (!ws) return null;
+        const plan = db.planState.find((p: { workspaceId: string }) => p.workspaceId === workspaceId)?.plan ?? "Free";
+        return { id: ws.id, name: ws.name, slug: ws.slug, plan, description: ws.description };
+      },
+      async update(workspaceId, patch) {
+        const db = store.readDb();
+        const ws = db.workspaces.find((w: { id: string }) => w.id === workspaceId);
+        if (!ws) throw new Error("Workspace not found");
+        if (patch.name !== undefined) ws.name = patch.name;
+        if (patch.description !== undefined) ws.description = patch.description;
+        store.writeDb(db);
+      },
     },
     memberships: {
       async add(workspaceId, userId, role) {

@@ -69,7 +69,7 @@ type PresenceRecord = {
 
 type DbShape = {
   users: Array<{ id: string; externalId: string; email: string; name: string; createdAt: string }>;
-  workspaces: Array<{ id: string; ownerId: string; name: string; slug: string; plan: Plan; createdAt: string }>;
+  workspaces: Array<{ id: string; ownerId: string; name: string; slug: string; plan: Plan; createdAt: string; description?: string }>;
   memberships: Membership[];
   systems: PersistedSystem[];
   nodes: Node[];

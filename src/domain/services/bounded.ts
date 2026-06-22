@@ -217,7 +217,17 @@ export class CollaborationService {
 
 export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing`, customerId: state.externalCustomerId }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
 
-export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
+export class WorkspaceService {
+  constructor(private readonly repos: RepositorySet) {}
+  async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); }
+  async get(workspaceId: string) { return this.repos.workspaces.get(workspaceId); }
+  async update(workspaceId: string, patch: { name?: string; description?: string }) {
+    const name = patch.name?.trim();
+    if (name !== undefined && name.length === 0) throw new Error("Workspace name cannot be empty");
+    if (name !== undefined && name.length > 80) throw new Error("Workspace name must be 80 characters or fewer");
+    return this.repos.workspaces.update(workspaceId, { ...patch, name });
+  }
+}
 
 export class ProtocolService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
