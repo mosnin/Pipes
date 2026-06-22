@@ -460,9 +460,9 @@ export default function PricingPage() {
                 Start free. Upgrade when your team is ready to ship. Every tier
                 speaks the same protocol your agents read.
               </p>
-              <div className="mt-12">
-                <PricingHeroAndTiers tiers={TIERS} />
-              </div>
+            </div>
+            <div className="mt-12">
+              <PricingHeroAndTiers tiers={TIERS} />
             </div>
           </div>
         </div>
@@ -540,7 +540,7 @@ export default function PricingPage() {
           </p>
           <a
             href="/signup?source=pricing_bottom_cta"
-            className="inline-flex items-center gap-2 bg-[#111] text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-[#222] transition-colors"
+            className="inline-flex items-center gap-2 bg-indigo-600 text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-indigo-700 transition-colors"
           >
             Start building free
           </a>
