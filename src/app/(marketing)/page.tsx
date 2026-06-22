@@ -24,7 +24,7 @@ const HOMEPAGE_SUBTITLE =
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {
-  title: "Describe your system. Watch it build itself. - Looper",
+  title: HOMEPAGE_TITLE + " - Looper",
   description: HOMEPAGE_SUBTITLE,
   openGraph: {
     title: HOMEPAGE_TITLE,
