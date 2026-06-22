@@ -94,7 +94,7 @@ export default function TokensSettingsPage() {
   // ── Secret dialog state ───────────────────────────────────────────────────
   const [secret, setSecret]         = useState<string | null>(null);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
-  const [copied, setCopied]         = useState(false);
+  const [copiedId, setCopiedId]     = useState<string | null>(null);
 
   // ── Revoke dialog state ───────────────────────────────────────────────────
   const [revokeTarget, setRevokeTarget] = useState<TokenRow | null>(null);
@@ -165,10 +165,10 @@ export default function TokensSettingsPage() {
     }
   };
 
-  const handleCopy = (text: string) => {
+  const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((prev) => (prev === id ? null : prev)), 2000);
       toast.success("Copied to clipboard");
     }).catch(() => {
       toast.error("Could not copy — please select and copy manually");
@@ -570,11 +570,11 @@ export default function TokensSettingsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onPress={() => handleCopy(secret)}
+                onPress={() => handleCopy(secret, "secret")}
                 className="text-white hover:bg-white/10 ml-2"
                 aria-label="Copy token"
               >
-                {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                {copiedId === "secret" ? <CheckCircle2 size={14} /> : <Copy size={14} />}
               </Button>
             </CardFooter>
 
@@ -588,11 +588,11 @@ export default function TokensSettingsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onPress={() => handleCopy(authHeader)}
+                    onPress={() => handleCopy(authHeader, "authHeader")}
                     className="text-white hover:bg-white/10 ml-2"
                     aria-label="Copy authorization header"
                   >
-                    {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                    {copiedId === "authHeader" ? <CheckCircle2 size={14} /> : <Copy size={14} />}
                   </Button>
                 </CardFooter>
               </div>
