@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Inter_Tight } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers } from "@/components/Providers";
 import { SoundProvider } from "@/lib/sound/SoundProvider";
@@ -9,6 +10,14 @@ import { ClerkProvider } from "@clerk/nextjs";
 // Geist Sans + Geist Mono — Vercel's official open-source typefaces, shipped
 // as variable fonts via the `geist` npm package. No asset files required.
 // `GeistSans.variable` exposes `--font-geist-sans`; mono is `--font-geist-mono`.
+// Inter Tight is loaded for display headings — tighter spacing, heavier weights.
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Looper",
@@ -20,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-color-scheme="light"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${interTight.variable}`}
     >
       <head>
         <script
