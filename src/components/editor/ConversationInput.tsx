@@ -183,14 +183,13 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
           ) : (
             <button
               type="button"
-              onClick={onSend}
-              disabled={!canSend}
+              onClick={canSend ? onSend : () => textareaRef.current?.focus()}
               aria-label="Send"
               className={cn(
                 "inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors",
                 canSend
                   ? "bg-[#4F46E5] text-white hover:bg-indigo-700"
-                  : "bg-[#F5F5F7] text-[#C7C7CC] cursor-not-allowed",
+                  : "bg-indigo-100 text-indigo-300 cursor-default",
               )}
             >
               <ArrowUp size={16} />
