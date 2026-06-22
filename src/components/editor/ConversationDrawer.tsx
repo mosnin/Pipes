@@ -444,6 +444,13 @@ function EmptyStarters({
   return (
     <div className="flex flex-col items-center gap-3 mb-1">
       <p className="t-caption text-[#8E8E93]">{headline}</p>
+      <div className="flex items-center gap-1.5 text-[10px] text-[#C7C7CC] select-none" aria-hidden>
+        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">Describe</span>
+        <span aria-hidden>&#8594;</span>
+        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">AI builds</span>
+        <span aria-hidden>&#8594;</span>
+        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">Share with any agent</span>
+      </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
         {STARTER_CHIPS.map((chip) => (
           <button

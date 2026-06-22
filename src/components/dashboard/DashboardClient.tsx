@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
 import { STARTER_CHIPS } from "@/components/editor/ConversationDrawer";
@@ -24,6 +25,8 @@ import {
   Copy,
   Tag,
   X,
+  Bot,
+  ArrowRight,
 } from "lucide-react";
 import {
   Button,
@@ -866,6 +869,14 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 Start blank
               </button>
             </div>
+            <Link
+              href="/settings/tokens"
+              className="inline-flex items-center gap-1.5 t-caption text-[#8E8E93] hover:text-indigo-600 transition-colors border border-black/[0.06] hover:border-indigo-200 rounded-full px-3 py-1.5 bg-white/60"
+            >
+              <Bot size={11} className="shrink-0" aria-hidden />
+              Connect to any AI agent via MCP
+              <ArrowRight size={11} className="shrink-0" aria-hidden />
+            </Link>
           </div>
         </div>
 
