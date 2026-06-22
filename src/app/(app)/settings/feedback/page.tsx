@@ -23,7 +23,15 @@ export default function FeedbackPage() {
     if (!message.trim()) return;
     setSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "free_text", surface: type, text: message }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        throw new Error(body.error ?? "Request failed");
+      }
       toast.success("Feedback sent. Thank you!");
       setMessage("");
       setSubmitted(true);
