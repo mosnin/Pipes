@@ -212,7 +212,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               <span className="t-caption text-[#C7C7CC]">{hintText}</span>
             ) : null}
           </div>
-          {focused && !isRunning && !hasError ? (
+          {!isRunning && !hasError && trimmed.length > 0 ? (
             <span className="t-caption text-[#C7C7CC] inline-flex items-center gap-1.5">
               <KbdHint keys={["Enter"]} /> to send
             </span>
