@@ -40,6 +40,8 @@ export function LoopVisibilityToggle({ systemId, currentVisibility, canSetPrivat
     const url = `${window.location.origin}/s/${systemId}`;
     void navigator.clipboard.writeText(url).then(() => {
       toast.success("Share link copied");
+    }).catch(() => {
+      toast.error("Could not copy — please select and copy the URL manually");
     });
   }
 
