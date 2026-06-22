@@ -282,7 +282,7 @@ export function createMockRepositories(): RepositorySet {
       async getByToken(token) {
         const invite = store.readDb().invites.find((i) => i.token === token) ?? null;
         if (!invite) return null;
-        return { workspaceId: invite.workspaceId, token: invite.token, email: invite.email, role: invite.role, status: invite.status, expiresAt: invite.expiresAt };
+        return { workspaceId: invite.workspaceId, token: invite.token, email: invite.email, role: invite.role, status: invite.status, expiresAt: invite.expiresAt, invitedBy: invite.invitedBy };
       },
       async accept(token, userId) {
         const db = store.readDb();

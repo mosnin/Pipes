@@ -109,7 +109,7 @@ export interface VersionsRepository {
 export interface InvitesRepository {
   add(input: { workspaceId: string; email: string; role: Role; token: string; invitedBy: string; expiresAt: string }): Promise<void>;
   list(workspaceId: string): Promise<Array<{ token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string }>>;
-  getByToken(token: string): Promise<{ workspaceId: string; token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string } | null>;
+  getByToken(token: string): Promise<{ workspaceId: string; token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string; invitedBy?: string } | null>;
   accept(token: string, userId: string): Promise<void>;
   cancel(token: string): Promise<void>;
 }

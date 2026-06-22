@@ -1,13 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Users, XCircle } from "lucide-react";
 import { Spinner, StatusBadge } from "@/components/ui";
-
-// Invite-accept form. Same submission logic as the previous page, redesigned
-// to live inside the AuthShell left column. Token validation and POST flow
-// are preserved verbatim.
 
 type AcceptState =
   | { kind: "idle" }
@@ -17,10 +13,11 @@ type AcceptState =
   | { kind: "invalid" }
   | { kind: "error"; message: string };
 
-const PLACEHOLDER_INVITER = "Alex Rivera";
-const PLACEHOLDER_WORKSPACE = "Acme AI";
-const PLACEHOLDER_ROLE: "owner" | "admin" | "member" = "member";
-const PLACEHOLDER_MESSAGE: string | null = null;
+type InviteInfo = {
+  workspaceName: string;
+  role: "owner" | "admin" | "member";
+  email: string;
+};
 
 export type InviteFormProps = {
   token: string;
@@ -29,6 +26,24 @@ export type InviteFormProps = {
 export function InviteForm({ token }: InviteFormProps) {
   const router = useRouter();
   const [state, setState] = useState<AcceptState>({ kind: "idle" });
+  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
+  const [infoLoading, setInfoLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch(`/api/invites/${token}`);
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          setInviteInfo(data.data as InviteInfo);
+        }
+      } catch {
+        // best-effort — fall back to generic copy
+      } finally {
+        setInfoLoading(false);
+      }
+    })();
+  }, [token]);
 
   async function handleAccept() {
     setState({ kind: "loading" });
@@ -106,7 +121,10 @@ export function InviteForm({ token }: InviteFormProps) {
   }
 
   const isLoading = state.kind === "loading";
-  const inviterInitials = PLACEHOLDER_INVITER.split(" ")
+  const workspaceName = inviteInfo?.workspaceName ?? "a workspace";
+  const role = inviteInfo?.role ?? "member";
+  const workspaceInitials = workspaceName
+    .split(" ")
     .map((part) => part.charAt(0))
     .join("")
     .slice(0, 2)
@@ -120,34 +138,34 @@ export function InviteForm({ token }: InviteFormProps) {
       </p>
 
       <div className="mt-8 rounded-2xl border border-black/[0.06] bg-white p-5">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white t-label font-semibold">
-            {inviterInitials}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="t-label text-[#3C3C43]">
-              <span className="font-semibold text-[#111]">
-                {PLACEHOLDER_INVITER}
-              </span>{" "}
-              invited you to
-            </p>
-            <p className="mt-0.5 t-title text-[#111] truncate">
-              {PLACEHOLDER_WORKSPACE}
-            </p>
+        {infoLoading ? (
+          <div className="flex justify-center py-4">
+            <Spinner size="sm" />
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white t-label font-semibold">
+                {workspaceInitials}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="t-label text-[#3C3C43]">
+                  <span className="font-semibold text-[#111]">A teammate</span>{" "}
+                  invited you to
+                </p>
+                <p className="mt-0.5 t-title text-[#111] truncate">
+                  {workspaceName}
+                </p>
+              </div>
+            </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="t-caption text-[#8E8E93]">Role</span>
-          <StatusBadge tone="info">
-            <span className="capitalize">{PLACEHOLDER_ROLE}</span>
-          </StatusBadge>
-        </div>
-
-        {PLACEHOLDER_MESSAGE != null && (
-          <p className="mt-4 t-label text-[#3C3C43] leading-relaxed">
-            {PLACEHOLDER_MESSAGE}
-          </p>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="t-caption text-[#8E8E93]">Role</span>
+              <StatusBadge tone="info">
+                <span className="capitalize">{role}</span>
+              </StatusBadge>
+            </div>
+          </>
         )}
       </div>
 
