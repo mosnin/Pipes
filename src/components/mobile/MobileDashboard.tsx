@@ -339,7 +339,7 @@ export function MobileDashboard({
                       <div className="min-w-0 flex-1">
                         <p className="t-label font-semibold text-[#111] truncate">{row.name}</p>
                         <p className="t-caption text-[#8E8E93] truncate">
-                          {row.description || "No description"}
+                          {row.description || <span className="italic opacity-50">No description</span>}
                         </p>
                         {row.tags.length > 0 && (
                           <div className="flex gap-1 mt-1 overflow-hidden">

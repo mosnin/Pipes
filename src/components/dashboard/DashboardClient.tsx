@@ -185,7 +185,7 @@ function SystemCard({
             )}
           </div>
           <p className="t-label text-[#8E8E93] line-clamp-2 leading-snug">
-            {row.description || "No description"}
+            {row.description || <span className="italic opacity-50">No description</span>}
           </p>
         </div>
         <div className="flex items-start gap-1.5 shrink-0">

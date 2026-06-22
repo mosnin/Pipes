@@ -2140,7 +2140,14 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       <Button variant="ghost" size="sm" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add Upstream</Button>
                     </div>
                   </Card>
-                ) : <p className="t-label text-[#8E8E93] py-2">Select a node to inspect details.</p>}
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+                    <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="9" y="9" width="5" height="5" rx="1" fill="#EBEBEB"/></svg>
+                    </div>
+                    <p className="t-caption text-[#C7C7CC]">Click a node to edit it</p>
+                  </div>
+                )}
               </>
             )}
           </Panel>
