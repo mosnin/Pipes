@@ -119,7 +119,7 @@ export default function HomePage() {
                   event="homepage_cta_clicked"
                   metadata={{ location: "hero_primary" }}
                 >
-                  <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700">
+                  <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-indigo-600 px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700">
                     Start free
                     <ArrowRight size={14} aria-hidden="true" />
                   </span>
