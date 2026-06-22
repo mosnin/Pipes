@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, Textarea, Select, Tooltip, ValidationBadge } from "@/components/ui";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
-import { BarChart2, Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
+import { BarChart2, Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Link2, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
 import { EditorTutorial } from "@/components/editor/EditorTutorial";
 import { getTutorialSeen } from "@/lib/feedback/storage";
@@ -1079,6 +1079,19 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           <div className="flex items-center gap-2 shrink-0">
             <AvatarStack names={data.presence.map((p) => p.name)} />
             <Badge tone={saveState === "error" ? "warn" : saveState === "saved" ? "good" : "neutral"}>{saveLabel}</Badge>
+            <Tooltip content="Copy link">
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(window.location.href);
+                  const isPrivate = (data.system.visibility ?? "public") === "private";
+                  toast.success(isPrivate ? "Link copied — only workspace members can open private loops" : "Link copied");
+                }}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-black/[0.05] transition-colors"
+                aria-label="Copy link"
+              >
+                <Link2 size={14} />
+              </button>
+            </Tooltip>
             <LoopVisibilityToggle
               systemId={systemId}
               currentVisibility={data.system.visibility ?? "public"}
