@@ -36,7 +36,7 @@ export type SystemRecord = {
 
 export type NodeRecord = { id: string; systemId: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[] };
 export type PipeRecord = { id: string; systemId: string; fromPortId: string; toPortId: string; fromNodeId?: string; toNodeId?: string };
-export type CommentRecord = { id: string; systemId: string; authorId: string; body: string; nodeId?: string; createdAt: string };
+export type CommentRecord = { id: string; systemId: string; authorId: string; authorName?: string; body: string; nodeId?: string; createdAt: string };
 export type VersionRecord = { id: string; systemId: string; name: string; authorId: string; createdAt: string; snapshot: string };
 export type PresenceRecord = { id: string; systemId: string; userId: string; name: string; selectedNodeId?: string; editingTarget?: string; cursor?: { x: number; y: number }; updatedAt: string };
 

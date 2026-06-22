@@ -42,7 +42,7 @@ type SystemPayload = {
   system: { id: string; name: string; description: string; visibility?: "public" | "private" };
   nodes: GraphNode[];
   pipes: GraphPipe[];
-  comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; createdAt: string }>;
+  comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; authorName?: string; createdAt: string }>;
   versions: Array<{ id: string; name: string; authorId: string; createdAt: string }>;
   presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
   entitlements?: { privateLoops: boolean; marketplaceSelling: boolean; mcpReadWrite: boolean; aiGeneration: boolean; versionHistory: boolean };
@@ -62,7 +62,7 @@ function normalizeBundle(bundle: any): SystemPayload {
     system: { id: String(bundle.system._id ?? bundle.system.id), name: bundle.system.name, description: bundle.system.description, visibility: bundle.system.visibility },
     nodes: bundle.nodes.map((n: any) => ({ id: String(n._id ?? n.id), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [], config: n.config ?? {} })),
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
-    comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
+    comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), authorName: c.authorName ?? undefined, createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
     presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined })),
     entitlements,
@@ -1501,7 +1501,21 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                 {data.comments.length === 0 ? (
                   <p className="t-caption text-[#8E8E93] text-center py-4">No comments yet. {selectedNodeId ? "Comment on the selected node." : "Select a node to comment on it, or post a system-level comment."}</p>
                 ) : (
-                  <div className="space-y-2 mt-2">{data.comments.map((c) => <CommentBubble key={c.id} author={c.authorId} text={c.body} />)}</div>
+                  <div className="space-y-2 mt-2">{data.comments.map((c) => {
+                    const diff = Date.now() - new Date(c.createdAt).getTime();
+                    const mins = Math.floor(diff / 60_000);
+                    const age = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`;
+                    const displayName = c.authorName ?? `User …${c.authorId.slice(-4)}`;
+                    return (
+                      <div key={c.id} className="border-l-2 border-indigo-400 pl-3 py-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <strong className="t-label font-semibold text-[#111] truncate">{displayName}</strong>
+                          <span className="t-caption text-[#C7C7CC] shrink-0 text-[10px]">{age}</span>
+                        </div>
+                        <p className="mt-0.5 t-label text-[#3C3C43]">{c.body}</p>
+                      </div>
+                    );
+                  })}</div>
                 )}
               </div>
             )}

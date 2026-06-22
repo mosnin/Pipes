@@ -75,7 +75,7 @@ function getBundle(systemId: string): SystemBundle {
     pipes: db.pipes
       .filter((p) => p.systemId === systemId)
       .map((p) => ({ ...p, fromNodeId: db.nodes.find((n) => n.portIds.includes(p.fromPortId))?.id, toNodeId: db.nodes.find((n) => n.portIds.includes(p.toPortId))?.id })),
-    comments: db.comments.filter((c) => c.systemId === systemId),
+    comments: db.comments.filter((c) => c.systemId === systemId).map((c) => ({ ...c, authorName: usersById.get(c.authorId)?.name })),
     versions: db.versions.filter((v) => v.systemId === systemId),
     presence: db.presence.filter((p) => p.systemId === systemId).map((p) => ({ ...p, name: usersById.get(p.userId)?.name ?? p.name }))
   };
