@@ -18,7 +18,7 @@ export const ROLE_IDS = [
 export type RoleId = (typeof ROLE_IDS)[number];
 
 export type OnboardingState = {
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3;
   roleId: RoleId | null;
   workspaceName: string;
   starterId: string | null;
@@ -36,7 +36,8 @@ function isRoleId(value: unknown): value is RoleId {
 }
 
 function coerceStep(value: unknown): OnboardingState["step"] {
-  if (value === 1 || value === 2 || value === 3 || value === 4) return value;
+  if (value === 1 || value === 2 || value === 3) return value;
+  if (value === 4) return 3; // backwards compat: old 4-step flow lands on launch
   return 1;
 }
 

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
 import { OnboardingStepRole } from "@/components/onboarding/OnboardingStepRole";
-import { OnboardingStepWorkspace } from "@/components/onboarding/OnboardingStepWorkspace";
 import { OnboardingStepStarter } from "@/components/onboarding/OnboardingStepStarter";
 import { OnboardingStepLaunch } from "@/components/onboarding/OnboardingStepLaunch";
 import type { OnboardingStep } from "@/components/onboarding/OnboardingStepShell";
@@ -23,7 +22,7 @@ import {
 
 export default function WelcomePage() {
   const router = useRouter();
-  const { state, hydrated, setStep, setRoleId, setWorkspaceName, setStarterId } =
+  const { state, hydrated, setStep, setRoleId, setStarterId } =
     useOnboardingState();
   const [shouldRender, setShouldRender] = useState(false);
   const { user } = useUser();
@@ -38,7 +37,7 @@ export default function WelcomePage() {
   }, [hydrated, router]);
 
   const goNext = useCallback(() => {
-    setStep(((state.step + 1) as OnboardingStep) > 4 ? 4 : ((state.step + 1) as OnboardingStep));
+    setStep(((state.step + 1) as OnboardingStep) > 3 ? 3 : ((state.step + 1) as OnboardingStep));
   }, [setStep, state.step]);
 
   const goBack = useCallback(() => {
@@ -102,22 +101,9 @@ export default function WelcomePage() {
         />
       )}
       {state.step === 2 && (
-        <OnboardingStepWorkspace
+        <OnboardingStepStarter
           key="step-2"
           step={2}
-          firstName={firstName}
-          roleId={state.roleId}
-          workspaceName={state.workspaceName}
-          onChange={setWorkspaceName}
-          onContinue={goNext}
-          onBack={goBack}
-          onJumpTo={handleJumpTo}
-        />
-      )}
-      {state.step === 3 && (
-        <OnboardingStepStarter
-          key="step-3"
-          step={3}
           roleId={state.roleId}
           starterId={state.starterId}
           onSelect={setStarterId}
@@ -126,10 +112,10 @@ export default function WelcomePage() {
           onJumpTo={handleJumpTo}
         />
       )}
-      {state.step === 4 && (
+      {state.step === 3 && (
         <OnboardingStepLaunch
-          key="step-4"
-          step={4}
+          key="step-3"
+          step={3}
           starterId={state.starterId}
           workspaceName={state.workspaceName}
           onJumpTo={handleJumpTo}

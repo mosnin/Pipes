@@ -14,8 +14,8 @@ import { Spinner } from "@/components/ui";
 // The dots are clickable backward; forward navigation is locked behind the
 // continueDisabled prop set by the step itself.
 
-export type OnboardingStep = 1 | 2 | 3 | 4;
-export const TOTAL_STEPS = 4 as const;
+export type OnboardingStep = 1 | 2 | 3;
+export const TOTAL_STEPS = 3 as const;
 
 export type OnboardingStepShellProps = {
   step: OnboardingStep;
@@ -118,7 +118,7 @@ type ProgressDotsProps = {
 };
 
 function ProgressDots({ step, onJumpTo }: ProgressDotsProps) {
-  const dots: OnboardingStep[] = [1, 2, 3, 4];
+  const dots: OnboardingStep[] = [1, 2, 3];
   return (
     <div
       role="tablist"

@@ -22,7 +22,7 @@ describe("OnboardingStepShell", () => {
     expect(screen.getByText("CONTENT")).toBeTruthy();
   });
 
-  it("renders four progress dots", () => {
+  it("renders three progress dots", () => {
     render(
       <OnboardingStepShell
         step={2}
@@ -34,7 +34,7 @@ describe("OnboardingStepShell", () => {
       </OnboardingStepShell>,
     );
     const dots = screen.getAllByRole("tab");
-    expect(dots).toHaveLength(4);
+    expect(dots).toHaveLength(3);
   });
 
   it("marks the active step via aria-selected", () => {
@@ -128,7 +128,7 @@ describe("OnboardingStepShell", () => {
   it("hides the back/continue row when hideControls is set", () => {
     render(
       <OnboardingStepShell
-        step={4}
+        step={3}
         title="t"
         subtitle="s"
         hideControls
