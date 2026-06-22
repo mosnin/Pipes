@@ -4,12 +4,12 @@ import { failure, success } from "@/lib/api/response";
 
 export const runtime = "nodejs";
 
-// Per-plan monthly build allowances. Anything not in the map (or above
-// Enterprise) is unlimited and surfaces no badge in the client.
+// Per-plan monthly build allowances. Free=50; paid plans are unlimited
+// (matching the enforcement in /api/agent/build/route.ts).
 const PLAN_LIMITS: Record<string, number> = {
   Free: 50,
-  Pro: 1_000,
-  Builder: 10_000,
+  Pro: Number.POSITIVE_INFINITY,
+  Builder: Number.POSITIVE_INFINITY,
   Enterprise: Number.POSITIVE_INFINITY,
 };
 

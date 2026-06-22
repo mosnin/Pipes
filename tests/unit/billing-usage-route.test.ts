@@ -74,26 +74,28 @@ describe("/api/billing/usage route", () => {
     expect(body.data.used).toBe(0);
   });
 
-  it("returns the Pro plan limit for a Pro user", async () => {
+  it("returns null limit (unlimited) for a Pro user", async () => {
     const { app } = buildApp({ plan: "Pro", metric: null });
     mockedServer.mockResolvedValue(app);
 
     const { GET } = await import("@/app/api/billing/usage/route");
     const res = await GET();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; data: { used: number; limit: number; plan: string } };
+    const body = (await res.json()) as { ok: boolean; data: { used: number; limit: number | null; plan: string } };
     expect(body.data.plan).toBe("Pro");
-    expect(body.data.limit).toBe(1000);
+    // Infinity serializes to null in JSON — client treats null as unlimited
+    expect(body.data.limit).toBeNull();
   });
 
-  it("returns the Builder plan limit", async () => {
+  it("returns null limit (unlimited) for a Builder user", async () => {
     const { app } = buildApp({ plan: "Builder", metric: null });
     mockedServer.mockResolvedValue(app);
 
     const { GET } = await import("@/app/api/billing/usage/route");
     const res = await GET();
-    const body = (await res.json()) as { ok: boolean; data: { limit: number } };
-    expect(body.data.limit).toBe(10000);
+    const body = (await res.json()) as { ok: boolean; data: { limit: number | null } };
+    // Infinity serializes to null in JSON — client treats null as unlimited
+    expect(body.data.limit).toBeNull();
   });
 
   it("returns 401 when auth fails", async () => {
