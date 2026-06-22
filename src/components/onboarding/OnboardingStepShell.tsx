@@ -21,6 +21,7 @@ export type OnboardingStepShellProps = {
   step: OnboardingStep;
   title: string;
   subtitle: string;
+  direction?: 1 | -1;
   onBack?: () => void;
   onContinue?: () => void;
   onJumpTo?: (step: OnboardingStep) => void;
@@ -35,6 +36,7 @@ export function OnboardingStepShell({
   step,
   title,
   subtitle,
+  direction = 1,
   onBack,
   onContinue,
   onJumpTo,
@@ -44,8 +46,15 @@ export function OnboardingStepShell({
   hideControls = false,
   children,
 }: OnboardingStepShellProps) {
+  const xOut = direction * -36;
+  const xIn = direction * 36;
   return (
-    <div className="flex min-h-screen flex-col">
+    <div
+      className="flex min-h-screen flex-col"
+      style={{
+        background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79,70,229,0.06) 0%, transparent 70%)",
+      }}
+    >
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
         <Wordmark size="md" />
         <ProgressDots step={step} onJumpTo={onJumpTo} />
@@ -56,18 +65,32 @@ export function OnboardingStepShell({
 
       <motion.section
         key={step}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
+        initial={{ opacity: 0, x: xIn }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: xOut }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         className="flex-1 flex flex-col items-center justify-center px-6 py-12"
         aria-labelledby="onboarding-title"
       >
         <div className="w-full max-w-2xl">
-          <h1 id="onboarding-title" className="t-h1 text-[#111]">
+          <h1
+            id="onboarding-title"
+            className="text-[#111]"
+            style={{
+              fontSize: "clamp(28px, 4vw, 40px)",
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.12,
+            }}
+          >
             {title}
           </h1>
-          <p className="mt-3 t-body text-[#3C3C43]">{subtitle}</p>
+          <p
+            className="mt-4 text-[#3C3C43]"
+            style={{ fontSize: 17, lineHeight: 1.55 }}
+          >
+            {subtitle}
+          </p>
 
           <div className="mt-10">{children}</div>
 
@@ -92,11 +115,13 @@ export function OnboardingStepShell({
                 onClick={onContinue}
                 disabled={continueDisabled || continueLoading}
                 className="
-                  inline-flex items-center gap-2 h-11 px-5
-                  rounded-lg bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-700
-                  text-white font-semibold t-label transition-colors
+                  inline-flex items-center gap-2 h-11 px-6
+                  rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
+                  text-white font-semibold t-label transition-all duration-150
                   disabled:opacity-50 disabled:cursor-not-allowed
+                  shadow-sm hover:shadow-md
                 "
+                style={{ letterSpacing: "-0.01em" }}
               >
                 {continueLoading && <Spinner size="sm" />}
                 {continueLabel}

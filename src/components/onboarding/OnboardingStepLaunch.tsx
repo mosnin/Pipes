@@ -15,6 +15,7 @@ export type OnboardingStepLaunchProps = {
   step: OnboardingStep;
   starterId: string | null;
   workspaceName: string;
+  direction?: 1 | -1;
   onJumpTo?: (step: OnboardingStep) => void;
   onComplete: (systemId: string, prompt: string) => void;
   onError?: (message: string) => void;
@@ -26,6 +27,7 @@ export function OnboardingStepLaunch({
   step,
   starterId,
   workspaceName,
+  direction,
   onJumpTo,
   onComplete,
   onError,
@@ -114,6 +116,7 @@ export function OnboardingStepLaunch({
   return (
     <OnboardingStepShell
       step={step}
+      direction={direction}
       title={headline}
       subtitle={sub}
       onJumpTo={onJumpTo}

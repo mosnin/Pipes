@@ -55,6 +55,7 @@ export type OnboardingStepStarterProps = {
   step: OnboardingStep;
   roleId: RoleId | null;
   starterId: string | null;
+  direction?: 1 | -1;
   onSelect: (id: string) => void;
   onContinue: () => void;
   onBack?: () => void;
@@ -65,6 +66,7 @@ export function OnboardingStepStarter({
   step,
   roleId,
   starterId,
+  direction,
   onSelect,
   onContinue,
   onBack,
@@ -75,6 +77,7 @@ export function OnboardingStepStarter({
   return (
     <OnboardingStepShell
       step={step}
+      direction={direction}
       title="Pick something the agent will build for you."
       subtitle="Just to show you how it works. You can throw it away after."
       onBack={onBack}

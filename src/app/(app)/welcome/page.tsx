@@ -25,6 +25,7 @@ export default function WelcomePage() {
   const { state, hydrated, setStep, setRoleId, setStarterId } =
     useOnboardingState();
   const [shouldRender, setShouldRender] = useState(false);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const { user } = useUser();
 
   useEffect(() => {
@@ -37,11 +38,13 @@ export default function WelcomePage() {
   }, [hydrated, router]);
 
   const goNext = useCallback(() => {
+    setDirection(1);
     setStep(((state.step + 1) as OnboardingStep) > 3 ? 3 : ((state.step + 1) as OnboardingStep));
   }, [setStep, state.step]);
 
   const goBack = useCallback(() => {
     if (state.step <= 1) return;
+    setDirection(-1);
     setStep((state.step - 1) as OnboardingStep);
   }, [setStep, state.step]);
 
@@ -94,6 +97,7 @@ export default function WelcomePage() {
         <OnboardingStepRole
           key="step-1"
           step={1}
+          direction={direction}
           roleId={state.roleId}
           onSelect={handleSelectRole}
           onContinue={goNext}
@@ -104,6 +108,7 @@ export default function WelcomePage() {
         <OnboardingStepStarter
           key="step-2"
           step={2}
+          direction={direction}
           roleId={state.roleId}
           starterId={state.starterId}
           onSelect={setStarterId}
@@ -116,6 +121,7 @@ export default function WelcomePage() {
         <OnboardingStepLaunch
           key="step-3"
           step={3}
+          direction={direction}
           starterId={state.starterId}
           workspaceName={state.workspaceName}
           onJumpTo={handleJumpTo}

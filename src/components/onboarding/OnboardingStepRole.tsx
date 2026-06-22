@@ -50,6 +50,7 @@ const ROLES: ReadonlyArray<RoleChip> = [
 export type OnboardingStepRoleProps = {
   step: OnboardingStep;
   roleId: RoleId | null;
+  direction?: 1 | -1;
   onSelect: (roleId: RoleId) => void;
   onContinue: () => void;
   onBack?: () => void;
@@ -59,6 +60,7 @@ export type OnboardingStepRoleProps = {
 export function OnboardingStepRole({
   step,
   roleId,
+  direction,
   onSelect,
   onContinue,
   onBack,
@@ -67,6 +69,7 @@ export function OnboardingStepRole({
   return (
     <OnboardingStepShell
       step={step}
+      direction={direction}
       title="What do you build?"
       subtitle="Tells us how to tune the agent for you."
       onBack={onBack}
