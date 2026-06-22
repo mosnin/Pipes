@@ -278,6 +278,19 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     }
   }, []);
 
+  // Auto-enter rename mode when arriving from "New System" so the user's
+  // first action is naming the loop rather than seeing "Untitled System".
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rename") === "1" && data?.system.name) {
+      setRenameValue(data.system.name);
+      setRenamingSystem(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("rename");
+      window.history.replaceState(null, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.system.name]);
+
   // Hydrate the tutorial seen flag once on the client. Default of `true`
   // keeps the tutorial hidden during SSR and the first render so we never
   // flash a tutorial overlay for returning users.

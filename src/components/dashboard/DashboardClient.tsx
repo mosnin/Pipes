@@ -394,7 +394,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       const data = await res.json();
       if (data.ok) {
         toast.success("System created", { id });
-        router.push(`/systems/${data.data.systemId}`);
+        router.push(`/systems/${data.data.systemId}?rename=1`);
       } else {
         toast.error(data.error ?? "Failed to create system", { id });
       }
