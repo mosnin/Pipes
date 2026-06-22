@@ -219,23 +219,43 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     const name = renameValue.trim();
     setRenamingSystem(false);
     if (!name || name === data?.system.name) return;
-    await fetch(`/api/systems/${systemId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    reload();
+    try {
+      const res = await fetch(`/api/systems/${systemId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      reload();
+      toast.success(`Renamed to "${name}"`);
+    } catch (err) {
+      setRenameValue(data?.system.name ?? "");
+      toast.error(err instanceof Error ? err.message : "Failed to rename loop");
+    }
   }, [renameValue, data?.system.name, systemId, reload]);
 
   const commitDescription = useCallback(async () => {
     setEditingDescription(false);
     if (descriptionDraft === (data?.system.description ?? "")) return;
-    await fetch(`/api/systems/${systemId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ description: descriptionDraft.trim() }),
-    });
-    reload();
+    try {
+      const res = await fetch(`/api/systems/${systemId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ description: descriptionDraft.trim() }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      reload();
+      toast.success("Description saved");
+    } catch (err) {
+      setDescriptionDraft(data?.system.description ?? "");
+      toast.error(err instanceof Error ? err.message : "Failed to save description");
+    }
   }, [descriptionDraft, data?.system.description, systemId, reload]);
 
   useEffect(() => {
