@@ -157,7 +157,8 @@ const COMPARISON: readonly ComparisonGroup[] = [
       },
       {
         feature: "Versioned loop history",
-        starter: "7 days",
+        detail: "Named checkpoints you can restore at any time.",
+        starter: false,
         pro: "Unlimited",
         team: "Unlimited",
         enterprise: "Unlimited",

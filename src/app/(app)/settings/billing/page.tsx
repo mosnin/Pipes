@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ExternalLink,
   XCircle,
+  Zap,
 } from "lucide-react";
 import {
   Button,
@@ -276,6 +277,28 @@ export default function BillingSettingsPage() {
           )
         }
       />
+
+      {summary?.plan === "Free" && (
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <Zap size={16} className="text-indigo-500 mt-0.5 shrink-0" aria-hidden />
+            <div>
+              <p className="t-label font-semibold text-indigo-900">You are on the Free plan</p>
+              <p className="t-caption text-indigo-700/80 mt-0.5">
+                50 builds/month, 3 public loops, no version history or MCP access. Upgrade to Pro for unlimited builds, private loops, full version history, and MCP tokens.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            onPress={() => setPlanDialogOpen(true)}
+            className="shrink-0"
+          >
+            Upgrade to Pro
+          </Button>
+        </div>
+      )}
 
       {loadError ? (
         <CardShell>
