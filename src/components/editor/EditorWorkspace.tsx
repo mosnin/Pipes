@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, Textarea, Select, Tooltip, ValidationBadge } from "@/components/ui";
@@ -123,7 +124,7 @@ function localApply(nodes: GraphNode[], pipes: GraphPipe[], action: EditorGraphA
   return { nodes, pipes };
 }
 
-function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { systemId: string; data: SystemPayload | null; reload: () => void; initialPrompt?: string }) {
+function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }: { systemId: string; data: SystemPayload | null; notFound?: boolean; reload: () => void; initialPrompt?: string }) {
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
@@ -928,11 +929,28 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
     }));
   }, [activeTurnId, completedTurns]);
 
-  if (!data) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Spinner size="lg" />
-    </div>
-  );
+  if (!data) {
+    if (notFound) return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6">
+        <p className="text-4xl">&#x2049;</p>
+        <h1 className="t-label font-semibold text-[#111]">Loop not found</h1>
+        <p className="t-caption text-[#8E8E93] max-w-xs">
+          This loop may have been deleted or you do not have access to it.
+        </p>
+        <Link
+          href="/dashboard"
+          className="px-4 py-1.5 rounded-full bg-[#4F46E5] text-white text-xs font-semibold hover:bg-[#4338CA] transition-colors"
+        >
+          Back to dashboard
+        </Link>
+      </div>
+    );
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -2056,25 +2074,29 @@ function EditorWorkspaceView({ systemId, data, reload, initialPrompt }: { system
 
 function MockEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const load = useCallback(async () => {
+    if (notFound) return;
     const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
-    const systemData = await systemRes.json();
-    if (systemData.ok) setData(systemData.data);
-  }, [systemId]);
+    const systemData = await systemRes.json() as { ok: boolean; data?: SystemPayload };
+    if (systemData.ok && systemData.data) setData(systemData.data);
+    else if (!systemData.ok) setNotFound(true);
+  }, [systemId, notFound]);
 
   useEffect(() => {
     void load();
-    const interval = setInterval(load, 1500);
+    const interval = setInterval(() => { void load(); }, 1500);
     return () => clearInterval(interval);
   }, [load]);
 
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={load} initialPrompt={initialPrompt} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} notFound={notFound} reload={load} initialPrompt={initialPrompt} />;
 }
 
 function RealEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const bundle = useQuery(api.app.getSystemBundle, { systemId: systemId as never });
+  const notFound = bundle === null;
   const data = bundle ? normalizeBundle(bundle) : null;
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} initialPrompt={initialPrompt} />;
+  return <EditorWorkspaceView systemId={systemId} data={data} notFound={notFound} reload={() => {}} initialPrompt={initialPrompt} />;
 }
 
 export function EditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
