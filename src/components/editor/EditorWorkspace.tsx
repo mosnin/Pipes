@@ -562,6 +562,15 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     });
   }, [activeTurnId]);
 
+  // Show the "See what agents see" banner the first time the AI builds nodes
+  // so users know to connect their freshly-built loop to an agent.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (completedTurns.length === 1 && nodes.length > 0 && !showNewBanner) {
+      setShowNewBanner(true);
+    }
+  }, [completedTurns.length, nodes.length]);
+
   const deferredNodes = useDeferredValue(nodes);
   const deferredPipes = useDeferredValue(pipes);
 
