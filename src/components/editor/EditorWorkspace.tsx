@@ -1877,37 +1877,6 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             )}
             {activeSystemPanel === "agent" && (
               <div className="space-y-3">
-                <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
-                  <p className="t-caption text-[#3C3C43] leading-relaxed">
-                    This is exactly what any AI agent receives when it queries your system via MCP. Paste this URL into Claude, GPT, or any agent to give it full architectural context.
-                  </p>
-                </div>
-                {agentViewLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner size="sm" />
-                  </div>
-                ) : agentViewJson ? (
-                  <>
-                    <div className="relative">
-                      <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-4 overflow-auto max-h-80 whitespace-pre-wrap"
-                           style={{ borderRadius: "8px", lineHeight: "1.6" }}>
-                        {agentViewJson}
-                      </pre>
-                      <button
-                        onClick={() => {
-                          void navigator.clipboard.writeText(agentViewJson).then(() => {
-                            toast.success("Agent view JSON copied");
-                          });
-                        }}
-                        className="absolute top-2 right-2 flex items-center gap-1 t-caption font-medium text-[#9ca3af] hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors"
-                      >
-                        <Copy size={11} /> Copy
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="t-label text-[#8E8E93] py-2">Loading…</p>
-                )}
                 {data?.entitlements?.mcpReadWrite === false ? (
                   <LoopUpgradeGate reason="mcp_access" />
                 ) : (
@@ -1924,6 +1893,38 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                     </Button>
                   </>
                 )}
+                <details className="group">
+                  <summary className="flex items-center gap-1 t-caption text-[#8E8E93] hover:text-[#3C3C43] cursor-pointer select-none list-none">
+                    <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
+                    View raw schema (what agents receive)
+                  </summary>
+                  <div className="mt-2">
+                    {agentViewLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Spinner size="sm" />
+                      </div>
+                    ) : agentViewJson ? (
+                      <div className="relative">
+                        <pre className="bg-[#111] text-[#e5e7eb] t-caption font-mono p-4 overflow-auto max-h-80 whitespace-pre-wrap"
+                             style={{ borderRadius: "8px", lineHeight: "1.6" }}>
+                          {agentViewJson}
+                        </pre>
+                        <button
+                          onClick={() => {
+                            void navigator.clipboard.writeText(agentViewJson).then(() => {
+                              toast.success("Agent view JSON copied");
+                            });
+                          }}
+                          className="absolute top-2 right-2 flex items-center gap-1 t-caption font-medium text-[#9ca3af] hover:text-white bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-colors"
+                        >
+                          <Copy size={11} /> Copy
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="t-label text-[#8E8E93] py-2">Loading…</p>
+                    )}
+                  </div>
+                </details>
               </div>
             )}
             {activeSystemPanel === "analytics" && (
