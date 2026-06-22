@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import {
   Breadcrumbs,
-  Button,
   StatusBadge,
   type StatusBadgeTone,
 } from "@/components/ui";
@@ -12,6 +11,7 @@ import { TrackedLink } from "@/components/marketing/TrackedLink";
 import { TemplateDetailHero } from "@/components/marketing/TemplateDetailHero";
 import { TemplateNodeBreakdown } from "@/components/marketing/TemplateNodeBreakdown";
 import { TemplateInlineRun } from "@/components/marketing/TemplateInlineRun";
+import { TemplateUseCTA } from "@/components/marketing/TemplateUseCTA";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -223,16 +223,7 @@ export default async function TemplateDetailPage({
                 Your dashboard opens with this starter pre-filled. Press return.
               </p>
             </div>
-            <TrackedLink
-              href={`/signup?source=template-${template.slug}`}
-              event="public_template_instantiate_clicked"
-              metadata={{ templateId: template.id, source: "template_detail_cta" }}
-            >
-              <Button variant="primary" className="bg-white text-indigo-600 hover:bg-indigo-50">
-                Use this starter
-                <ArrowRight size={14} className="ml-1.5" aria-hidden="true" />
-              </Button>
-            </TrackedLink>
+            <TemplateUseCTA templateId={template.id} slug={template.slug} />
           </div>
         </div>
       </section>
