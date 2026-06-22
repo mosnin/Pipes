@@ -201,7 +201,7 @@ export function EditorInspector({
     });
 
   return (
-    <aside className="w-[320px] shrink-0 border-l border-black/[0.08] bg-white flex flex-col">
+    <aside key={selectedNode.id} className="w-[320px] shrink-0 border-l border-black/[0.08] bg-white flex flex-col">
       <div className="px-4 py-3 border-b border-black/[0.06]">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
