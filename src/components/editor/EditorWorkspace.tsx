@@ -148,6 +148,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
   const [versionName, setVersionName] = useState("checkpoint");
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [savingCheckpoint, setSavingCheckpoint] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const [aiEditPrompt, setAiEditPrompt] = useState("Improve reliability and add guardrails.");
   const [pendingSuggestion, setPendingSuggestion] = useState<any | null>(null);
   const [acceptedChangeIds, setAcceptedChangeIds] = useState<string[]>([]);
@@ -969,6 +970,8 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
           reload();
           toast.success(`Saved "${name}"`);
+          setSavedFlash(true);
+          setTimeout(() => setSavedFlash(false), 1000);
         } catch {
           toast.error("Failed to save checkpoint");
         } finally {
@@ -986,7 +989,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
       offInspector();
       offCheckpoint();
     };
-  }, [data, duplicateSelection, redo, reload, savingCheckpoint, selectedNodeIds, setSavingCheckpoint, systemId, toggleSystemPanel, undo]);
+  }, [data, duplicateSelection, redo, reload, savedFlash, savingCheckpoint, selectedNodeIds, setSavedFlash, setSavingCheckpoint, systemId, toggleSystemPanel, undo]);
 
   // Publish the "Show node metadata" command into the global Command Palette
   // when exactly one node is selected. Cleared otherwise. The action opens
@@ -1197,13 +1200,15 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
                   reload();
                   toast.success(`Saved "${name}"`);
+                  setSavedFlash(true);
+                  setTimeout(() => setSavedFlash(false), 1000);
                 } catch {
                   toast.error("Failed to save checkpoint");
                 } finally {
                   setSavingCheckpoint(false);
                 }
               }}
-              className={data?.entitlements?.versionHistory === false ? "text-[#C7C7CC]" : "text-[#8E8E93] hover:text-[#3C3C43]"}
+              className={`${data?.entitlements?.versionHistory === false ? "text-[#C7C7CC]" : "text-[#8E8E93] hover:text-[#3C3C43]"} ${savedFlash ? "looper-saved-flash" : ""}`}
             >
               {savingCheckpoint ? <Spinner size="sm" /> : <History size={14} />}
               {savingCheckpoint ? null : (data?.versions.length ?? 0) > 0 ? `Checkpoint (${data!.versions.length})` : "Checkpoint"}
@@ -1263,7 +1268,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         style={{
           marginTop: 12,
           gridTemplateColumns: `${leftPaneOpen ? "260px" : "48px"} 1fr ${inspectorOpen ? "320px" : "48px"}`,
-          transition: "grid-template-columns 200ms ease",
+          transition: "grid-template-columns 280ms cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
         {leftPaneOpen ? (
