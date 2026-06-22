@@ -365,37 +365,61 @@ export default function TokensSettingsPage() {
           </p>
         </CardHeader>
         <CardBody className="space-y-6">
+          {/* MCP endpoint — always show the full URL first */}
+          <div className="space-y-2">
+            <p className="t-label font-semibold text-[#111]">MCP endpoint</p>
+            <p className="t-caption text-[#3C3C43]">
+              Point any agent at this URL. It serves {MCP_TOOL_COUNT} tools covering systems, graphs, templates, versions, validation, and blueprints.
+            </p>
+            <div className="flex items-center gap-2 rounded-lg bg-[#0B0B0F] px-4 py-3">
+              <code className="flex-1 t-mono text-[12px] text-[#7DD3FC] break-all">
+                {typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}/api/protocol/mcp`;
+                  void navigator.clipboard.writeText(url).then(() => toast.success("Endpoint URL copied"));
+                }}
+                className="shrink-0 text-[#8E8E93] hover:text-white transition-colors"
+                aria-label="Copy endpoint URL"
+              >
+                <Copy size={12} />
+              </button>
+            </div>
+          </div>
           {/* Claude Projects / Claude Code */}
           <div className="space-y-2">
             <p className="t-label font-semibold text-[#111]">Claude Projects or Claude Code</p>
             <p className="t-caption text-[#3C3C43]">
-              In Claude Projects, open the Project settings and add this under &quot;MCP Servers&quot;. In Claude Code, add it to your <InlineCode>.claude/settings.json</InlineCode> MCP config.
+              In Claude Projects, go to Project settings → MCP Servers → Add server. In Claude Code, add to <InlineCode>.claude/settings.json</InlineCode> under <InlineCode>mcpServers</InlineCode>.
             </p>
-            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-1">
-              <code className="block t-mono text-[12px] text-[#86EFAC]">{`{ "authorization": "Bearer ptk_your_token_here" }`}</code>
+            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-0.5 overflow-x-auto">
+              <code className="block t-mono text-[12px] text-[#8E8E93]">{`{`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93] pl-4">{`"mcpServers": {`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93] pl-8">{`"looper": {`}</code>
+              <code className="block t-mono text-[12px] text-[#7DD3FC] pl-12">{`"url": "`}<span className="text-[#86EFAC]">{typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}</span>{`",`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93] pl-12">{`"headers": { "Authorization": "`}<span className="text-[#FCD34D]">Bearer ptk_your_token_here</span>{`" }`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93] pl-8">{`}`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93] pl-4">{`}`}</code>
+              <code className="block t-mono text-[12px] text-[#8E8E93]">{`}`}</code>
             </div>
           </div>
           {/* Any HTTP client */}
           <div className="space-y-2">
             <p className="t-label font-semibold text-[#111]">Any HTTP client or agent framework</p>
             <p className="t-caption text-[#3C3C43]">
-              Pass the token as a Bearer token in the <InlineCode>Authorization</InlineCode> header on every request to <InlineCode>/api/protocol/mcp</InlineCode>.
+              Pass the token as a Bearer token in the <InlineCode>Authorization</InlineCode> header on every POST request to the endpoint above.
             </p>
-            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
-              <code className="t-mono text-[12px] text-[#7DD3FC]">
-                Authorization: Bearer ptk_your_token_here
+            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-0.5">
+              <code className="block t-mono text-[12px] text-[#8E8E93]">
+                POST <span className="text-[#7DD3FC]">{typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}</span>
               </code>
-            </div>
-          </div>
-          {/* MCP endpoint */}
-          <div className="space-y-2">
-            <p className="t-label font-semibold text-[#111]">MCP endpoint</p>
-            <p className="t-caption text-[#3C3C43]">
-              Point your agent at this endpoint. It serves {MCP_TOOL_COUNT} tools covering systems, graphs, templates, versions, validation, and blueprints.
-            </p>
-            <div className="rounded-lg bg-[#0B0B0F] px-4 py-3">
-              <code className="t-mono text-[12px] text-[#7DD3FC]">
-                POST /api/protocol/mcp
+              <code className="block t-mono text-[12px] text-[#8E8E93]">
+                Authorization: Bearer <span className="text-[#FCD34D]">ptk_your_token_here</span>
+              </code>
+              <code className="block t-mono text-[12px] text-[#8E8E93]">
+                Content-Type: application/json
               </code>
             </div>
           </div>
