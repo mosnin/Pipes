@@ -37,7 +37,7 @@ export function PricingTiersGrid({ tiers, period }: PricingTiersGridProps) {
   const reduce = useReducedMotion();
 
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-3 items-stretch">
+    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 items-stretch">
       {tiers.map((tier) => {
         const isHighlighted = tier.highlighted;
         const price = period === "yearly" ? tier.yearlyPrice : tier.monthlyPrice;
@@ -50,7 +50,7 @@ export function PricingTiersGrid({ tiers, period }: PricingTiersGridProps) {
             whileHover={reduce ? undefined : { scale: 1.01 }}
             transition={{ type: "spring", stiffness: 360, damping: 26 }}
             className={[
-              "relative flex flex-col rounded-3xl bg-white p-8 h-full",
+              "relative flex flex-col rounded-3xl bg-white p-6 h-full",
               isHighlighted
                 ? "border-2 border-indigo-600 shadow-lg-token"
                 : "border border-black/[0.08] shadow-xs hover:shadow-lg-token",
