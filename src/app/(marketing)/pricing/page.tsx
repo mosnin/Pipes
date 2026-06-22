@@ -539,7 +539,7 @@ export default function PricingPage() {
             Free to start. No card required. Describe your first loop in one sentence.
           </p>
           <a
-            href="/dashboard"
+            href="/signup?source=pricing_bottom_cta"
             className="inline-flex items-center gap-2 bg-[#111] text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-[#222] transition-colors"
           >
             Start building free
