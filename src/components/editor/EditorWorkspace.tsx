@@ -2057,7 +2057,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                     {inspectorTab === "config" && selectedDefinition ? (
                       <div className="space-y-4">
                         {/* Identity inline at the top: title + description. */}
-                        <div className="space-y-2">
+                        <div key={selectedNode.id} className="space-y-2">
                           <Input defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} placeholder="Title" />
                           <Input defaultValue={selectedNode.description ?? ""} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, description: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, description: selectedNode.description ?? "" })} placeholder="Description" />
                         </div>
