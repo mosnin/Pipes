@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const systemId = await services.templates.instantiate(ctx, listing.templateId, `${name} (from marketplace)`);
+    const { systemId } = await services.templates.instantiate(ctx, listing.templateId, `${name} (from marketplace)`);
     const res = NextResponse.json({ ok: true, data: { systemId } });
     const receipt = settlementResponseHeader(gate.settlement);
     if (gate.amountUsd > 0 && receipt) res.headers.set("x-payment-response", receipt);
