@@ -415,3 +415,46 @@ a { color: inherit; text-decoration: none; }
     animation: none;
   }
 }
+
+/* ── Pricing — badge pulse + card shine ────────────────────────────────────── */
+@keyframes looper-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35); }
+  50%       { box-shadow: 0 0 0 5px rgba(217, 119, 6, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .looper-badge-pulse {
+    animation: looper-badge-pulse 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes looper-card-shine {
+  from { transform: translateX(-120%) skewX(-12deg); }
+  to   { transform: translateX(220%) skewX(-12deg); }
+}
+.pricing-card-shine {
+  position: relative;
+}
+.pricing-card-shine .pricing-shine-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pricing-card-shine .pricing-shine-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.52) 50%,
+    transparent 75%
+  );
+  transform: translateX(-120%) skewX(-12deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pricing-card-shine:hover .pricing-shine-inner::after {
+    animation: looper-card-shine 0.65s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
