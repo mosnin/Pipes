@@ -88,11 +88,11 @@ function MarketingFooter() {
                 type="email"
                 required
                 placeholder="you@company.com"
-                className="flex-1 h-10 rounded-md border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#8E8E93] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                className="flex-1 h-10 rounded-md border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               />
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-md bg-[#111] px-4 t-label font-semibold text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors"
+                className="inline-flex items-center justify-center rounded-md bg-violet-600 px-4 t-label font-semibold text-white hover:bg-violet-700 active:bg-violet-800 transition-colors"
               >
                 Subscribe
               </button>
@@ -109,13 +109,13 @@ function MarketingFooter() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col gap-4">
             <Link
               href="/"
-              className="group relative flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
+              className="group relative flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-md"
               aria-label="Looper home"
             >
               <Wordmark size="lg" />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] origin-left scale-x-0 bg-indigo-600 transition-transform duration-150 group-hover:scale-x-100"
+                className="pointer-events-none absolute left-0 right-0 -bottom-0.5 h-[2px] origin-left scale-x-0 bg-violet-600 transition-transform duration-150 group-hover:scale-x-100"
               />
             </Link>
 
@@ -189,7 +189,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
       {/* Skip-to-content link for keyboard / AT users (WCAG 2.4.1). */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-[#111] focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-indigo-500"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-[#111] focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-violet-500"
       >
         Skip to content
       </a>

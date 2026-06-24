@@ -56,7 +56,7 @@ export type WordmarkProps = {
 export function Wordmark({
   size = "md",
   color = "#111",
-  accent = "#4F46E5",
+  accent = "#7C3AED",
   cover = "#FFFFFF",
   className,
 }: WordmarkProps) {
