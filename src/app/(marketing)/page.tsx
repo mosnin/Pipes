@@ -5,7 +5,7 @@ import { starterTemplates } from "@/domain/templates/catalog";
 import { nodeTypeValues } from "@/domain/looper_schema_v1/schema";
 import { useCases } from "@/lib/public/content";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
-import { HeroScrollDemo } from "@/components/marketing/HeroScrollDemo";
+import { ProductMockup } from "@/components/marketing/ProductMockup";
 import {
   ScrollSection,
   RevealStack,
@@ -122,7 +122,7 @@ export default function HomePage() {
                     </span>
                   </TrackedLink>
                   <Link
-                    href="#scroll-demo"
+                    href="#product-preview"
                     className="inline-flex h-12 items-center gap-1.5 rounded-full border border-black/10 bg-white px-6 t-label font-semibold text-[#111] transition-all hover:border-black/30 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                   >
                     Watch the demo
@@ -150,10 +150,10 @@ export default function HomePage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────────────
-          HERO SCROLL DEMO — 300vh outer, sticky inner that plays six beats
-          tied to scroll progress. This is the star of the page.
+          PRODUCT MOCKUP — static browser-chrome preview of the Looper UI.
+          Shows immediately: canvas, inspector, Claude MCP panel.
          ─────────────────────────────────────────────────────────────────── */}
-      <HeroScrollDemo id="scroll-demo" />
+      <ProductMockup />
 
       {/* ───────────────────────────────────────────────────────────────────
           METRICS — counters that count up from 0 the first time they enter

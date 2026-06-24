@@ -420,8 +420,9 @@ export function generateStaticParams() {
   return Object.keys(FEATURES).map((slug) => ({ slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const feature = FEATURES[params.slug];
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const feature = FEATURES[slug];
   if (!feature) return {};
   return {
     title: `${feature.title} — Looper`,
@@ -429,8 +430,9 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function FeaturePage({ params }: { params: { slug: string } }) {
-  const feature = FEATURES[params.slug];
+export default async function FeaturePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const feature = FEATURES[slug];
   if (!feature) notFound();
 
   const Illustration = feature.illustration;
@@ -448,7 +450,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
           }}
         />
         <div className="relative mx-auto max-w-5xl px-6 pt-24 pb-16">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-violet-700">
             {feature.eyebrow}
           </span>
           <h1
@@ -475,7 +477,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               event="feature_page_cta_clicked"
               metadata={{ feature: feature.slug, location: "hero" }}
             >
-              <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-indigo-600 px-6 text-[13px] font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25">
+              <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-violet-600 px-6 text-[13px] font-semibold text-white transition-all hover:bg-violet-700 hover:shadow-lg hover:shadow-violet-500/25">
                 {feature.ctaLabel}
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
@@ -511,8 +513,8 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               key={cap.title}
               className="flex gap-4 rounded-2xl border border-black/[0.06] bg-white p-6 hover:border-black/[0.12] transition-colors"
             >
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50">
-                <Check size={12} strokeWidth={3} className="text-indigo-600" />
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-50">
+                <Check size={12} strokeWidth={3} className="text-violet-600" />
               </span>
               <div>
                 <p className="text-[14px] font-700 font-semibold text-[#111] leading-snug">
@@ -528,7 +530,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
       </section>
 
       {/* ── CTA strip ── */}
-      <section className="border-t border-black/[0.06] bg-[#F5F5F7]">
+      <section className="border-t border-black/[0.06] bg-[#F5F3FF]">
         <div className="mx-auto max-w-4xl px-6 py-16 text-center">
           <h2
             className="text-[#0A0A0F]"
@@ -545,7 +547,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               event="feature_page_cta_clicked"
               metadata={{ feature: feature.slug, location: "footer" }}
             >
-              <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-indigo-600 px-6 text-[13px] font-semibold text-white transition-all hover:bg-indigo-700">
+              <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-violet-600 px-6 text-[13px] font-semibold text-white transition-all hover:bg-violet-700">
                 {feature.ctaLabel}
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
