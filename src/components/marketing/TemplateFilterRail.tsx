@@ -81,7 +81,7 @@ export function TemplateFilterRail({
               onClick={() =>
                 onChange({ category: "all", complexity: "all", useCase: "all" })
               }
-              className="t-caption text-indigo-600 hover:text-indigo-700"
+              className="t-caption text-violet-600 hover:text-violet-700"
             >
               Reset
             </button>
@@ -140,7 +140,7 @@ export function TemplateFilterRail({
                   className={[
                     "flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition-colors",
                     active
-                      ? "bg-indigo-50 border-indigo-200 text-[#111]"
+                      ? "bg-violet-50 border-violet-200 text-[#111]"
                       : "bg-white border-black/[0.06] text-[#111] hover:bg-[#FAFAFA]",
                   ].join(" ")}
                 >
@@ -149,7 +149,7 @@ export function TemplateFilterRail({
                       aria-hidden="true"
                       className={[
                         "h-3.5 w-3.5 rounded-full border-2 shrink-0",
-                        active ? "border-indigo-600" : "border-[#C7C7CC]",
+                        active ? "border-violet-600" : "border-[#C7C7CC]",
                       ].join(" ")}
                       style={
                         active

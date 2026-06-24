@@ -131,7 +131,7 @@ function CapabilityCard({ capability, index }: CapabilityCardProps) {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.45, delay: Math.min(index, 8) * 0.04, ease: [0.2, 0.8, 0.2, 1] }}
       whileHover={reduced ? undefined : { scale: 1.01, y: -2 }}
-      className="group relative flex flex-col rounded-[18px] border border-black/[0.08] bg-white p-5 transition-shadow hover:shadow-lg-token hover:border-indigo-200"
+      className="group relative flex flex-col rounded-[18px] border border-black/[0.08] bg-white p-5 transition-shadow hover:shadow-lg-token hover:border-violet-200"
     >
       <header className="flex items-start justify-between gap-2">
         <code
@@ -180,7 +180,7 @@ function CapabilityCard({ capability, index }: CapabilityCardProps) {
         <span className="t-caption text-[#8E8E93]">Capability scope</span>
         <Link
           href={`/docs#capability-${capability.scope.replace(":", "-")}`}
-          className="inline-flex items-center gap-1 t-caption font-semibold text-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
+          className="inline-flex items-center gap-1 t-caption font-semibold text-violet-700 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100"
         >
           View details
           <ArrowUpRight size={12} aria-hidden="true" />

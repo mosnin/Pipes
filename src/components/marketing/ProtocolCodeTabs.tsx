@@ -305,7 +305,7 @@ export function ProtocolCodeTabs({
                 {isActive && (
                   <span
                     aria-hidden="true"
-                    className="absolute inset-x-2 bottom-0 h-[2px] bg-indigo-400 rounded-full"
+                    className="absolute inset-x-2 bottom-0 h-[2px] bg-violet-400 rounded-full"
                   />
                 )}
               </button>

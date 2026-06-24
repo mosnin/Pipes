@@ -46,7 +46,7 @@ export function FeatureCard({
       </div>
 
       {href != null && cta != null && (
-        <span className="mt-auto inline-flex items-center gap-1 t-label font-semibold text-indigo-600 group-hover:text-indigo-700">
+        <span className="mt-auto inline-flex items-center gap-1 t-label font-semibold text-violet-600 group-hover:text-violet-700">
           {cta}
           <ArrowUpRight size={14} aria-hidden="true" />
         </span>
@@ -58,7 +58,7 @@ export function FeatureCard({
     return (
       <Link
         href={href}
-        className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-[12px]"
+        className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 rounded-[12px]"
       >
         {inner}
       </Link>

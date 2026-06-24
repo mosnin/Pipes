@@ -262,7 +262,7 @@ export function EmbeddedCanvas({
           className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 t-micro text-[#3C3C43] shadow-sm-token"
           data-testid="embedded-canvas-status"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
           {statusLabel}
         </div>
       ) : null}

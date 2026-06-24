@@ -128,7 +128,7 @@ export function BlogPostLayout({
                               className={cn(
                                 "block text-left w-full t-label px-2 py-1 rounded-md transition-colors",
                                 active
-                                  ? "text-[#111] bg-indigo-50/60 border-l-2 border-indigo-500"
+                                  ? "text-[#111] bg-violet-50/60 border-l-2 border-violet-500"
                                   : "text-[#3C3C43] hover:text-[#111]",
                               )}
                             >
@@ -159,7 +159,7 @@ export function BlogPostLayout({
               </div>
               <Link
                 href="/blog"
-                className="hidden sm:inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600"
+                className="hidden sm:inline-flex items-center gap-1.5 t-label font-semibold text-violet-600"
               >
                 All posts
                 <ArrowRight size={14} aria-hidden="true" />
@@ -201,7 +201,7 @@ export function BlogPostLayout({
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-indigo-600 text-white t-label font-semibold hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-violet-600 text-white t-label font-semibold hover:bg-violet-700 transition-colors"
               >
                 Try Looper
                 <ArrowRight size={14} aria-hidden="true" />
@@ -259,7 +259,7 @@ function ShareRow({ title }: { title: string }) {
           type="button"
           onClick={onCopy}
           aria-label="Copy link"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-indigo-300 hover:text-[#111] transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-violet-300 hover:text-[#111] transition-colors"
         >
           <Link2 size={14} aria-hidden="true" />
           <span className="sr-only">{copied ? "Copied" : "Copy link"}</span>
@@ -268,7 +268,7 @@ function ShareRow({ title }: { title: string }) {
           type="button"
           onClick={onShare}
           aria-label="Share"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-indigo-300 hover:text-[#111] transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-violet-300 hover:text-[#111] transition-colors"
         >
           <Share2 size={14} aria-hidden="true" />
           <span className="sr-only">Share</span>
@@ -276,7 +276,7 @@ function ShareRow({ title }: { title: string }) {
         <a
           href={mailto()}
           aria-label="Share by email"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-indigo-300 hover:text-[#111] transition-colors"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-md border border-black/[0.08] bg-white text-[#3C3C43] hover:border-violet-300 hover:text-[#111] transition-colors"
         >
           <Mail size={14} aria-hidden="true" />
           <span className="sr-only">Share by email</span>

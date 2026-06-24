@@ -81,7 +81,7 @@ export function LI({ children }: { children: ReactNode }) {
 
 export function Quote({ children }: { children: ReactNode }) {
   return (
-    <blockquote className="border-l-4 border-indigo-500 bg-indigo-50/40 pl-5 pr-4 py-3 my-2 rounded-r-md">
+    <blockquote className="border-l-4 border-violet-500 bg-violet-50/40 pl-5 pr-4 py-3 my-2 rounded-r-md">
       <p className="t-h3 font-medium text-[#111]">{children}</p>
     </blockquote>
   );
@@ -110,7 +110,7 @@ export function A({
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className="text-indigo-600 hover:underline underline-offset-2"
+      className="text-violet-600 hover:underline underline-offset-2"
     >
       {children}
     </a>

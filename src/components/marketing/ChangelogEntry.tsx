@@ -22,8 +22,8 @@ const KIND_CONFIG = {
   improved: {
     label: "Improved",
     icon: ArrowUpRight,
-    badge: "border-indigo-100 bg-indigo-50 text-indigo-700",
-    iconColor: "text-indigo-700",
+    badge: "border-violet-100 bg-violet-50 text-violet-700",
+    iconColor: "text-violet-700",
   },
   fixed: {
     label: "Fixed",

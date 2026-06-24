@@ -41,7 +41,7 @@ export function BlogPostCard({
         transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
         className={cn(
           "relative overflow-hidden rounded-[28px] border border-black/[0.06] bg-white",
-          "hover:border-indigo-200 transition-colors",
+          "hover:border-violet-200 transition-colors",
           className,
         )}
       >
@@ -52,7 +52,7 @@ export function BlogPostCard({
         >
           <div
             aria-hidden="true"
-            className="relative h-56 lg:h-full bg-indigo-50 brand-pattern-bg overflow-hidden"
+            className="relative h-56 lg:h-full bg-violet-50 brand-pattern-bg overflow-hidden"
           >
             <div
               className="absolute inset-0"
@@ -75,7 +75,7 @@ export function BlogPostCard({
 
           <div className="p-8 lg:p-10 flex flex-col gap-5 justify-between">
             <div className="flex flex-col gap-3">
-              <span className="t-overline text-indigo-600">Latest</span>
+              <span className="t-overline text-violet-600">Latest</span>
               <h2 className="t-h1 text-[#111] line-clamp-3">{post.title}</h2>
               <p className="t-body text-[#3C3C43] line-clamp-3">
                 {post.excerpt}
@@ -88,7 +88,7 @@ export function BlogPostCard({
                 readingTimeMin={post.readingTimeMin}
                 compact
               />
-              <span className="inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600">
+              <span className="inline-flex items-center gap-1.5 t-label font-semibold text-violet-600">
                 Read the post
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
@@ -107,7 +107,7 @@ export function BlogPostCard({
       transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-black/[0.06] bg-white p-6 flex flex-col gap-4",
-        "hover:border-indigo-200 transition-colors",
+        "hover:border-violet-200 transition-colors",
         className,
       )}
     >

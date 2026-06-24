@@ -39,7 +39,7 @@ export function BlogAuthorBlock({
       <div className={cn("flex items-center gap-2 t-caption text-[#8E8E93]", className)}>
         <span
           aria-hidden="true"
-          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white t-micro font-semibold"
+          className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-600 text-white t-micro font-semibold"
         >
           {initials}
         </span>
@@ -56,7 +56,7 @@ export function BlogAuthorBlock({
     <div className={cn("flex flex-wrap items-center gap-3", className)}>
       <span
         aria-hidden="true"
-        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-600 text-white t-label font-semibold"
+        className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-600 text-white t-label font-semibold"
       >
         {initials}
       </span>

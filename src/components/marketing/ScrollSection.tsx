@@ -42,7 +42,7 @@ const TONE_CLASSES: Record<NonNullable<ScrollSectionProps["tone"]>, string> = {
   indigo: "bg-violet-50 text-[#111]",
   inverse: "bg-[#0A0A0A] text-white",
   accent: "bg-violet-600 text-white",
-  violet: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
+  violet: "bg-gradient-to-br from-violet-600 to-violet-600 text-white",
 };
 
 const DEPTH_CLASSES: Record<NonNullable<ScrollSectionProps["depth"]>, string> = {

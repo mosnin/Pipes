@@ -87,14 +87,14 @@ export function NewsletterSignup({
           aria-label="Email address"
           className={cn(
             "flex-1 h-10 rounded-lg border bg-white px-3 t-label text-[#111] placeholder:text-[#8E8E93] outline-none",
-            "focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
+            "focus:border-violet-400 focus:ring-2 focus:ring-violet-100",
             showInvalid ? "border-[#FCA5A5]" : "border-black/[0.08]",
           )}
         />
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg bg-indigo-600 text-white t-label font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg bg-violet-600 text-white t-label font-semibold hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
         >
           {submitting ? <Spinner size="xs" /> : null}
           <span>{submitting ? "Subscribing" : "Subscribe"}</span>
@@ -107,7 +107,7 @@ export function NewsletterSignup({
   return (
     <div
       className={cn(
-        "rounded-[40px] bg-indigo-50 border border-indigo-100 px-6 py-10 sm:px-12 sm:py-14",
+        "rounded-[40px] bg-violet-50 border border-violet-100 px-6 py-10 sm:px-12 sm:py-14",
         className,
       )}
       data-testid="newsletter-signup"
@@ -135,14 +135,14 @@ export function NewsletterSignup({
             aria-label="Email address"
             className={cn(
               "flex-1 h-11 rounded-lg border bg-white px-4 t-body text-[#111] placeholder:text-[#8E8E93] outline-none",
-              "focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
+              "focus:border-violet-400 focus:ring-2 focus:ring-violet-100",
               showInvalid ? "border-[#FCA5A5]" : "border-black/[0.08]",
             )}
           />
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-lg bg-indigo-600 text-white t-label font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-lg bg-violet-600 text-white t-label font-semibold hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? <Spinner size="xs" /> : null}
             <span>{submitting ? "Subscribing" : "Subscribe"}</span>

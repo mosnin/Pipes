@@ -105,7 +105,7 @@ function Panel({
               aria-hidden="true"
               className={[
                 "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0",
-                accent ? "bg-indigo-600" : "bg-white/50",
+                accent ? "bg-violet-600" : "bg-white/50",
               ].join(" ")}
             />
             <span

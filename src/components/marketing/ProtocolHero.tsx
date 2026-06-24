@@ -39,7 +39,7 @@ export function ProtocolHero({ className }: ProtocolHeroProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
               >
-                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 t-caption font-semibold text-indigo-700">
+                <div className="inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white px-3 py-1 t-caption font-semibold text-violet-700">
                   <KeyRound size={12} aria-hidden="true" />
                   Protocol reference
                 </div>
@@ -63,7 +63,7 @@ export function ProtocolHero({ className }: ProtocolHeroProps) {
                 <div className="mt-7 flex flex-wrap items-center gap-3">
                   <Link
                     href="/docs#protocol"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-indigo-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
                   >
                     View docs
                     <ArrowRight size={14} aria-hidden="true" />

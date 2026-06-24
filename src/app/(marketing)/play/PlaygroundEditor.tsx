@@ -401,7 +401,7 @@ export function PlaygroundEditor() {
             Sign up to keep your work.{" "}
             <Link
               href="/signup?source=playground"
-              className="text-indigo-600 hover:text-indigo-700 font-semibold"
+              className="text-violet-600 hover:text-violet-700 font-semibold"
             >
               Start building
             </Link>
@@ -433,13 +433,13 @@ export function PlaygroundEditor() {
                   "inline-flex items-center gap-2 rounded-full px-5 h-12 t-label font-medium transition-all",
                   "border shadow-sm",
                   isActive
-                    ? "bg-indigo-600 border-indigo-600 text-white"
+                    ? "bg-violet-600 border-violet-600 text-white"
                     : disabled
                       ? "bg-white border-black/[0.06] text-[#8E8E93] cursor-not-allowed"
-                      : "bg-white border-black/[0.08] text-[#111] hover:border-indigo-300 hover:-translate-y-0.5 hover:shadow-md",
+                      : "bg-white border-black/[0.08] text-[#111] hover:border-violet-300 hover:-translate-y-0.5 hover:shadow-md",
                 ].join(" ")}
               >
-                <Sparkles size={14} className={isActive ? "text-white" : "text-indigo-500"} />
+                <Sparkles size={14} className={isActive ? "text-white" : "text-violet-500"} />
                 {s.label}
               </button>
             );
@@ -497,7 +497,7 @@ export function PlaygroundEditor() {
       {/* After-build callout */}
       {state === "done" && nodes.length > 0 ? (
         <section className="px-4 sm:px-6 lg:px-8 pb-6" data-testid="playground-after-build">
-          <div className="mx-auto max-w-3xl bg-white border border-indigo-200 rounded-2xl px-6 py-5 shadow-sm">
+          <div className="mx-auto max-w-3xl bg-white border border-violet-200 rounded-2xl px-6 py-5 shadow-sm">
             <p className="t-h3 text-[#111]">
               You just built a system in {elapsedSeconds} seconds.
             </p>
@@ -508,7 +508,7 @@ export function PlaygroundEditor() {
               <Link
                 href={`/signup?source=playground&starter=${activeKey ?? ""}`}
                 data-testid="playground-signup-cta"
-                className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-4 py-2 t-label font-semibold text-white hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-4 py-2 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
               >
                 Sign up to keep this
                 <ArrowRight size={14} />

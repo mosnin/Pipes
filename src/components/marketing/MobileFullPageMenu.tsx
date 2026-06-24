@@ -103,7 +103,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
               href="/"
               onClick={onClose}
               aria-label="Looper home"
-              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+              className="focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded"
             >
               <Wordmark size="lg" />
             </Link>
@@ -112,7 +112,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
               type="button"
               onClick={onClose}
               aria-label="Close menu"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-ink-2)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-ink-2)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
             >
               <X size={20} aria-hidden="true" />
             </button>
@@ -135,7 +135,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
                   ref={lastFocusableRef}
                   href="/dashboard"
                   onClick={onClose}
-                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                 >
                   <LayoutDashboard size={14} aria-hidden="true" />
                   Dashboard
@@ -145,7 +145,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
                   <Link
                     href="/login"
                     onClick={onClose}
-                    className="flex h-12 items-center justify-center rounded-full border border-black/[0.08] t-label font-medium text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="flex h-12 items-center justify-center rounded-full border border-black/[0.08] t-label font-medium text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   >
                     Log in
                   </Link>
@@ -153,7 +153,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
                     ref={lastFocusableRef}
                     href="/signup"
                     onClick={onClose}
-                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   >
                     Start free
                     <ArrowRight size={14} aria-hidden="true" />
@@ -184,7 +184,7 @@ function MobileSection({
         <Link
           href={item.menu.href}
           onClick={onNavigate}
-          className="flex min-h-[56px] items-center justify-between rounded-2xl px-1 t-h3 text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="flex min-h-[56px] items-center justify-between rounded-2xl px-1 t-h3 text-[var(--color-ink-1)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
         >
           {item.label}
         </Link>
@@ -203,7 +203,7 @@ function MobileSection({
             <Link
               href={row.href}
               onClick={onNavigate}
-              className="flex min-h-[56px] flex-col justify-center rounded-xl px-2 py-2 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="flex min-h-[56px] flex-col justify-center rounded-xl px-2 py-2 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
             >
               <span className="t-title text-[var(--color-ink-1)]">{row.title}</span>
               {row.subtitle ? (

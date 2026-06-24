@@ -57,7 +57,7 @@ export default function SecurityPage() {
             </div>
             <Link
               href="/security#documentation"
-              className="hidden sm:inline-flex t-label font-semibold text-indigo-600 hover:text-indigo-800"
+              className="hidden sm:inline-flex t-label font-semibold text-violet-600 hover:text-violet-800"
             >
               Request a report {"→"}
             </Link>
@@ -144,13 +144,13 @@ export default function SecurityPage() {
                 className="group flex items-start justify-between gap-6 rounded-3xl border border-black/[0.06] bg-white p-7 transition-shadow hover:shadow-md-token"
               >
                 <div className="flex-1">
-                  <h3 className="t-h3 text-[#111] group-hover:text-indigo-700">
+                  <h3 className="t-h3 text-[#111] group-hover:text-violet-700">
                     {link.title}
                   </h3>
                   <p className="mt-2 t-label text-[#3C3C43] leading-relaxed">
                     {link.description}
                   </p>
-                  <span className="mt-3 inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600">
+                  <span className="mt-3 inline-flex items-center gap-1.5 t-label font-semibold text-violet-600">
                     {link.cta}
                     <span aria-hidden="true">{"→"}</span>
                   </span>
@@ -158,7 +158,7 @@ export default function SecurityPage() {
                 <ArrowUpRight
                   size={16}
                   aria-hidden="true"
-                  className="mt-1 shrink-0 text-[#8E8E93] transition-colors group-hover:text-indigo-700"
+                  className="mt-1 shrink-0 text-[#8E8E93] transition-colors group-hover:text-violet-700"
                 />
               </a>
             ))}

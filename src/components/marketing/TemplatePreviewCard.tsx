@@ -131,7 +131,7 @@ export function TemplatePreviewCard(props: TemplatePreviewCardProps) {
         href={`/templates/${props.slug}`}
         event="template_detail_viewed"
         metadata={{ source: "templates_index", templateId: props.id }}
-        className="flex flex-1 flex-col gap-3 p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-3xl"
+        className="flex flex-1 flex-col gap-3 p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 rounded-3xl"
       >
         <div className="flex items-start justify-between gap-2">
           <h3 className="t-title text-[#111] leading-snug">{props.title}</h3>
@@ -149,7 +149,7 @@ export function TemplatePreviewCard(props: TemplatePreviewCardProps) {
 
         <div className="mt-auto pt-3 border-t border-black/[0.04] flex items-center justify-between">
           <span className="t-caption text-[#8E8E93] font-mono">{props.preview}</span>
-          <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+          <span className="inline-flex items-center gap-1 t-label font-semibold text-violet-600 group-hover:text-violet-700 transition-colors">
             Details
             <ArrowRight size={12} aria-hidden="true" />
           </span>

@@ -35,7 +35,7 @@ function PriceTag({ price }: { price: number }) {
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-2 py-0.5 t-caption font-semibold text-indigo-700">
+    <span className="inline-flex items-center rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 t-caption font-semibold text-violet-700">
       ${price}/mo
     </span>
   );
@@ -96,7 +96,7 @@ async function handleUseLoop(listingId: string, name: string, price: number) {
 
 function ListingCard({ listing }: { listing: MarketplaceListing }) {
   return (
-    <article className="flex flex-col rounded-2xl border border-black/[0.08] bg-white p-5 gap-4 hover:border-indigo-200 hover:shadow-sm transition-all">
+    <article className="flex flex-col rounded-2xl border border-black/[0.08] bg-white p-5 gap-4 hover:border-violet-200 hover:shadow-sm transition-all">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -200,7 +200,7 @@ export function MarketplaceGallery({ listings }: { listings: MarketplaceListing[
                 <p className="t-caption text-[#8E8E93] mt-1">Free forever</p>
               </div>
               <div className="rounded-2xl bg-white border border-black/[0.06] p-4">
-                <p className="t-display font-bold text-indigo-600" style={{ fontSize: 32, lineHeight: 1 }}>{paidCount}</p>
+                <p className="t-display font-bold text-violet-600" style={{ fontSize: 32, lineHeight: 1 }}>{paidCount}</p>
                 <p className="t-caption text-[#8E8E93] mt-1">Premium loops</p>
               </div>
               <div className="rounded-2xl bg-white border border-black/[0.06] p-4">
@@ -246,7 +246,7 @@ export function MarketplaceGallery({ listings }: { listings: MarketplaceListing[
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat === categoryFilter ? "all" : cat)}
-              className={`px-3 py-1 rounded-full t-caption font-medium transition-colors border ${categoryFilter === cat ? "border-indigo-600 bg-indigo-600 text-white" : "border-black/[0.08] text-[#8E8E93] hover:border-black/[0.18] hover:text-[#111]"}`}
+              className={`px-3 py-1 rounded-full t-caption font-medium transition-colors border ${categoryFilter === cat ? "border-violet-600 bg-violet-600 text-white" : "border-black/[0.08] text-[#8E8E93] hover:border-black/[0.18] hover:text-[#111]"}`}
             >
               {cat}
             </button>
@@ -287,7 +287,7 @@ export function MarketplaceGallery({ listings }: { listings: MarketplaceListing[
           )}
 
           {/* Sell CTA */}
-          <div className="mt-16 rounded-[40px] bg-indigo-50 border border-indigo-100 px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-16 rounded-[40px] bg-violet-50 border border-violet-100 px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1.5 max-w-md">
               <h2 className="t-h3 text-[#111]">Publish your own loop</h2>
               <p className="t-label text-[#3C3C43]">

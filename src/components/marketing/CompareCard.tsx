@@ -36,7 +36,7 @@ export function CompareCard({
       href={`/compare/${slug}`}
       event="comparison_page_viewed"
       metadata={{ source: "compare_index", slug }}
-      className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-3xl"
+      className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 rounded-3xl"
     >
       <motion.article
         data-testid={`compare-card-${slug}`}
@@ -73,7 +73,7 @@ export function CompareCard({
             <span className="t-caption font-medium text-[#111] w-14">Looper</span>
             <div className="relative flex-1 h-1.5 rounded-full bg-[#F5F5F7] overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 rounded-full bg-indigo-600"
+                className="absolute inset-y-0 left-0 rounded-full bg-violet-600"
                 style={{ width: "92%" }}
               />
             </div>
@@ -99,7 +99,7 @@ export function CompareCard({
           <span className="t-caption text-[#8E8E93]">
             {differenceCount} key {differenceCount === 1 ? "difference" : "differences"}
           </span>
-          <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+          <span className="inline-flex items-center gap-1 t-label font-semibold text-violet-600 group-hover:text-violet-700 transition-colors">
             Read the comparison
             <ArrowRight size={14} aria-hidden="true" />
           </span>

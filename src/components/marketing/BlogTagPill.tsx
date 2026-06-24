@@ -27,8 +27,8 @@ export function BlogTagPill({
   const base = cn(
     "inline-flex items-center h-6 px-2.5 rounded-full t-caption font-medium border transition-colors",
     active
-      ? "bg-indigo-600 text-white border-indigo-600"
-      : "bg-white text-[#3C3C43] border-black/[0.08] hover:border-indigo-300 hover:text-[#111]",
+      ? "bg-violet-600 text-white border-violet-600"
+      : "bg-white text-[#3C3C43] border-black/[0.08] hover:border-violet-300 hover:text-[#111]",
     className,
   );
 

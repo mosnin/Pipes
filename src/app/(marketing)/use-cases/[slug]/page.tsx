@@ -318,7 +318,7 @@ export default async function UseCaseDetailPage({
               >
                 <span
                   aria-hidden="true"
-                  className="mt-1.5 inline-block h-2 w-2 rounded-full bg-indigo-600 shrink-0"
+                  className="mt-1.5 inline-block h-2 w-2 rounded-full bg-violet-600 shrink-0"
                 />
                 <p className="t-body text-[#3C3C43] leading-relaxed">
                   {outcome}
@@ -347,7 +347,7 @@ export default async function UseCaseDetailPage({
             </div>
             <Link
               href="/use-cases"
-              className="t-label font-semibold text-indigo-700 hover:text-indigo-900 transition-colors"
+              className="t-label font-semibold text-violet-700 hover:text-violet-900 transition-colors"
             >
               View all {"→"}
             </Link>
@@ -370,13 +370,13 @@ export default async function UseCaseDetailPage({
                     <span className="t-overline text-[#8E8E93]">
                       {otherStory?.role ?? "Customer"}
                     </span>
-                    <h3 className="t-h3 text-[#111] group-hover:text-indigo-700 transition-colors">
+                    <h3 className="t-h3 text-[#111] group-hover:text-violet-700 transition-colors">
                       {otherStory?.company ?? other.title}
                     </h3>
                     <p className="t-label text-[#3C3C43] leading-relaxed flex-1">
                       {otherStory?.headline ?? other.fit}
                     </p>
-                    <span className="mt-2 t-label font-semibold text-indigo-700">
+                    <span className="mt-2 t-label font-semibold text-violet-700">
                       Read story {"→"}
                     </span>
                   </article>

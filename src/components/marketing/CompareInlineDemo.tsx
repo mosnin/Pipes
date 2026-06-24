@@ -63,17 +63,17 @@ export function CompareInlineDemo({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Looper side */}
             <article
-              className="rounded-2xl border border-indigo-200 bg-white p-5 flex flex-col gap-4"
+              className="rounded-2xl border border-violet-200 bg-white p-5 flex flex-col gap-4"
               data-testid="compare-inline-pipes"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-0.5">
-                  <span className="t-overline text-indigo-600">Looper</span>
+                  <span className="t-overline text-violet-600">Looper</span>
                   <h3 className="t-h3 text-[#111]">Describe. Watch.</h3>
                 </div>
                 {elapsed ? (
                   <span
-                    className="t-mono t-caption text-[#3C3C43] rounded-md bg-indigo-50 px-2 py-1"
+                    className="t-mono t-caption text-[#3C3C43] rounded-md bg-violet-50 px-2 py-1"
                     data-testid="compare-inline-pipes-elapsed"
                   >
                     Built in {elapsed}

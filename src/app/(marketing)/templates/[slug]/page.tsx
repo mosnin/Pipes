@@ -138,7 +138,7 @@ export default async function TemplateDetailPage({
                       <ArrowRight
                         size={14}
                         aria-hidden="true"
-                        className="text-indigo-500 shrink-0"
+                        className="text-violet-500 shrink-0"
                       />
                       <span className="t-label font-medium text-[#111] truncate">
                         {to}
@@ -189,7 +189,7 @@ export default async function TemplateDetailPage({
                   href={`/templates/${r.slug}`}
                   event="template_detail_viewed"
                   metadata={{ source: "template_related", templateId: r.id }}
-                  className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-3xl"
+                  className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 rounded-3xl"
                 >
                   <article className="group h-full flex flex-col gap-3 rounded-3xl border border-black/[0.06] bg-white p-5 transition-all hover:border-black/[0.14] hover:shadow-sm-token">
                     <div className="flex items-start justify-between gap-2">
@@ -201,7 +201,7 @@ export default async function TemplateDetailPage({
                     <p className="t-label text-[#3C3C43] line-clamp-3 leading-relaxed">
                       {r.description}
                     </p>
-                    <span className="mt-auto inline-flex items-center gap-1 t-label font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                    <span className="mt-auto inline-flex items-center gap-1 t-label font-semibold text-violet-600 group-hover:text-violet-700 transition-colors">
                       Open
                       <ArrowRight size={12} aria-hidden="true" />
                     </span>
@@ -216,7 +216,7 @@ export default async function TemplateDetailPage({
       {/* 6. Final CTA */}
       <section className="mt-12 sm:mt-16 px-4 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[40px] bg-indigo-600 text-white px-6 py-14 sm:px-12 sm:py-20 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-[40px] bg-violet-600 text-white px-6 py-14 sm:px-12 sm:py-20 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2 max-w-xl">
               <h2 className="t-h2 text-white">Start with this prompt.</h2>
               <p className="t-body text-white/85">

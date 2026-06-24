@@ -94,7 +94,7 @@ export function CustomerCaseStudyGrid({ studies }: CustomerCaseStudyGridProps) {
                 <div className="flex items-center justify-between">
                   <span
                     data-testid="case-study-category"
-                    className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 t-caption font-semibold text-indigo-700"
+                    className="inline-flex items-center rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 t-caption font-semibold text-violet-700"
                   >
                     <span className="uppercase tracking-[0.08em]">
                       {study.category}
@@ -129,7 +129,7 @@ export function CustomerCaseStudyGrid({ studies }: CustomerCaseStudyGridProps) {
                   </span>
                   <Link
                     href={href}
-                    className="inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600 transition-colors hover:text-indigo-800"
+                    className="inline-flex items-center gap-1.5 t-label font-semibold text-violet-600 transition-colors hover:text-violet-800"
                   >
                     Read story
                     <span aria-hidden="true">{"→"}</span>

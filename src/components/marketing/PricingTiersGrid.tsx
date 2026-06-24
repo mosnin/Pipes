@@ -105,7 +105,7 @@ function PricingCard({
         "pricing-card-shine",
         "relative flex flex-col rounded-3xl bg-white p-6 h-full",
         isHighlighted
-          ? "border-2 border-indigo-600 shadow-lg-token"
+          ? "border-2 border-violet-600 shadow-lg-token"
           : "border border-black/[0.08] shadow-xs hover:shadow-lg-token",
         "transition-shadow",
       ].join(" ")}
@@ -165,7 +165,7 @@ function PricingCard({
           >
             <span
               aria-hidden="true"
-              className="mt-[1px] inline-flex h-4 w-4 shrink-0 items-center justify-center text-indigo-600 font-semibold"
+              className="mt-[1px] inline-flex h-4 w-4 shrink-0 items-center justify-center text-violet-600 font-semibold"
               style={{ fontSize: 12 }}
             >
               {"✓"}
@@ -187,7 +187,7 @@ function PricingCard({
             className={[
               "inline-flex w-full items-center justify-center gap-1.5 rounded-full h-11 px-5 t-label font-semibold transition-colors",
               tier.ctaTone === "primary"
-                ? "bg-[#111] text-white hover:bg-indigo-700"
+                ? "bg-violet-600 text-white hover:bg-violet-700"
                 : "border border-black/[0.14] bg-white text-[#111] hover:border-black/[0.24] hover:bg-black/[0.02]",
             ].join(" ")}
           >

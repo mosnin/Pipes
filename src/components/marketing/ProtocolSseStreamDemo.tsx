@@ -265,7 +265,7 @@ export function ProtocolSseStreamDemo({ className }: ProtocolSseStreamDemoProps)
         </span>
         <div className="flex-1 mx-4 h-[2px] rounded-full bg-white/[0.08] overflow-hidden">
           <motion.div
-            className="h-full bg-indigo-400"
+            className="h-full bg-violet-400"
             animate={{ width: `${progress * 100}%` }}
             transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
           />

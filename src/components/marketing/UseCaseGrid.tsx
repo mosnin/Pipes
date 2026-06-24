@@ -30,7 +30,7 @@ function SystemMotif() {
     <svg
       viewBox="0 0 120 36"
       aria-hidden="true"
-      className="h-9 w-auto text-indigo-600"
+      className="h-9 w-auto text-violet-600"
     >
       <path
         d="M 18 18 L 60 18 M 60 18 L 102 18"
@@ -77,7 +77,7 @@ export function UseCaseGrid({ cards }: UseCaseGridProps) {
               <SystemMotif />
 
               <div className="flex flex-col gap-2">
-                <h3 className="t-h3 text-[#111] group-hover:text-indigo-700 transition-colors">
+                <h3 className="t-h3 text-[#111] group-hover:text-violet-700 transition-colors">
                   {card.company}
                 </h3>
                 <p className="t-body text-[#3C3C43] leading-relaxed flex-1">
@@ -85,7 +85,7 @@ export function UseCaseGrid({ cards }: UseCaseGridProps) {
                 </p>
               </div>
 
-              <span className="mt-auto inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600 group-hover:text-indigo-700 transition-colors">
+              <span className="mt-auto inline-flex items-center gap-1.5 t-label font-semibold text-violet-600 group-hover:text-violet-700 transition-colors">
                 Read story
                 <span aria-hidden="true">{"→"}</span>
               </span>

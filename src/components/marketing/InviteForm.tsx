@@ -97,7 +97,7 @@ export function InviteForm({ token }: InviteFormProps) {
     return (
       <ResultPanel
         tone="info"
-        icon={<Users className="w-7 h-7 text-indigo-600" aria-hidden="true" />}
+        icon={<Users className="w-7 h-7 text-violet-600" aria-hidden="true" />}
         title="You already joined."
         description="This account is already on the workspace. Head to the dashboard."
         primaryLabel="Go to dashboard"
@@ -145,7 +145,7 @@ export function InviteForm({ token }: InviteFormProps) {
         ) : (
           <>
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white t-label font-semibold">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white t-label font-semibold">
                 {workspaceInitials}
               </span>
               <div className="flex-1 min-w-0">
@@ -183,7 +183,7 @@ export function InviteForm({ token }: InviteFormProps) {
           type="button"
           onClick={handleAccept}
           disabled={isLoading}
-          className="inline-flex items-center justify-center gap-2 w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg t-label transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-2 w-full h-11 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg t-label transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {isLoading && <Spinner size="sm" />}
           Accept invite
@@ -203,7 +203,7 @@ export function InviteForm({ token }: InviteFormProps) {
         By accepting, you agree to the workspace{" "}
         <a
           href="/terms"
-          className="text-indigo-600 hover:text-indigo-700 transition-colors"
+          className="text-violet-600 hover:text-violet-700 transition-colors"
         >
           Terms
         </a>
@@ -239,7 +239,7 @@ function ResultPanel({
       ? "bg-[#ECFDF5] border-[#A7F3D0]"
       : tone === "danger"
         ? "bg-[#FEF2F2] border-[#FCA5A5]"
-        : "bg-indigo-50 border-indigo-100";
+        : "bg-violet-50 border-violet-100";
 
   return (
     <div className="w-full max-w-sm mx-auto">
@@ -256,7 +256,7 @@ function ResultPanel({
         className={`mt-6 w-full h-11 font-semibold rounded-lg t-label transition-colors ${
           primaryGhost
             ? "bg-white border border-black/[0.14] hover:border-black/[0.24] text-[#111]"
-            : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            : "bg-violet-600 hover:bg-violet-700 text-white"
         }`}
       >
         {primaryLabel}

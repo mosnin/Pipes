@@ -232,7 +232,7 @@ export function TemplatesGallery({ templates }: { templates: TemplateMarketing[]
 
               {/* Bottom panel */}
               <div className="mt-14">
-                <div className="rounded-[40px] bg-indigo-50 border border-indigo-100 px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="rounded-[40px] bg-violet-50 border border-violet-100 px-6 py-10 sm:px-10 sm:py-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-1.5 max-w-md">
                     <h2 className="t-h3 text-[#111]">
                       Want a system that is not on this list?

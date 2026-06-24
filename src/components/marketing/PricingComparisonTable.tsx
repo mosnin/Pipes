@@ -46,7 +46,7 @@ function Cell({ value }: { value: ComparisonCellValue }) {
       return (
         <span
           aria-label="Included"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-indigo-700 font-semibold"
+          className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-50 text-violet-700 font-semibold"
           style={{ fontSize: 12 }}
         >
           {"✓"}
@@ -64,7 +64,7 @@ function Cell({ value }: { value: ComparisonCellValue }) {
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 t-caption font-semibold text-indigo-700">
+    <span className="inline-flex items-center rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 t-caption font-semibold text-violet-700">
       {value.label ?? "Limited"}
     </span>
   );
@@ -95,10 +95,10 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
                   <span className="t-caption font-normal text-[#8E8E93]">$0</span>
                 </div>
               </th>
-              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-indigo-700 bg-indigo-50/40">
+              <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-violet-700 bg-violet-50/40">
                 <div className="flex flex-col items-center gap-0.5">
                   <span>Pro</span>
-                  <span className="t-caption font-normal text-indigo-700/80">$29 / mo</span>
+                  <span className="t-caption font-normal text-violet-700/80">$29 / mo</span>
                 </div>
               </th>
               <th scope="col" className="px-3 py-5 text-center t-label font-semibold text-[#111]">
@@ -147,7 +147,7 @@ export function PricingComparisonTable({ groups }: PricingComparisonTableProps) 
                     <td className="px-3 py-4 text-center align-middle">
                       <Cell value={row.starter} />
                     </td>
-                    <td className="px-3 py-4 text-center align-middle bg-indigo-50/20">
+                    <td className="px-3 py-4 text-center align-middle bg-violet-50/20">
                       <Cell value={row.pro} />
                     </td>
                     <td className="px-3 py-4 text-center align-middle">

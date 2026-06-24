@@ -57,7 +57,7 @@ export function DocsRightRail({ headings, activeId }: DocsRightRailProps) {
                 onClick={(e) => handleClick(e, h.id)}
                 className={[
                   "block py-1 pl-3 pr-2 t-caption transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-r",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 rounded-r",
                   h.level === 3 ? "pl-6" : "",
                   isActive
                     ? "text-[#4F46E5] font-medium"

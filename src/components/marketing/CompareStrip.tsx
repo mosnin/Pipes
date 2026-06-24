@@ -76,7 +76,7 @@ export function CompareStrip() {
 
       {/* AFTER */}
       <motion.div
-        className="overflow-hidden rounded-[20px] border border-indigo-200 bg-white"
+        className="overflow-hidden rounded-[20px] border border-violet-200 bg-white"
         initial={reduced ? false : { opacity: 0, x: 12 }}
         animate={
           reduced
@@ -91,15 +91,15 @@ export function CompareStrip() {
           ease: [0.2, 0.8, 0.2, 1],
         }}
       >
-        <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/60 px-4 py-2.5">
+        <div className="flex items-center justify-between border-b border-violet-100 bg-violet-50/60 px-4 py-2.5">
           <span
-            className="t-overline text-indigo-700"
+            className="t-overline text-violet-700"
             style={{ fontSize: 10 }}
           >
             After
           </span>
           <span
-            className="t-mono text-indigo-700"
+            className="t-mono text-violet-700"
             style={{ fontSize: 10 }}
           >
             sys_8a72
@@ -164,7 +164,7 @@ export function CompareStrip() {
             ))}
           </svg>
           <p
-            className="t-caption text-indigo-700"
+            className="t-caption text-violet-700"
             style={{ fontSize: 11 }}
           >
             Looper built it. Your team and your agent read the same graph.

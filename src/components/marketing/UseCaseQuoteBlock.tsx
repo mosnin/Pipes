@@ -18,7 +18,7 @@ export function UseCaseQuoteBlock({
         <figure className="surface-subtle rounded-[40px] border border-black/[0.06] p-10 sm:p-16">
           <span
             aria-hidden="true"
-            className="block text-indigo-600 font-serif"
+            className="block text-violet-600 font-serif"
             style={{ fontSize: 56, lineHeight: 0.9, letterSpacing: "-0.04em" }}
           >
             {"\""}

@@ -429,7 +429,7 @@ export default async function CompareDetailPage({
         <div className="mx-auto max-w-7xl">
           <div className="rounded-[32px] bg-white border border-black/[0.06] px-6 py-12 sm:px-12 sm:py-14">
             <figure className="max-w-3xl">
-              <span aria-hidden="true" className="t-display text-indigo-200 leading-none block">
+              <span aria-hidden="true" className="t-display text-violet-200 leading-none block">
                 &quot;
               </span>
               <blockquote className="-mt-6">
@@ -448,7 +448,7 @@ export default async function CompareDetailPage({
       {/* 5. Final CTA */}
       <section className="mt-12 sm:mt-16 px-4 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[40px] bg-indigo-600 text-white px-6 py-14 sm:px-12 sm:py-20 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="rounded-[40px] bg-violet-600 text-white px-6 py-14 sm:px-12 sm:py-20 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2 max-w-xl">
               <h2 className="t-h2 text-white">
                 See it for yourself.
@@ -462,7 +462,7 @@ export default async function CompareDetailPage({
               event="signup_started"
               metadata={{ source: `compare_${entry.slug}_cta` }}
             >
-              <Button variant="primary" className="bg-white text-indigo-600 hover:bg-indigo-50">
+              <Button variant="primary" className="bg-white text-violet-600 hover:bg-violet-50">
                 Start free
                 <ArrowRight size={14} className="ml-1.5" aria-hidden="true" />
               </Button>

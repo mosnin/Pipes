@@ -540,7 +540,7 @@ export default function PricingPage() {
           </p>
           <a
             href="/signup?source=pricing_bottom_cta"
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 bg-violet-600 text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-violet-700 transition-colors"
           >
             Start building free
           </a>

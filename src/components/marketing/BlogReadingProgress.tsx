@@ -44,7 +44,7 @@ export function BlogReadingProgress() {
       className="fixed top-0 left-0 right-0 h-[2px] z-[60] pointer-events-none bg-transparent"
     >
       <div
-        className="h-full bg-indigo-600 origin-left"
+        className="h-full bg-violet-600 origin-left"
         style={{
           transform: `scaleX(${progress})`,
           transition: "transform 120ms linear",

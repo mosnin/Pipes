@@ -36,7 +36,7 @@ export function ProtocolReadingProgress() {
       className="fixed top-0 left-0 right-0 h-[2px] z-50 pointer-events-none"
     >
       <div
-        className="h-full bg-indigo-600 origin-left"
+        className="h-full bg-violet-600 origin-left"
         style={{
           transform: `scaleX(${progress})`,
           transition: "transform 120ms linear",

@@ -136,7 +136,7 @@ export function TryItFloatingWidget() {
             aria-label="Try Looper in a slim playground"
             data-testid="try-it-trigger"
             data-seen={seenBefore ? "1" : "0"}
-            className="inline-flex items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg-token outline-none focus-visible:ring-4 focus-visible:ring-indigo-200"
+            className="inline-flex items-center justify-center rounded-full bg-violet-600 text-white shadow-lg-token outline-none focus-visible:ring-4 focus-visible:ring-violet-200"
             style={{ width: collapsedSize, height: collapsedSize }}
             initial={false}
             animate={
@@ -329,7 +329,7 @@ function SlimPlayground({ onClose }: SlimPlaygroundProps) {
               className={[
                 "inline-flex items-center rounded-full px-3.5 h-8 t-caption font-medium border transition-colors",
                 isActive
-                  ? "bg-indigo-600 border-indigo-600 text-white"
+                  ? "bg-violet-600 border-violet-600 text-white"
                   : "bg-white border-black/[0.08] text-[#3C3C43] hover:border-black/[0.16] hover:text-[#111]",
                 isRunning && !isActive ? "opacity-50 cursor-not-allowed" : "",
               ].join(" ")}
@@ -369,7 +369,7 @@ function SlimPlayground({ onClose }: SlimPlaygroundProps) {
         </div>
         {tick.status && !tick.done ? (
           <div className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 t-micro text-[#3C3C43] shadow-sm-token">
-            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
             {tick.status}
           </div>
         ) : null}
@@ -381,7 +381,7 @@ function SlimPlayground({ onClose }: SlimPlaygroundProps) {
           <Link
             href="/signup?source=floating_try_it"
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-3 h-9 t-label font-semibold text-white hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-3 h-9 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
           >
             Sign up to keep this
             <ArrowRight size={12} aria-hidden="true" />

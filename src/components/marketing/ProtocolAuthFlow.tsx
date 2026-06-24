@@ -125,7 +125,7 @@ export function ProtocolAuthFlow({ className }: ProtocolAuthFlowProps) {
                   <span className="inline-flex items-center gap-2 t-overline text-[#8E8E93]">
                     Step {step.label}
                   </span>
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-700">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-violet-50 text-violet-700">
                     <Icon size={15} aria-hidden="true" />
                   </span>
                 </div>

@@ -180,7 +180,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                   </span>
                   <span
                     aria-hidden="true"
-                    className="ml-px inline-block h-3.5 w-px bg-indigo-500"
+                    className="ml-px inline-block h-3.5 w-px bg-violet-500"
                     style={{
                       opacity: progress < 0.16 ? 1 : 0,
                       transition: "opacity 120ms",
@@ -207,7 +207,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                     Plan
                   </p>
                   <span
-                    className="t-caption text-indigo-700"
+                    className="t-caption text-violet-700"
                     style={{ fontSize: 10 }}
                   >
                     {visiblePlanLines} of {PLAN_LINES.length}
@@ -225,7 +225,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                     >
                       <span
                         aria-hidden="true"
-                        className="inline-block h-1 w-1 rounded-full bg-indigo-500"
+                        className="inline-block h-1 w-1 rounded-full bg-violet-500"
                       />
                       <span
                         className="t-mono text-[#3C3C43]"
@@ -285,15 +285,15 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                   Claude
                 </span>
                 <span
-                  className="ml-auto inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5"
+                  className="ml-auto inline-flex items-center gap-1 rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5"
                   style={{ fontSize: 10 }}
                 >
                   <span
                     aria-hidden="true"
-                    className="inline-block h-1 w-1 rounded-full bg-indigo-500"
+                    className="inline-block h-1 w-1 rounded-full bg-violet-500"
                   />
                   <span
-                    className="t-caption font-semibold text-indigo-700"
+                    className="t-caption font-semibold text-violet-700"
                     style={{ fontSize: 10 }}
                   >
                     via pipes (MCP)
@@ -340,7 +340,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                     >
                       <span
                         aria-hidden="true"
-                        className="inline-block h-1 w-1 rounded-full bg-indigo-500"
+                        className="inline-block h-1 w-1 rounded-full bg-violet-500"
                       />
                       <span
                         className="t-mono text-[#3C3C43]"
@@ -376,7 +376,7 @@ export function HeroScrollDemo({ id }: HeroScrollDemoProps) {
                     Open in Claude
                   </span>
                   <span
-                    className="t-mono text-indigo-700"
+                    className="t-mono text-violet-700"
                     style={{ fontSize: 10 }}
                   >
                     ptk_8a72...

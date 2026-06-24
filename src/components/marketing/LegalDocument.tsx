@@ -48,7 +48,7 @@ export function LegalDocument({ title, lastUpdated, intro, sections }: LegalDocu
                   <li key={s.id}>
                     <a
                       href={`#${s.id}`}
-                      className="t-label text-[#3C3C43] hover:text-indigo-700 transition-colors"
+                      className="t-label text-[#3C3C43] hover:text-violet-700 transition-colors"
                     >
                       {s.heading}
                     </a>

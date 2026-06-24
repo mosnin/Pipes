@@ -54,7 +54,7 @@ export function UseCaseStorySection({
         className="flex flex-col gap-3"
       >
         {eyebrow != null && (
-          <span className="t-overline text-indigo-700">{eyebrow}</span>
+          <span className="t-overline text-violet-700">{eyebrow}</span>
         )}
         <h2
           className="t-h1 text-[#111] max-w-3xl"

@@ -1,0 +1,11 @@
+{
+  "events": [
+    {
+      "event": "logged_out_signup_entry_source",
+      "metadata": {
+        "source": "direct"
+      },
+      "at": "2026-06-24T06:02:03.994Z"
+    }
+  ]
+}

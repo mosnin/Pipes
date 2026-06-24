@@ -688,7 +688,7 @@ export default function ProtocolPage() {
                 <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                   <Link
                     href="/signup?source=protocol_cta"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-indigo-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-white px-5 h-11 t-label font-semibold text-[#111] hover:bg-violet-50 transition-colors"
                   >
                     Get started
                     <ArrowRight size={14} aria-hidden="true" />

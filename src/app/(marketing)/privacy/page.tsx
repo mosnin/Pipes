@@ -97,7 +97,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
       <p>
         Depending on your jurisdiction, you may have the right to access,
         correct, export, or delete your personal data. Reach us through the{" "}
-        <a href="/contact" className="text-indigo-600 hover:text-indigo-800 font-medium">
+        <a href="/contact" className="text-violet-600 hover:text-violet-800 font-medium">
           contact page
         </a>{" "}
         and we will respond within the time the law requires.
@@ -111,7 +111,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
       <p>
         We protect your data with encryption in transit, workspace-level tenant
         isolation, and least-privilege access. Read more on the{" "}
-        <a href="/security" className="text-indigo-600 hover:text-indigo-800 font-medium">
+        <a href="/security" className="text-violet-600 hover:text-violet-800 font-medium">
           security page
         </a>
         . No system is perfectly secure, but security is part of the product,

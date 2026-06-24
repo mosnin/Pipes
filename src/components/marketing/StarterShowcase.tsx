@@ -87,7 +87,7 @@ export function StarterShowcase({ starters }: StarterShowcaseProps) {
             className="flex flex-col gap-3"
           >
             <p
-              className="t-overline text-indigo-700"
+              className="t-overline text-violet-700"
               style={{ fontSize: 11 }}
             >
               {current.category}
@@ -228,7 +228,7 @@ export function QuoteRotator({
             className="flex flex-col items-center gap-5 text-center"
           >
             <span
-              className="t-overline text-indigo-700"
+              className="t-overline text-violet-700"
               style={{ fontSize: 11 }}
             >
               {current.title}

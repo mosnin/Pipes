@@ -67,7 +67,7 @@ export default function ChangelogPage() {
             </div>
             <a
               href="/changelog.rss"
-              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700"
+              className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
             >
               <Rss size={14} aria-hidden="true" />
               Subscribe

@@ -63,7 +63,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
         We maintain technical and organizational measures appropriate to the
         risk, including encryption in transit, workspace-level tenant
         isolation, least-privilege access, and audit logging. Details are on the{" "}
-        <a href="/security" className="text-indigo-600 hover:text-indigo-800 font-medium">
+        <a href="/security" className="text-violet-600 hover:text-violet-800 font-medium">
           security page
         </a>
         .
@@ -120,7 +120,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
     body: (
       <p>
         Need a countersigned DPA for your records? Reach us through the{" "}
-        <a href="/contact?source=dpa" className="text-indigo-600 hover:text-indigo-800 font-medium">
+        <a href="/contact?source=dpa" className="text-violet-600 hover:text-violet-800 font-medium">
           contact page
         </a>{" "}
         and we will send one over.

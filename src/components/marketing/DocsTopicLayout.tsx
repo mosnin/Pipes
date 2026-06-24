@@ -55,13 +55,13 @@ export function DocsTopicLayout({ eyebrow, title, intro, children, prev, next }:
             {prev ? (
               <Link
                 href={prev.href}
-                className="group rounded-2xl border border-black/[0.06] bg-white p-4 hover:border-indigo-300 transition-colors"
+                className="group rounded-2xl border border-black/[0.06] bg-white p-4 hover:border-violet-300 transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 t-caption text-[#8E8E93]">
                   <ArrowLeft size={12} aria-hidden="true" />
                   Previous
                 </span>
-                <span className="mt-1 block t-label font-semibold text-[#111] group-hover:text-indigo-700">
+                <span className="mt-1 block t-label font-semibold text-[#111] group-hover:text-violet-700">
                   {prev.label}
                 </span>
               </Link>
@@ -71,13 +71,13 @@ export function DocsTopicLayout({ eyebrow, title, intro, children, prev, next }:
             {next ? (
               <Link
                 href={next.href}
-                className="group rounded-2xl border border-black/[0.06] bg-white p-4 text-right hover:border-indigo-300 transition-colors"
+                className="group rounded-2xl border border-black/[0.06] bg-white p-4 text-right hover:border-violet-300 transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 t-caption text-[#8E8E93] justify-end w-full">
                   Next
                   <ArrowRight size={12} aria-hidden="true" />
                 </span>
-                <span className="mt-1 block t-label font-semibold text-[#111] group-hover:text-indigo-700">
+                <span className="mt-1 block t-label font-semibold text-[#111] group-hover:text-violet-700">
                   {next.label}
                 </span>
               </Link>
@@ -90,7 +90,7 @@ export function DocsTopicLayout({ eyebrow, title, intro, children, prev, next }:
         {/* Help line */}
         <div className="mt-8 flex items-center gap-2 t-caption text-[#8E8E93]">
           <span>Something unclear?</span>
-          <Link href="/contact?source=docs" className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium">
+          <Link href="/contact?source=docs" className="inline-flex items-center gap-1 text-violet-600 hover:text-violet-800 font-medium">
             Tell us
             <ArrowUpRight size={11} aria-hidden="true" />
           </Link>

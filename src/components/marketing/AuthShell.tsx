@@ -123,16 +123,35 @@ function ProofPanel() {
       className="
         hidden md:flex flex-col justify-between
         rounded-[40px] p-10 lg:p-14
-        bg-[#0A0A0A] text-white
+        text-white
         relative overflow-hidden
       "
+      style={{ background: "linear-gradient(145deg, #5B21B6 0%, #4F46E5 50%, #6D28D9 100%)" }}
     >
-      <div className="flex items-center gap-2">
-        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#4F46E5]" aria-hidden="true" />
-        <span className="t-overline text-white/60">Live canvas</span>
+      {/* Decorative circles */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div
+          className="absolute rounded-full"
+          style={{ width: 400, height: 400, right: -80, top: -80, background: "rgba(255,255,255,0.05)" }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{ width: 240, height: 240, right: 20, top: 60, background: "rgba(255,255,255,0.04)" }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{ width: 600, height: 600, left: -200, bottom: -200, background: "rgba(255,255,255,0.03)" }}
+        />
+      </div>
+      <div className="relative flex items-center gap-2">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-300" aria-hidden="true" />
+        <span className="t-overline text-white/70">Live canvas</span>
       </div>
 
-      <div className="mx-auto w-full max-w-md">
+      <div className="relative mx-auto w-full max-w-md">
         <div className="rounded-[20px] bg-white p-4 border border-white/10 shadow-xl-token">
           <AnimatedCanvas
             nodes={PROOF_NODES}
@@ -152,7 +171,7 @@ function ProofPanel() {
         </div>
       </div>
 
-      <div>
+      <div className="relative">
         <p
           key={lineIdx}
           className="t-h2 text-white leading-tight max-w-md transition-opacity duration-500"
@@ -162,7 +181,7 @@ function ProofPanel() {
         >
           {line}
         </p>
-        <p className="mt-4 t-label text-white/50">
+        <p className="mt-4 t-label text-white/60">
           Built for the engineer shipping a multi-agent system this week.
         </p>
       </div>

@@ -92,7 +92,7 @@ export function DocsSidebar({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter sections"
             aria-label="Filter docs sections"
-            className="w-full h-9 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#8E8E93] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            className="w-full h-9 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           />
         </div>
       ) : null}
@@ -116,7 +116,7 @@ export function DocsSidebar({
                   onClick={(e) => handleClick(e, item.id)}
                   className={[
                     "relative pl-3 pr-2 py-1.5 rounded-md t-label transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400",
                     isActive
                       ? "text-[#4F46E5] bg-[#EEF2FF] font-medium"
                       : "text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04]",

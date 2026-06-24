@@ -90,7 +90,7 @@ export function TemplateInlineRun({
               </p>
               <Link
                 href={`/signup?source=template_inline_run&starter=${slug}`}
-                className="inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600 hover:text-indigo-700"
+                className="inline-flex items-center gap-1.5 t-label font-semibold text-violet-600 hover:text-violet-700"
               >
                 Sign up to keep your version
                 <ArrowRight size={12} aria-hidden="true" />

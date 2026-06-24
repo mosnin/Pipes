@@ -34,7 +34,7 @@ const ICON_BY_ID: Record<string, typeof KeyRound> = {
 };
 
 const CATEGORY_CHIP: Record<ControlCategory, string> = {
-  Authentication: "border-indigo-100 bg-indigo-50 text-indigo-700",
+  Authentication: "border-violet-100 bg-violet-50 text-violet-700",
   Encryption: "border-emerald-100 bg-emerald-50 text-emerald-700",
   Audit: "border-amber-100 bg-amber-50 text-amber-800",
   Isolation: "border-blue-100 bg-blue-50 text-blue-700",

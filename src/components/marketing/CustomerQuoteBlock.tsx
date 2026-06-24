@@ -28,7 +28,7 @@ export function CustomerQuoteBlock({ quote }: CustomerQuoteBlockProps) {
         {quote.body}
       </blockquote>
       <figcaption className="mt-10 flex items-center gap-4">
-        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 t-label font-semibold text-indigo-700">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-violet-50 t-label font-semibold text-violet-700">
           {quote.persona
             .split(" ")
             .map((p) => p.charAt(0))

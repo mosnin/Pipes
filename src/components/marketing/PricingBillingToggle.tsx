@@ -74,7 +74,7 @@ export function PricingBillingToggle({
                     "relative ml-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]",
                     selected
                       ? "bg-white/15 text-white"
-                      : "bg-indigo-50 text-indigo-700",
+                      : "bg-violet-50 text-violet-700",
                   ].join(" ")}
                 >
                   -2 mo

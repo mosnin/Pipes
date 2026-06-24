@@ -128,7 +128,7 @@ function ProductContent({
                       role="menuitem"
                       href={link.href}
                       onClick={onItemClick}
-                      className="group flex flex-col rounded-lg px-2 py-1.5 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="group flex flex-col rounded-lg px-2 py-1.5 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                     >
                       <span className="t-label font-medium text-[var(--color-ink-1)]">
                         {link.label}
@@ -178,7 +178,7 @@ function UseCasesContent({
           role="menuitem"
           href={card.href}
           onClick={onItemClick}
-          className="group flex flex-col rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-4 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="group flex flex-col rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-4 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
         >
           <h4 className="t-title text-[var(--color-ink-1)]">{card.title}</h4>
           <p className="mt-1.5 t-label text-[var(--color-ink-2)] leading-relaxed">
@@ -208,7 +208,7 @@ function DocsContent({
                 role="menuitem"
                 href={link.href}
                 onClick={onItemClick}
-                className="group flex flex-col rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="group flex flex-col rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
                 <span className="t-label font-medium text-[var(--color-ink-1)]">
                   {link.label}
@@ -232,7 +232,7 @@ function DocsContent({
                 role="menuitem"
                 href={link.href}
                 onClick={onItemClick}
-                className="group flex flex-col rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="group flex flex-col rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
               >
                 <span className="t-label font-medium text-[var(--color-ink-1)]">
                   {link.label}
@@ -266,7 +266,7 @@ function CustomersContent({
           role="menuitem"
           href={card.href}
           onClick={onItemClick}
-          className="group flex flex-col justify-between rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-5 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="group flex flex-col justify-between rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-5 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
         >
           <p className="t-overline text-[var(--color-accent)]">{card.persona}</p>
           <blockquote className="mt-2 t-title text-[var(--color-ink-1)] leading-snug">

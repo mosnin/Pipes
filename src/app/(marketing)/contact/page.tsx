@@ -86,7 +86,7 @@ export default async function ContactPage({
                 <p className="mt-2 t-body leading-relaxed text-[#3C3C43] flex-1">{c.body}</p>
                 <a
                   href={c.href}
-                  className="mt-5 inline-flex items-center gap-1.5 t-label font-semibold text-indigo-600 hover:text-indigo-800"
+                  className="mt-5 inline-flex items-center gap-1.5 t-label font-semibold text-violet-600 hover:text-violet-800"
                 >
                   {c.action}
                   <ArrowUpRight size={13} aria-hidden="true" />

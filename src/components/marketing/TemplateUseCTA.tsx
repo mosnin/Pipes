@@ -39,7 +39,7 @@ export function TemplateUseCTA({ templateId, slug, className }: Props) {
       type="button"
       onClick={() => void handleClick()}
       disabled={loading}
-      className={className ?? "inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-white text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition-colors disabled:opacity-70"}
+      className={className ?? "inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-white text-violet-600 font-semibold text-sm hover:bg-violet-50 transition-colors disabled:opacity-70"}
     >
       {loading ? "Opening..." : "Use this starter"}
       {!loading && <ArrowRight size={14} aria-hidden="true" />}

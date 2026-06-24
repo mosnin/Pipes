@@ -26,12 +26,12 @@ export function LoginForm() {
               headerTitle: "hidden",
               headerSubtitle: "hidden",
               formButtonPrimary:
-                "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-700 text-white font-semibold rounded-lg t-label transition-colors h-10",
+                "bg-violet-600 hover:bg-violet-700 active:bg-violet-700 text-white font-semibold rounded-lg t-label transition-colors h-10",
               socialButtonsBlockButton:
                 "bg-white border border-black/[0.14] hover:border-black/[0.24] text-[#111] font-medium rounded-lg t-label transition-colors h-10",
               socialButtonsBlockButtonText: "text-[#111] font-medium",
               formFieldInput:
-                "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#C7C7CC] focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-shadow",
+                "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] placeholder:text-[#C7C7CC] focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-400 transition-shadow",
               formFieldLabel: "t-label font-medium text-[#111]",
               dividerText: "t-caption text-[#8E8E93]",
               dividerLine: "bg-black/[0.08]",
@@ -39,9 +39,9 @@ export function LoginForm() {
               footerAction: "hidden",
               identityPreviewText: "t-label text-[#3C3C43]",
               identityPreviewEditButton:
-                "text-indigo-600 hover:text-indigo-700 font-medium",
+                "text-violet-600 hover:text-violet-700 font-medium",
               formResendCodeLink:
-                "text-indigo-600 hover:text-indigo-700 font-medium",
+                "text-violet-600 hover:text-violet-700 font-medium",
             },
             variables: {
               fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
@@ -59,7 +59,7 @@ export function LoginForm() {
         No account yet?{" "}
         <Link
           href="/signup"
-          className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+          className="text-violet-600 font-medium hover:text-violet-700 transition-colors"
         >
           Create a workspace
         </Link>

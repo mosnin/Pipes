@@ -45,7 +45,7 @@ export function SecurityIncidentDisclosure({
           </span>
           <div className="flex flex-col">
             <span className="t-overline text-[#8E8E93]">Contact</span>
-            <span className="t-label font-mono font-semibold text-[#111] group-hover:text-indigo-700">
+            <span className="t-label font-mono font-semibold text-[#111] group-hover:text-violet-700">
               {bounty.contact}
             </span>
           </div>

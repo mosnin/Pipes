@@ -57,7 +57,7 @@ export default function StatusPage() {
             </div>
             <Link
               href="/security#disclosure"
-              className="hidden sm:inline-flex t-label font-semibold text-indigo-600 hover:text-indigo-800"
+              className="hidden sm:inline-flex t-label font-semibold text-violet-600 hover:text-violet-800"
             >
               Coordinated disclosure {"→"}
             </Link>
@@ -80,14 +80,14 @@ export default function StatusPage() {
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <a
                 href="mailto:status@looper.dev?subject=Subscribe%20to%20status%20updates"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-indigo-700"
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
               >
                 <Bell size={14} aria-hidden="true" />
                 Subscribe by email
               </a>
               <a
                 href="/status.rss"
-                className="t-label font-semibold text-indigo-700 transition-colors hover:text-indigo-900"
+                className="t-label font-semibold text-violet-700 transition-colors hover:text-violet-900"
               >
                 Or use the RSS feed {"→"}
               </a>

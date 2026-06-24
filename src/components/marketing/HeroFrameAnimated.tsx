@@ -116,7 +116,7 @@ export function HeroFrameAnimated() {
                 {PROMPT_TEXT}
               </span>
               <span
-                className="pipes-hero-caret inline-block w-px h-3 ml-px bg-indigo-500"
+                className="pipes-hero-caret inline-block w-px h-3 ml-px bg-violet-500"
                 aria-hidden="true"
               />
             </div>
@@ -218,7 +218,7 @@ export function HeroFrameAnimated() {
                 <div key={line} className="flex items-center gap-2">
                   <span
                     aria-hidden="true"
-                    className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500"
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500"
                   />
                   <p className="t-mono t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
                     {line}

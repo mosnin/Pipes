@@ -142,7 +142,7 @@ export function MarketingNav() {
             <Link
               href="/"
               aria-label="Looper home"
-              className="ml-2 inline-flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="ml-2 inline-flex items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
             >
               <Wordmark size="sm" />
             </Link>
@@ -159,7 +159,7 @@ export function MarketingNav() {
                     <Link
                       key={item.id}
                       href={item.menu.href}
-                      className="inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                      className="inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                       onMouseEnter={() => {
                         // Hovering a direct item should close any open menu
                         // after the grace, so navigating across the bar feels
@@ -193,7 +193,7 @@ export function MarketingNav() {
                       }
                     }}
                     className={[
-                      "inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-[14px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+                      "inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-[14px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500",
                       open
                         ? "bg-black/[0.04] text-[var(--color-ink-1)]"
                         : "text-[var(--color-ink-2)] hover:bg-black/[0.04] hover:text-[var(--color-ink-1)]",
@@ -227,7 +227,7 @@ export function MarketingNav() {
                 <>
                   <Link
                     href="/login"
-                    className="hidden md:inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="hidden md:inline-flex items-center rounded-full px-4 py-1.5 text-[14px] font-medium text-[var(--color-ink-2)] transition-colors duration-150 hover:bg-black/[0.04] hover:text-[var(--color-ink-1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   >
                     Log in
                   </Link>
@@ -246,7 +246,7 @@ export function MarketingNav() {
                 aria-label="Open menu"
                 aria-expanded={mobileOpen}
                 aria-controls="marketing-mobile-drawer"
-                className="md:hidden inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-ink-2)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="md:hidden inline-flex h-11 w-11 items-center justify-center rounded-full text-[var(--color-ink-2)] hover:bg-black/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                 data-testid="marketing-nav-hamburger"
               >
                 <Menu size={18} aria-hidden="true" />

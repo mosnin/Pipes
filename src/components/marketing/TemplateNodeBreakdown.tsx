@@ -92,13 +92,13 @@ function NodeRow({
       {!isLast && (
         <span
           aria-hidden="true"
-          className="absolute left-[19px] top-10 bottom-0 w-px bg-gradient-to-b from-indigo-200 to-indigo-50"
+          className="absolute left-[19px] top-10 bottom-0 w-px bg-gradient-to-b from-violet-200 to-violet-50"
         />
       )}
 
       {/* Number + icon */}
       <div className="flex flex-col items-center shrink-0">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 t-label font-semibold tabular-nums">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 border border-violet-100 text-violet-700 t-label font-semibold tabular-nums">
           {index}
         </span>
       </div>

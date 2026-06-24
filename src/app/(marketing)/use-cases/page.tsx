@@ -112,7 +112,7 @@ export default function UseCasesPage() {
       {/* ── 3. CTA STRIP ────────────────────────────────────────────────── */}
       <section className="px-6 pb-20">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-[40px] bg-indigo-50 border border-indigo-100 p-10 sm:p-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
+          <div className="rounded-[40px] bg-violet-50 border border-violet-100 p-10 sm:p-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8">
             <div className="flex-1">
               <h2
                 className="text-[#111] max-w-2xl"
@@ -136,13 +136,13 @@ export default function UseCasesPage() {
                 event="use_cases_cta_clicked"
                 metadata={{ location: "use_cases_bottom" }}
               >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#111] px-6 h-12 t-label font-semibold text-white hover:bg-indigo-700 transition-colors">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#111] px-6 h-12 t-label font-semibold text-white hover:bg-violet-700 transition-colors">
                   Start free
                 </span>
               </TrackedLink>
               <Link
                 href="/contact?source=use_cases_contact"
-                className="t-label font-semibold text-indigo-700 hover:text-indigo-900 transition-colors"
+                className="t-label font-semibold text-violet-700 hover:text-violet-900 transition-colors"
               >
                 Talk to sales {"→"}
               </Link>

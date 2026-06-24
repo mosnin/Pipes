@@ -19,7 +19,7 @@ export function MegaMenuCard({ href, eyebrow, title, body }: MegaMenuCardProps) 
     <Link
       href={href}
       role="menuitem"
-      className="group block rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-5 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      className="group block rounded-2xl border border-black/[0.04] bg-[var(--surface-muted)] p-5 transition-all duration-200 hover:bg-white hover:shadow-sm-token focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
     >
       <p className="t-overline text-[var(--color-accent)]">{eyebrow}</p>
       <h4 className="mt-2 t-title text-[var(--color-ink-1)]">{title}</h4>
