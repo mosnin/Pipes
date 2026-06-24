@@ -129,7 +129,7 @@ export default function AboutPage() {
           </p>
           <Link
             href="/signup?source=about_cta"
-            className="inline-flex items-center gap-2 bg-[#111] text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-[var(--color-accent-hover)] transition-colors"
+            className="inline-flex items-center gap-2 bg-violet-600 text-white rounded-xl px-6 py-3 t-label font-semibold hover:bg-violet-700 transition-colors"
           >
             Start building free
             <ArrowRight size={15} aria-hidden="true" />

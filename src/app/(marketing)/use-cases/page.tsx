@@ -136,7 +136,7 @@ export default function UseCasesPage() {
                 event="use_cases_cta_clicked"
                 metadata={{ location: "use_cases_bottom" }}
               >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#111] px-6 h-12 t-label font-semibold text-white hover:bg-violet-700 transition-colors">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-6 h-12 t-label font-semibold text-white hover:bg-violet-700 transition-colors">
                   Start free
                 </span>
               </TrackedLink>

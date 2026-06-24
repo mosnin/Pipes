@@ -108,7 +108,7 @@ export default async function ContactPage({
           <div className="mt-6 flex items-center justify-center gap-3">
             <Link
               href="/signup?source=contact"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#111] px-5 py-2.5 t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
             >
               Start building free
             </Link>

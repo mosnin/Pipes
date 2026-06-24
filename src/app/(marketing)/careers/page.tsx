@@ -86,7 +86,7 @@ export default function CareersPage() {
             </p>
             <Link
               href="/contact?source=careers"
-              className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-[#111] px-5 py-2.5 t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] transition-colors"
+              className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
             >
               Introduce yourself
               <ArrowUpRight size={14} aria-hidden="true" />

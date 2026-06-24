@@ -63,7 +63,7 @@ export function ProtocolHero({ className }: ProtocolHeroProps) {
                 <div className="mt-7 flex flex-wrap items-center gap-3">
                   <Link
                     href="/docs#protocol"
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-5 h-11 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-5 h-11 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
                   >
                     View docs
                     <ArrowRight size={14} aria-hidden="true" />

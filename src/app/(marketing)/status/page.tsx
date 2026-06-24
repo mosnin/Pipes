@@ -80,7 +80,7 @@ export default function StatusPage() {
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <a
                 href="mailto:status@looper.dev?subject=Subscribe%20to%20status%20updates"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-[#111] px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
+                className="inline-flex h-12 items-center gap-2 rounded-full bg-violet-600 px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
               >
                 <Bell size={14} aria-hidden="true" />
                 Subscribe by email

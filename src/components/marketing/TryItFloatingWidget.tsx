@@ -381,7 +381,7 @@ function SlimPlayground({ onClose }: SlimPlaygroundProps) {
           <Link
             href="/signup?source=floating_try_it"
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-3 h-9 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 h-9 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
           >
             Sign up to keep this
             <ArrowRight size={12} aria-hidden="true" />

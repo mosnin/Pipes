@@ -508,7 +508,7 @@ export function PlaygroundEditor() {
               <Link
                 href={`/signup?source=playground&starter=${activeKey ?? ""}`}
                 data-testid="playground-signup-cta"
-                className="inline-flex items-center gap-1.5 rounded-md bg-[#111] px-4 py-2 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-4 py-2 t-label font-semibold text-white hover:bg-violet-700 transition-colors"
               >
                 Sign up to keep this
                 <ArrowRight size={14} />
