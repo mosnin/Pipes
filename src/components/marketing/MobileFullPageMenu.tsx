@@ -135,7 +135,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
                   ref={lastFocusableRef}
                   href="/dashboard"
                   onClick={onClose}
-                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-violet-600 t-label font-semibold text-white hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                 >
                   <LayoutDashboard size={14} aria-hidden="true" />
                   Dashboard
@@ -153,7 +153,7 @@ export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
                     ref={lastFocusableRef}
                     href="/signup"
                     onClick={onClose}
-                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-[#111] t-label font-semibold text-white hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
+                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-violet-600 t-label font-semibold text-white hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   >
                     Start free
                     <ArrowRight size={14} aria-hidden="true" />

@@ -275,7 +275,7 @@ export function EmbeddedCanvas({
           className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-sm transition-colors hover:bg-white/85"
           aria-label="Run this starter"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-[#111] text-white px-4 py-2 t-label font-semibold shadow-md">
+          <span className="inline-flex items-center gap-2 rounded-full bg-violet-600 text-white px-4 py-2 t-label font-semibold shadow-md">
             <Play size={14} aria-hidden="true" />
             Run this starter
           </span>
