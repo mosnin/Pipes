@@ -12,15 +12,15 @@
 
   /* Subtle brand pattern: a 24 px indigo-tinted grid as a CSS data URL.
      Used as a wash on hero surfaces and OG-style cards. */
-  --brand-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M24 0 L0 0 0 24' fill='none' stroke='rgba(79,70,229,0.06)' stroke-width='1'/></svg>");
+  --brand-pattern: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M24 0 L0 0 0 24' fill='none' stroke='rgba(124,58,237,0.06)' stroke-width='1'/></svg>");
 
   /* Surface — Apple's #F5F5F7, warmer and optically neutral vs slate-50 */
-  --color-surface: #F5F5F7;
+  --color-surface: #F5F3FF;
 
-  /* Single accent — indigo-600. One color. Used twice maximum per screen. */
-  --color-accent:       #4F46E5;
-  --color-accent-light: #EEF2FF;
-  --color-accent-hover: #4338CA;
+  /* Single accent — violet-600. One color. Used twice maximum per screen. */
+  --color-accent:       #7C3AED;
+  --color-accent-light: #F5F3FF;
+  --color-accent-hover: #6D28D9;
 
   /* Ink */
   --color-ink-1: #111111; /* primary text    */
@@ -64,16 +64,18 @@
   /* Surface scale */
   --surface-canvas: #FFFFFF;
   --surface-subtle: #FAFAFA;
-  --surface-muted: #F5F5F7;
+  --surface-muted: #F5F3FF;
   --surface-inverse: #0A0A0A;
+  --surface-page: #F7F5FB;
 
   /* Shadow tokens */
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -1px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08);
-  --shadow-focus: 0 0 0 3px rgba(79,70,229,0.15);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.07);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(124,58,237,0.06);
+  --shadow-focus: 0 0 0 3px rgba(124,58,237,0.15);
 
   /* Radius extras (do not remove existing ones) */
   --radius-xs: 4px;
@@ -267,7 +269,7 @@ a { color: inherit; text-decoration: none; }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(60% 60% at 50% 0%, rgba(79, 70, 229, 0.04) 0%, transparent 70%);
+  background: radial-gradient(60% 60% at 50% 0%, rgba(124, 58, 237, 0.05) 0%, transparent 70%);
   pointer-events: none;
   border-radius: inherit;
 }
@@ -288,8 +290,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 .depth-glow-indigo {
-  background: radial-gradient(50% 35% at 50% 10%, rgba(79, 70, 229, 0.08) 0%, transparent 70%);
+  background: radial-gradient(50% 35% at 50% 10%, rgba(124, 58, 237, 0.08) 0%, transparent 70%);
 }
+
+.shadow-card { box-shadow: var(--shadow-card); }
 
 .hero-vignette {
   position: relative;
@@ -377,7 +381,7 @@ a { color: inherit; text-decoration: none; }
   inset: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #4F46E5 100%);
+  background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 50%, #7C3AED 100%);
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);

@@ -3,21 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 
-/**
- * MetricsStrip
- *
- * Four large counters that animate from 0 to their target ONCE when the
- * strip first enters the viewport. Ease-out over ~1.4s. Respects reduced
- * motion (renders the final value immediately).
- */
-
 export interface Metric {
   value: number;
   suffix?: string;
   prefix?: string;
-  /** What this number measures. */
   label: string;
-  /** Decimal places to render. Default 0. */
   decimals?: number;
 }
 
@@ -33,27 +23,28 @@ function easeOutQuart(t: number): number {
 
 export function MetricsStrip({ metrics }: MetricsStripProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const inView = useInView(ref, { once: true, amount: 0.4 });
+  const inView = useInView(ref, { once: true, amount: 0.3 });
   return (
     <section className="px-4 sm:px-6">
-      <div
-        ref={ref}
-        className="mx-auto grid max-w-7xl grid-cols-2 gap-6 border-y border-black/[0.06] py-16 lg:grid-cols-4 lg:gap-10"
-      >
-        {metrics.map((m) => (
-          <MetricCounter key={m.label} metric={m} active={inView} />
-        ))}
+      <div ref={ref} className="mx-auto max-w-7xl py-10">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {metrics.map((m, i) => (
+            <MetricCard key={m.label} metric={m} active={inView} featured={i === 0} />
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
-function MetricCounter({
+function MetricCard({
   metric,
   active,
+  featured,
 }: {
   metric: Metric;
   active: boolean;
+  featured: boolean;
 }) {
   const reduced = useReducedMotion();
   const [display, setDisplay] = useState<number>(reduced ? metric.value : 0);
@@ -84,23 +75,60 @@ function MetricCounter({
   }, [active, metric.value, reduced]);
 
   const formatted = formatMetric(display, metric);
+  const finalFormatted = formatMetric(metric.value, metric);
+
+  if (featured) {
+    return (
+      <div
+        data-testid="metric-counter"
+        className="relative overflow-hidden rounded-2xl p-6"
+        style={{
+          background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
+          boxShadow: "0 4px 24px rgba(124,58,237,0.28)",
+        }}
+      >
+        <div className="relative z-10">
+          <p className="text-violet-200 mb-4" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            {metric.label}
+          </p>
+          <span
+            className="t-num block text-white"
+            style={{ fontSize: 52, lineHeight: 1.0, letterSpacing: "-0.04em", fontWeight: 700 }}
+            aria-label={`${finalFormatted} ${metric.label}`}
+          >
+            {formatted}
+          </span>
+        </div>
+        {/* Decorative circles */}
+        <div
+          aria-hidden="true"
+          className="absolute rounded-full"
+          style={{ width: 120, height: 120, right: -20, bottom: -20, background: "rgba(255,255,255,0.08)" }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute rounded-full"
+          style={{ width: 72, height: 72, right: 16, bottom: 16, background: "rgba(255,255,255,0.07)" }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-2" data-testid="metric-counter">
+    <div
+      data-testid="metric-counter"
+      className="rounded-2xl bg-white p-6"
+      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(124,58,237,0.05)" }}
+    >
+      <p className="text-[#8E8E93] mb-4" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        {metric.label}
+      </p>
       <span
-        className="t-num text-[#111]"
-        style={{
-          fontSize: 56,
-          lineHeight: 1.0,
-          letterSpacing: "-0.035em",
-          fontWeight: 700,
-        }}
-        aria-label={`${formatMetric(metric.value, metric)} ${metric.label}`}
+        className="t-num block text-[#111]"
+        style={{ fontSize: 40, lineHeight: 1.0, letterSpacing: "-0.04em", fontWeight: 700 }}
+        aria-label={`${finalFormatted} ${metric.label}`}
       >
         {formatted}
-      </span>
-      <span className="t-label text-[#3C3C43]" style={{ fontSize: 14 }}>
-        {metric.label}
       </span>
     </div>
   );

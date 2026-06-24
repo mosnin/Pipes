@@ -40,10 +40,10 @@ describe("globals.css depth tokens", () => {
     expect(css).toMatch(/\.hero-vignette::before\s*\{/);
   });
 
-  it("uses indigo at low alpha for the radial bloom (no loud gradients)", () => {
-    // Subtle — 0.04 alpha on the radial overlay, 0.08 on the glow.
-    expect(css).toContain("rgba(79, 70, 229, 0.04)");
-    expect(css).toContain("rgba(79, 70, 229, 0.08)");
+  it("uses violet at low alpha for the radial bloom (no loud gradients)", () => {
+    // Subtle — 0.05 alpha on the radial overlay, 0.08 on the glow.
+    expect(css).toContain("rgba(124, 58, 237, 0.05)");
+    expect(css).toContain("rgba(124, 58, 237, 0.08)");
   });
 
   it("uses SVG fractal noise at 4% opacity for depth-noise", () => {

@@ -218,7 +218,7 @@ export function MarketingNav() {
               {showDashboard ? (
                 <Link
                   href="/dashboard"
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                 >
                   <LayoutDashboard size={13} aria-hidden="true" />
                   Dashboard
@@ -233,7 +233,7 @@ export function MarketingNav() {
                   </Link>
                   <Link
                     href="/signup"
-                    className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-[#111] px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-4 py-1.5 text-[14px] font-semibold text-white transition-colors duration-150 hover:bg-violet-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
                   >
                     Start free
                     <ArrowRight size={13} aria-hidden="true" />

@@ -28,8 +28,8 @@ const FEATURES: ReadonlyArray<Feature> = [
     icon: <Layers size={18} />,
     title: "Every loop shape covered",
     body: "Planner, coder, evaluator, router — every primitive you need to wire any agent loop.",
-    accent: "#4F46E5",
-    accentBg: "rgba(79,70,229,0.06)",
+    accent: "#7C3AED",
+    accentBg: "rgba(124,58,237,0.06)",
   },
   {
     stat: "11",
@@ -37,8 +37,8 @@ const FEATURES: ReadonlyArray<Feature> = [
     icon: <Zap size={18} />,
     title: "Full agent API, one endpoint",
     body: "List, read, mutate, propose — any Claude or LangGraph agent reads your loop live through MCP.",
-    accent: "#7C3AED",
-    accentBg: "rgba(124,58,237,0.06)",
+    accent: "#4F46E5",
+    accentBg: "rgba(79,70,229,0.06)",
   },
   {
     stat: "∞",
@@ -91,7 +91,7 @@ export function FeatureGrid({
     <section className="px-4 sm:px-6">
       <div className="mx-auto max-w-7xl py-24 sm:py-32">
         <div className="mb-14 max-w-2xl">
-          <p className="t-overline text-indigo-700">
+          <p className="t-overline text-violet-700">
             {eyebrow}
           </p>
           <h2
@@ -124,8 +124,8 @@ function FeatureTile({ feature, index }: { feature: Feature; index: number }) {
   return (
     <motion.div
       ref={ref}
-      className="feature-tile group relative flex flex-col gap-0 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white"
-      style={{ "--tile-accent": feature.accent } as React.CSSProperties}
+      className="feature-tile group relative flex flex-col gap-0 overflow-hidden rounded-[20px] bg-white"
+      style={{ "--tile-accent": feature.accent, boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(124,58,237,0.05)" } as React.CSSProperties}
       initial={reduced ? false : { opacity: 0, y: 24 }}
       animate={
         reduced

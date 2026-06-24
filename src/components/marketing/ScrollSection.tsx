@@ -15,7 +15,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 export interface ScrollSectionProps {
   children: ReactNode;
   /** Tone controls the surface background. */
-  tone?: "subtle" | "white" | "indigo" | "inverse" | "accent";
+  tone?: "subtle" | "white" | "indigo" | "inverse" | "accent" | "violet";
   /** Border radius in pixels. Defaults to 40. */
   radius?: number;
   /** Container className for outer padding wrapper. */
@@ -37,11 +37,12 @@ export interface ScrollSectionProps {
 }
 
 const TONE_CLASSES: Record<NonNullable<ScrollSectionProps["tone"]>, string> = {
-  subtle: "bg-[#FAFAFA] text-[#111]",
+  subtle: "bg-[#F7F5FB] text-[#111]",
   white: "bg-white text-[#111]",
-  indigo: "bg-indigo-50 text-[#111]",
+  indigo: "bg-violet-50 text-[#111]",
   inverse: "bg-[#0A0A0A] text-white",
-  accent: "bg-indigo-600 text-white",
+  accent: "bg-violet-600 text-white",
+  violet: "bg-gradient-to-br from-violet-600 to-indigo-600 text-white",
 };
 
 const DEPTH_CLASSES: Record<NonNullable<ScrollSectionProps["depth"]>, string> = {

@@ -67,7 +67,7 @@ export default function HomePage() {
   }));
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F7F5FB]">
       {/* ───────────────────────────────────────────────────────────────────
           HERO — locked headline + subhead + CTAs, with the scroll-driven
           demo right below. The hero block itself is sized to a full viewport
@@ -76,29 +76,18 @@ export default function HomePage() {
          ─────────────────────────────────────────────────────────────────── */}
       <section
         aria-label="Looper hero"
-        className="relative flex min-h-[92vh] items-center overflow-hidden"
+        className="relative flex min-h-[92vh] items-center overflow-hidden bg-white"
       >
-        {/* Floating gradient orbs — atmospheric depth */}
+        {/* Subtle violet bloom */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
-            className="looper-orb-1 absolute rounded-full"
+            className="absolute rounded-full"
             style={{
-              width: 680,
-              height: 680,
-              top: "-180px",
-              left: "-120px",
-              background: "radial-gradient(circle, rgba(99,102,241,0.13) 0%, rgba(139,92,246,0.07) 45%, transparent 70%)",
-              filter: "blur(48px)",
-            }}
-          />
-          <div
-            className="looper-orb-2 absolute rounded-full"
-            style={{
-              width: 500,
-              height: 500,
-              top: "60px",
-              right: "-100px",
-              background: "radial-gradient(circle, rgba(79,70,229,0.10) 0%, rgba(99,102,241,0.05) 50%, transparent 70%)",
+              width: 800,
+              height: 800,
+              top: "-200px",
+              left: "-100px",
+              background: "radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 60%)",
               filter: "blur(60px)",
             }}
           />
@@ -107,12 +96,12 @@ export default function HomePage() {
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="lg:col-span-7">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 t-caption font-semibold uppercase tracking-[0.08em] text-indigo-700"
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 t-caption font-semibold uppercase tracking-[0.08em] text-violet-700"
                 style={{ fontSize: 11 }}
               >
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-indigo-500"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500"
                 />
                 Co-author loops with your agent
               </span>
@@ -127,7 +116,7 @@ export default function HomePage() {
                     event="homepage_cta_clicked"
                     metadata={{ location: "hero_primary" }}
                   >
-                    <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-indigo-600 px-6 t-label font-semibold text-white transition-all hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98]">
+                    <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-violet-600 px-6 t-label font-semibold text-white transition-all hover:bg-violet-700 hover:shadow-lg hover:shadow-violet-500/25 hover:scale-[1.02] active:scale-[0.98]">
                       Start free
                       <ArrowRight size={14} aria-hidden="true" />
                     </span>
@@ -192,7 +181,7 @@ export default function HomePage() {
           <RevealStack className="flex flex-col gap-5 lg:col-span-5">
             <RevealItem
               as="span"
-              className="t-overline text-indigo-700"
+              className="t-overline text-violet-700"
             >
               Your agent builds with you.
             </RevealItem>
@@ -222,7 +211,7 @@ export default function HomePage() {
                 event="homepage_cta_clicked"
                 metadata={{ location: "describe_section" }}
               >
-                <span className="inline-flex items-center gap-1 t-label font-semibold text-indigo-700 hover:text-indigo-800">
+                <span className="inline-flex items-center gap-1 t-label font-semibold text-violet-700 hover:text-violet-800">
                   Browse loop templates
                   <ArrowRight size={14} aria-hidden="true" />
                 </span>
@@ -247,7 +236,7 @@ export default function HomePage() {
       <ScrollSection tone="indigo" radius={40} ariaLabel="Every loop is a starter">
         <div className="mb-10 flex flex-col gap-3">
           <RevealStack className="flex flex-col gap-3">
-            <RevealItem as="span" className="t-overline text-indigo-700">
+            <RevealItem as="span" className="t-overline text-violet-700">
               Every loop is a starter
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
@@ -268,13 +257,13 @@ export default function HomePage() {
       </ScrollSection>
 
       {/* ───────────────────────────────────────────────────────────────────
-          SECTION 4 — The whole agent in your pocket. Dark inverse surface.
+          SECTION 4 — The whole agent in your pocket. Violet gradient surface.
           rounded-[40px]
          ─────────────────────────────────────────────────────────────────── */}
-      <ScrollSection tone="inverse" radius={40} ariaLabel="The whole agent in your pocket">
+      <ScrollSection tone="violet" radius={40} ariaLabel="The whole agent in your pocket">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16">
           <RevealStack className="flex flex-col gap-5">
-            <RevealItem as="span" className="t-overline text-indigo-300">
+            <RevealItem as="span" className="t-overline text-violet-300">
               One loop, any agent
             </RevealItem>
             <RevealItem as="h2">
@@ -292,7 +281,7 @@ export default function HomePage() {
             </RevealItem>
             <RevealItem as="p">
               <span
-                className="text-[#C7C7CC]"
+                className="text-violet-100"
                 style={{ fontSize: 17, lineHeight: 1.55 }}
               >
                 Export one MCP token. Paste it into any agent. It reads the full loop definition live — steps, connections, evaluators, and all.
@@ -312,7 +301,7 @@ export default function HomePage() {
       <ScrollSection tone="white" radius={40} ariaLabel="What you can build with Looper">
         <div className="mx-auto max-w-4xl">
           <RevealStack className="mb-10 flex flex-col gap-3 text-center">
-            <RevealItem as="span" className="t-overline text-indigo-700">
+            <RevealItem as="span" className="t-overline text-violet-700">
               What teams build with Looper
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
@@ -360,7 +349,7 @@ export default function HomePage() {
           </RevealItem>
           <RevealItem as="p">
             <span
-              className="text-indigo-100"
+              className="text-violet-100"
               style={{ fontSize: 18, lineHeight: 1.55 }}
             >
               Describe the loop. Your agent draws it. You refine it. Any agent reads it via MCP. Share or sell it on the marketplace.
@@ -375,7 +364,7 @@ export default function HomePage() {
               event="homepage_cta_clicked"
               metadata={{ location: "final_cta" }}
             >
-              <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-white px-7 t-label font-semibold text-indigo-700 transition-colors hover:bg-indigo-50">
+              <span className="inline-flex h-12 items-center gap-1.5 rounded-full bg-white px-7 t-label font-semibold text-violet-700 transition-colors hover:bg-violet-50">
                 Start free
                 <ArrowRight size={14} aria-hidden="true" />
               </span>
@@ -462,7 +451,7 @@ function PocketScene() {
         <text x="78" y="64" fontSize="8" fill="#8E8E93">
           sys_8a72
         </text>
-        <circle cx="232" cy="62" r="3" fill="#4F46E5" />
+        <circle cx="232" cy="62" r="3" fill="#7C3AED" />
       </g>
       {/* Graph card */}
       <g>
@@ -490,10 +479,10 @@ function PocketScene() {
               height="32"
               rx="8"
               fill="#16161a"
-              stroke="#4F46E5"
+              stroke="#7C3AED"
               strokeWidth="0.75"
             />
-            <circle cx={n.x + 12} cy={n.y + 16} r="2.5" fill="#4F46E5" />
+            <circle cx={n.x + 12} cy={n.y + 16} r="2.5" fill="#7C3AED" />
             <text
               x={n.x + 22}
               y={n.y + 20}
@@ -506,7 +495,7 @@ function PocketScene() {
             {i < 2 ? (
               <path
                 d={`M ${n.x + 12} ${n.y + 32} L ${n.x + 12} ${n.y + 48}`}
-                stroke="#4F46E5"
+                stroke="#7C3AED"
                 strokeWidth="0.75"
               />
             ) : null}
@@ -545,7 +534,7 @@ function PocketScene() {
           width="192"
           height="38"
           rx="12"
-          fill="#4F46E5"
+          fill="#7C3AED"
         />
         <text
           x="140"
@@ -578,144 +567,75 @@ function PocketScene() {
 function HeroSidePreview() {
   return (
     <div
-      className="relative aspect-[5/4] w-full overflow-hidden rounded-[24px] border border-black/[0.06] bg-white shadow-md-token"
+      className="relative w-full"
       aria-hidden="true"
     >
-      <div className="absolute left-0 right-0 top-0 flex items-center gap-2 border-b border-black/[0.06] bg-white px-3 py-2">
-        <span
-          className="t-label font-semibold text-[#111]"
-          style={{ fontSize: 11 }}
-        >
-          Looper
-</span>
-        <span
-          className="t-caption text-[#8E8E93]"
-          style={{ fontSize: 10 }}
-        >
-          sys_8a72
-        </span>
-        <span
-          className="ml-auto inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5"
-          style={{ fontSize: 9 }}
-        >
-          <span className="inline-block h-1 w-1 rounded-full bg-indigo-500" />
-          <span
-            className="t-caption font-semibold text-indigo-700"
-            style={{ fontSize: 9 }}
+      {/* Main violet gradient card */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6"
+        style={{
+          background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
+          boxShadow: "0 8px 40px rgba(124,58,237,0.30)",
+        }}
+      >
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+              Agent loops running
+            </p>
+            <p style={{ fontSize: 30, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+              +88.4%
+            </p>
+          </div>
+          <div
+            style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            live
-          </span>
-        </span>
-      </div>
-      <div className="absolute inset-0 flex flex-col gap-2 px-4 pb-4 pt-10">
-        <div className="rounded-md border border-black/[0.08] bg-[#FAFAFA] px-3 py-2">
-          <p
-            className="t-caption text-[#8E8E93]"
-            style={{ fontSize: 9 }}
-          >
-            You typed
-          </p>
-          <p
-            className="t-label text-[#111]"
-            style={{ fontSize: 11 }}
-          >
-            Planner agent reads tickets, hands off to a coder.
-          </p>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8h12M2 4h12M2 12h8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
         </div>
-        <div className="relative flex-1 overflow-hidden rounded-md border border-black/[0.08] bg-white">
-          <svg
-            viewBox="0 0 320 200"
-            className="absolute inset-0 h-full w-full"
-            role="img"
-            aria-label="Planner node connected by a pipe to a Coder node."
-          >
-            <defs>
-              <pattern
-                id="hero-side-grid"
-                width="16"
-                height="16"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 16 0 L 0 0 0 16"
-                  fill="none"
-                  stroke="rgba(0,0,0,0.04)"
-                  strokeWidth="1"
-                />
-              </pattern>
-            </defs>
-            <rect width="320" height="200" fill="url(#hero-side-grid)" />
-            <path
-              d="M 110 100 C 150 100, 170 100, 210 100"
-              stroke="#4F46E5"
-              strokeWidth="1.5"
-              fill="none"
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 52, marginBottom: 4 }}>
+          {[28,38,32,52,44,58,50,66,74,62,80,88].map((h, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: `${h}%`,
+                background: i > 8 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.22)",
+                borderRadius: "3px 3px 0 0",
+              }}
             />
-            <g>
-              <rect
-                x="40"
-                y="82"
-                width="70"
-                height="36"
-                rx="6"
-                fill="white"
-                stroke="#4F46E5"
-                strokeWidth="1.25"
-              />
-              <text
-                x="75"
-                y="98"
-                fontSize="9"
-                fontWeight="600"
-                fill="#111"
-                textAnchor="middle"
-              >
-                Planner
-              </text>
-              <text
-                x="75"
-                y="110"
-                fontSize="7.5"
-                fill="#8E8E93"
-                textAnchor="middle"
-              >
-                agent
-              </text>
-            </g>
-            <g>
-              <rect
-                x="210"
-                y="82"
-                width="70"
-                height="36"
-                rx="6"
-                fill="white"
-                stroke="#4F46E5"
-                strokeWidth="1.25"
-              />
-              <text
-                x="245"
-                y="98"
-                fontSize="9"
-                fontWeight="600"
-                fill="#111"
-                textAnchor="middle"
-              >
-                Coder
-              </text>
-              <text
-                x="245"
-                y="110"
-                fontSize="7.5"
-                fill="#8E8E93"
-                textAnchor="middle"
-              >
-                agent
-              </text>
-            </g>
-          </svg>
+          ))}
         </div>
+        <div
+          style={{ position: "absolute", width: 130, height: 130, right: -24, bottom: -24, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }}
+        />
+        <div
+          style={{ position: "absolute", width: 72, height: 72, right: 20, bottom: 20, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }}
+        />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+        {([
+          { label: "Node types", value: "27", sub: "+3 this month" },
+          { label: "MCP tools", value: "11", sub: "Fully scoped" },
+        ] as const).map((s) => (
+          <div
+            key={s.label}
+            style={{
+              background: "white",
+              borderRadius: 14,
+              padding: "16px",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(124,58,237,0.05)",
+            }}
+          >
+            <p style={{ fontSize: 10, fontWeight: 600, color: "#8E8E93", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{s.label}</p>
+            <p style={{ fontSize: 28, fontWeight: 700, color: "#111", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{s.value}</p>
+            <p style={{ fontSize: 10, color: "#8E8E93", marginTop: 3 }}>{s.sub}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
