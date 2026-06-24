@@ -139,7 +139,7 @@ export function CompareStrip() {
                   height="32"
                   rx="6"
                   fill="white"
-                  stroke="#4F46E5"
+                  stroke="#7C3AED"
                   strokeWidth="1.25"
                 />
                 <text
@@ -155,7 +155,7 @@ export function CompareStrip() {
                 {i < 2 ? (
                   <path
                     d={`M ${n.x + 88} 32 C ${n.x + 100} 32, ${n.x + 104} 32, ${n.x + 116} 32`}
-                    stroke="#4F46E5"
+                    stroke="#7C3AED"
                     strokeWidth="1.25"
                     fill="none"
                   />

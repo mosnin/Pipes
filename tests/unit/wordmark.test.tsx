@@ -21,16 +21,16 @@ describe("Wordmark", () => {
     }
   });
 
-  it("paints an indigo accent dot", () => {
+  it("paints a violet accent dot", () => {
     render(<Wordmark />);
     const dot = screen.getByTestId("wordmark-dot");
     expect(dot.getAttribute("aria-hidden")).toBe("true");
-    // The indigo accent token is hard-coded as #4F46E5 (indigo-600).
+    // The violet accent token is hard-coded as #7C3AED (violet-600).
     // JSDOM normalizes hex to rgb(), so accept either form.
     const style = (dot.getAttribute("style") ?? "").toLowerCase();
-    const isIndigo =
-      style.includes("#4f46e5") || style.includes("rgb(79, 70, 229)");
-    expect(isIndigo).toBe(true);
+    const isViolet =
+      style.includes("#7c3aed") || style.includes("rgb(124, 58, 237)");
+    expect(isViolet).toBe(true);
   });
 
   it("renders a cover sliver that hides the native i-dot", () => {
