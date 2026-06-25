@@ -9,15 +9,15 @@ import type { z } from "zod";
 
 type AiDraft = z.infer<typeof AiSystemDraftSchema>;
 
-function nanoid(): string {
-  return Math.random().toString(36).slice(2, 12);
+function uid(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 }
 
 export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> {
   const id = toast.loading("Importing as new loop...");
   try {
     const now = new Date().toISOString();
-    const systemId = `sys_${nanoid()}`;
+    const systemId = `sys_${uid()}`;
     const userId = "user_import";
     const workspaceId = "ws_import";
 
@@ -37,13 +37,17 @@ export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> 
     const nodeIdMap = Object.fromEntries(draft.nodes.map((n) => [n.id, `node_${n.id}`]));
     const ports: object[] = [];
     const pipes: object[] = [];
+    const droppedPipes: string[] = [];
 
     draft.pipes.forEach((p, i) => {
       const fromNodeId = nodeIdMap[p.fromNodeId];
       const toNodeId = nodeIdMap[p.toNodeId];
-      if (!fromNodeId || !toNodeId) return;
-      const outPortId = `pout_${i}_${nanoid()}`;
-      const inPortId = `pin_${i}_${nanoid()}`;
+      if (!fromNodeId || !toNodeId) {
+        droppedPipes.push(`${p.fromNodeId} → ${p.toNodeId}`);
+        return;
+      }
+      const outPortId = `pout_${i}_${uid()}`;
+      const inPortId = `pin_${i}_${uid()}`;
       ports.push({
         id: outPortId,
         nodeId: fromNodeId,
@@ -63,7 +67,7 @@ export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> 
         required: false,
       });
       pipes.push({
-        id: `pipe_${i}_${nanoid()}`,
+        id: `pipe_${i}_${uid()}`,
         systemId,
         fromPortId: outPortId,
         toPortId: inPortId,
@@ -124,6 +128,11 @@ export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> 
     if (!json.data?.ok) throw new Error((json.data?.diagnostics ?? []).join("; ") || "Import failed");
 
     const importedSystemId: string = json.data?.systemId ?? "";
+    if (droppedPipes.length > 0) {
+      toast.warning(`${droppedPipes.length} pipe(s) skipped — referenced missing nodes`, {
+        description: droppedPipes.slice(0, 3).join(", ") + (droppedPipes.length > 3 ? "…" : ""),
+      });
+    }
     toast.success("Loop created!", { id, description: draft.systemName });
     if (importedSystemId) {
       setTimeout(() => { window.location.href = `/systems/${importedSystemId}`; }, 800);
