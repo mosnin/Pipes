@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2, Import, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -111,7 +111,9 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
   }
 
   const totalLevels = dag.executionPlan.levels.length;
-  const maxParallelism = Math.max(...dag.executionPlan.levels.map((l) => l.nodeIds.length));
+  const maxParallelism = dag.executionPlan.levels.length > 0
+    ? Math.max(...dag.executionPlan.levels.map((l) => l.nodeIds.length))
+    : 0;
 
   return (
     <motion.div
@@ -136,6 +138,7 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             onClick={onClear}
             className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
           >
@@ -143,6 +146,7 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
             New plan
           </button>
           <button
+            type="button"
             onClick={handleImport}
             disabled={importing}
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition-colors"
@@ -223,6 +227,12 @@ export function BuildClient() {
   const [result, setResult] = useState<AgentDag | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (result) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [result]);
+
   async function handleBuild() {
     if (!goal.trim()) {
       toast.error("Describe the goal first");
@@ -239,7 +249,6 @@ export function BuildClient() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error ?? "Planning failed");
       setResult(json.data);
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     } catch (err) {
       toast.error("Planning failed", { description: (err as Error).message });
     } finally {
