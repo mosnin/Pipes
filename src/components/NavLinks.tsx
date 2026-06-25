@@ -7,6 +7,8 @@ import {
   BookOpen,
   Settings,
   BarChart2,
+  Sparkles,
+  GitBranch,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Tooltip, KbdHint } from "@/components/ui";
@@ -31,6 +33,13 @@ const PRIMARY_SECTIONS: NavSection[] = [
     items: [
       { href: "/dashboard", label: "Loops", icon: <LayoutDashboard className={ic} />, shortcut: "G S" },
       { href: "/templates", label: "Loop starters", icon: <BookOpen className={ic} />, shortcut: "G T" },
+    ],
+  },
+  {
+    title: "Build",
+    items: [
+      { href: "/compile", label: "Skill Compiler", icon: <Sparkles className={ic} />, shortcut: "G C" },
+      { href: "/build", label: "Workflow Builder", icon: <GitBranch className={ic} />, shortcut: "G B" },
     ],
   },
 ];
