@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Code2, BookOpen, ScrollText, Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "sonner"; // still needed for compile errors
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
+import { importGraphAsLoop } from "@/lib/importGraph";
 import type { CompiledGraph } from "@/lib/ai/compiler";
 import type { DocType } from "@/lib/ai/compiler";
 
@@ -65,68 +66,8 @@ function GraphPreview({ graph }: { graph: CompiledGraph }) {
 
   async function handleImport() {
     setImporting(true);
-    const id = toast.loading("Importing as new loop...");
-    try {
-      // Convert AiSystemDraft to looper_schema_v1 import format
-      const now = new Date().toISOString();
-      const systemId = `sys_${Math.random().toString(36).slice(2, 10)}`;
-
-      const nodes = graph.nodes.map((n) => ({
-        id: `node_${n.id}`,
-        systemId,
-        type: n.type,
-        title: n.title,
-        description: n.description ?? "",
-        position: { x: n.x, y: n.y },
-        config: {},
-        portIds: [],
-      }));
-
-      // Build port + pipe map
-      const nodeIdMap = Object.fromEntries(graph.nodes.map((n) => [n.id, `node_${n.id}`]));
-      const ports: object[] = [];
-      const pipes: object[] = [];
-
-      graph.pipes.forEach((p, i) => {
-        const fromNodeId = nodeIdMap[p.fromNodeId];
-        const toNodeId = nodeIdMap[p.toNodeId];
-        if (!fromNodeId || !toNodeId) return;
-        const outPortId = `port_out_${i}`;
-        const inPortId = `port_in_${i}`;
-        ports.push({ id: outPortId, nodeId: fromNodeId, key: "output", label: "Output", direction: "output", dataType: "any", required: false });
-        ports.push({ id: inPortId, nodeId: toNodeId, key: "input", label: "Input", direction: "input", dataType: "any", required: false });
-        pipes.push({ id: `pipe_${i}`, systemId, fromPortId: outPortId, toPortId: inPortId });
-      });
-
-      const schema = {
-        version: 1,
-        exportedAt: now,
-        system: { id: systemId, workspaceId: "ws_import", name: graph.systemName, description: graph.description, createdAt: now, updatedAt: now, status: "active" },
-        nodes,
-        ports,
-        pipes,
-        groups: [],
-        annotations: [],
-      };
-
-      const res = await fetch("/api/import/system", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ schema, mode: "new" }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? "Import failed");
-
-      toast.success("Loop created!", { id, description: graph.systemName });
-      const importedId = json.data?.system?.id ?? json.data?.systemId;
-      if (importedId) {
-        setTimeout(() => { window.location.href = `/systems/${importedId}`; }, 800);
-      }
-    } catch (err) {
-      toast.error("Import failed", { id, description: (err as Error).message });
-    } finally {
-      setImporting(false);
-    }
+    await importGraphAsLoop(graph);
+    setImporting(false);
   }
 
   return (
@@ -245,16 +186,25 @@ export function CompilerClient() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
         {/* Left: Document textarea */}
         <div className="flex flex-col gap-3">
-          <label className="t-label font-semibold text-[#111]">Document</label>
+          <div className="flex items-center justify-between">
+            <label className="t-label font-semibold text-[#111]">Document</label>
+            <span
+              className="t-caption tabular-nums"
+              style={{ fontSize: 11, color: content.length > 18000 ? "#EF4444" : "#8E8E93" }}
+            >
+              {content.length.toLocaleString()} / 20,000
+            </span>
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={PLACEHOLDER[docType]}
+            maxLength={20000}
             className="w-full h-64 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
             spellCheck={false}
           />
           <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-            Paste text, a URL you copied from, or raw content up to 20,000 characters.
+            Paste a SOP, API spec, README, or any structured text.
           </p>
         </div>
 

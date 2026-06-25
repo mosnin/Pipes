@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2, Import } from "lucide-react";
+import { ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2, Import } from "lucide-react";
 import { toast } from "sonner";
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
+import { importGraphAsLoop } from "@/lib/importGraph";
 import type { AgentDag } from "@/lib/ai/dag_planner";
 
 // ---------------------------------------------------------------------------
@@ -102,70 +103,11 @@ function ExecutionLevel({
 
 function DagPreview({ dag }: { dag: AgentDag }) {
   const [importing, setImporting] = useState(false);
-  const [activeLevel] = useState<number | null>(null);
 
   async function handleImport() {
     setImporting(true);
-    const id = toast.loading("Importing DAG as new loop...");
-    try {
-      const now = new Date().toISOString();
-      const systemId = `sys_${Math.random().toString(36).slice(2, 10)}`;
-
-      const nodes = dag.nodes.map((n) => ({
-        id: `node_${n.id}`,
-        systemId,
-        type: n.type,
-        title: n.title,
-        description: n.description ?? "",
-        position: { x: n.x, y: n.y },
-        config: {},
-        portIds: [],
-      }));
-
-      const nodeIdMap = Object.fromEntries(dag.nodes.map((n) => [n.id, `node_${n.id}`]));
-      const ports: object[] = [];
-      const pipes: object[] = [];
-
-      dag.pipes.forEach((p, i) => {
-        const fromNodeId = nodeIdMap[p.fromNodeId];
-        const toNodeId = nodeIdMap[p.toNodeId];
-        if (!fromNodeId || !toNodeId) return;
-        const outPortId = `port_out_${i}`;
-        const inPortId = `port_in_${i}`;
-        ports.push({ id: outPortId, nodeId: fromNodeId, key: "output", label: "Output", direction: "output", dataType: "any", required: false });
-        ports.push({ id: inPortId, nodeId: toNodeId, key: "input", label: "Input", direction: "input", dataType: "any", required: false });
-        pipes.push({ id: `pipe_${i}`, systemId, fromPortId: outPortId, toPortId: inPortId });
-      });
-
-      const schema = {
-        version: 1,
-        exportedAt: now,
-        system: { id: systemId, workspaceId: "ws_import", name: dag.systemName, description: dag.description, createdAt: now, updatedAt: now, status: "active" },
-        nodes,
-        ports,
-        pipes,
-        groups: [],
-        annotations: [],
-      };
-
-      const res = await fetch("/api/import/system", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ schema, mode: "new" }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? "Import failed");
-
-      toast.success("Loop created!", { id, description: dag.systemName });
-      const importedId = json.data?.system?.id ?? json.data?.systemId;
-      if (importedId) {
-        setTimeout(() => { window.location.href = `/systems/${importedId}`; }, 800);
-      }
-    } catch (err) {
-      toast.error("Import failed", { id, description: (err as Error).message });
-    } finally {
-      setImporting(false);
-    }
+    await importGraphAsLoop(dag);
+    setImporting(false);
   }
 
   const totalLevels = dag.executionPlan.levels.length;
@@ -233,7 +175,7 @@ function DagPreview({ dag }: { dag: AgentDag }) {
               nodeIds={lvl.nodeIds}
               description={lvl.description}
               nodes={dag.nodes}
-              active={activeLevel === lvl.level}
+              active={false}
             />
           ))}
         </div>
