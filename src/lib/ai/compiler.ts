@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { env, runtimeFlags, DEFAULT_OPENROUTER_MODEL } from "@/lib/env";
 import { AiSystemDraftSchema } from "@/lib/ai";
+import { generateStructured } from "@/lib/ai/structured";
 
 export const DOC_TYPES = ["sop", "api_spec", "documentation", "book"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
@@ -211,74 +211,16 @@ const MOCK_RESULTS: Record<DocType, CompiledGraph> = {
 };
 
 // ---------------------------------------------------------------------------
-// Compiler interface
+// Compile: document → agent graph
 // ---------------------------------------------------------------------------
 
-export interface DocumentCompiler {
-  compile(req: CompileRequest): Promise<CompiledGraph>;
-}
-
-class MockCompiler implements DocumentCompiler {
-  async compile(req: CompileRequest): Promise<CompiledGraph> {
-    return MOCK_RESULTS[req.docType];
-  }
-}
-
-class OpenAiCompiler implements DocumentCompiler {
-  private model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-
-  async compile(req: CompileRequest): Promise<CompiledGraph> {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0.15,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPTS[req.docType] },
-          { role: "user", content: `DOCUMENT TO COMPILE:\n\n${req.content}` },
-        ],
-      }),
-    });
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    const raw = JSON.parse(text.replace(/```json\n?|```/g, "").trim());
-    return AiSystemDraftSchema.parse(raw);
-  }
-}
-
-class OpenRouterCompiler implements DocumentCompiler {
-  private model = env.OPENROUTER_MODEL ?? DEFAULT_OPENROUTER_MODEL;
-
-  async compile(req: CompileRequest): Promise<CompiledGraph> {
-    const res = await fetch(`${env.OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-        "content-type": "application/json",
-        "X-Title": "Looper Skill Compiler",
-        "HTTP-Referer": env.NEXT_PUBLIC_APP_URL,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0.15,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPTS[req.docType] },
-          { role: "user", content: `DOCUMENT TO COMPILE:\n\n${req.content}` },
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error(`openrouter_${res.status}`);
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    const raw = JSON.parse(text);
-    return AiSystemDraftSchema.parse(raw);
-  }
-}
-
-export function getDocumentCompiler(): DocumentCompiler {
-  if (runtimeFlags.hasOpenRouter) return new OpenRouterCompiler();
-  if (!runtimeFlags.useMocks && runtimeFlags.hasOpenAI) return new OpenAiCompiler();
-  return new MockCompiler();
+export function compileDocument(req: CompileRequest): Promise<CompiledGraph> {
+  return generateStructured({
+    system: SYSTEM_PROMPTS[req.docType],
+    user: `DOCUMENT TO COMPILE:\n\n${req.content}`,
+    schema: AiSystemDraftSchema,
+    temperature: 0.15,
+    title: "Looper Skill Compiler",
+    mock: () => MOCK_RESULTS[req.docType],
+  });
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { env, runtimeFlags, DEFAULT_OPENROUTER_MODEL } from "@/lib/env";
 import { AiSystemDraftSchema } from "@/lib/ai";
+import { generateStructured } from "@/lib/ai/structured";
 
 // ---------------------------------------------------------------------------
 // DAG Planner — agents build workflows autonomously given a goal
@@ -154,76 +154,17 @@ const MOCK_DAG: AgentDag = {
 };
 
 // ---------------------------------------------------------------------------
-// Planner implementations
+// Plan: goal → execution DAG
 // ---------------------------------------------------------------------------
 
-export interface DagPlanner {
-  plan(req: DagPlanRequest): Promise<AgentDag>;
-}
-
-class MockDagPlanner implements DagPlanner {
-  async plan(_req: DagPlanRequest): Promise<AgentDag> {
-    return MOCK_DAG;
-  }
-}
-
-class OpenAiDagPlanner implements DagPlanner {
-  private model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
-
-  async plan(req: DagPlanRequest): Promise<AgentDag> {
-    const userMsg = `GOAL: ${req.goal}${req.context ? `\n\nCONTEXT: ${req.context}` : ""}\n\nPARALLELISM PREFERENCE: ${req.parallelism}`;
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: DAG_SYSTEM_PROMPT },
-          { role: "user", content: userMsg },
-        ],
-      }),
-    });
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    const raw = JSON.parse(text.replace(/```json\n?|```/g, "").trim());
-    return AgentDagSchema.parse(raw);
-  }
-}
-
-class OpenRouterDagPlanner implements DagPlanner {
-  private model = env.OPENROUTER_MODEL ?? DEFAULT_OPENROUTER_MODEL;
-
-  async plan(req: DagPlanRequest): Promise<AgentDag> {
-    const userMsg = `GOAL: ${req.goal}${req.context ? `\n\nCONTEXT: ${req.context}` : ""}\n\nPARALLELISM PREFERENCE: ${req.parallelism}`;
-    const res = await fetch(`${env.OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-        "content-type": "application/json",
-        "X-Title": "Looper DAG Planner",
-        "HTTP-Referer": env.NEXT_PUBLIC_APP_URL,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: DAG_SYSTEM_PROMPT },
-          { role: "user", content: userMsg },
-        ],
-      }),
-    });
-    if (!res.ok) throw new Error(`openrouter_${res.status}`);
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    const raw = JSON.parse(text);
-    return AgentDagSchema.parse(raw);
-  }
-}
-
-export function getDagPlanner(): DagPlanner {
-  if (runtimeFlags.hasOpenRouter) return new OpenRouterDagPlanner();
-  if (!runtimeFlags.useMocks && runtimeFlags.hasOpenAI) return new OpenAiDagPlanner();
-  return new MockDagPlanner();
+export function planDag(req: DagPlanRequest): Promise<AgentDag> {
+  const context = req.context ? `\n\nCONTEXT: ${req.context}` : "";
+  return generateStructured({
+    system: DAG_SYSTEM_PROMPT,
+    user: `GOAL: ${req.goal}${context}\n\nPARALLELISM PREFERENCE: ${req.parallelism}`,
+    schema: AgentDagSchema,
+    temperature: 0.2,
+    title: "Looper DAG Planner",
+    mock: () => MOCK_DAG,
+  });
 }
