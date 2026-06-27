@@ -29,11 +29,17 @@ function StatusBadge({ status }: { status: TraceResult["status"] }) {
   );
 }
 
-function StepList({ steps, maxLatency }: { steps: TraceStep[]; maxLatency: number }) {
+function StepList({ steps, maxLatency, animate = false }: { steps: TraceStep[]; maxLatency: number; animate?: boolean }) {
   return (
     <ol className="flex flex-col gap-1.5 mt-2">
-      {steps.map((s) => (
-        <li key={s.step} className="flex items-start gap-1.5">
+      {steps.map((s, i) => (
+        <motion.li
+          key={s.step}
+          initial={animate ? { opacity: 0, x: -4 } : false}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.18, delay: animate ? i * 0.05 : 0, ease: "easeOut" }}
+          className="flex items-start gap-1.5"
+        >
           <span className="mt-0.5 w-3.5 h-3.5 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-violet-600" style={{ fontSize: 8, fontWeight: 700 }}>
             {s.step}
           </span>
@@ -49,7 +55,7 @@ function StepList({ steps, maxLatency }: { steps: TraceStep[]; maxLatency: numbe
               </div>
             )}
           </div>
-        </li>
+        </motion.li>
       ))}
     </ol>
   );
@@ -169,7 +175,7 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
             </div>
 
             {/* Steps */}
-            <StepList steps={result.steps} maxLatency={maxLatency} />
+            <StepList steps={result.steps} maxLatency={maxLatency} animate />
           </motion.div>
         )}
       </AnimatePresence>

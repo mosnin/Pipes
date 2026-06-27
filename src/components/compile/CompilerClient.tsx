@@ -130,8 +130,14 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
                 const maxLatency = Math.max(...trace.steps.map((s) => s.latency_ms ?? 0), 1);
                 return (
                   <ol className="flex flex-col gap-2">
-                    {trace.steps.map((s) => (
-                      <li key={s.step} className="flex items-start gap-2.5">
+                    {trace.steps.map((s, i) => (
+                      <motion.li
+                        key={s.step}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.22, delay: i * 0.06, ease: "easeOut" }}
+                        className="flex items-start gap-2.5"
+                      >
                         <span
                           className="mt-0.5 w-4 h-4 rounded-full bg-emerald-200 flex items-center justify-center shrink-0 t-overline text-emerald-700"
                           style={{ fontSize: 9, fontWeight: 700 }}
@@ -155,7 +161,7 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
                             </div>
                           )}
                         </div>
-                      </li>
+                      </motion.li>
                     ))}
                   </ol>
                 );
