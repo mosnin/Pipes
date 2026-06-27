@@ -219,7 +219,9 @@ export const ValidationReportSchema = z.object({
 export const SimulationStepSchema = z.object({
   step: z.number(),
   nodeId: id,
-  summary: z.string()
+  summary: z.string(),
+  latency_ms: z.number().optional(),
+  token_count: z.number().optional(),
 });
 
 export const SimulationRunSchema = z.object({

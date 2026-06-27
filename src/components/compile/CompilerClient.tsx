@@ -12,8 +12,14 @@ import type { CompiledGraph } from "@/lib/ai/compiler";
 // Run trace panel (shown after import)
 // ---------------------------------------------------------------------------
 
-type TraceStep = { step: number; nodeId: string; summary: string };
-type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[] };
+type TraceStep = { step: number; nodeId: string; summary: string; latency_ms?: number; token_count?: number };
+type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[]; totalLatencyMs: number; totalTokens: number };
+
+function formatMs(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
 
 function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; systemName: string; onClear: () => void }) {
   const [tracing, setTracing] = useState(false);
@@ -95,36 +101,65 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
             className="overflow-hidden"
           >
             <div className="border-t border-emerald-200 pt-4">
-              <div className="flex items-center gap-2 mb-3">
+              {/* Telemetry summary */}
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <span
                   className={[
                     "inline-flex items-center rounded-full px-2 py-0.5 t-caption font-semibold",
-                    trace.status === "success"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-amber-100 text-amber-700",
+                    trace.status === "success" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
                   ].join(" ")}
                   style={{ fontSize: 10 }}
                 >
                   {trace.status === "success" ? "Trace complete" : "Halted"}
                 </span>
-                <span className="t-caption text-emerald-600" style={{ fontSize: 11 }}>
+                <span className="t-caption text-emerald-700 font-semibold" style={{ fontSize: 11 }}>
+                  ~{formatMs(trace.totalLatencyMs)} estimated
+                </span>
+                {trace.totalTokens > 0 && (
+                  <span className="t-caption text-emerald-600" style={{ fontSize: 11 }}>
+                    ~{trace.totalTokens.toLocaleString()} tokens
+                  </span>
+                )}
+                <span className="t-caption text-emerald-500" style={{ fontSize: 11 }}>
                   {trace.steps.length} step{trace.steps.length !== 1 ? "s" : ""}
                 </span>
               </div>
-              <ol className="flex flex-col gap-1.5">
-                {trace.steps.map((s) => (
-                  <li key={s.step} className="flex items-start gap-2.5">
-                    <span
-                      className="mt-0.5 w-4 h-4 rounded-full bg-emerald-200 flex items-center justify-center shrink-0 t-overline text-emerald-700"
-                      style={{ fontSize: 9, fontWeight: 700 }}
-                    >
-                      {s.step}
-                    </span>
-                    <ChevronRight size={11} className="mt-1 shrink-0 text-emerald-400" />
-                    <p className="t-caption text-emerald-800" style={{ fontSize: 12 }}>{s.summary}</p>
-                  </li>
-                ))}
-              </ol>
+
+              {/* Max latency for proportional bars */}
+              {(() => {
+                const maxLatency = Math.max(...trace.steps.map((s) => s.latency_ms ?? 0), 1);
+                return (
+                  <ol className="flex flex-col gap-2">
+                    {trace.steps.map((s) => (
+                      <li key={s.step} className="flex items-start gap-2.5">
+                        <span
+                          className="mt-0.5 w-4 h-4 rounded-full bg-emerald-200 flex items-center justify-center shrink-0 t-overline text-emerald-700"
+                          style={{ fontSize: 9, fontWeight: 700 }}
+                        >
+                          {s.step}
+                        </span>
+                        <ChevronRight size={11} className="mt-1 shrink-0 text-emerald-400" />
+                        <div className="flex-1 min-w-0">
+                          <p className="t-caption text-emerald-800" style={{ fontSize: 12 }}>{s.summary}</p>
+                          {s.latency_ms !== undefined && s.latency_ms > 0 && (
+                            <div className="mt-1 flex items-center gap-2">
+                              <div className="flex-1 h-1 rounded-full bg-emerald-100 overflow-hidden">
+                                <div
+                                  className="h-1 rounded-full bg-emerald-400"
+                                  style={{ width: `${Math.round((s.latency_ms / maxLatency) * 100)}%` }}
+                                />
+                              </div>
+                              <span className="shrink-0 t-overline text-emerald-500" style={{ fontSize: 9 }}>
+                                {formatMs(s.latency_ms)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                );
+              })()}
             </div>
           </motion.div>
         )}
