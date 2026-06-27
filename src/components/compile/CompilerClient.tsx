@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw, Play, ExternalLink, ChevronRight } from "lucide-react";
+import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw, Play, ExternalLink, ChevronRight, ClipboardCopy, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { importGraphAsLoop } from "@/lib/importGraph";
 import { FlowGraph } from "@/components/shared/FlowGraph";
@@ -181,6 +181,14 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
 function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () => void }) {
   const [importing, setImporting] = useState(false);
   const [importedId, setImportedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(JSON.stringify(graph, null, 2)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   async function handleImport() {
     setImporting(true);
@@ -211,6 +219,14 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+          >
+            {copied ? <ClipboardCheck size={13} className="text-emerald-500" /> : <ClipboardCopy size={13} />}
+            {copied ? "Copied!" : "Copy JSON"}
+          </button>
           <button
             type="button"
             onClick={onClear}
