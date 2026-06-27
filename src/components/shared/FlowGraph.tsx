@@ -99,13 +99,30 @@ export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe
       </svg>
       </div>
       {seenTypes.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-1.5 px-3 py-2.5 border-t border-black/[0.05]">
-          {seenTypes.map(([type, cfg]) => (
-            <span key={type} className="inline-flex items-center gap-1.5" style={{ fontSize: 10 }}>
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
-              <span className="text-[#8E8E93] font-medium">{type}</span>
-            </span>
-          ))}
+        <div className="px-3 py-2.5 border-t border-black/[0.05]">
+          {/* Category summary */}
+          {(() => {
+            const catCounts = new Map<string, number>();
+            for (const node of nodes) {
+              const cat = getNodeTypeConfig(node.type).category;
+              catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1);
+            }
+            const CAT_LABEL: Record<string, string> = { ai: "AI", flow: "Flow", control: "Control", data: "Data", human: "Human", infra: "Infra" };
+            const parts = Array.from(catCounts.entries()).map(([cat, n]) => `${n} ${CAT_LABEL[cat] ?? cat}`);
+            return (
+              <p className="text-[#8E8E93] font-medium mb-1.5" style={{ fontSize: 10 }}>
+                {parts.join(" · ")}
+              </p>
+            );
+          })()}
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {seenTypes.map(([type, cfg]) => (
+              <span key={type} className="inline-flex items-center gap-1.5" style={{ fontSize: 10 }}>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
+                <span className="text-[#8E8E93] font-medium">{type}</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
