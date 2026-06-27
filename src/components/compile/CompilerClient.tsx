@@ -2,11 +2,136 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw } from "lucide-react";
+import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw, Play, ExternalLink, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { importGraphAsLoop } from "@/lib/importGraph";
 import { FlowGraph } from "@/components/shared/FlowGraph";
 import type { CompiledGraph } from "@/lib/ai/compiler";
+
+// ---------------------------------------------------------------------------
+// Run trace panel (shown after import)
+// ---------------------------------------------------------------------------
+
+type TraceStep = { step: number; nodeId: string; summary: string };
+type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[] };
+
+function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; systemName: string; onClear: () => void }) {
+  const [tracing, setTracing] = useState(false);
+  const [trace, setTrace] = useState<TraceResult | null>(null);
+
+  async function runTrace() {
+    setTracing(true);
+    setTrace(null);
+    try {
+      const res = await fetch(`/api/systems/${systemId}/simulate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error ?? "Trace failed");
+      setTrace(json.data);
+    } catch (err) {
+      toast.error("Trace failed", { description: (err as Error).message });
+    } finally {
+      setTracing(false);
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
+      className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6"
+    >
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <CheckCircle2 size={16} className="text-emerald-600" />
+            <span className="t-label font-semibold text-emerald-800">Loop created</span>
+          </div>
+          <p className="t-caption text-emerald-700" style={{ fontSize: 12 }}>
+            <span className="font-semibold">{systemName}</span> is ready in your workspace.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          className="t-caption text-emerald-600 hover:text-emerald-800 transition-colors"
+          style={{ fontSize: 11 }}
+        >
+          Dismiss
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3 mb-5">
+        <button
+          type="button"
+          onClick={runTrace}
+          disabled={tracing}
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+        >
+          {tracing ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          Run dry-run trace
+        </button>
+        <a
+          href={`/systems/${systemId}`}
+          className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-5 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 hover:text-emerald-800 transition-colors"
+        >
+          <ExternalLink size={13} />
+          Open in editor
+        </a>
+      </div>
+
+      {/* Trace results */}
+      <AnimatePresence>
+        {trace && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-emerald-200 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span
+                  className={[
+                    "inline-flex items-center rounded-full px-2 py-0.5 t-caption font-semibold",
+                    trace.status === "success"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700",
+                  ].join(" ")}
+                  style={{ fontSize: 10 }}
+                >
+                  {trace.status === "success" ? "Trace complete" : "Halted"}
+                </span>
+                <span className="t-caption text-emerald-600" style={{ fontSize: 11 }}>
+                  {trace.steps.length} step{trace.steps.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <ol className="flex flex-col gap-1.5">
+                {trace.steps.map((s) => (
+                  <li key={s.step} className="flex items-start gap-2.5">
+                    <span
+                      className="mt-0.5 w-4 h-4 rounded-full bg-emerald-200 flex items-center justify-center shrink-0 t-overline text-emerald-700"
+                      style={{ fontSize: 9, fontWeight: 700 }}
+                    >
+                      {s.step}
+                    </span>
+                    <ChevronRight size={11} className="mt-1 shrink-0 text-emerald-400" />
+                    <p className="t-caption text-emerald-800" style={{ fontSize: 12 }}>{s.summary}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Result panel
@@ -14,11 +139,13 @@ import type { CompiledGraph } from "@/lib/ai/compiler";
 
 function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () => void }) {
   const [importing, setImporting] = useState(false);
+  const [importedId, setImportedId] = useState<string | null>(null);
 
   async function handleImport() {
     setImporting(true);
-    await importGraphAsLoop(graph);
+    const id = await importGraphAsLoop(graph);
     setImporting(false);
+    if (id) setImportedId(id);
   }
 
   return (
@@ -51,15 +178,17 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
             <RotateCcw size={13} />
             Clear
           </button>
-          <button
-            type="button"
-            onClick={handleImport}
-            disabled={importing}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition-colors"
-          >
-            {importing ? <Loader2 size={14} className="animate-spin" /> : <Import size={14} />}
-            Import as Loop
-          </button>
+          {!importedId && (
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition-colors"
+            >
+              {importing ? <Loader2 size={14} className="animate-spin" /> : <Import size={14} />}
+              Import as Loop
+            </button>
+          )}
         </div>
       </div>
 
@@ -100,6 +229,15 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Loop ready / run trace */}
+      {importedId && (
+        <LoopReadyPanel
+          systemId={importedId}
+          systemName={graph.systemName}
+          onClear={onClear}
+        />
       )}
     </motion.div>
   );

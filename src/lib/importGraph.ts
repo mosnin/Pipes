@@ -134,9 +134,6 @@ export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> 
       });
     }
     toast.success("Loop created!", { id, description: draft.systemName });
-    if (importedSystemId) {
-      setTimeout(() => { window.location.href = `/systems/${importedSystemId}`; }, 800);
-    }
     return importedSystemId || null;
   } catch (err) {
     toast.error("Import failed", { id, description: (err as Error).message });
