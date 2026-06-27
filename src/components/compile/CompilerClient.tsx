@@ -657,6 +657,25 @@ export function CompilerClient() {
       {/* Result */}
       <div ref={resultRef}>
         <AnimatePresence>
+          {loading && !result && (
+            <motion.div
+              key="compile-skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="mt-8"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-4 h-4 rounded-full bg-emerald-200 animate-pulse shrink-0" />
+                <div className="w-36 h-3 rounded-full bg-[#F2F2F7] animate-pulse" />
+              </div>
+              <div className="w-56 h-6 rounded-full bg-[#F2F2F7] animate-pulse mb-6" />
+              <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB] flex items-center justify-center" style={{ minHeight: 180 }}>
+                <p className="t-caption text-[#C7C7CC]" style={{ fontSize: 12 }}>Compiling to loop graph…</p>
+              </div>
+            </motion.div>
+          )}
           {result && <GraphPreview graph={result} onClear={() => setResult(null)} />}
         </AnimatePresence>
       </div>

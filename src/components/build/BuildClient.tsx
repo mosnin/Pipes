@@ -447,6 +447,32 @@ export function BuildClient() {
       {/* Result */}
       <div ref={resultRef}>
         <AnimatePresence>
+          {loading && !result && (
+            <motion.div
+              key="planning-skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="mt-8"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-4 h-4 rounded-full bg-emerald-200 animate-pulse shrink-0" />
+                <div className="w-40 h-4 rounded-full bg-[#F2F2F7] animate-pulse" />
+              </div>
+              <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-black/[0.06] bg-[#FAFAFA]">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i}>
+                    <div className="w-14 h-2.5 rounded-full bg-[#E5E5EA] mb-2 animate-pulse" style={{ animationDelay: `${i * 0.08}s` }} />
+                    <div className="w-8 h-4 rounded-full bg-[#E5E5EA] animate-pulse" style={{ animationDelay: `${i * 0.08}s` }} />
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB] flex items-center justify-center" style={{ minHeight: 180 }}>
+                <p className="t-caption text-[#C7C7CC]" style={{ fontSize: 12 }}>Planning execution DAG…</p>
+              </div>
+            </motion.div>
+          )}
           {result && <DagPreview dag={result} onClear={() => setResult(null)} />}
         </AnimatePresence>
       </div>

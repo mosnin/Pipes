@@ -124,7 +124,7 @@ export async function importGraphAsLoop(draft: AiDraft): Promise<string | null> 
       body: JSON.stringify({ schema: JSON.stringify(schema), mode: "new" }),
     });
     const json = await res.json();
-    if (!json.success) throw new Error(json.error ?? "Import failed");
+    if (!json.ok) throw new Error(json.error ?? "Import failed");
     if (!json.data?.ok) throw new Error((json.data?.diagnostics ?? []).join("; ") || "Import failed");
 
     const importedSystemId: string = json.data?.systemId ?? "";
