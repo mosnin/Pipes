@@ -183,7 +183,7 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
                     ~{result.totalTokens.toLocaleString()} tok
                   </span>
                   <span className="t-caption text-[#8E8E93]" style={{ fontSize: 10 }}>
-                    ~${(result.totalTokens * 0.00000015).toFixed(4)}/run
+                    ~{(() => { const c = result.totalTokens * 0.00000015; return c < 0.0001 ? "< $0.0001" : `$${c.toFixed(4)}`; })()}/run
                   </span>
                 </>
               )}

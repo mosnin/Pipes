@@ -88,10 +88,11 @@ export async function POST(request: Request, { params }: Params) {
         continue;
       }
 
-      if (current.type === "Loop") {
+      if (current.type === "Loop" || current.type === "SubLoop") {
         const count = (loopGuards.get(current.id) ?? 0) + 1;
         loopGuards.set(current.id, count);
-        steps.push({ step: idx, nodeId: current.id, summary: `Loop "${current.title}" — iteration ${count}.`, latency_ms: latency, token_count: tokens || undefined });
+        const loopLabel = current.type === "SubLoop" ? "SubLoop" : "Loop";
+        steps.push({ step: idx, nodeId: current.id, summary: `${loopLabel} "${current.title}" — iteration ${count}.`, latency_ms: latency, token_count: tokens || undefined });
         if (count > MAX_LOOP_ITERS) {
           steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: "${current.title}" reached ${MAX_LOOP_ITERS} traced iterations.` });
           status = "halted";
@@ -99,7 +100,7 @@ export async function POST(request: Request, { params }: Params) {
         }
         const loopNext = nodeMap.get(nextIds[0] ?? "");
         if (!loopNext) {
-          steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: loop body node not found — check loop connections.` });
+          steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: ${loopLabel.toLowerCase()} body node not found — check loop connections.` });
           status = "halted";
           break;
         }
@@ -122,6 +123,11 @@ export async function POST(request: Request, { params }: Params) {
         break;
       }
       current = nextNode;
+    }
+
+    if (steps.length >= MAX_STEPS && status === "success") {
+      steps.push({ step: MAX_STEPS + 1, nodeId: "", summary: `Trace truncated — reached the ${MAX_STEPS}-step limit. Graph may contain a cycle.` });
+      status = "halted";
     }
 
     return NextResponse.json(success({

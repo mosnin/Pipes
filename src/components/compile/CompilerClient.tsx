@@ -173,7 +173,7 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
                       ~{trace.totalTokens.toLocaleString()} tokens
                     </span>
                     <span className="t-caption text-emerald-500" style={{ fontSize: 11 }}>
-                      ~${(trace.totalTokens * 0.00000015).toFixed(4)}/run
+                      ~{(() => { const c = trace.totalTokens * 0.00000015; return c < 0.0001 ? "< $0.0001" : `$${c.toFixed(4)}`; })()}/run
                     </span>
                   </>
                 )}
