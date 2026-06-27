@@ -12,6 +12,14 @@ const PAD = 44;
 export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe[] }) {
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
+  if (nodes.length === 0) {
+    return (
+      <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB] flex items-center justify-center" style={{ minHeight: 120 }}>
+        <p className="text-[#8E8E93]" style={{ fontSize: 12 }}>No nodes to display.</p>
+      </div>
+    );
+  }
+
   const xs = nodes.map((n) => n.x);
   const ys = nodes.map((n) => n.y);
   const svgW = Math.max(...xs) + NODE_W + PAD;

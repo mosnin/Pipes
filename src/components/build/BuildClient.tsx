@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2, Import, RotateCcw } from "lucide-react";
+import { ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2, Import, RotateCcw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
 import { importGraphAsLoop } from "@/lib/importGraph";
@@ -104,11 +104,13 @@ function ExecutionLevel({
 
 function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
   const [importing, setImporting] = useState(false);
+  const [importedId, setImportedId] = useState<string | null>(null);
 
   async function handleImport() {
     setImporting(true);
-    await importGraphAsLoop(dag);
+    const id = await importGraphAsLoop(dag);
     setImporting(false);
+    if (id) setImportedId(id);
   }
 
   const totalLevels = dag.executionPlan.levels.length;
@@ -146,37 +148,59 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
             <RotateCcw size={13} />
             New plan
           </button>
-          <button
-            type="button"
-            onClick={handleImport}
-            disabled={importing}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition-colors"
-          >
-            {importing ? <Loader2 size={14} className="animate-spin" /> : <Import size={14} />}
-            Import as Loop
-          </button>
+          {!importedId && (
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importing}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-60 transition-colors"
+            >
+              {importing ? <Loader2 size={14} className="animate-spin" /> : <Import size={14} />}
+              Import as Loop
+            </button>
+          )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6 p-4 rounded-xl border border-black/[0.06] bg-[#FAFAFA]">
-        <div>
-          <p className="t-overline text-[#8E8E93]">Nodes</p>
-          <p className="mt-0.5 t-label font-semibold text-[#111]">{dag.nodes.length}</p>
-        </div>
-        <div>
-          <p className="t-overline text-[#8E8E93]">Execution levels</p>
-          <p className="mt-0.5 t-label font-semibold text-[#111]">{totalLevels}</p>
-        </div>
-        <div>
-          <p className="t-overline text-[#8E8E93]">Max parallelism</p>
-          <p className="mt-0.5 t-label font-semibold text-[#111]">{maxParallelism}x</p>
-        </div>
-        <div>
-          <p className="t-overline text-[#8E8E93]">Parallelizable</p>
-          <p className="mt-0.5 t-label font-semibold text-[#111]">{dag.parallelizable ? "Yes" : "No"}</p>
-        </div>
-      </div>
+      {(() => {
+        const aiTypes = new Set(["Agent", "Model", "Prompt", "Evaluator", "Guardrail"]);
+        const humanTypes = new Set(["HumanApproval", "HumanReview"]);
+        const aiCount = dag.nodes.filter((nd) => aiTypes.has(nd.type)).length;
+        const humanCount = dag.nodes.filter((nd) => humanTypes.has(nd.type)).length;
+        const loops = dag.nodes.filter((nd) => nd.type === "Loop" || nd.type === "SubLoop").length;
+        const score = dag.nodes.length + aiCount * 2 + humanCount * 1.5 + loops * 3;
+        const [label, color, bg] = score >= 20 ? ["Enterprise-grade", "#7C3AED", "#F5F3FF"] :
+          score >= 12 ? ["Complex", "#D97706", "#FFFBEB"] :
+          score >= 6 ? ["Moderate", "#2563EB", "#EFF6FF"] :
+          ["Simple", "#16A34A", "#F0FDF4"];
+        return (
+          <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-black/[0.06] bg-[#FAFAFA]">
+            <div>
+              <p className="t-overline text-[#8E8E93]">Nodes</p>
+              <p className="mt-0.5 t-label font-semibold text-[#111]">{dag.nodes.length}</p>
+            </div>
+            <div>
+              <p className="t-overline text-[#8E8E93]">AI nodes</p>
+              <p className="mt-0.5 t-label font-semibold text-[#111]">{aiCount > 0 ? aiCount : "—"}{humanCount > 0 ? ` · ${humanCount} human` : ""}</p>
+            </div>
+            <div>
+              <p className="t-overline text-[#8E8E93]">Execution levels</p>
+              <p className="mt-0.5 t-label font-semibold text-[#111]">{totalLevels}</p>
+            </div>
+            <div>
+              <p className="t-overline text-[#8E8E93]">Max parallelism</p>
+              <p className="mt-0.5 t-label font-semibold text-[#111]">{maxParallelism}x</p>
+            </div>
+            <div>
+              <p className="t-overline text-[#8E8E93]">Complexity</p>
+              <p className="mt-1">
+                <span className="inline-block rounded-full px-2 py-0.5 t-caption font-semibold" style={{ fontSize: 10, color, background: bg }}>{label}</span>
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Flow graph */}
       <div className="mb-6">
@@ -216,6 +240,41 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Post-import confirmation */}
+      {importedId && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+          className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <CheckCircle2 size={15} className="text-emerald-600" />
+            <span className="t-label font-semibold text-emerald-800">Loop created</span>
+          </div>
+          <p className="t-caption text-emerald-700 mb-4" style={{ fontSize: 12 }}>
+            <span className="font-semibold">{dag.systemName}</span> is ready in your workspace.
+          </p>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/systems/${importedId}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-emerald-700 transition-colors"
+            >
+              <ExternalLink size={13} />
+              Open in editor
+            </a>
+            <button
+              type="button"
+              onClick={onClear}
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 transition-colors"
+            >
+              <RotateCcw size={13} />
+              Plan another
+            </button>
+          </div>
+        </motion.div>
       )}
     </motion.div>
   );
