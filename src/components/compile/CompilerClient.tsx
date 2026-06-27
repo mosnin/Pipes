@@ -250,22 +250,46 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
       </div>
 
       {/* Stats row */}
-      <div className="flex gap-6 mb-4">
-        <div>
-          <p className="t-overline text-[#8E8E93]">Nodes</p>
-          <p className="t-label font-semibold text-[#111]">{graph.nodes.length}</p>
-        </div>
-        <div>
-          <p className="t-overline text-[#8E8E93]">Connections</p>
-          <p className="t-label font-semibold text-[#111]">{graph.pipes.length}</p>
-        </div>
-        {graph.assumptions.length > 0 && (
-          <div>
-            <p className="t-overline text-[#8E8E93]">Assumptions</p>
-            <p className="t-label font-semibold text-[#111]">{graph.assumptions.length}</p>
+      {(() => {
+        const n = graph.nodes.length;
+        const aiTypes = new Set(["Agent", "Model", "Prompt", "Evaluator", "Guardrail"]);
+        const humanTypes = new Set(["HumanApproval", "HumanReview"]);
+        const aiCount = graph.nodes.filter((nd) => aiTypes.has(nd.type)).length;
+        const humanCount = graph.nodes.filter((nd) => humanTypes.has(nd.type)).length;
+        const loops = graph.nodes.filter((nd) => nd.type === "Loop" || nd.type === "SubLoop").length;
+        const score = n + aiCount * 2 + humanCount * 1.5 + loops * 3;
+        const [label, color, bg] =
+          score >= 20 ? ["Enterprise-grade", "#7C3AED", "#F5F3FF"] :
+          score >= 12 ? ["Complex", "#D97706", "#FFFBEB"] :
+          score >= 6  ? ["Moderate", "#2563EB", "#EFF6FF"] :
+                        ["Simple", "#16A34A", "#F0FDF4"];
+        return (
+          <div className="flex items-center gap-5 mb-4 flex-wrap">
+            <div>
+              <p className="t-overline text-[#8E8E93]">Nodes</p>
+              <p className="t-label font-semibold text-[#111]">{n}</p>
+            </div>
+            <div>
+              <p className="t-overline text-[#8E8E93]">Connections</p>
+              <p className="t-label font-semibold text-[#111]">{graph.pipes.length}</p>
+            </div>
+            {graph.assumptions.length > 0 && (
+              <div>
+                <p className="t-overline text-[#8E8E93]">Assumptions</p>
+                <p className="t-label font-semibold text-[#111]">{graph.assumptions.length}</p>
+              </div>
+            )}
+            <div className="ml-auto">
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-1 t-caption font-semibold"
+                style={{ fontSize: 11, color, background: bg }}
+              >
+                {label}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* The actual graph */}
       <FlowGraph nodes={graph.nodes} pipes={graph.pipes} />
