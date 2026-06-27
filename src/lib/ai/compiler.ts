@@ -7,7 +7,7 @@ export type DocType = (typeof DOC_TYPES)[number];
 
 export const CompileRequestSchema = z.object({
   content: z.string().min(10).max(20000),
-  docType: z.enum(DOC_TYPES).default("documentation"),
+  docType: z.enum(DOC_TYPES).optional(),
 });
 
 export type CompileRequest = z.infer<typeof CompileRequestSchema>;
@@ -23,6 +23,21 @@ const BASE_SCHEMA_INSTRUCTION = `Return ONLY strict JSON with this shape (no mar
 Valid node types (use ONLY these): Node, Agent, Tool, Model, Prompt, Memory, Input, Output, Action, Decision, Condition, Router, Loop, Queue, Datastore, ExternalApi, HumanApproval, Guardrail, Monitor, Trigger, Schedule, Environment, Subsystem, SubLoop, Reference, LoopControl, Checkpoint, Evaluator, HumanReview.
 
 Layout: x starts at 80, increments by 200 per step. y=160 for main flow, y=60 for success branch, y=280 for failure/alternate branch. Minimum 5 nodes.`;
+
+const AUTO_DETECT_PROMPT = `You are a Looper skill compiler. First, identify what kind of document this is (SOP, API spec, technical documentation, or book/framework), then apply the appropriate compilation rules.
+
+Auto-detection rules:
+- SOPs: numbered steps, procedures, roles, escalation paths, "if X then Y" flows
+- API specs: endpoints, HTTP verbs, request/response shapes, authentication sections
+- Documentation: READMEs, system descriptions, architecture docs, capability descriptions
+- Books/frameworks: named frameworks, stage/phase models, decision models, long-form concepts
+
+SOP compilation rules: sequential steps → Action nodes; decisions → Decision nodes; "must approve" → HumanApproval; "retry/loop" → Loop + LoopControl; "log/store" → Datastore; always start Input, end Output.
+API compilation rules: auth endpoints → Environment; operations → Tool or ExternalApi; validation → Guardrail; pagination → Loop; webhooks → Trigger; always Input → Agent → [Tools] → Output.
+Documentation compilation rules: capabilities → node clusters; "user provides" → Input; "AI analyzes" → Agent; "integrates with" → ExternalApi; "stores" → Datastore; "monitors" → Monitor; functional subsystems → Subsystem nodes.
+Book/framework compilation rules: stages/phases → Action nodes; cyclical models → Loop; decision points → Decision; "measure/evaluate" → Evaluator; feedback → LoopControl back-edge; aim for 8-15 nodes.
+
+${BASE_SCHEMA_INSTRUCTION}`;
 
 const SYSTEM_PROMPTS: Record<DocType, string> = {
   sop: `You are a Looper skill compiler specializing in Standard Operating Procedures.
@@ -215,12 +230,14 @@ const MOCK_RESULTS: Record<DocType, CompiledGraph> = {
 // ---------------------------------------------------------------------------
 
 export function compileDocument(req: CompileRequest): Promise<CompiledGraph> {
+  const systemPrompt = req.docType ? SYSTEM_PROMPTS[req.docType] : AUTO_DETECT_PROMPT;
+  const mockResult = req.docType ? MOCK_RESULTS[req.docType] : MOCK_RESULTS.documentation;
   return generateStructured({
-    system: SYSTEM_PROMPTS[req.docType],
+    system: systemPrompt,
     user: `DOCUMENT TO COMPILE:\n\n${req.content}`,
     schema: AiSystemDraftSchema,
     temperature: 0.15,
     title: "Looper Skill Compiler",
-    mock: () => MOCK_RESULTS[req.docType],
+    mock: () => mockResult,
   });
 }

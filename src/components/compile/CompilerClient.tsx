@@ -2,30 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Code2, BookOpen, ScrollText, Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw } from "lucide-react";
-import { toast } from "sonner"; // still needed for compile errors
+import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
 import { importGraphAsLoop } from "@/lib/importGraph";
 import type { CompiledGraph } from "@/lib/ai/compiler";
-import type { DocType } from "@/lib/ai/compiler";
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const DOC_TYPE_OPTIONS: { value: DocType; label: string; icon: React.ReactNode; description: string }[] = [
-  { value: "sop", label: "SOP", icon: <ScrollText size={15} />, description: "Standard operating procedure" },
-  { value: "api_spec", label: "API Spec", icon: <Code2 size={15} />, description: "OpenAPI, Swagger, or API docs" },
-  { value: "documentation", label: "Docs", icon: <FileText size={15} />, description: "Technical or product docs" },
-  { value: "book", label: "Book / Article", icon: <BookOpen size={15} />, description: "Frameworks, books, long-form" },
-];
-
-const PLACEHOLDER: Record<DocType, string> = {
-  sop: `Example:\n1. Receive customer support ticket\n2. Classify severity (P1-P4)\n3. If P1: immediately escalate to on-call engineer\n4. If P2-P3: assign to queue within 4 hours\n5. Agent drafts resolution\n6. Human reviews response before sending\n7. Close ticket and log resolution in CRM`,
-  api_spec: `Paste your OpenAPI spec, Swagger YAML, or describe your API:\n\nPOST /v1/payments\n  - Creates a payment intent\n  - Required: amount, currency, customer_id\n  - Returns: payment_intent_id, status\n\nGET /v1/payments/{id}\n  - Retrieves payment status\n  - Returns: status, amount, metadata`,
-  documentation: `Paste any technical documentation, README, or system description. Looper will extract the key processes and build an executable agent graph from it.`,
-  book: `Paste a chapter, section, or key excerpt from a book, article, or framework description. Looper will map the concepts and decision flows to a graph.`,
-};
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -163,7 +144,6 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
 // ---------------------------------------------------------------------------
 
 export function CompilerClient() {
-  const [docType, setDocType] = useState<DocType>("sop");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CompiledGraph | null>(null);
@@ -186,10 +166,10 @@ export function CompilerClient() {
       const res = await fetch("/api/compile", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content, docType }),
+        body: JSON.stringify({ content }),
       });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? "Compilation failed");
+      if (!json.ok) throw new Error(json.error ?? "Compilation failed");
       setResult(json.data);
     } catch (err) {
       toast.error("Compilation failed", { description: (err as Error).message });
@@ -199,80 +179,46 @@ export function CompilerClient() {
   }
 
   return (
-    <div>
-      {/* Input panel */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-        {/* Left: Document textarea */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <label className="t-label font-semibold text-[#111]">Document</label>
-            <span
-              className="t-caption tabular-nums"
-              style={{ fontSize: 11, color: content.length > 18000 ? "#EF4444" : "#8E8E93" }}
-            >
-              {content.length.toLocaleString()} / 20,000
-            </span>
-          </div>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={PLACEHOLDER[docType]}
-            maxLength={20000}
-            className="w-full h-64 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
-            spellCheck={false}
-          />
-          <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-            Paste a SOP, API spec, README, or any structured text.
-          </p>
-        </div>
-
-        {/* Right: Options */}
-        <div className="flex flex-col gap-5">
-          <div>
-            <p className="t-label font-semibold text-[#111] mb-2.5">Document type</p>
-            <div className="flex flex-col gap-2">
-              {DOC_TYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setDocType(opt.value)}
-                  className={[
-                    "flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors",
-                    docType === opt.value
-                      ? "border-violet-300 bg-violet-50 text-violet-700"
-                      : "border-black/[0.08] bg-white text-[#3C3C43] hover:border-black/[0.15] hover:text-[#111]",
-                  ].join(" ")}
-                >
-                  <span className={docType === opt.value ? "text-violet-600" : "text-[#8E8E93]"}>
-                    {opt.icon}
-                  </span>
-                  <div>
-                    <p className="t-label font-semibold" style={{ fontSize: 13 }}>{opt.label}</p>
-                    <p className="t-caption" style={{ fontSize: 11, opacity: 0.7 }}>{opt.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={handleCompile}
-            disabled={loading || !content.trim()}
-            className="mt-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? (
-              <>
-                <Loader2 size={15} className="animate-spin" />
-                Compiling...
-              </>
-            ) : (
-              <>
-                <Sparkles size={15} />
-                Compile to Loop
-                <ArrowRight size={14} />
-              </>
-            )}
-          </button>
-        </div>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <label className="t-label font-semibold text-[#111]">Paste your document</label>
+        <span
+          className="t-caption tabular-nums"
+          style={{ fontSize: 11, color: content.length > 18000 ? "#EF4444" : "#8E8E93" }}
+        >
+          {content.length.toLocaleString()} / 20,000
+        </span>
+      </div>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder={`Paste a SOP, API spec, README, book excerpt, or any structured process.\n\nLooper auto-detects the document type and compiles it into an executable agent loop.`}
+        maxLength={20000}
+        className="w-full h-72 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
+        spellCheck={false}
+      />
+      <div className="flex items-center justify-between">
+        <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
+          SOP, API spec, docs, or book — Looper figures out the rest.
+        </p>
+        <button
+          onClick={handleCompile}
+          disabled={loading || !content.trim()}
+          className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Compiling...
+            </>
+          ) : (
+            <>
+              <Sparkles size={15} />
+              Compile to Loop
+              <ArrowRight size={14} />
+            </>
+          )}
+        </button>
       </div>
 
       {/* Result */}
