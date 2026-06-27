@@ -6,6 +6,7 @@ import { ArrowRight, Loader2, GitBranch, Play, AlertTriangle, Info, CheckCircle2
 import { toast } from "sonner";
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
 import { importGraphAsLoop } from "@/lib/importGraph";
+import { FlowGraph } from "@/components/shared/FlowGraph";
 import type { AgentDag } from "@/lib/ai/dag_planner";
 
 // ---------------------------------------------------------------------------
@@ -177,6 +178,11 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
         </div>
       </div>
 
+      {/* Flow graph */}
+      <div className="mb-6">
+        <FlowGraph nodes={dag.nodes} pipes={dag.pipes} />
+      </div>
+
       {/* Execution plan */}
       <div className="mb-6">
         <p className="t-label font-semibold text-[#111] mb-4">Execution plan</p>
@@ -247,7 +253,7 @@ export function BuildClient() {
         body: JSON.stringify({ goal, context: context || undefined, parallelism }),
       });
       const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? "Planning failed");
+      if (!json.ok) throw new Error(json.error ?? "Planning failed");
       setResult(json.data);
     } catch (err) {
       toast.error("Planning failed", { description: (err as Error).message });

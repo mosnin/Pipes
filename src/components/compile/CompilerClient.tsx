@@ -4,43 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
 import { importGraphAsLoop } from "@/lib/importGraph";
+import { FlowGraph } from "@/components/shared/FlowGraph";
 import type { CompiledGraph } from "@/lib/ai/compiler";
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Result panel
 // ---------------------------------------------------------------------------
-
-function NodeCard({ node, index }: { node: CompiledGraph["nodes"][0]; index: number }) {
-  const cfg = getNodeTypeConfig(node.type);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.04, ease: [0.2, 0.8, 0.2, 1] }}
-      className="relative rounded-xl border border-black/[0.07] bg-white p-3.5 flex flex-col gap-1.5 shadow-sm"
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block w-2 h-2 rounded-full shrink-0"
-          style={{ background: cfg.color }}
-        />
-        <span className="t-overline text-[#8E8E93]" style={{ fontSize: 10 }}>
-          {node.type}
-        </span>
-      </div>
-      <p className="t-label font-semibold text-[#111]" style={{ fontSize: 13 }}>
-        {node.title}
-      </p>
-      {node.description && (
-        <p className="t-caption text-[#3C3C43]" style={{ fontSize: 11, lineHeight: 1.5 }}>
-          {node.description}
-        </p>
-      )}
-    </motion.div>
-  );
-}
 
 function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () => void }) {
   const [importing, setImporting] = useState(false);
@@ -59,7 +29,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
       className="mt-8"
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-5">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 size={15} className="text-emerald-500" />
@@ -67,7 +37,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           </div>
           <h2 className="t-h3 text-[#111]">{graph.systemName}</h2>
           {graph.description && (
-            <p className="mt-1 t-caption text-[#3C3C43]" style={{ fontSize: 12, maxWidth: "60ch" }}>
+            <p className="mt-1 t-caption text-[#3C3C43]" style={{ fontSize: 12, maxWidth: "64ch" }}>
               {graph.description}
             </p>
           )}
@@ -94,7 +64,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
       </div>
 
       {/* Stats row */}
-      <div className="flex gap-6 mb-6">
+      <div className="flex gap-6 mb-4">
         <div>
           <p className="t-overline text-[#8E8E93]">Nodes</p>
           <p className="t-label font-semibold text-[#111]">{graph.nodes.length}</p>
@@ -111,16 +81,12 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
         )}
       </div>
 
-      {/* Node grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {graph.nodes.map((node, i) => (
-          <NodeCard key={node.id} node={node} index={i} />
-        ))}
-      </div>
+      {/* The actual graph */}
+      <FlowGraph nodes={graph.nodes} pipes={graph.pipes} />
 
       {/* Assumptions + Warnings */}
       {(graph.assumptions.length > 0 || graph.warnings.length > 0) && (
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-2">
           {graph.assumptions.map((a, i) => (
             <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
               <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
