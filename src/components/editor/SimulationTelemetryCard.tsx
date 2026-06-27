@@ -97,7 +97,13 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden px-2.5 pb-2"
           >
-            <StepList steps={entry.steps} maxLatency={maxLatency} />
+            {entry.steps.length === 0 ? (
+              <p className="t-caption text-amber-600 mt-1" style={{ fontSize: 11 }}>
+                {entry.message ?? "No nodes traced."}
+              </p>
+            ) : (
+              <StepList steps={entry.steps} maxLatency={maxLatency} />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

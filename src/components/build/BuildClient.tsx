@@ -217,7 +217,11 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
       <div className="mb-6">
         <p className="t-label font-semibold text-[#111] mb-4">Execution plan</p>
         <div className="rounded-xl border border-black/[0.06] bg-white p-4">
-          {dag.executionPlan.levels.map((lvl) => (
+          {dag.executionPlan.levels.length === 0 ? (
+            <p className="t-caption text-[#8E8E93] text-center py-4" style={{ fontSize: 12 }}>
+              No execution levels — the graph may be incomplete or not yet connected.
+            </p>
+          ) : dag.executionPlan.levels.map((lvl) => (
             <ExecutionLevel
               key={lvl.level}
               level={lvl.level}

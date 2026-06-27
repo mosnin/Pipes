@@ -103,7 +103,13 @@ export async function POST(request: Request, { params }: Params) {
       }
 
       if (current.type === "Output" || nextIds.length === 0) break;
-      current = nodeMap.get(nextIds[0] ?? "") as typeof current;
+      const nextNode = nodeMap.get(nextIds[0] ?? "");
+      if (!nextNode) {
+        steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: next node not found — graph may have a broken pipe.` });
+        status = "halted";
+        break;
+      }
+      current = nextNode;
     }
 
     return NextResponse.json(success({
