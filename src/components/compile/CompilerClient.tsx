@@ -24,15 +24,16 @@ function formatMs(ms: number): string {
 function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; systemName: string; onClear: () => void }) {
   const [tracing, setTracing] = useState(false);
   const [trace, setTrace] = useState<TraceResult | null>(null);
+  const [branch, setBranch] = useState<"primary" | "secondary">("primary");
 
-  async function runTrace() {
+  async function runTrace(b: "primary" | "secondary" = branch) {
     setTracing(true);
     setTrace(null);
     try {
       const res = await fetch(`/api/systems/${systemId}/simulate`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify(b === "secondary" ? { input: { decision: "secondary" } } : {}),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error ?? "Trace failed");
@@ -42,6 +43,11 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
     } finally {
       setTracing(false);
     }
+  }
+
+  function switchBranch(b: "primary" | "secondary") {
+    setBranch(b);
+    if (trace) runTrace(b);
   }
 
   return (
@@ -71,10 +77,10 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
         </button>
       </div>
 
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
         <button
           type="button"
-          onClick={runTrace}
+          onClick={() => runTrace()}
           disabled={tracing}
           className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 t-label font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
         >
@@ -89,6 +95,29 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
           Open in editor
         </a>
       </div>
+      {/* Branch toggle — only shown after first trace */}
+      {(trace || tracing) && (
+        <div className="flex items-center gap-1.5 mb-4">
+          <span className="t-caption text-emerald-700 mr-1" style={{ fontSize: 11 }}>Branch:</span>
+          {(["primary", "secondary"] as const).map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => switchBranch(b)}
+              disabled={tracing}
+              className="t-caption rounded-lg px-2.5 py-1 font-semibold transition-colors disabled:opacity-50"
+              style={{
+                fontSize: 11,
+                background: branch === b ? "#059669" : "white",
+                color: branch === b ? "white" : "#047857",
+                border: `1px solid ${branch === b ? "#059669" : "#A7F3D0"}`,
+              }}
+            >
+              {b === "primary" ? "Primary" : "Secondary"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Trace results */}
       <AnimatePresence>
