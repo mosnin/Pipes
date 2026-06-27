@@ -438,6 +438,12 @@ export function CompilerClient() {
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && content.trim() && !loading) {
+            e.preventDefault();
+            handleCompile();
+          }
+        }}
         placeholder={`Paste a SOP, API spec, README, book excerpt, or any structured process.\n\nLooper auto-detects the document type and compiles it into an executable agent loop.`}
         maxLength={20000}
         className="w-full h-72 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
@@ -465,7 +471,7 @@ export function CompilerClient() {
       )}
       <div className="flex items-center justify-between">
         <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-          SOP, API spec, docs, or book — Looper figures out the rest.
+          SOP, API spec, docs, or book — Looper figures out the rest. <kbd className="rounded border border-black/[0.12] bg-[#F5F5F7] px-1 py-0.5 font-mono text-[#3C3C43]" style={{ fontSize: 10 }}>⌘↵</kbd> to compile.
         </p>
         <button
           onClick={handleCompile}
