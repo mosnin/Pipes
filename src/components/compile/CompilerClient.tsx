@@ -24,11 +24,13 @@ function formatMs(ms: number): string {
 function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; systemName: string; onClear: () => void }) {
   const [tracing, setTracing] = useState(false);
   const [trace, setTrace] = useState<TraceResult | null>(null);
+  const [traceError, setTraceError] = useState<string | null>(null);
   const [branch, setBranch] = useState<"primary" | "secondary">("primary");
 
   async function runTrace(b: "primary" | "secondary" = branch) {
     setTracing(true);
     setTrace(null);
+    setTraceError(null);
     try {
       const res = await fetch(`/api/systems/${systemId}/simulate`, {
         method: "POST",
@@ -39,7 +41,9 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
       if (!json.ok) throw new Error(json.error ?? "Trace failed");
       setTrace(json.data);
     } catch (err) {
-      toast.error("Trace failed", { description: (err as Error).message });
+      const msg = (err as Error).message;
+      toast.error("Trace failed", { description: msg });
+      setTraceError(msg);
     } finally {
       setTracing(false);
     }
@@ -117,6 +121,25 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
             </button>
           ))}
         </div>
+      )}
+
+      {/* Trace loading skeleton */}
+      {tracing && !trace && (
+        <div className="border-t border-emerald-200 pt-4 flex flex-col gap-2">
+          {[0.85, 0.6, 0.72].map((w, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-emerald-200 animate-pulse shrink-0" />
+              <div className="h-2.5 rounded-full bg-emerald-100 animate-pulse" style={{ width: `${w * 100}%`, animationDelay: `${i * 0.1}s` }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Inline trace error */}
+      {!tracing && traceError && (
+        <p className="mt-3 t-caption text-red-600 border-t border-emerald-200 pt-3" style={{ fontSize: 11 }}>
+          Trace failed: {traceError}
+        </p>
       )}
 
       {/* Trace results */}

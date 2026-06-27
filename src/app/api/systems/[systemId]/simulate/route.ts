@@ -78,7 +78,13 @@ export async function POST(request: Request, { params }: Params) {
         const branch = input.decision === "secondary" ? "secondary" : "primary";
         const chosen = branch === "secondary" ? nextIds[1] : nextIds[0];
         steps.push({ step: idx, nodeId: current.id, summary: `Branched at "${current.title}" — took ${branch} path.`, latency_ms: latency, token_count: tokens || undefined });
-        current = nodeMap.get(chosen ?? "") as typeof current;
+        const branchNode = nodeMap.get(chosen ?? "");
+        if (!branchNode) {
+          steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: ${branch} branch target not found — graph may be incomplete.` });
+          status = "halted";
+          break;
+        }
+        current = branchNode;
         continue;
       }
 
@@ -91,7 +97,13 @@ export async function POST(request: Request, { params }: Params) {
           status = "halted";
           break;
         }
-        current = nodeMap.get(nextIds[0] ?? "") as typeof current;
+        const loopNext = nodeMap.get(nextIds[0] ?? "");
+        if (!loopNext) {
+          steps.push({ step: idx + 1, nodeId: current.id, summary: `Stopped: loop body node not found — check loop connections.` });
+          status = "halted";
+          break;
+        }
+        current = loopNext;
         continue;
       }
 
