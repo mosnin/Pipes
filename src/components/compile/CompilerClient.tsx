@@ -279,6 +279,113 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
 }
 
 // ---------------------------------------------------------------------------
+// Example snippets
+// ---------------------------------------------------------------------------
+
+const EXAMPLES: { label: string; tag: string; content: string }[] = [
+  {
+    label: "Support escalation SOP",
+    tag: "SOP",
+    content: `Customer Support Escalation SOP
+
+Purpose: Handle inbound support tickets from receipt to resolution.
+
+Steps:
+1. Receive ticket via email or chat widget. Auto-tag with category (billing, technical, general).
+2. Classify severity:
+   - P1 (Critical): service down, data loss → skip queue, page on-call engineer immediately
+   - P2 (High): major feature broken → assign to senior agent, SLA 4 hours
+   - P3 (Medium): degraded performance → standard queue, SLA 24 hours
+   - P4 (Low): general question → self-serve or 48-hour queue
+3. Agent drafts initial response using knowledge base lookup.
+4. If response requires account changes: human review required before sending.
+5. Send response. If no reply from customer in 48 hours, mark resolved.
+6. Log resolution category and root cause in CRM.
+7. Weekly: aggregate root causes, flag patterns to engineering backlog.`,
+  },
+  {
+    label: "Payments API spec",
+    tag: "API",
+    content: `Payments Service API — v2
+
+Authentication: Bearer token, header: Authorization: Bearer <token>
+
+Endpoints:
+
+POST /v2/payments/intents
+  Creates a payment intent before charging.
+  Body: { amount: number (cents), currency: "usd"|"eur", customer_id: string, metadata?: object }
+  Returns: { intent_id, client_secret, status: "requires_payment_method" }
+
+POST /v2/payments/confirm
+  Confirms and captures a payment intent.
+  Body: { intent_id: string, payment_method_id: string }
+  Returns: { charge_id, status: "succeeded"|"failed"|"requires_action", receipt_url }
+
+GET /v2/payments/{charge_id}
+  Retrieves charge details and current status.
+  Returns: { charge_id, amount, currency, status, created_at, customer_id }
+
+POST /v2/refunds
+  Issues a full or partial refund.
+  Body: { charge_id: string, amount?: number (omit for full refund) }
+  Returns: { refund_id, amount, status: "pending"|"succeeded" }
+
+Webhooks: payment.succeeded, payment.failed, refund.processed → POST to your registered URL`,
+  },
+  {
+    label: "RAG pipeline docs",
+    tag: "Docs",
+    content: `Retrieval-Augmented Generation (RAG) Pipeline
+
+Overview: Our RAG system answers user questions by grounding LLM responses in verified internal documents. It has three stages: retrieval, augmentation, and generation.
+
+Retrieval Stage:
+- User query is embedded using text-embedding-3-small (1536 dims).
+- Approximate nearest-neighbor search runs against Pinecone index (top-k=8).
+- Results are re-ranked by cross-encoder model; bottom 3 dropped.
+- If similarity score < 0.72: classify as "out of scope" and return fallback.
+
+Augmentation Stage:
+- Top 5 chunks injected into system prompt as [CONTEXT] blocks.
+- Each chunk includes: source document title, page/section, confidence score.
+- Query + context assembled into final prompt (max 6000 tokens).
+
+Generation Stage:
+- GPT-4.1-mini called with temperature 0.2 for factual grounding.
+- Output parsed for citations; missing citations trigger a retry (max 2).
+- Response streamed to user with source links appended.
+- Full interaction logged to audit store with chunk IDs for traceability.`,
+  },
+  {
+    label: "Getting Things Done",
+    tag: "Framework",
+    content: `Getting Things Done (GTD) — David Allen
+
+Core principle: Your mind is for having ideas, not holding them. Capture everything, then process it on a schedule.
+
+The five stages:
+
+1. Capture
+   Collect every open loop — tasks, ideas, commitments — into a single trusted inbox (physical or digital). Nothing should live only in your head.
+
+2. Clarify
+   Process each item: Is it actionable? If no: trash it, incubate it (someday/maybe list), or file it as reference. If yes: what is the very next physical action?
+
+3. Organize
+   Place items in the right list: Next Actions (by context: @computer, @phone, @errands), Projects (anything requiring 2+ steps), Waiting For (delegated items), Calendar (date-specific), Someday/Maybe.
+
+4. Reflect
+   Weekly review: scan all lists, clear inbox to zero, update projects, identify next actions for the week ahead. Daily: check calendar and Next Actions list each morning.
+
+5. Engage
+   Choose your next action based on context, time available, energy level, and priority. Trust the system — act without second-guessing.
+
+Key concept: Projects need a defined outcome and at least one next action or they stall.`,
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -336,6 +443,26 @@ export function CompilerClient() {
         className="w-full h-72 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
         spellCheck={false}
       />
+      {/* Example chips — shown only when the textarea is empty */}
+      {!content && !result && (
+        <div>
+          <p className="t-overline text-[#8E8E93] mb-2" style={{ fontSize: 10 }}>Try an example</p>
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.label}
+                type="button"
+                onClick={() => setContent(ex.content)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.07] bg-white px-3 py-1.5 t-caption text-[#3C3C43] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                style={{ fontSize: 11 }}
+              >
+                <span className="rounded-full bg-violet-100 text-violet-600 px-1.5 py-0.5 font-semibold" style={{ fontSize: 9 }}>{ex.tag}</span>
+                {ex.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
           SOP, API spec, docs, or book — Looper figures out the rest.
