@@ -209,6 +209,47 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
 }
 
 // ---------------------------------------------------------------------------
+// Collapsible assumptions list
+// ---------------------------------------------------------------------------
+
+function AssumptionsList({ assumptions }: { assumptions: string[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (assumptions.length === 0) return null;
+  const visible = expanded ? assumptions : assumptions.slice(0, 2);
+  const hidden = assumptions.length - 2;
+  return (
+    <div className="mt-4 flex flex-col gap-1.5">
+      {visible.map((a, i) => (
+        <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
+          <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
+          <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
+        </div>
+      ))}
+      {hidden > 0 && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+          style={{ fontSize: 11 }}
+        >
+          + {hidden} more assumption{hidden !== 1 ? "s" : ""}
+        </button>
+      )}
+      {expanded && assumptions.length > 2 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+          style={{ fontSize: 11 }}
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Result panel
 // ---------------------------------------------------------------------------
 
@@ -334,15 +375,9 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
       {/* The actual graph */}
       <FlowGraph nodes={graph.nodes} pipes={graph.pipes} />
 
-      {/* Assumptions + Warnings */}
-      {(graph.assumptions.length > 0 || graph.warnings.length > 0) && (
+      {/* Warnings always shown */}
+      {graph.warnings.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
-          {graph.assumptions.map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
-              <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
-              <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
-            </div>
-          ))}
           {graph.warnings.map((w, i) => (
             <div key={i} className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5">
               <AlertTriangle size={13} className="text-amber-600 mt-0.5 shrink-0" />
@@ -351,6 +386,8 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           ))}
         </div>
       )}
+      {/* Assumptions — collapsed beyond 2 */}
+      <AssumptionsList assumptions={graph.assumptions} />
 
       {/* Loop ready / run trace */}
       {importedId && (
