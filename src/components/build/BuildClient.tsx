@@ -105,6 +105,7 @@ function ExecutionLevel({
 function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
   const [importing, setImporting] = useState(false);
   const [importedId, setImportedId] = useState<string | null>(null);
+  const [assumptionsExpanded, setAssumptionsExpanded] = useState(false);
 
   async function handleImport() {
     setImporting(true);
@@ -227,18 +228,46 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
       {/* Notes */}
       {(dag.assumptions.length > 0 || dag.warnings.length > 0) && (
         <div className="flex flex-col gap-3">
-          {dag.assumptions.map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
-              <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
-              <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
-            </div>
-          ))}
           {dag.warnings.map((w, i) => (
             <div key={i} className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2.5">
               <AlertTriangle size={13} className="text-amber-600 mt-0.5 shrink-0" />
               <p className="t-caption text-amber-800" style={{ fontSize: 12 }}>{w}</p>
             </div>
           ))}
+          {dag.assumptions.length > 0 && (() => {
+            const visible = assumptionsExpanded ? dag.assumptions : dag.assumptions.slice(0, 2);
+            const hidden = dag.assumptions.length - 2;
+            return (
+              <>
+                {visible.map((a, i) => (
+                  <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
+                    <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
+                    <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
+                  </div>
+                ))}
+                {hidden > 0 && !assumptionsExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setAssumptionsExpanded(true)}
+                    className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                    style={{ fontSize: 11 }}
+                  >
+                    + {hidden} more assumption{hidden !== 1 ? "s" : ""}
+                  </button>
+                )}
+                {assumptionsExpanded && dag.assumptions.length > 2 && (
+                  <button
+                    type="button"
+                    onClick={() => setAssumptionsExpanded(false)}
+                    className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                    style={{ fontSize: 11 }}
+                  >
+                    Show less
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 

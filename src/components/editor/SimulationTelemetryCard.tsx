@@ -185,6 +185,17 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
         )}
       </AnimatePresence>
 
+      {loading && (
+        <div className="flex flex-col gap-1.5 mt-1">
+          {[0.9, 0.65, 0.75].map((w, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 rounded-full bg-violet-100 animate-pulse shrink-0" />
+              <div className="h-2.5 rounded-full bg-[#F2F2F7] animate-pulse" style={{ width: `${w * 100}%`, animationDelay: `${i * 0.12}s` }} />
+            </div>
+          ))}
+        </div>
+      )}
+
       {!result && !loading && (
         <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
           Run a trace to see per-node latency and token estimates.
