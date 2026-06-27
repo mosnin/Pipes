@@ -30,6 +30,7 @@ import type { NodeType } from "@/domain/looper_schema_v1/schema";
 import { register as registerShortcut } from "@/lib/keyboard/registry";
 import { PortAffordance, type PortAffordanceData } from "@/components/editor/PortAffordance";
 import { LoopProposalBanner } from "@/components/editor/LoopProposalBanner";
+import { SimulationTelemetryCard } from "@/components/editor/SimulationTelemetryCard";
 import { publish as publishPaletteItems, clear as clearPaletteScope } from "@/lib/palette/registry";
 import type { CommandItem } from "@/components/editor/CommandPalette";
 import { LoopVisibilityToggle } from "@/components/editor/LoopVisibilityToggle";
@@ -1606,6 +1607,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   {traceSummary.blocked.length === 0 ? <p className="t-caption text-[#8E8E93]">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
                   {invalidPipeIds.length > 0 ? <p className="t-caption text-[#8E8E93] mt-1">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
                 </Card>
+                <SimulationTelemetryCard systemId={systemId} />
               </div>
             )}
             {activeSystemPanel === "comments" && (
