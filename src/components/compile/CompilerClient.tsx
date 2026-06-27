@@ -450,12 +450,31 @@ export function CompilerClient() {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <label className="t-label font-semibold text-[#111]">Paste your document</label>
-        <span
-          className="t-caption tabular-nums"
-          style={{ fontSize: 11, color: content.length > 18000 ? "#EF4444" : "#8E8E93" }}
-        >
-          {content.length.toLocaleString()} / 20,000
-        </span>
+        {(() => {
+          const MAX = 20000;
+          const pct = Math.min(content.length / MAX, 1);
+          const R = 8; const C = 2 * Math.PI * R;
+          const warn = content.length > 18000;
+          const color = warn ? "#EF4444" : content.length > 0 ? "#7C3AED" : "#C7C7CC";
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <svg width={20} height={20} viewBox="0 0 20 20">
+                <circle cx={10} cy={10} r={R} fill="none" stroke="#E5E5EA" strokeWidth={2.5} />
+                <circle
+                  cx={10} cy={10} r={R} fill="none"
+                  stroke={color} strokeWidth={2.5}
+                  strokeDasharray={`${pct * C} ${C}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 10 10)"
+                  style={{ transition: "stroke-dasharray 0.15s ease, stroke 0.2s" }}
+                />
+              </svg>
+              <span className="t-caption tabular-nums" style={{ fontSize: 11, color: warn ? "#EF4444" : "#8E8E93" }}>
+                {content.length.toLocaleString()}
+              </span>
+            </span>
+          );
+        })()}
       </div>
       <textarea
         value={content}
