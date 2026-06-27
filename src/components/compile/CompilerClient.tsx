@@ -13,7 +13,7 @@ import type { CompiledGraph } from "@/lib/ai/compiler";
 // ---------------------------------------------------------------------------
 
 type TraceStep = { step: number; nodeId: string; summary: string; latency_ms?: number; token_count?: number };
-type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[]; totalLatencyMs: number; totalTokens: number };
+type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[]; totalLatencyMs: number; totalTokens: number; message?: string };
 
 function formatMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -159,8 +159,12 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
                 </span>
               </div>
 
-              {/* Max latency for proportional bars */}
-              {(() => {
+              {/* Steps or empty-graph message */}
+              {trace.steps.length === 0 ? (
+                <p className="t-caption text-amber-700" style={{ fontSize: 11 }}>
+                  {trace.message ?? "No nodes were traced."}
+                </p>
+              ) : (() => {
                 const maxLatency = Math.max(...trace.steps.map((s) => s.latency_ms ?? 0), 1);
                 return (
                   <ol className="flex flex-col gap-2">

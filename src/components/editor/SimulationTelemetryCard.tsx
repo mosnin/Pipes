@@ -6,7 +6,7 @@ import { Play, Loader2, ChevronRight, ChevronDown, Clock, Zap, History } from "l
 import { toast } from "sonner";
 
 type TraceStep = { step: number; nodeId: string; summary: string; latency_ms?: number; token_count?: number };
-type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[]; totalLatencyMs: number; totalTokens: number };
+type TraceResult = { status: "success" | "halted" | "error"; steps: TraceStep[]; totalLatencyMs: number; totalTokens: number; message?: string };
 type HistoryEntry = TraceResult & { runId: string; ranAt: string };
 
 function formatMs(ms: number): string {
@@ -184,7 +184,13 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
             </div>
 
             {/* Steps */}
-            <StepList steps={result.steps} maxLatency={maxLatency} animate />
+            {result.steps.length === 0 ? (
+              <p className="t-caption text-amber-600 mt-1" style={{ fontSize: 11 }}>
+                {result.message ?? "No nodes traced — add an Input or Trigger node to the graph."}
+              </p>
+            ) : (
+              <StepList steps={result.steps} maxLatency={maxLatency} animate />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

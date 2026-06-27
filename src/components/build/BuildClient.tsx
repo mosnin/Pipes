@@ -92,6 +92,11 @@ function ExecutionLevel({
                 <div>
                   <p className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>{node.title}</p>
                   <p className="t-overline text-[#8E8E93]" style={{ fontSize: 10 }}>{node.type}</p>
+                  {node.description && (
+                    <p className="t-caption text-[#8E8E93] mt-0.5" style={{ fontSize: 10 }}>
+                      {node.description.length > 44 ? node.description.slice(0, 42) + "…" : node.description}
+                    </p>
+                  )}
                 </div>
               </div>
             );
