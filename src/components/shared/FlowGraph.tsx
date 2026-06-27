@@ -2,11 +2,11 @@
 
 import { getNodeTypeConfig } from "@/lib/nodeTypeConfig";
 
-export type FlowNode = { id: string; type: string; title: string; x: number; y: number };
+export type FlowNode = { id: string; type: string; title: string; description?: string; x: number; y: number };
 export type FlowPipe = { fromNodeId: string; toNodeId: string };
 
 const NODE_W = 164;
-const NODE_H = 54;
+const NODE_H = 66;
 const PAD = 44;
 
 export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe[] }) {
@@ -75,17 +75,24 @@ export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe
           const { x, y } = node;
           const title = node.title.length > 21 ? node.title.slice(0, 19) + "…" : node.title;
           const typeLabel = node.type.length > 13 ? node.type.slice(0, 13) : node.type;
+          const descLabel = node.description && node.description.length > 52 ? node.description.slice(0, 50) + "…" : (node.description ?? "");
           return (
             <g key={node.id}>
+              {node.description && <title>{node.title} ({node.type}){"\n"}{node.description}</title>}
               <rect x={x + 1} y={y - NODE_H / 2 + 2} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.04)" />
               <rect x={x} y={y - NODE_H / 2} width={NODE_W} height={NODE_H} rx={10} fill={cfg.bgLight} stroke={cfg.color} strokeWidth={1.5} />
               <circle cx={x + 14} cy={y - 9} r={3.5} fill={cfg.color} />
               <text x={x + 25} y={y - 5} fontSize={9} fill={cfg.color} fontFamily="system-ui,-apple-system,sans-serif" fontWeight={700} letterSpacing={0.6}>
                 {typeLabel.toUpperCase()}
               </text>
-              <text x={x + 14} y={y + 14} fontSize={12.5} fill="#111" fontFamily="system-ui,-apple-system,sans-serif" fontWeight={600}>
+              <text x={x + 14} y={y + 10} fontSize={12.5} fill="#111" fontFamily="system-ui,-apple-system,sans-serif" fontWeight={600}>
                 {title}
               </text>
+              {descLabel && (
+                <text x={x + 14} y={y + 24} fontSize={9} fill="#8E8E93" fontFamily="system-ui,-apple-system,sans-serif">
+                  {descLabel}
+                </text>
+              )}
             </g>
           );
         })}
