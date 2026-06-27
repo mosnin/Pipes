@@ -19,8 +19,12 @@ export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe
   const rawMaxY = Math.max(...ys) + NODE_H / 2 + PAD;
   const svgH = rawMaxY - rawMinY;
 
+  // Build legend: unique types present in this graph
+  const seenTypes = Array.from(new Map(nodes.map((n) => [n.type, getNodeTypeConfig(n.type)])).entries());
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-black/[0.07] bg-[#F9F9FB]">
+    <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB]">
+      <div className="overflow-x-auto">
       <svg
         width={svgW + PAD}
         height={svgH}
@@ -86,6 +90,17 @@ export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe
           );
         })}
       </svg>
+      </div>
+      {seenTypes.length > 0 && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 px-3 py-2.5 border-t border-black/[0.05]">
+          {seenTypes.map(([type, cfg]) => (
+            <span key={type} className="inline-flex items-center gap-1.5" style={{ fontSize: 10 }}>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: cfg.color }} />
+              <span className="text-[#8E8E93] font-medium">{type}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
