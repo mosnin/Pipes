@@ -270,13 +270,19 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
               <p className="t-label font-semibold text-[#111]">{n}</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">Connections</p>
+              <p className="t-overline text-[#8E8E93]">Pipes</p>
               <p className="t-label font-semibold text-[#111]">{graph.pipes.length}</p>
             </div>
-            {graph.assumptions.length > 0 && (
+            {aiCount > 0 && (
               <div>
-                <p className="t-overline text-[#8E8E93]">Assumptions</p>
-                <p className="t-label font-semibold text-[#111]">{graph.assumptions.length}</p>
+                <p className="t-overline text-[#8E8E93]">AI nodes</p>
+                <p className="t-label font-semibold" style={{ color: "#7C3AED" }}>{aiCount}</p>
+              </div>
+            )}
+            {humanCount > 0 && (
+              <div>
+                <p className="t-overline text-[#8E8E93]">Human steps</p>
+                <p className="t-label font-semibold" style={{ color: "#EC4899" }}>{humanCount}</p>
               </div>
             )}
             <div className="ml-auto">
