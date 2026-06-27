@@ -108,10 +108,12 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
 export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TraceResult | null>(null);
+  const [traceError, setTraceError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   async function run() {
     setLoading(true);
+    setTraceError(null);
     try {
       const res = await fetch(`/api/systems/${systemId}/simulate`, {
         method: "POST",
@@ -127,7 +129,9 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
         ...prev.slice(0, 4),
       ]);
     } catch (err) {
-      toast.error("Trace failed", { description: (err as Error).message });
+      const msg = (err as Error).message;
+      toast.error("Trace failed", { description: msg });
+      setTraceError(msg);
     } finally {
       setLoading(false);
     }
@@ -197,9 +201,15 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
       )}
 
       {!result && !loading && (
-        <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-          Run a trace to see per-node latency and token estimates.
-        </p>
+        traceError ? (
+          <p className="t-caption text-red-500" style={{ fontSize: 11 }}>
+            Trace failed: {traceError}
+          </p>
+        ) : (
+          <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
+            Run a trace to see per-node latency and token estimates.
+          </p>
+        )
       )}
 
       {/* Run history */}

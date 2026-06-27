@@ -407,8 +407,9 @@ export function BuildClient() {
                 <button
                   key={opt.value}
                   onClick={() => setParallelism(opt.value)}
+                  disabled={loading}
                   className={[
-                    "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors",
+                    "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     parallelism === opt.value
                       ? "border-violet-300 bg-violet-50 text-violet-700"
                       : "border-black/[0.08] bg-white text-[#3C3C43] hover:border-black/[0.15]",

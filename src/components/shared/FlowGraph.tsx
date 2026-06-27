@@ -86,7 +86,7 @@ export function FlowGraph({ nodes, pipes }: { nodes: FlowNode[]; pipes: FlowPipe
           const descLabel = node.description && node.description.length > 52 ? node.description.slice(0, 50) + "…" : (node.description ?? "");
           return (
             <g key={node.id}>
-              {node.description && <title>{node.title} ({node.type}){"\n"}{node.description}</title>}
+              <title>{node.title} ({node.type}){node.description ? "\n" + node.description : ""}</title>
               <rect x={x + 1} y={y - NODE_H / 2 + 2} width={NODE_W} height={NODE_H} rx={10} fill="rgba(0,0,0,0.04)" />
               <rect x={x} y={y - NODE_H / 2} width={NODE_W} height={NODE_H} rx={10} fill={cfg.bgLight} stroke={cfg.color} strokeWidth={1.5} />
               <circle cx={x + 14} cy={y - 9} r={3.5} fill={cfg.color} />
