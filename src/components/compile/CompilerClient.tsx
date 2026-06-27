@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw, Play, ExternalLink, ChevronRight, ClipboardCopy, ClipboardCheck } from "lucide-react";
+import { Sparkles, ArrowRight, AlertTriangle, Info, CheckCircle2, Loader2, Import, RotateCcw, Play, ExternalLink, ChevronRight, ClipboardCopy, ClipboardCheck, Download } from "lucide-react";
 import { toast } from "sonner";
 import { importGraphAsLoop } from "@/lib/importGraph";
 import { FlowGraph } from "@/components/shared/FlowGraph";
@@ -265,6 +265,17 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
     });
   }
 
+  function handleDownload() {
+    const blob = new Blob([JSON.stringify(graph, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${graph.systemName.toLowerCase().replace(/\s+/g, "-")}.looper.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded");
+  }
+
   async function handleImport() {
     setImporting(true);
     const id = await importGraphAsLoop(graph);
@@ -294,6 +305,14 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+          >
+            <Download size={13} />
+            Download
+          </button>
           <button
             type="button"
             onClick={handleCopy}
