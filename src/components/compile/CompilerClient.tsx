@@ -145,9 +145,14 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
                   ~{formatMs(trace.totalLatencyMs)} estimated
                 </span>
                 {trace.totalTokens > 0 && (
-                  <span className="t-caption text-emerald-600" style={{ fontSize: 11 }}>
-                    ~{trace.totalTokens.toLocaleString()} tokens
-                  </span>
+                  <>
+                    <span className="t-caption text-emerald-600" style={{ fontSize: 11 }}>
+                      ~{trace.totalTokens.toLocaleString()} tokens
+                    </span>
+                    <span className="t-caption text-emerald-500" style={{ fontSize: 11 }}>
+                      ~${(trace.totalTokens * 0.00000015).toFixed(4)}/run
+                    </span>
+                  </>
                 )}
                 <span className="t-caption text-emerald-500" style={{ fontSize: 11 }}>
                   {trace.steps.length} step{trace.steps.length !== 1 ? "s" : ""}

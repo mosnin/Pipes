@@ -167,10 +167,15 @@ export function SimulationTelemetryCard({ systemId }: { systemId: string }) {
                 ~{formatMs(result.totalLatencyMs)}
               </span>
               {result.totalTokens > 0 && (
-                <span className="inline-flex items-center gap-1 t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
-                  <Zap size={10} className="text-[#8E8E93]" />
-                  ~{result.totalTokens.toLocaleString()} tok
-                </span>
+                <>
+                  <span className="inline-flex items-center gap-1 t-caption text-[#3C3C43]" style={{ fontSize: 11 }}>
+                    <Zap size={10} className="text-[#8E8E93]" />
+                    ~{result.totalTokens.toLocaleString()} tok
+                  </span>
+                  <span className="t-caption text-[#8E8E93]" style={{ fontSize: 10 }}>
+                    ~${(result.totalTokens * 0.00000015).toFixed(4)}/run
+                  </span>
+                </>
               )}
             </div>
 
