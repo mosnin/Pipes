@@ -213,14 +213,16 @@ function SystemCard({
           {row.archivedAt && <StatusBadge tone="warning">Archived</StatusBadge>}
           <Dropdown>
             <DropdownTrigger>
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 aria-label="System options"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors opacity-0 group-hover:opacity-100"
               >
                 <MoreHorizontal size={14} />
-              </button>
+              </div>
             </DropdownTrigger>
             <Dropdown.Popover>
               <DropdownMenu aria-label="System actions">
@@ -748,14 +750,16 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       render: (row) => (
         <Dropdown>
           <DropdownTrigger>
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               aria-label="System options"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
             >
               <MoreHorizontal size={14} />
-            </button>
+            </div>
           </DropdownTrigger>
           <Dropdown.Popover>
             <DropdownMenu aria-label="System actions">

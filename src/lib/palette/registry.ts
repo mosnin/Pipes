@@ -14,8 +14,10 @@ import type { CommandItem } from "@/components/editor/CommandPalette";
 
 const store = new Map<string, CommandItem[]>();
 const listeners = new Set<() => void>();
+let cachedSnapshot: CommandItem[] | null = null;
 
 function notify(): void {
+  cachedSnapshot = null;
   for (const l of listeners) l();
 }
 
@@ -33,11 +35,13 @@ export function clear(scope: string): void {
 }
 
 export function snapshot(): CommandItem[] {
+  if (cachedSnapshot !== null) return cachedSnapshot;
   const out: CommandItem[] = [];
   for (const items of store.values()) {
     for (const item of items) out.push(item);
   }
-  return out;
+  cachedSnapshot = out;
+  return cachedSnapshot;
 }
 
 export function subscribe(listener: () => void): () => void {
@@ -51,4 +55,5 @@ export function subscribe(listener: () => void): () => void {
 export function _resetPaletteRegistry(): void {
   store.clear();
   listeners.clear();
+  cachedSnapshot = null;
 }

@@ -1217,7 +1217,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           </Tooltip>
           <Dropdown>
             <DropdownTrigger>
-              <Button variant="ghost" size="sm" className="text-[#8E8E93] hover:text-[#3C3C43]"><MoreHorizontal size={14} /></Button>
+              <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[#8E8E93] hover:text-[#3C3C43] hover:bg-[#F5F5F7] transition-colors cursor-pointer"><MoreHorizontal size={14} /></div>
             </DropdownTrigger>
             <Dropdown.Popover>
               <DropdownMenu aria-label="More actions">
@@ -2071,7 +2071,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         </Tooltip>
                         <Dropdown>
                           <DropdownTrigger>
-                            <Button variant="ghost" size="sm" aria-label="More inspector options"><MoreHorizontal size={13} /> More</Button>
+                            <div role="button" tabIndex={0} aria-label="More inspector options" className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer text-xs"><MoreHorizontal size={13} /> More</div>
                           </DropdownTrigger>
                           <Dropdown.Popover>
                             <DropdownMenu aria-label="Inspector overflow">

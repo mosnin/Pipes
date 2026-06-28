@@ -152,9 +152,9 @@ export function EditorTopBar({
         </Tooltip>
         <Dropdown>
           <DropdownTrigger>
-            <Button variant="ghost" size="sm" aria-label="More actions">
+            <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer">
               <MoreHorizontal size={16} />
-            </Button>
+            </div>
           </DropdownTrigger>
           <Dropdown.Popover>
             <DropdownMenu aria-label="More actions">
