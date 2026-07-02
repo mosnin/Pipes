@@ -277,11 +277,11 @@ export default function CollaborationSettingsPage() {
             <Avatar.Fallback>{getInitials(row)}</Avatar.Fallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="t-label font-medium text-[#111] truncate">
+            <div className="t-label font-medium text-ink-1 truncate">
               {row.name ?? row.email ?? row.userId}
             </div>
             {row.name && row.email && (
-              <div className="t-caption text-[#8E8E93] truncate">{row.email}</div>
+              <div className="t-caption text-ink-3 truncate">{row.email}</div>
             )}
           </div>
         </div>
@@ -291,7 +291,7 @@ export default function CollaborationSettingsPage() {
       key: "email",
       header: "Email",
       render: (row) => (
-        <span className="t-label text-[#3C3C43] truncate">{row.email ?? "-"}</span>
+        <span className="t-label text-ink-2 truncate">{row.email ?? "-"}</span>
       ),
     },
     {
@@ -307,7 +307,7 @@ export default function CollaborationSettingsPage() {
       header: "Joined",
       width: "120px",
       render: (row) => (
-        <span className="t-caption text-[#8E8E93]">{formatDate(row.joinedAt)}</span>
+        <span className="t-caption text-ink-3">{formatDate(row.joinedAt)}</span>
       ),
     },
     {
@@ -315,7 +315,7 @@ export default function CollaborationSettingsPage() {
       header: "Last active",
       width: "120px",
       render: (row) => (
-        <span className="t-caption text-[#8E8E93]">{relativeTime(row.lastActiveAt)}</span>
+        <span className="t-caption text-ink-3">{relativeTime(row.lastActiveAt)}</span>
       ),
     },
     {
@@ -325,7 +325,7 @@ export default function CollaborationSettingsPage() {
       align: "right",
       render: (row) =>
         row.role === "Owner" ? (
-          <span className="t-caption text-[#C7C7CC]">-</span>
+          <span className="t-caption text-ink-4">-</span>
         ) : (
           <Button
             size="sm"
@@ -344,7 +344,7 @@ export default function CollaborationSettingsPage() {
     {
       key: "email",
       header: "Email",
-      render: (row) => <span className="t-label text-[#111]">{row.email}</span>,
+      render: (row) => <span className="t-label text-ink-1">{row.email}</span>,
     },
     {
       key: "role",
@@ -357,7 +357,7 @@ export default function CollaborationSettingsPage() {
       header: "Expires",
       width: "140px",
       render: (row) => (
-        <span className="t-caption text-[#8E8E93]">{formatDate(row.expiresAt)}</span>
+        <span className="t-caption text-ink-3">{formatDate(row.expiresAt)}</span>
       ),
     },
     {
@@ -408,8 +408,8 @@ export default function CollaborationSettingsPage() {
         <CardHeader bordered>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="t-title text-[#111]">Members</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Members</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 {rows.members.length} active member{rows.members.length === 1 ? "" : "s"} in this workspace.
               </p>
             </div>
@@ -472,8 +472,8 @@ export default function CollaborationSettingsPage() {
         <CardHeader bordered>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="t-title text-[#111]">Pending invites</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Pending invites</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 Invites awaiting acceptance.
               </p>
             </div>
@@ -527,7 +527,7 @@ export default function CollaborationSettingsPage() {
       >
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="invite-email" className="t-label font-medium text-[#111]">
+            <label htmlFor="invite-email" className="t-label font-medium text-ink-1">
               Email address
             </label>
             <input
@@ -544,21 +544,21 @@ export default function CollaborationSettingsPage() {
               className={
                 emailError
                   ? "w-full h-10 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 t-label text-[#991B1B] outline-none focus:ring-2 focus:ring-red-100"
-                  : "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  : "w-full h-10 rounded-lg border border-line surface-canvas px-3 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               }
             />
             {emailError && <HelpText tone="error">{emailError}</HelpText>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="invite-role" className="t-label font-medium text-[#111]">
+            <label htmlFor="invite-role" className="t-label font-medium text-ink-1">
               Role
             </label>
             <select
               id="invite-role"
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as Role)}
-              className="w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full h-10 rounded-lg border border-line surface-canvas px-3 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -598,9 +598,9 @@ export default function CollaborationSettingsPage() {
         }
       >
         {removeTarget && (
-          <p className="t-label text-[#3C3C43]">
+          <p className="t-label text-ink-2">
             Remove{" "}
-            <span className="font-semibold text-[#111]">
+            <span className="font-semibold text-ink-1">
               {removeTarget.name ?? removeTarget.email ?? removeTarget.userId}
             </span>{" "}
             from this workspace?

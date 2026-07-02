@@ -85,7 +85,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
     <nav aria-label="Settings sections" className="flex flex-col gap-6">
       {NAV_GROUPS.map((group) => (
         <div key={group.heading} className="flex flex-col gap-1">
-          <div className="t-overline text-[#8E8E93] px-2 mb-1">
+          <div className="t-overline text-ink-3 px-2 mb-1">
             {group.heading}
           </div>
           <ul className="flex flex-col gap-0.5">
@@ -100,8 +100,8 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                     className={cn(
                       "flex items-center gap-2 px-2 py-1.5 rounded-md t-label transition-colors",
                       isActive
-                        ? "bg-white shadow-xs ring-1 ring-black/5 text-[#111] font-medium"
-                        : "text-[#3C3C43] hover:bg-white/60 hover:text-[#111]",
+                        ? "surface-canvas shadow-xs ring-1 ring-[var(--color-line)] text-ink-1 font-medium"
+                        : "text-ink-2 hover:bg-[var(--color-hover)] hover:text-ink-1",
                     )}
                   >
                     <Icon
@@ -109,7 +109,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
                       strokeWidth={1.75}
                       className={cn(
                         "shrink-0",
-                        isActive ? "text-indigo-600" : "text-[#8E8E93]",
+                        isActive ? "text-indigo-600" : "text-ink-3",
                       )}
                     />
                     <span className="flex-1 truncate">{label}</span>
@@ -141,23 +141,23 @@ export function SettingsShell({ children }: { children: ReactNode }) {
     : [{ label: "Settings" }];
 
   return (
-    <div className="flex w-full min-h-screen bg-white">
+    <div className="flex w-full min-h-screen surface-canvas">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-[240px] shrink-0 sticky top-0 self-start h-screen border-r border-black/[0.08] bg-[#F5F5F7] px-3 py-6 flex-col gap-6 overflow-y-auto">
+      <aside className="hidden lg:flex w-[240px] shrink-0 sticky top-0 self-start h-screen border-r border-line bg-[var(--surface-subtle)] px-3 py-6 flex-col gap-6 overflow-y-auto">
         <div className="px-2">
-          <div className="t-overline text-[#8E8E93] mb-1">Account</div>
-          <h1 className="t-h3 font-semibold text-[#111]">Settings</h1>
+          <div className="t-overline text-ink-3 mb-1">Account</div>
+          <h1 className="t-h3 font-semibold text-ink-1">Settings</h1>
         </div>
         <NavContent />
       </aside>
 
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-black/[0.08] bg-white px-4">
-        <span className="t-label font-semibold text-[#111]">Settings</span>
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between border-b border-line surface-canvas px-4">
+        <span className="t-label font-semibold text-ink-1">Settings</span>
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-md hover:bg-black/[0.04]"
+          className="p-2 rounded-md hover:bg-[var(--color-hover)]"
           aria-label="Open settings navigation"
         >
           <Menu size={18} />
@@ -171,16 +171,16 @@ export function SettingsShell({ children }: { children: ReactNode }) {
             className="lg:hidden fixed inset-0 z-40 bg-black/40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-72 bg-[#F5F5F7] px-3 py-6 flex flex-col gap-6 shadow-xl-token">
+          <aside className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-72 bg-[var(--surface-subtle)] px-3 py-6 flex flex-col gap-6 shadow-xl-token">
             <div className="flex items-center justify-between px-2 mb-1">
               <div>
-                <div className="t-overline text-[#8E8E93] mb-1">Account</div>
-                <span className="t-h3 font-semibold text-[#111]">Settings</span>
+                <div className="t-overline text-ink-3 mb-1">Account</div>
+                <span className="t-h3 font-semibold text-ink-1">Settings</span>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-md hover:bg-black/[0.04]"
+                className="p-2 rounded-md hover:bg-[var(--color-hover)]"
                 aria-label="Close settings navigation"
               >
                 <X size={18} />

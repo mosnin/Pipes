@@ -124,7 +124,7 @@ export default function AuditLogPage() {
       header: "Time",
       width: "120px",
       render: (row) => (
-        <span className="t-caption text-[#3C3C43]" title={row.createdAt}>
+        <span className="t-caption text-ink-2" title={row.createdAt}>
           {formatRelative(row.createdAt)}
         </span>
       ),
@@ -143,7 +143,7 @@ export default function AuditLogPage() {
       key: "action",
       header: "Action",
       render: (row) => (
-        <span className="t-label text-[#111] font-mono text-[11px]">
+        <span className="t-label text-ink-1 font-mono text-[11px]">
           {formatAction(row.action)}
         </span>
       ),
@@ -153,7 +153,7 @@ export default function AuditLogPage() {
       header: "Target",
       width: "120px",
       render: (row) => (
-        <span className="t-caption text-[#3C3C43]">{row.targetType}</span>
+        <span className="t-caption text-ink-2">{row.targetType}</span>
       ),
     },
     {

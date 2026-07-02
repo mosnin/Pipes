@@ -39,7 +39,7 @@ export default function TrustPage() {
               },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between gap-4 py-3">
-                <p className="t-label text-[#111]">{item.label}</p>
+                <p className="t-label text-ink-1">{item.label}</p>
                 <StatusBadge tone={item.tone}>{item.value}</StatusBadge>
               </div>
             ))}
@@ -69,8 +69,8 @@ export default function TrustPage() {
                 { label: "Scope", value: "Per-workspace" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between gap-4 py-3">
-                  <p className="t-label text-[#111]">{item.label}</p>
-                  <p className="t-label font-mono text-[#3C3C43] text-[11px]">{item.value}</p>
+                  <p className="t-label text-ink-1">{item.label}</p>
+                  <p className="t-label font-mono text-ink-2 text-[11px]">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -101,8 +101,8 @@ export default function TrustPage() {
               },
             ].map((item) => (
               <div key={item.label} className="flex items-start justify-between gap-4 py-3">
-                <p className="t-label text-[#111] shrink-0">{item.label}</p>
-                <p className="t-caption text-[#3C3C43] text-right">{item.value}</p>
+                <p className="t-label text-ink-1 shrink-0">{item.label}</p>
+                <p className="t-caption text-ink-2 text-right">{item.value}</p>
               </div>
             ))}
           </div>

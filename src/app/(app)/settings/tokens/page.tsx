@@ -190,7 +190,7 @@ export default function TokensSettingsPage() {
         header: "Name",
         render: (row) => (
           <div className="flex flex-col gap-0.5">
-            <span className="t-label font-medium text-[#111]">{row.name}</span>
+            <span className="t-label font-medium text-ink-1">{row.name}</span>
             {row.tokenPreview && (
               <button
                 type="button"
@@ -202,10 +202,10 @@ export default function TokensSettingsPage() {
                 title="Copy Bearer token"
                 className="group inline-flex items-center gap-1 w-fit"
               >
-                <code className="t-mono text-[11px] text-[#8E8E93] group-hover:text-indigo-600 transition-colors">
+                <code className="t-mono text-[11px] text-ink-3 group-hover:text-indigo-600 transition-colors">
                   {row.tokenPreview}&hellip;
                 </code>
-                <Copy size={10} className="text-[#C7C7CC] group-hover:text-indigo-500 transition-colors" />
+                <Copy size={10} className="text-ink-4 group-hover:text-indigo-500 transition-colors" />
               </button>
             )}
           </div>
@@ -216,7 +216,7 @@ export default function TokensSettingsPage() {
         header: "Capabilities",
         render: (row) => {
           const caps = row.capabilities ?? [];
-          if (caps.length === 0) return <span className="t-caption text-[#C7C7CC]">None</span>;
+          if (caps.length === 0) return <span className="t-caption text-ink-4">None</span>;
           const visible = caps.slice(0, 3);
           const overflow = caps.length - visible.length;
           return (
@@ -227,7 +227,7 @@ export default function TokensSettingsPage() {
                 </InlineCode>
               ))}
               {overflow > 0 && (
-                <span className="t-caption text-[#8E8E93]">+{overflow} more</span>
+                <span className="t-caption text-ink-3">+{overflow} more</span>
               )}
             </div>
           );
@@ -238,7 +238,7 @@ export default function TokensSettingsPage() {
         header: "Created",
         width: "120px",
         render: (row) => (
-          <span className="t-caption text-[#8E8E93]">{formatDate(row.createdAt)}</span>
+          <span className="t-caption text-ink-3">{formatDate(row.createdAt)}</span>
         ),
       },
       {
@@ -246,7 +246,7 @@ export default function TokensSettingsPage() {
         header: "Last used",
         width: "120px",
         render: (row) => (
-          <span className="t-caption text-[#8E8E93]">{formatDate(row.lastUsedAt)}</span>
+          <span className="t-caption text-ink-3">{formatDate(row.lastUsedAt)}</span>
         ),
       },
       {
@@ -254,7 +254,7 @@ export default function TokensSettingsPage() {
         header: "Expires",
         width: "120px",
         render: (row) => (
-          <span className="t-caption text-[#8E8E93]">{formatDate(row.expiresAt)}</span>
+          <span className="t-caption text-ink-3">{formatDate(row.expiresAt)}</span>
         ),
       },
       {
@@ -313,8 +313,8 @@ export default function TokensSettingsPage() {
         <CardHeader bordered>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="t-title text-[#111]">Active tokens</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Active tokens</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 Tokens are SHA-256 hashed before storage; the secret is shown once at creation.
               </p>
             </div>
@@ -358,16 +358,16 @@ export default function TokensSettingsPage() {
       {/* ── How to use card ───────────────────────────────────────────────── */}
       <CardShell>
         <CardHeader bordered>
-          <h2 className="t-title text-[#111]">How to use your token</h2>
-          <p className="mt-1 t-caption text-[#8E8E93]">
+          <h2 className="t-title text-ink-1">How to use your token</h2>
+          <p className="mt-1 t-caption text-ink-3">
             Paste this token into any agent to give it read/write access to your loops.
           </p>
         </CardHeader>
         <CardBody className="space-y-6">
           {/* MCP endpoint — always show the full URL first */}
           <div className="space-y-2">
-            <p className="t-label font-semibold text-[#111]">MCP endpoint</p>
-            <p className="t-caption text-[#3C3C43]">
+            <p className="t-label font-semibold text-ink-1">MCP endpoint</p>
+            <p className="t-caption text-ink-2">
               Point any agent at this URL. It serves {MCP_TOOL_COUNT} tools covering systems, graphs, templates, versions, validation, and blueprints.
             </p>
             <div className="flex items-center gap-2 rounded-lg bg-[#0B0B0F] px-4 py-3">
@@ -380,7 +380,7 @@ export default function TokensSettingsPage() {
                   const url = `${window.location.origin}/api/protocol/mcp`;
                   void navigator.clipboard.writeText(url).then(() => toast.success("Endpoint URL copied"));
                 }}
-                className="shrink-0 text-[#8E8E93] hover:text-white transition-colors"
+                className="shrink-0 text-ink-3 hover:text-white transition-colors"
                 aria-label="Copy endpoint URL"
               >
                 <Copy size={12} />
@@ -389,35 +389,35 @@ export default function TokensSettingsPage() {
           </div>
           {/* Claude Projects / Claude Code */}
           <div className="space-y-2">
-            <p className="t-label font-semibold text-[#111]">Claude Projects or Claude Code</p>
-            <p className="t-caption text-[#3C3C43]">
+            <p className="t-label font-semibold text-ink-1">Claude Projects or Claude Code</p>
+            <p className="t-caption text-ink-2">
               In Claude Projects, go to Project settings → MCP Servers → Add server. In Claude Code, add to <InlineCode>.claude/settings.json</InlineCode> under <InlineCode>mcpServers</InlineCode>.
             </p>
             <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-0.5 overflow-x-auto">
-              <code className="block t-mono text-[12px] text-[#8E8E93]">{`{`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93] pl-4">{`"mcpServers": {`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93] pl-8">{`"looper": {`}</code>
+              <code className="block t-mono text-[12px] text-ink-3">{`{`}</code>
+              <code className="block t-mono text-[12px] text-ink-3 pl-4">{`"mcpServers": {`}</code>
+              <code className="block t-mono text-[12px] text-ink-3 pl-8">{`"looper": {`}</code>
               <code className="block t-mono text-[12px] text-[#7DD3FC] pl-12">{`"url": "`}<span className="text-[#86EFAC]">{typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}</span>{`",`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93] pl-12">{`"headers": { "Authorization": "`}<span className="text-[#FCD34D]">Bearer ptk_your_token_here</span>{`" }`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93] pl-8">{`}`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93] pl-4">{`}`}</code>
-              <code className="block t-mono text-[12px] text-[#8E8E93]">{`}`}</code>
+              <code className="block t-mono text-[12px] text-ink-3 pl-12">{`"headers": { "Authorization": "`}<span className="text-[#FCD34D]">Bearer ptk_your_token_here</span>{`" }`}</code>
+              <code className="block t-mono text-[12px] text-ink-3 pl-8">{`}`}</code>
+              <code className="block t-mono text-[12px] text-ink-3 pl-4">{`}`}</code>
+              <code className="block t-mono text-[12px] text-ink-3">{`}`}</code>
             </div>
           </div>
           {/* Any HTTP client */}
           <div className="space-y-2">
-            <p className="t-label font-semibold text-[#111]">Any HTTP client or agent framework</p>
-            <p className="t-caption text-[#3C3C43]">
+            <p className="t-label font-semibold text-ink-1">Any HTTP client or agent framework</p>
+            <p className="t-caption text-ink-2">
               Pass the token as a Bearer token in the <InlineCode>Authorization</InlineCode> header on every POST request to the endpoint above.
             </p>
             <div className="rounded-lg bg-[#0B0B0F] px-4 py-3 space-y-0.5">
-              <code className="block t-mono text-[12px] text-[#8E8E93]">
+              <code className="block t-mono text-[12px] text-ink-3">
                 POST <span className="text-[#7DD3FC]">{typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}</span>
               </code>
-              <code className="block t-mono text-[12px] text-[#8E8E93]">
+              <code className="block t-mono text-[12px] text-ink-3">
                 Authorization: Bearer <span className="text-[#FCD34D]">ptk_your_token_here</span>
               </code>
-              <code className="block t-mono text-[12px] text-[#8E8E93]">
+              <code className="block t-mono text-[12px] text-ink-3">
                 Content-Type: application/json
               </code>
             </div>
@@ -457,7 +457,7 @@ export default function TokensSettingsPage() {
       >
         <div className="space-y-5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="token-name" className="t-label font-medium text-[#111]">
+            <label htmlFor="token-name" className="t-label font-medium text-ink-1">
               Token name
             </label>
             <input
@@ -473,14 +473,14 @@ export default function TokensSettingsPage() {
               className={
                 nameError
                   ? "w-full h-10 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 t-label text-[#991B1B] outline-none focus:ring-2 focus:ring-red-100"
-                  : "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  : "w-full h-10 rounded-lg border border-line surface-canvas px-3 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               }
             />
             {nameError && <HelpText tone="error">{nameError}</HelpText>}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="t-label font-medium text-[#111]">Capabilities</span>
+            <span className="t-label font-medium text-ink-1">Capabilities</span>
             <HelpText>Grant only what is needed. Select at least one.</HelpText>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-1 border border-[var(--color-line)] rounded-md p-2">
               {AGENT_CAPABILITIES.map((cap: AgentCapability) => {
@@ -488,7 +488,7 @@ export default function TokensSettingsPage() {
                 return (
                   <label
                     key={cap}
-                    className="flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-[#FAFAFA]"
+                    className="flex items-start gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-[var(--color-hover)]"
                   >
                     <input
                       type="checkbox"
@@ -498,7 +498,7 @@ export default function TokensSettingsPage() {
                     />
                     <span className="flex flex-col">
                       <InlineCode className="t-micro w-fit">{cap}</InlineCode>
-                      <span className="t-caption text-[#8E8E93] mt-0.5">
+                      <span className="t-caption text-ink-3 mt-0.5">
                         {CAPABILITY_LABELS[cap] ?? cap}
                       </span>
                     </span>
@@ -512,14 +512,14 @@ export default function TokensSettingsPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="token-expiration" className="t-label font-medium text-[#111]">
+            <label htmlFor="token-expiration" className="t-label font-medium text-ink-1">
               Expiration
             </label>
             <select
               id="token-expiration"
               value={expiration}
               onChange={(e) => setExpiration(e.target.value)}
-              className="w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              className="w-full h-10 rounded-lg border border-line surface-canvas px-3 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
             >
               {EXPIRATION_OPTIONS.map((opt) => (
                 <option key={opt.id} value={opt.id}>
@@ -582,7 +582,7 @@ export default function TokensSettingsPage() {
 
             {authHeader && (
               <div className="space-y-1.5">
-                <div className="t-label font-medium text-[#111]">Authorization header</div>
+                <div className="t-label font-medium text-ink-1">Authorization header</div>
                 <CardFooter className="bg-[#0B0B0F] rounded-lg border-0 px-3 py-2 flex items-center justify-between">
                   <code className="flex-1 t-mono text-[12px] text-[#7DD3FC] break-all">
                     {authHeader}
@@ -600,13 +600,13 @@ export default function TokensSettingsPage() {
               </div>
             )}
 
-            <div className="border-t border-black/[0.06] pt-3 space-y-2">
-              <div className="t-label font-semibold text-[#111]">Next step: connect an agent</div>
+            <div className="border-t border-line pt-3 space-y-2">
+              <div className="t-label font-semibold text-ink-1">Next step: connect an agent</div>
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-[80px] t-caption text-[#8E8E93] shrink-0">Endpoint</div>
+                  <div className="w-[80px] t-caption text-ink-3 shrink-0">Endpoint</div>
                   <div className="flex-1 flex items-center gap-1.5">
-                    <code className="flex-1 bg-[#F5F5F7] border border-black/[0.06] rounded px-2 py-1 t-caption font-mono text-indigo-700 truncate">
+                    <code className="flex-1 bg-[var(--surface-subtle)] border border-line rounded px-2 py-1 t-caption font-mono text-indigo-700 truncate">
                       {typeof window !== "undefined" ? `${window.location.origin}/api/protocol/mcp` : "/api/protocol/mcp"}
                     </code>
                     <button
@@ -619,7 +619,7 @@ export default function TokensSettingsPage() {
                           toast.error("Could not copy — please select and copy manually");
                         });
                       }}
-                      className="shrink-0 px-2 py-1 rounded bg-[#F5F5F7] hover:bg-[#EBEBEB] t-caption text-[#3C3C43] transition-colors"
+                      className="shrink-0 px-2 py-1 rounded bg-[var(--surface-subtle)] hover:bg-[var(--color-hover-strong)] t-caption text-ink-2 transition-colors"
                       aria-label="Copy MCP endpoint"
                     >
                       <Copy size={11} />
@@ -627,10 +627,10 @@ export default function TokensSettingsPage() {
                   </div>
                 </div>
               </div>
-              <div className="bg-[#F5F5F7] rounded-lg p-3 space-y-1.5 t-caption text-[#3C3C43]">
-                <div><strong className="text-[#111]">Claude Projects:</strong> Settings → Project → Add MCP server → paste URL + auth header</div>
-                <div><strong className="text-[#111]">GPT Actions:</strong> Configure → Authentication → Bearer Token → paste token</div>
-                <div><strong className="text-[#111]">Any agent:</strong> <code className="font-mono text-indigo-700">Authorization: Bearer &lt;token&gt;</code> on each request</div>
+              <div className="bg-[var(--surface-subtle)] rounded-lg p-3 space-y-1.5 t-caption text-ink-2">
+                <div><strong className="text-ink-1">Claude Projects:</strong> Settings → Project → Add MCP server → paste URL + auth header</div>
+                <div><strong className="text-ink-1">GPT Actions:</strong> Configure → Authentication → Bearer Token → paste token</div>
+                <div><strong className="text-ink-1">Any agent:</strong> <code className="font-mono text-indigo-700">Authorization: Bearer &lt;token&gt;</code> on each request</div>
               </div>
             </div>
           </div>
@@ -664,8 +664,8 @@ export default function TokensSettingsPage() {
         }
       >
         {revokeTarget && (
-          <p className="t-label text-[#3C3C43]">
-            Revoke <span className="font-semibold text-[#111]">{revokeTarget.name}</span>?
+          <p className="t-label text-ink-2">
+            Revoke <span className="font-semibold text-ink-1">{revokeTarget.name}</span>?
           </p>
         )}
       </Dialog>

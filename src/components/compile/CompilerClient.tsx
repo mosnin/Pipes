@@ -93,7 +93,7 @@ function LoopReadyPanel({ systemId, systemName, onClear }: { systemId: string; s
         </button>
         <a
           href={`/systems/${systemId}`}
-          className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-5 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 hover:text-emerald-800 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 surface-canvas px-5 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 hover:text-emerald-800 transition-colors"
         >
           <ExternalLink size={13} />
           Open in editor
@@ -247,16 +247,16 @@ function AssumptionsList({ assumptions }: { assumptions: string[] }) {
   return (
     <div className="mt-4 flex flex-col gap-1.5">
       {visible.map((a, i) => (
-        <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
-          <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
-          <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
+        <div key={i} className="flex items-start gap-2.5 rounded-lg border border-line bg-[#FAFAFA] px-3.5 py-2.5">
+          <Info size={13} className="text-ink-3 mt-0.5 shrink-0" />
+          <p className="t-caption text-ink-2" style={{ fontSize: 12 }}>{a}</p>
         </div>
       ))}
       {hidden > 0 && !expanded && (
         <button
           type="button"
           onClick={() => setExpanded(true)}
-          className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+          className="self-start t-caption text-ink-3 hover:text-ink-2 transition-colors"
           style={{ fontSize: 11 }}
         >
           + {hidden} more assumption{hidden !== 1 ? "s" : ""}
@@ -266,7 +266,7 @@ function AssumptionsList({ assumptions }: { assumptions: string[] }) {
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+          className="self-start t-caption text-ink-3 hover:text-ink-2 transition-colors"
           style={{ fontSize: 11 }}
         >
           Show less
@@ -322,11 +322,11 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
         <div>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 size={15} className="text-emerald-500" />
-            <span className="t-overline text-[#8E8E93]">Compiled successfully</span>
+            <span className="t-overline text-ink-3">Compiled successfully</span>
           </div>
-          <h2 className="t-h3 text-[#111]">{graph.systemName}</h2>
+          <h2 className="t-h3 text-ink-1">{graph.systemName}</h2>
           {graph.description && (
-            <p className="mt-1 t-caption text-[#3C3C43]" style={{ fontSize: 12, maxWidth: "64ch" }}>
+            <p className="mt-1 t-caption text-ink-2" style={{ fontSize: 12, maxWidth: "64ch" }}>
               {graph.description}
             </p>
           )}
@@ -335,7 +335,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] surface-canvas px-4 py-2.5 t-label font-semibold text-ink-2 hover:border-black/[0.2] hover:text-ink-1 transition-colors"
           >
             <Download size={13} />
             Download
@@ -343,7 +343,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] surface-canvas px-4 py-2.5 t-label font-semibold text-ink-2 hover:border-black/[0.2] hover:text-ink-1 transition-colors"
           >
             {copied ? <ClipboardCheck size={13} className="text-emerald-500" /> : <ClipboardCopy size={13} />}
             {copied ? "Copied!" : "Copy JSON"}
@@ -351,7 +351,7 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
           <button
             type="button"
             onClick={onClear}
-            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] surface-canvas px-4 py-2.5 t-label font-semibold text-ink-2 hover:border-black/[0.2] hover:text-ink-1 transition-colors"
           >
             <RotateCcw size={13} />
             Clear
@@ -387,22 +387,22 @@ function GraphPreview({ graph, onClear }: { graph: CompiledGraph; onClear: () =>
         return (
           <div className="flex items-center gap-5 mb-4 flex-wrap">
             <div>
-              <p className="t-overline text-[#8E8E93]">Nodes</p>
-              <p className="t-label font-semibold text-[#111]">{n}</p>
+              <p className="t-overline text-ink-3">Nodes</p>
+              <p className="t-label font-semibold text-ink-1">{n}</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">Pipes</p>
-              <p className="t-label font-semibold text-[#111]">{graph.pipes.length}</p>
+              <p className="t-overline text-ink-3">Pipes</p>
+              <p className="t-label font-semibold text-ink-1">{graph.pipes.length}</p>
             </div>
             {aiCount > 0 && (
               <div>
-                <p className="t-overline text-[#8E8E93]">AI nodes</p>
+                <p className="t-overline text-ink-3">AI nodes</p>
                 <p className="t-label font-semibold" style={{ color: "#7C3AED" }}>{aiCount}</p>
               </div>
             )}
             {humanCount > 0 && (
               <div>
-                <p className="t-overline text-[#8E8E93]">Human steps</p>
+                <p className="t-overline text-ink-3">Human steps</p>
                 <p className="t-label font-semibold" style={{ color: "#EC4899" }}>{humanCount}</p>
               </div>
             )}
@@ -596,7 +596,7 @@ export function CompilerClient() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <label className="t-label font-semibold text-[#111]">Paste your document</label>
+        <label className="t-label font-semibold text-ink-1">Paste your document</label>
         {(() => {
           const MAX = 20000;
           const pct = Math.min(content.length / MAX, 1);
@@ -634,20 +634,20 @@ export function CompilerClient() {
         }}
         placeholder={`Paste a SOP, API spec, README, book excerpt, or any structured process.\n\nLooper auto-detects the document type and compiles it into an executable agent loop.`}
         maxLength={20000}
-        className="w-full h-72 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
+        className="w-full h-72 resize-none rounded-xl border border-black/[0.1] surface-canvas px-4 py-3.5 t-body text-ink-1 text-[13px] leading-relaxed placeholder:text-ink-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
         spellCheck={false}
       />
       {/* Example chips — shown only when the textarea is empty */}
       {!content && !result && (
         <div>
-          <p className="t-overline text-[#8E8E93] mb-2" style={{ fontSize: 10 }}>Try an example</p>
+          <p className="t-overline text-ink-3 mb-2" style={{ fontSize: 10 }}>Try an example</p>
           <div className="flex flex-wrap gap-2">
             {EXAMPLES.map((ex) => (
               <button
                 key={ex.label}
                 type="button"
                 onClick={() => setContent(ex.content)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.07] bg-white px-3 py-1.5 t-caption text-[#3C3C43] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-black/[0.07] surface-canvas px-3 py-1.5 t-caption text-ink-2 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
                 style={{ fontSize: 11 }}
               >
                 <span className="rounded-full bg-violet-100 text-violet-600 px-1.5 py-0.5 font-semibold" style={{ fontSize: 9 }}>{ex.tag}</span>
@@ -658,8 +658,8 @@ export function CompilerClient() {
         </div>
       )}
       <div className="flex items-center justify-between">
-        <p className="t-caption text-[#8E8E93]" style={{ fontSize: 11 }}>
-          SOP, API spec, docs, or book — Looper figures out the rest. <kbd className="rounded border border-black/[0.12] bg-[#F5F5F7] px-1 py-0.5 font-mono text-[#3C3C43]" style={{ fontSize: 10 }}>⌘↵</kbd> to compile.
+        <p className="t-caption text-ink-3" style={{ fontSize: 11 }}>
+          SOP, API spec, docs, or book — Looper figures out the rest. <kbd className="rounded border border-line-strong bg-[var(--surface-subtle)] px-1 py-0.5 font-mono text-ink-2" style={{ fontSize: 10 }}>⌘↵</kbd> to compile.
         </p>
         <button
           onClick={handleCompile}
@@ -699,7 +699,7 @@ export function CompilerClient() {
               </div>
               <div className="w-56 h-6 rounded-full bg-[#F2F2F7] animate-pulse mb-6" />
               <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB] flex items-center justify-center" style={{ minHeight: 180 }}>
-                <p className="t-caption text-[#C7C7CC]" style={{ fontSize: 12 }}>Compiling to loop graph…</p>
+                <p className="t-caption text-ink-4" style={{ fontSize: 12 }}>Compiling to loop graph…</p>
               </div>
             </motion.div>
           )}

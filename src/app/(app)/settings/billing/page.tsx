@@ -207,14 +207,14 @@ export default function BillingSettingsPage() {
       key: "number",
       header: "Invoice",
       render: (row) => (
-        <span className="t-mono text-[12px] text-[#111]">{row.number ?? row.id}</span>
+        <span className="t-mono text-[12px] text-ink-1">{row.number ?? row.id}</span>
       ),
     },
     {
       key: "issuedAt",
       header: "Date",
       render: (row) => (
-        <span className="t-label text-[#3C3C43]">{formatDate(row.issuedAt)}</span>
+        <span className="t-label text-ink-2">{formatDate(row.issuedAt)}</span>
       ),
     },
     {
@@ -222,7 +222,7 @@ export default function BillingSettingsPage() {
       header: "Amount",
       align: "right",
       render: (row) => (
-        <span className="t-label t-num text-[#111]">{formatUsd(row.amountUsd)}</span>
+        <span className="t-label t-num text-ink-1">{formatUsd(row.amountUsd)}</span>
       ),
     },
     {
@@ -250,7 +250,7 @@ export default function BillingSettingsPage() {
             PDF
           </a>
         ) : (
-          <span className="t-caption text-[#C7C7CC]">-</span>
+          <span className="t-caption text-ink-4">-</span>
         ),
     },
   ];
@@ -304,7 +304,7 @@ export default function BillingSettingsPage() {
         <CardShell>
           <CardBody>
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-              <p className="t-label text-[#3C3C43]">We could not load your billing details.</p>
+              <p className="t-label text-ink-2">We could not load your billing details.</p>
               <Button variant="outline" size="sm" onPress={loadSummary}>Try again</Button>
             </div>
           </CardBody>
@@ -349,8 +349,8 @@ export default function BillingSettingsPage() {
             <CardHeader bordered>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="t-title text-[#111]">Current plan</h2>
-                  <p className="mt-1 t-caption text-[#8E8E93]">
+                  <h2 className="t-title text-ink-1">Current plan</h2>
+                  <p className="mt-1 t-caption text-ink-3">
                     Entitlements granted by your subscription.
                   </p>
                 </div>
@@ -378,8 +378,8 @@ export default function BillingSettingsPage() {
           {/* ── Upcoming invoice ── */}
           <CardShell>
             <CardHeader bordered>
-              <h2 className="t-title text-[#111]">Upcoming invoice</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Upcoming invoice</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 Preview of the next charge to your account.
               </p>
             </CardHeader>
@@ -387,10 +387,10 @@ export default function BillingSettingsPage() {
               {summary.upcomingInvoice ? (
                 <div className="flex items-baseline justify-between">
                   <div>
-                    <div className="t-h2 t-num text-[#111]">
+                    <div className="t-h2 t-num text-ink-1">
                       {formatUsd(summary.upcomingInvoice.amountUsd)}
                     </div>
-                    <div className="t-caption text-[#8E8E93] mt-0.5">
+                    <div className="t-caption text-ink-3 mt-0.5">
                       Due {formatDate(summary.upcomingInvoice.periodEnd ?? summary.nextBillingDate)}
                     </div>
                   </div>
@@ -408,8 +408,8 @@ export default function BillingSettingsPage() {
           {/* ── Payment method ── */}
           <CardShell>
             <CardHeader bordered>
-              <h2 className="t-title text-[#111]">Payment method</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Payment method</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 Card on file for recurring charges.
               </p>
             </CardHeader>
@@ -417,15 +417,15 @@ export default function BillingSettingsPage() {
               {summary.paymentMethod ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center justify-center w-10 h-7 rounded-md border border-[var(--color-line)] bg-[#F5F5F7] t-mono text-[10px] text-[#3C3C43] uppercase">
+                    <span className="inline-flex items-center justify-center w-10 h-7 rounded-md border border-[var(--color-line)] bg-[var(--surface-subtle)] t-mono text-[10px] text-ink-2 uppercase">
                       {summary.paymentMethod.brand}
                     </span>
                     <div>
-                      <div className="t-label text-[#111]">
+                      <div className="t-label text-ink-1">
                         Ending in {summary.paymentMethod.last4}
                       </div>
                       {summary.paymentMethod.expMonth != null && summary.paymentMethod.expYear != null && (
-                        <div className="t-caption text-[#8E8E93]">
+                        <div className="t-caption text-ink-3">
                           Expires {String(summary.paymentMethod.expMonth).padStart(2, "0")}/{summary.paymentMethod.expYear}
                         </div>
                       )}
@@ -448,8 +448,8 @@ export default function BillingSettingsPage() {
           {/* ── Invoices ── */}
           <CardShell>
             <CardHeader bordered>
-              <h2 className="t-title text-[#111]">Invoice history</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <h2 className="t-title text-ink-1">Invoice history</h2>
+              <p className="mt-1 t-caption text-ink-3">
                 Download past statements for accounting.
               </p>
             </CardHeader>
@@ -469,14 +469,14 @@ export default function BillingSettingsPage() {
           <CardShell className="border-[#FCA5A5]">
             <CardHeader bordered className="border-b-[#FCA5A5]/40">
               <h2 className="t-title text-[#991B1B]">Danger zone</h2>
-              <p className="mt-1 t-caption text-[#8E8E93]">
+              <p className="mt-1 t-caption text-ink-3">
                 Cancelling stops billing at the end of the current period and downgrades the workspace.
               </p>
             </CardHeader>
             <CardBody>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="t-label font-medium text-[#111]">Cancel subscription</div>
+                  <div className="t-label font-medium text-ink-1">Cancel subscription</div>
                   <HelpText>You can resubscribe at any time.</HelpText>
                 </div>
                 <Button
@@ -508,12 +508,12 @@ export default function BillingSettingsPage() {
                 className="border border-[var(--color-line)] rounded-[var(--radius-card)] p-4 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="t-title text-[#111]">{PLAN_DISPLAY_NAME[plan]}</span>
-                  <span className="t-label font-semibold text-[#111]">{details.price}</span>
+                  <span className="t-title text-ink-1">{PLAN_DISPLAY_NAME[plan]}</span>
+                  <span className="t-label font-semibold text-ink-1">{details.price}</span>
                 </div>
                 <ul className="space-y-1.5">
                   {details.features.map((f) => (
-                    <li key={f} className="t-label text-[#3C3C43]">
+                    <li key={f} className="t-label text-ink-2">
                       {f}
                     </li>
                   ))}
@@ -574,9 +574,9 @@ function FeatureRow({ label, enabled }: { label: string; enabled: boolean }) {
       {enabled ? (
         <CheckCircle2 size={14} className="text-[#059669] shrink-0" />
       ) : (
-        <XCircle size={14} className="text-[#C7C7CC] shrink-0" />
+        <XCircle size={14} className="text-ink-4 shrink-0" />
       )}
-      <span className={enabled ? "text-[#111]" : "text-[#8E8E93]"}>{label}</span>
+      <span className={enabled ? "text-ink-1" : "text-ink-3"}>{label}</span>
     </li>
   );
 }

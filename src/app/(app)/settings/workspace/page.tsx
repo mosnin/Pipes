@@ -89,7 +89,7 @@ export default function WorkspaceSettingsPage() {
             <CardBody>
               <div className="flex flex-col gap-4 max-w-md">
                 <div className="flex flex-col gap-1.5">
-                  <label className="t-label font-medium text-[#111]" htmlFor="ws-name">
+                  <label className="t-label font-medium text-ink-1" htmlFor="ws-name">
                     Name
                   </label>
                   <Input
@@ -99,14 +99,14 @@ export default function WorkspaceSettingsPage() {
                     placeholder="My Workspace"
                     maxLength={80}
                   />
-                  <p className="t-caption text-[#8E8E93]">
+                  <p className="t-caption text-ink-3">
                     Shown in the sidebar and shared with collaborators.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="t-label font-medium text-[#111]" htmlFor="ws-description">
-                    Description <span className="font-normal text-[#8E8E93]">(optional)</span>
+                  <label className="t-label font-medium text-ink-1" htmlFor="ws-description">
+                    Description <span className="font-normal text-ink-3">(optional)</span>
                   </label>
                   <Input
                     id="ws-description"
@@ -154,8 +154,8 @@ export default function WorkspaceSettingsPage() {
                   { label: "Plan", value: data?.plan },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                    <dt className="t-label text-[#8E8E93]">{label}</dt>
-                    <dd className="t-label font-medium text-[#111] font-mono text-right truncate max-w-[240px]">
+                    <dt className="t-label text-ink-3">{label}</dt>
+                    <dd className="t-label font-medium text-ink-1 font-mono text-right truncate max-w-[240px]">
                       {value ?? "-"}
                     </dd>
                   </div>

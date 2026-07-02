@@ -56,8 +56,8 @@ export default function FeedbackPage() {
               <div className="w-12 h-12 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
                 <span className="text-xl text-green-600">&#10003;</span>
               </div>
-              <p className="t-label font-medium text-[#111]">Feedback received</p>
-              <p className="t-caption text-[#8E8E93]">
+              <p className="t-label font-medium text-ink-1">Feedback received</p>
+              <p className="t-caption text-ink-3">
                 We read every submission. If you reported a bug or asked for a feature, we may
                 follow up by email.
               </p>
@@ -82,7 +82,7 @@ export default function FeedbackPage() {
                       "px-3 py-1.5 rounded-lg t-label capitalize transition-colors",
                       type === t
                         ? "bg-indigo-600 text-white"
-                        : "bg-[#F5F5F7] text-[#3C3C43] hover:bg-indigo-50 hover:text-indigo-700",
+                        : "bg-[var(--surface-subtle)] text-ink-2 hover:bg-indigo-50 hover:text-indigo-700",
                     ].join(" ")}
                   >
                     {t === "bug" ? "Bug report" : t === "feature" ? "Feature request" : "Other"}
@@ -133,8 +133,8 @@ export default function FeedbackPage() {
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between gap-4 py-3">
                 <div>
-                  <p className="t-label font-medium text-[#111]">{item.label}</p>
-                  <p className="t-caption text-[#8E8E93]">{item.description}</p>
+                  <p className="t-label font-medium text-ink-1">{item.label}</p>
+                  <p className="t-caption text-ink-3">{item.description}</p>
                 </div>
                 <a
                   href={item.href}

@@ -101,8 +101,8 @@ export default function OperationsPage() {
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between gap-4 py-3">
                     <div>
-                      <p className="t-label font-medium text-[#111]">{item.label}</p>
-                      <p className="t-caption text-[#8E8E93]">{item.description}</p>
+                      <p className="t-label font-medium text-ink-1">{item.label}</p>
+                      <p className="t-caption text-ink-3">{item.description}</p>
                     </div>
                     <StatusBadge tone={item.enabled ? "success" : "neutral"}>
                       {item.enabled ? "Enabled" : "Not included"}
@@ -116,7 +116,7 @@ export default function OperationsPage() {
           <CardShell>
             <CardHeader>Platform limits</CardHeader>
             <CardBody>
-              <p className="t-caption text-[#8E8E93] mb-4">
+              <p className="t-caption text-ink-3 mb-4">
                 These are fixed platform defaults that apply to all workspaces. They are not configurable per workspace.
               </p>
               <div className="flex flex-col divide-y divide-black/[0.06]">
@@ -127,8 +127,8 @@ export default function OperationsPage() {
                   { label: "MCP request timeout", value: "30 seconds" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between gap-4 py-3">
-                    <p className="t-label text-[#111]">{item.label}</p>
-                    <p className="t-label font-mono text-[#3C3C43]">{item.value}</p>
+                    <p className="t-label text-ink-1">{item.label}</p>
+                    <p className="t-label font-mono text-ink-2">{item.value}</p>
                   </div>
                 ))}
               </div>

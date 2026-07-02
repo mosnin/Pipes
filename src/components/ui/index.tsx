@@ -1135,8 +1135,8 @@ export function SidebarNav({ sections, activeHref, className }: SidebarNavProps)
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 rounded-md t-label transition-colors",
                   active
-                    ? "surface-canvas shadow-xs ring-1 ring-black/5 text-ink-1"
-                    : "text-ink-2 hover:surface-canvas/60 hover:text-ink-1",
+                    ? "surface-canvas shadow-xs ring-1 ring-[var(--color-line)] text-ink-1"
+                    : "text-ink-2 hover:bg-[var(--color-hover)] hover:text-ink-1",
                 )}
               >
                 {item.icon != null && (

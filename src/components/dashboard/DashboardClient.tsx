@@ -898,7 +898,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             </div>
             <Link
               href="/settings/tokens"
-              className="inline-flex items-center gap-1.5 t-caption text-ink-3 hover:text-indigo-600 transition-colors border border-line hover:border-indigo-200 rounded-full px-3 py-1.5 surface-canvas/60"
+              className="inline-flex items-center gap-1.5 t-caption text-ink-3 hover:text-indigo-600 transition-colors border border-line hover:border-indigo-200 rounded-full px-3 py-1.5 surface-canvas"
             >
               <Bot size={11} className="shrink-0" aria-hidden />
               Connect to any AI agent via MCP

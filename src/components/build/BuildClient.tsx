@@ -60,7 +60,7 @@ function ExecutionLevel({
             "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
             active
               ? "bg-violet-600 border-violet-600 text-white"
-              : "bg-white border-black/[0.1] text-[#8E8E93]",
+              : "surface-canvas border-black/[0.1] text-ink-3",
           ].join(" ")}
         >
           {level}
@@ -71,7 +71,7 @@ function ExecutionLevel({
       {/* Content */}
       <div className="flex-1 pb-4">
         <div className="flex items-center gap-2 mb-2">
-          <p className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>{description}</p>
+          <p className="t-label font-semibold text-ink-1" style={{ fontSize: 12 }}>{description}</p>
           {isParallel && (
             <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-200 px-2 py-0.5 t-caption text-violet-700" style={{ fontSize: 10 }}>
               <GitBranch size={9} />
@@ -90,10 +90,10 @@ function ExecutionLevel({
               >
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: cfg.color }} />
                 <div>
-                  <p className="t-label font-semibold text-[#111]" style={{ fontSize: 12 }}>{node.title}</p>
-                  <p className="t-overline text-[#8E8E93]" style={{ fontSize: 10 }}>{node.type}</p>
+                  <p className="t-label font-semibold text-ink-1" style={{ fontSize: 12 }}>{node.title}</p>
+                  <p className="t-overline text-ink-3" style={{ fontSize: 10 }}>{node.type}</p>
                   {node.description && (
-                    <p className="t-caption text-[#8E8E93] mt-0.5" style={{ fontSize: 10 }}>
+                    <p className="t-caption text-ink-3 mt-0.5" style={{ fontSize: 10 }}>
                       {node.description.length > 44 ? node.description.slice(0, 42) + "…" : node.description}
                     </p>
                   )}
@@ -136,11 +136,11 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle2 size={15} className="text-emerald-500" />
-            <span className="t-overline text-[#8E8E93]">DAG planned</span>
+            <span className="t-overline text-ink-3">DAG planned</span>
           </div>
-          <h2 className="t-h3 text-[#111]">{dag.systemName}</h2>
+          <h2 className="t-h3 text-ink-1">{dag.systemName}</h2>
           {dag.description && (
-            <p className="mt-1 t-caption text-[#3C3C43]" style={{ fontSize: 12, maxWidth: "60ch" }}>
+            <p className="mt-1 t-caption text-ink-2" style={{ fontSize: 12, maxWidth: "60ch" }}>
               {dag.description}
             </p>
           )}
@@ -149,7 +149,7 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
           <button
             type="button"
             onClick={onClear}
-            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] bg-white px-4 py-2.5 t-label font-semibold text-[#3C3C43] hover:border-black/[0.2] hover:text-[#111] transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-black/[0.1] surface-canvas px-4 py-2.5 t-label font-semibold text-ink-2 hover:border-black/[0.2] hover:text-ink-1 transition-colors"
           >
             <RotateCcw size={13} />
             New plan
@@ -181,25 +181,25 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
           score >= 6 ? ["Moderate", "#2563EB", "#EFF6FF"] :
           ["Simple", "#16A34A", "#F0FDF4"];
         return (
-          <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-black/[0.06] bg-[#FAFAFA]">
+          <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-line bg-[#FAFAFA]">
             <div>
-              <p className="t-overline text-[#8E8E93]">Nodes</p>
-              <p className="mt-0.5 t-label font-semibold text-[#111]">{dag.nodes.length}</p>
+              <p className="t-overline text-ink-3">Nodes</p>
+              <p className="mt-0.5 t-label font-semibold text-ink-1">{dag.nodes.length}</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">AI nodes</p>
-              <p className="mt-0.5 t-label font-semibold text-[#111]">{aiCount > 0 ? aiCount : "—"}{humanCount > 0 ? ` · ${humanCount} human` : ""}</p>
+              <p className="t-overline text-ink-3">AI nodes</p>
+              <p className="mt-0.5 t-label font-semibold text-ink-1">{aiCount > 0 ? aiCount : "—"}{humanCount > 0 ? ` · ${humanCount} human` : ""}</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">Execution levels</p>
-              <p className="mt-0.5 t-label font-semibold text-[#111]">{totalLevels}</p>
+              <p className="t-overline text-ink-3">Execution levels</p>
+              <p className="mt-0.5 t-label font-semibold text-ink-1">{totalLevels}</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">Max parallelism</p>
-              <p className="mt-0.5 t-label font-semibold text-[#111]">{maxParallelism}x</p>
+              <p className="t-overline text-ink-3">Max parallelism</p>
+              <p className="mt-0.5 t-label font-semibold text-ink-1">{maxParallelism}x</p>
             </div>
             <div>
-              <p className="t-overline text-[#8E8E93]">Complexity</p>
+              <p className="t-overline text-ink-3">Complexity</p>
               <p className="mt-1">
                 <span className="inline-block rounded-full px-2 py-0.5 t-caption font-semibold" style={{ fontSize: 10, color, background: bg }}>{label}</span>
               </p>
@@ -215,10 +215,10 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
 
       {/* Execution plan */}
       <div className="mb-6">
-        <p className="t-label font-semibold text-[#111] mb-4">Execution plan</p>
-        <div className="rounded-xl border border-black/[0.06] bg-white p-4">
+        <p className="t-label font-semibold text-ink-1 mb-4">Execution plan</p>
+        <div className="rounded-xl border border-line surface-canvas p-4">
           {dag.executionPlan.levels.length === 0 ? (
-            <p className="t-caption text-[#8E8E93] text-center py-4" style={{ fontSize: 12 }}>
+            <p className="t-caption text-ink-3 text-center py-4" style={{ fontSize: 12 }}>
               No execution levels — the graph may be incomplete or not yet connected.
             </p>
           ) : dag.executionPlan.levels.map((lvl) => (
@@ -249,16 +249,16 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
             return (
               <>
                 {visible.map((a, i) => (
-                  <div key={i} className="flex items-start gap-2.5 rounded-lg border border-black/[0.06] bg-[#FAFAFA] px-3.5 py-2.5">
-                    <Info size={13} className="text-[#8E8E93] mt-0.5 shrink-0" />
-                    <p className="t-caption text-[#3C3C43]" style={{ fontSize: 12 }}>{a}</p>
+                  <div key={i} className="flex items-start gap-2.5 rounded-lg border border-line bg-[#FAFAFA] px-3.5 py-2.5">
+                    <Info size={13} className="text-ink-3 mt-0.5 shrink-0" />
+                    <p className="t-caption text-ink-2" style={{ fontSize: 12 }}>{a}</p>
                   </div>
                 ))}
                 {hidden > 0 && !assumptionsExpanded && (
                   <button
                     type="button"
                     onClick={() => setAssumptionsExpanded(true)}
-                    className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                    className="self-start t-caption text-ink-3 hover:text-ink-2 transition-colors"
                     style={{ fontSize: 11 }}
                   >
                     + {hidden} more assumption{hidden !== 1 ? "s" : ""}
@@ -268,7 +268,7 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
                   <button
                     type="button"
                     onClick={() => setAssumptionsExpanded(false)}
-                    className="self-start t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                    className="self-start t-caption text-ink-3 hover:text-ink-2 transition-colors"
                     style={{ fontSize: 11 }}
                   >
                     Show less
@@ -306,7 +306,7 @@ function DagPreview({ dag, onClear }: { dag: AgentDag; onClear: () => void }) {
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 surface-canvas px-4 py-2.5 t-label font-semibold text-emerald-700 hover:border-emerald-400 transition-colors"
             >
               <RotateCcw size={13} />
               Plan another
@@ -366,37 +366,37 @@ export function BuildClient() {
         {/* Left */}
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2.5">
-            <label className="t-label font-semibold text-[#111]">Goal</label>
+            <label className="t-label font-semibold text-ink-1">Goal</label>
             <textarea
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="Describe what you want agents to accomplish. Be specific about inputs, outputs, and any constraints..."
-              className="w-full h-28 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors"
+              className="w-full h-28 resize-none rounded-xl border border-black/[0.1] surface-canvas px-4 py-3.5 t-body text-ink-1 text-[13px] leading-relaxed placeholder:text-ink-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors"
             />
           </div>
 
           <div className="flex flex-col gap-2.5">
-            <label className="t-label font-semibold text-[#111] flex items-center gap-1.5">
-              Context <span className="t-caption text-[#8E8E93] font-normal">(optional)</span>
+            <label className="t-label font-semibold text-ink-1 flex items-center gap-1.5">
+              Context <span className="t-caption text-ink-3 font-normal">(optional)</span>
             </label>
             <textarea
               value={context}
               onChange={(e) => setContext(e.target.value)}
               placeholder="Relevant tools, APIs, constraints, or existing infrastructure the agents should be aware of..."
-              className="w-full h-20 resize-none rounded-xl border border-black/[0.1] bg-white px-4 py-3.5 t-body text-[#111] text-[13px] leading-relaxed placeholder:text-[#8E8E93] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors"
+              className="w-full h-20 resize-none rounded-xl border border-black/[0.1] surface-canvas px-4 py-3.5 t-body text-ink-1 text-[13px] leading-relaxed placeholder:text-ink-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors"
             />
           </div>
 
           {/* Example goals */}
           {!goal && (
             <div>
-              <p className="t-overline text-[#8E8E93] mb-2">Examples</p>
+              <p className="t-overline text-ink-3 mb-2">Examples</p>
               <div className="flex flex-wrap gap-2">
                 {EXAMPLE_GOALS.map((eg) => (
                   <button
                     key={eg}
                     onClick={() => setGoal(eg)}
-                    className="text-left rounded-lg border border-black/[0.07] bg-white px-3 py-2 t-caption text-[#3C3C43] hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                    className="text-left rounded-lg border border-black/[0.07] surface-canvas px-3 py-2 t-caption text-ink-2 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
                     style={{ fontSize: 11 }}
                   >
                     {eg.length > 70 ? eg.slice(0, 67) + "..." : eg}
@@ -410,7 +410,7 @@ export function BuildClient() {
         {/* Right: Options */}
         <div className="flex flex-col gap-5">
           <div>
-            <p className="t-label font-semibold text-[#111] mb-2.5">Parallelism</p>
+            <p className="t-label font-semibold text-ink-1 mb-2.5">Parallelism</p>
             <div className="flex flex-col gap-2">
               {PARALLELISM_OPTIONS.map((opt) => (
                 <button
@@ -421,7 +421,7 @@ export function BuildClient() {
                     "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     parallelism === opt.value
                       ? "border-violet-300 bg-violet-50 text-violet-700"
-                      : "border-black/[0.08] bg-white text-[#3C3C43] hover:border-black/[0.15]",
+                      : "border-line surface-canvas text-ink-2 hover:border-black/[0.15]",
                   ].join(" ")}
                 >
                   <div>
@@ -470,7 +470,7 @@ export function BuildClient() {
                 <div className="w-4 h-4 rounded-full bg-emerald-200 animate-pulse shrink-0" />
                 <div className="w-40 h-4 rounded-full bg-[#F2F2F7] animate-pulse" />
               </div>
-              <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-black/[0.06] bg-[#FAFAFA]">
+              <div className="grid grid-cols-5 gap-4 mb-6 p-4 rounded-xl border border-line bg-[#FAFAFA]">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <div key={i}>
                     <div className="w-14 h-2.5 rounded-full bg-[#E5E5EA] mb-2 animate-pulse" style={{ animationDelay: `${i * 0.08}s` }} />
@@ -479,7 +479,7 @@ export function BuildClient() {
                 ))}
               </div>
               <div className="rounded-xl border border-black/[0.07] bg-[#F9F9FB] flex items-center justify-center" style={{ minHeight: 180 }}>
-                <p className="t-caption text-[#C7C7CC]" style={{ fontSize: 12 }}>Planning execution DAG…</p>
+                <p className="t-caption text-ink-4" style={{ fontSize: 12 }}>Planning execution DAG…</p>
               </div>
             </motion.div>
           )}
