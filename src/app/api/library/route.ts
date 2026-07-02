@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getServerApp } from "@/lib/composition/server";
-import { failure, success } from "@/lib/api/response";
+import { failure, safeFailure, success } from "@/lib/api/response";
+
+const LibraryActionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("favorite"), systemId: z.string(), favorite: z.boolean() }),
+  z.object({ action: z.literal("tags"), systemId: z.string(), tags: z.array(z.string().max(50)).max(20).default([]) }),
+  z.object({ action: z.literal("archive"), systemId: z.string() }),
+  z.object({ action: z.literal("restore"), systemId: z.string() }),
+]);
 
 export async function GET(request: Request) {
   try {
@@ -12,20 +20,24 @@ export async function GET(request: Request) {
     const tag = url.searchParams.get("tag") ?? undefined;
     return NextResponse.json(success(await services.library.query(ctx, { q, status, sort, tag })));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(error), { status: 400 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const { ctx, services } = await getServerApp();
-    const body = await request.json();
-    if (body.action === "favorite") return NextResponse.json(success(await services.library.setFavorite(ctx, body.systemId, Boolean(body.favorite))));
-    if (body.action === "tags") return NextResponse.json(success(await services.library.setTags(ctx, body.systemId, body.tags ?? [])));
+    const raw = await request.json();
+    const parsed = LibraryActionSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json(failure("Unsupported library action"), { status: 400 });
+    }
+    const body = parsed.data;
+    if (body.action === "favorite") return NextResponse.json(success(await services.library.setFavorite(ctx, body.systemId, body.favorite)));
+    if (body.action === "tags") return NextResponse.json(success(await services.library.setTags(ctx, body.systemId, body.tags)));
     if (body.action === "archive") return NextResponse.json(success(await services.library.archive(ctx, body.systemId)));
-    if (body.action === "restore") return NextResponse.json(success(await services.library.restore(ctx, body.systemId)));
-    return NextResponse.json(failure("Unsupported library action"), { status: 400 });
+    return NextResponse.json(success(await services.library.restore(ctx, body.systemId)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(error), { status: 400 });
   }
 }
