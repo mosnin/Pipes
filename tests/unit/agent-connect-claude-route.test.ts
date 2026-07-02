@@ -117,13 +117,14 @@ describe("/api/agent/connect-claude route", () => {
     const data = body.data as {
       token: string;
       mcpUrl: string;
+      serverName: string;
       configBlock: {
         mcpServers: Record<
           string,
-          { url: string; transport: string; headers: { Authorization: string } }
+          { type: string; url: string; headers: { Authorization: string } }
         >;
       };
-      claudeDeepLink: string;
+      cliCommand: string;
       expiresAt: string;
       capabilities: string[];
     };
@@ -134,14 +135,19 @@ describe("/api/agent/connect-claude route", () => {
 
     const serverEntries = Object.values(data.configBlock.mcpServers);
     expect(serverEntries).toHaveLength(1);
-    expect(serverEntries[0].transport).toBe("http");
+    // Real Claude config uses `type: "http"` (not the invented `transport`).
+    expect(serverEntries[0].type).toBe("http");
     expect(serverEntries[0].url).toBe("http://localhost:3000/api/protocol/mcp");
     expect(serverEntries[0].headers.Authorization).toBe(`Bearer ${data.token}`);
 
-    expect(data.claudeDeepLink.startsWith("claude://mcp/install?config=")).toBe(true);
-    const encoded = data.claudeDeepLink.split("config=")[1];
-    const decoded = JSON.parse(Buffer.from(encoded, "base64").toString("utf8"));
-    expect(decoded).toEqual(data.configBlock);
+    // Server name is brand-consistent (looper-*, not the leaking pipes- prefix).
+    expect(Object.keys(data.configBlock.mcpServers)[0].startsWith("looper-")).toBe(true);
+
+    // A real, runnable CLI command — no fake claude:// deep link.
+    expect(data.cliCommand).toContain("claude mcp add --transport http");
+    expect(data.cliCommand).toContain(data.mcpUrl);
+    expect(data.cliCommand).toContain(`Bearer ${data.token}`);
+    expect((data as unknown as { claudeDeepLink?: string }).claudeDeepLink).toBeUndefined();
 
     // Token persisted with read-only capabilities only.
     expect(tokensCreated).toHaveLength(1);

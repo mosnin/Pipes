@@ -28,17 +28,22 @@ const TTL_MS = TTL_HOURS * 60 * 60 * 1000;
 type ConnectClaudeResponseBody = {
   token: string;
   mcpUrl: string;
+  serverName: string;
+  // The exact shape Claude Desktop / claude.ai expect in the "mcpServers"
+  // map for a remote (HTTP) MCP server. Note the field is `type`, not the
+  // invented `transport`.
   configBlock: {
     mcpServers: Record<
       string,
       {
+        type: "http";
         url: string;
-        transport: "http";
         headers: { Authorization: string };
       }
     >;
   };
-  claudeDeepLink: string;
+  // Real, copy-pasteable connect paths — no fake deep link.
+  cliCommand: string;
   expiresAt: string;
   capabilities: string[];
 };
@@ -59,13 +64,6 @@ function shortName(input: string): string {
   return cleaned.length > 0 ? cleaned : "system";
 }
 
-function toBase64(input: string): string {
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(input, "utf8").toString("base64");
-  }
-  // Fallback for non-Node runtimes.
-  return globalThis.btoa(unescape(encodeURIComponent(input)));
-}
 
 export async function POST(request: Request): Promise<Response> {
   let app: Awaited<ReturnType<typeof getServerApp>>;
@@ -130,11 +128,8 @@ export async function POST(request: Request): Promise<Response> {
       tokenPreview,
       createdByUserId: ctx.userId
     });
-  } catch (error) {
-    return jsonResponse(500, {
-      ok: false,
-      error: `Failed to issue token: ${(error as Error).message}`
-    });
+  } catch {
+    return jsonResponse(500, { ok: false, error: "Failed to issue connection token." });
   }
 
   // Persist issuance and TTL via the audit trail (the token table itself does
@@ -172,26 +167,26 @@ export async function POST(request: Request): Promise<Response> {
     .catch(() => undefined);
 
   const mcpUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/api/protocol/mcp`;
-  const serverKey = `pipes-${shortName(system.name)}`;
+  const serverName = `looper-${shortName(system.name)}`;
   const configBlock: ConnectClaudeResponseBody["configBlock"] = {
     mcpServers: {
-      [serverKey]: {
+      [serverName]: {
+        type: "http",
         url: mcpUrl,
-        transport: "http",
         headers: { Authorization: `Bearer ${secret}` }
       }
     }
   };
 
-  const claudeDeepLink = `claude://mcp/install?config=${toBase64(
-    JSON.stringify(configBlock)
-  )}`;
+  // Claude Code / CLI one-liner. This actually registers the server.
+  const cliCommand = `claude mcp add --transport http ${serverName} ${mcpUrl} --header "Authorization: Bearer ${secret}"`;
 
   const responseBody: ConnectClaudeResponseBody = {
     token: secret,
     mcpUrl,
+    serverName,
     configBlock,
-    claudeDeepLink,
+    cliCommand,
     expiresAt,
     capabilities
   };

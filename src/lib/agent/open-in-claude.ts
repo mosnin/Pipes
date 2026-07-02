@@ -1,6 +1,7 @@
-// Shared Open-in-Claude trigger. The same flow as OpenInClaudeButton's click
-// handler, extracted so the conversation drawer's PostBuildSuccess can fire
-// it without reaching into the topbar.
+// Shared Connect-to-Claude trigger. Fired by the conversation drawer's
+// PostBuildSuccess affordance. Mints a scoped read-only MCP token and copies
+// the real `claude mcp add` command to the clipboard so the user can paste it
+// straight into Claude Code. No fake deep link.
 
 import { toast } from "sonner";
 
@@ -8,8 +9,8 @@ type ConfigBlock = {
   mcpServers: Record<
     string,
     {
+      type: "http";
       url: string;
-      transport: "http";
       headers: { Authorization: string };
     }
   >;
@@ -18,19 +19,19 @@ type ConfigBlock = {
 type ConnectClaudeData = {
   token: string;
   mcpUrl: string;
+  serverName: string;
   configBlock: ConfigBlock;
-  claudeDeepLink: string;
+  cliCommand: string;
   expiresAt: string;
   capabilities: string[];
 };
 
-const TOAST_ID = "open-in-claude";
-const FALLBACK_COPY_DELAY_MS = 600;
+const TOAST_ID = "connect-claude";
 
-async function copyConfigToClipboard(configBlock: ConfigBlock): Promise<boolean> {
+async function copyText(text: string): Promise<boolean> {
   if (typeof navigator === "undefined" || !navigator.clipboard) return false;
   try {
-    await navigator.clipboard.writeText(JSON.stringify(configBlock, null, 2));
+    await navigator.clipboard.writeText(text);
     return true;
   } catch {
     return false;
@@ -38,7 +39,7 @@ async function copyConfigToClipboard(configBlock: ConfigBlock): Promise<boolean>
 }
 
 export async function triggerOpenInClaude(systemId: string): Promise<void> {
-  toast.loading("Opening in Claude...", { id: TOAST_ID });
+  toast.loading("Generating a Claude connection...", { id: TOAST_ID });
   try {
     const res = await fetch("/api/agent/connect-claude", {
       method: "POST",
@@ -50,28 +51,18 @@ export async function triggerOpenInClaude(systemId: string): Promise<void> {
       | { ok: false; error: string };
 
     if (!res.ok || !body.ok) {
-      const message = !body.ok ? body.error : "Could not open in Claude.";
-      toast.error(message, { id: TOAST_ID });
+      toast.error(!body.ok ? body.error : "Could not generate a connection.", { id: TOAST_ID });
       return;
     }
 
-    const data = body.data;
-    if (typeof window !== "undefined") {
-      window.open(data.claudeDeepLink, "_blank");
-    }
-    window.setTimeout(() => {
-      void copyConfigToClipboard(data.configBlock).then((copied) => {
-        toast.success(
-          copied
-            ? "Opened in Claude. Config also copied to clipboard."
-            : "Opened in Claude. Open the topbar to copy manually.",
-          { id: TOAST_ID },
-        );
-      });
-    }, FALLBACK_COPY_DELAY_MS);
-  } catch (error) {
-    toast.error(`Could not open in Claude: ${(error as Error).message}`, {
-      id: TOAST_ID,
-    });
+    const copied = await copyText(body.data.cliCommand);
+    toast.success(
+      copied
+        ? "Connection ready — `claude mcp add` command copied. Paste it into Claude Code."
+        : "Connection ready. Open the Connect to Claude dialog to copy the command.",
+      { id: TOAST_ID },
+    );
+  } catch {
+    toast.error("Could not generate a connection.", { id: TOAST_ID });
   }
 }

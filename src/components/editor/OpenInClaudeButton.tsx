@@ -8,8 +8,8 @@ type ConfigBlock = {
   mcpServers: Record<
     string,
     {
+      type: "http";
       url: string;
-      transport: "http";
       headers: { Authorization: string };
     }
   >;
@@ -18,8 +18,9 @@ type ConfigBlock = {
 type ConnectClaudeData = {
   token: string;
   mcpUrl: string;
+  serverName: string;
   configBlock: ConfigBlock;
-  claudeDeepLink: string;
+  cliCommand: string;
   expiresAt: string;
   capabilities: string[];
 };
@@ -30,125 +31,129 @@ type Props = {
   onOpenLegacy?: () => void;
 };
 
-const TOAST_ID = "open-in-claude";
-const FALLBACK_COPY_DELAY_MS = 600;
+const TOAST_ID = "connect-claude";
 
-async function copyConfigToClipboard(configBlock: ConfigBlock): Promise<boolean> {
+async function copyText(text: string): Promise<boolean> {
   if (typeof navigator === "undefined" || !navigator.clipboard) return false;
   try {
-    await navigator.clipboard.writeText(JSON.stringify(configBlock, null, 2));
+    await navigator.clipboard.writeText(text);
     return true;
   } catch {
     return false;
   }
 }
 
+// Honest connect flow. Clicking mints a scoped, read-only MCP token and opens
+// a dialog with the REAL ways to connect — a `claude mcp add` one-liner, the
+// Claude Desktop config block, and the remote-connector URL. No fake deep
+// link, no "Opened in Claude" that opened nothing.
 export function OpenInClaudeButton({ systemId, hasNodes, onOpenLegacy }: Props) {
   const [loading, setLoading] = useState(false);
-  const [showConfig, setShowConfig] = useState(false);
-  const [lastConfig, setLastConfig] = useState<ConfigBlock | null>(null);
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<ConnectClaudeData | null>(null);
 
   const disabled = !hasNodes || loading;
 
   const handleClick = async () => {
     if (loading || !hasNodes) return;
     setLoading(true);
-    toast.loading("Opening in Claude...", { id: TOAST_ID });
+    toast.loading("Generating a Claude connection...", { id: TOAST_ID });
     try {
       const res = await fetch("/api/agent/connect-claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemId })
+        body: JSON.stringify({ systemId }),
       });
       const body = (await res.json()) as
         | { ok: true; data: ConnectClaudeData }
         | { ok: false; error: string };
 
       if (!res.ok || !body.ok) {
-        const message = !body.ok ? body.error : "Could not open in Claude.";
-        toast.error(message, {
+        toast.error(!body.ok ? body.error : "Could not generate a connection.", {
           id: TOAST_ID,
-          action: onOpenLegacy
-            ? { label: "Use custom token", onClick: onOpenLegacy }
-            : undefined
+          action: onOpenLegacy ? { label: "Use custom token", onClick: onOpenLegacy } : undefined,
         });
         return;
       }
 
-      const data = body.data;
-      setLastConfig(data.configBlock);
-
-      // Try to open Claude Desktop via the install deep link.
-      if (typeof window !== "undefined") {
-        window.open(data.claudeDeepLink, "_blank");
-      }
-
-      // Fallback: copy the config block to the clipboard a beat later, so
-      // users can paste it manually if Claude Desktop is not installed.
-      window.setTimeout(() => {
-        void copyConfigToClipboard(data.configBlock).then((copied) => {
-          toast.success(
-            copied
-              ? "Opened in Claude. Config also copied to clipboard."
-              : "Opened in Claude. Tap Show config to copy manually.",
-            {
-              id: TOAST_ID,
-              action: {
-                label: "Show config",
-                onClick: () => setShowConfig(true)
-              }
-            }
-          );
-        });
-      }, FALLBACK_COPY_DELAY_MS);
-    } catch (error) {
-      toast.error(`Could not open in Claude: ${(error as Error).message}`, {
+      setData(body.data);
+      setOpen(true);
+      toast.success("Connection ready. Copy the command into Claude.", { id: TOAST_ID });
+    } catch {
+      toast.error("Could not generate a connection.", {
         id: TOAST_ID,
-        action: onOpenLegacy
-          ? { label: "Use custom token", onClick: onOpenLegacy }
-          : undefined
+        action: onOpenLegacy ? { label: "Use custom token", onClick: onOpenLegacy } : undefined,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const tooltipContent = !hasNodes
-    ? "Add a node first"
-    : "Send this system to Claude Desktop";
+  const tooltipContent = !hasNodes ? "Add a node first" : "Connect this loop to Claude via MCP";
 
   return (
     <>
       <Tooltip content={tooltipContent}>
         <span className="inline-flex">
-          <Button
-            variant="primary"
-            size="sm"
-            onPress={handleClick}
-            isDisabled={disabled}
-            aria-label="Open in Claude"
-          >
+          <Button variant="primary" size="sm" onPress={handleClick} isDisabled={disabled} aria-label="Connect to Claude">
             {loading && <Spinner size="xs" />}
-            <span className="hidden sm:inline">Open in Claude</span>
+            <span className="hidden sm:inline">Connect to Claude</span>
           </Button>
         </span>
       </Tooltip>
 
       <Dialog
-        open={showConfig}
-        onOpenChange={(next) => {
-          if (!next) setShowConfig(false);
-        }}
-        title="Claude Desktop config"
-        description="Paste this into your Claude Desktop config to connect."
+        open={open}
+        onOpenChange={(next) => { if (!next) setOpen(false); }}
+        title="Connect this loop to Claude"
+        description="This loop is now a live MCP server. Connect it with one command, or paste the config. The token is read-only and expires in 24 hours."
         size="md"
       >
-        {lastConfig ? (
-          <pre className="t-mono text-[12px] bg-[#111] text-emerald-300 p-3 rounded-[10px] whitespace-pre-wrap break-all leading-relaxed">
-            {JSON.stringify(lastConfig, null, 2)}
-          </pre>
+        {data ? (
+          <div className="flex flex-col gap-5">
+            <section className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="t-overline text-ink-3">Claude Code / CLI</span>
+                <button
+                  type="button"
+                  className="t-caption font-medium text-violet-600 hover:text-violet-700"
+                  onClick={() => copyText(data.cliCommand).then((ok) => toast[ok ? "success" : "error"](ok ? "Command copied." : "Copy failed."))}
+                >
+                  Copy command
+                </button>
+              </div>
+              <pre className="t-mono text-[12px] surface-inverse p-3 rounded-[10px] whitespace-pre-wrap break-all leading-relaxed">
+                {data.cliCommand}
+              </pre>
+            </section>
+
+            <section className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="t-overline text-ink-3">Claude Desktop config</span>
+                <button
+                  type="button"
+                  className="t-caption font-medium text-violet-600 hover:text-violet-700"
+                  onClick={() => copyText(JSON.stringify(data.configBlock, null, 2)).then((ok) => toast[ok ? "success" : "error"](ok ? "Config copied." : "Copy failed."))}
+                >
+                  Copy config
+                </button>
+              </div>
+              <pre className="t-mono text-[12px] surface-inverse p-3 rounded-[10px] whitespace-pre-wrap break-all leading-relaxed">
+                {JSON.stringify(data.configBlock, null, 2)}
+              </pre>
+            </section>
+
+            <section className="flex flex-col gap-1.5">
+              <span className="t-overline text-ink-3">claude.ai custom connector</span>
+              <p className="t-caption text-ink-2">
+                In claude.ai, add a custom connector with this URL and an{" "}
+                <code className="t-mono">Authorization: Bearer</code> header:
+              </p>
+              <code className="t-mono text-[12px] text-ink-1 break-all">{data.mcpUrl}</code>
+            </section>
+          </div>
         ) : (
-          <p className="t-caption text-[#8E8E93]">No config available yet.</p>
+          <p className="t-caption text-ink-3">No connection generated yet.</p>
         )}
       </Dialog>
     </>

@@ -118,4 +118,49 @@ describe("protocol token and hardening flow", () => {
     const protocolCtx = await getProtocolContext(new Request("http://localhost", { headers: { authorization: `Bearer ${token.secret}` } }));
     expect(protocolCtx.ctx.actorType).toBe("agent");
   });
+
+  it("speaks real JSON-RPC MCP: initialize, tools/list, tools/call", async () => {
+    const repos = createMockRepositories();
+    const services = createBoundedServices(repos);
+    const userCtx = await repos.users.provision({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
+    await repos.entitlements.upsertPlanState({ workspaceId: userCtx.workspaceId, plan: "Pro", status: "active" });
+    const token = await services.protocol.createToken(userCtx, { name: "Claude", capabilities: ["systems:read"] });
+    const auth = { authorization: `Bearer ${token.secret}`, "content-type": "application/json" };
+    const rpc = (body: unknown) => mcpPost(new Request("http://localhost/api/protocol/mcp", { method: "POST", headers: auth, body: JSON.stringify(body) }));
+
+    // initialize handshake
+    const initRes = await rpc({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } } });
+    const init = await initRes.json();
+    expect(init.jsonrpc).toBe("2.0");
+    expect(init.id).toBe(1);
+    expect(init.result.serverInfo.name).toBe("looper");
+    expect(init.result.capabilities.tools).toBeTruthy();
+
+    // notifications/initialized -> 202, no body
+    const notif = await rpc({ jsonrpc: "2.0", method: "notifications/initialized" });
+    expect(notif.status).toBe(202);
+
+    // tools/list returns tools with inputSchema
+    const listRes = await rpc({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    const list = await listRes.json();
+    expect(Array.isArray(list.result.tools)).toBe(true);
+    const listSystems = list.result.tools.find((t: { name: string }) => t.name === "list_systems");
+    expect(listSystems.inputSchema.type).toBe("object");
+
+    // tools/call wraps data in MCP content blocks
+    const callRes = await rpc({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "list_systems", arguments: {} } });
+    const call = await callRes.json();
+    expect(call.result.content[0].type).toBe("text");
+    expect(() => JSON.parse(call.result.content[0].text)).not.toThrow();
+
+    // a capability the token lacks comes back as isError, not a transport crash
+    const denied = await rpc({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "apply_graph_actions", arguments: { systemId: "x" } } });
+    const deniedBody = await denied.json();
+    expect(deniedBody.result.isError).toBe(true);
+
+    // unknown method -> JSON-RPC method-not-found
+    const bad = await rpc({ jsonrpc: "2.0", id: 5, method: "does/not/exist" });
+    const badBody = await bad.json();
+    expect(badBody.error.code).toBe(-32601);
+  });
 });
