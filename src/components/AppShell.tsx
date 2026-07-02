@@ -12,18 +12,12 @@ function getInitials(name: string): string {
     .join("");
 }
 
-function deriveWorkspaceName(workspaceId: string): string {
-  // Convex IDs and synthetic IDs are not user-friendly. Show a stable short label.
-  if (workspaceId.length === 0) return "Workspace";
-  if (workspaceId.length <= 12) return workspaceId;
-  return "Workspace";
-}
-
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getAuthService().requireUser();
-  const { ctx } = await getServerApp();
+  const { ctx, repositories } = await getServerApp();
   const showAdmin = canAccessAdmin(user.email);
   const initials = getInitials(user.name);
+  const workspace = await repositories.workspaces.get(ctx.workspaceId);
 
   return (
     <AppShellClient
@@ -34,7 +28,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       }}
       workspace={{
         id: ctx.workspaceId,
-        name: deriveWorkspaceName(ctx.workspaceId),
+        name: workspace?.name ?? "Workspace",
         plan: ctx.plan,
         role: ctx.role,
       }}

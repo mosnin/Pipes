@@ -77,7 +77,7 @@ export function PricingBillingToggle({
                       : "bg-violet-50 text-violet-700",
                   ].join(" ")}
                 >
-                  -2 mo
+                  2 mo free
                 </span>
               )}
             </button>
