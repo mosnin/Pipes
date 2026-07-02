@@ -2393,21 +2393,42 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
 function MockEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const load = useCallback(async () => {
+  // Signature of the last applied bundle. The poll re-fetches every 1.5s, but
+  // an unchanged response must NOT setState — a fresh object graph would hand
+  // xyflow new array references and trigger the whole StoreUpdater re-render
+  // churn for nothing. Comparing a cheap signature makes the steady state free.
+  const lastSigRef = useRef<string | null>(null);
+  const load = useCallback(async (force = false) => {
     if (notFound) return;
+    // Don't poll a backgrounded tab — pure waste until the user returns.
+    if (!force && typeof document !== "undefined" && document.visibilityState === "hidden") return;
     const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
     const systemData = await systemRes.json() as { ok: boolean; data?: SystemPayload };
-    if (systemData.ok && systemData.data) setData(systemData.data);
-    else if (!systemData.ok) setNotFound(true);
+    if (systemData.ok && systemData.data) {
+      const sig = JSON.stringify(systemData.data);
+      if (sig !== lastSigRef.current) {
+        lastSigRef.current = sig;
+        setData(systemData.data);
+      }
+    } else if (!systemData.ok) {
+      setNotFound(true);
+    }
   }, [systemId, notFound]);
 
   useEffect(() => {
-    void load();
+    void load(true);
     const interval = setInterval(() => { void load(); }, 1500);
-    return () => clearInterval(interval);
+    // Refresh immediately when the tab regains focus so nothing feels stale.
+    const onVisible = () => { if (document.visibilityState === "visible") void load(true); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
-  return <EditorWorkspaceView systemId={systemId} data={data} notFound={notFound} reload={load} initialPrompt={initialPrompt} />;
+  const reload = useCallback(() => load(true), [load]);
+  return <EditorWorkspaceView systemId={systemId} data={data} notFound={notFound} reload={reload} initialPrompt={initialPrompt} />;
 }
 
 function RealEditorWorkspace({ systemId, initialPrompt }: { systemId: string; initialPrompt?: string }) {
