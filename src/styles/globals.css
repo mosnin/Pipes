@@ -34,6 +34,10 @@
   --color-line: rgba(0, 0, 0, 0.08);
   --color-line-strong: rgba(0, 0, 0, 0.14);
 
+  /* Neutral hover wash — tints on hover without inventing a gray each time */
+  --color-hover: rgba(0, 0, 0, 0.04);
+  --color-hover-strong: rgba(0, 0, 0, 0.06);
+
   /* Radius system: input=8 card=12 modal=16 — nothing else */
   --radius-input: 8px;
   --radius-card:  12px;
@@ -116,7 +120,7 @@ body {
     letter-spacing: -0.03em;
     line-height: 1.15;
     font-weight: 800;
-    color: #0A0A0F;
+    color: var(--color-ink-1);
   }
 }
 
@@ -146,6 +150,8 @@ a { color: inherit; text-decoration: none; }
 
 .surface-subtle  { background-color: var(--surface-subtle); }
 .surface-muted   { background-color: var(--surface-muted); }
+.surface-canvas  { background-color: var(--surface-canvas); }
+.surface-page    { background-color: var(--surface-page); }
 .surface-inverse { background-color: var(--surface-inverse); color: white; }
 .ring-focus:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 .hover-lift { transition: transform 140ms ease, box-shadow 140ms ease; }
@@ -378,7 +384,7 @@ a { color: inherit; text-decoration: none; }
 
 .system-card {
   position: relative;
-  background: white;
+  background: var(--surface-canvas);
   isolation: isolate;
 }
 .system-card::before {
@@ -582,7 +588,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 @theme inline {
-  --color-line: color-mix(in oklab, var(--border) 64%, var(--background));
   --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
   --color-chart-scale-05: var(--chart-scale-05);
   --color-chart-scale-04: var(--chart-scale-04);
@@ -751,16 +756,16 @@ a { color: inherit; text-decoration: none; }
 [data-color-scheme="dark"] {
   --background: #0A0A0C;
   --foreground: #F5F5F7;
-  --card: #131316;
+  --card: #16161A;
   --card-foreground: #F5F5F7;
-  --popover: #131316;
+  --popover: #16161A;
   --popover-foreground: #F5F5F7;
   --primary: #8B5CF6;
   --primary-foreground: #ffffff;
   --secondary: #1C1C21;
   --secondary-foreground: #F5F5F7;
   --muted: #1C1C21;
-  --muted-foreground: #8E8E93;
+  --muted-foreground: #86868C;
   --accent: #1C1C21;
   --accent-foreground: #F5F5F7;
   --destructive: #EF4444;
@@ -768,6 +773,33 @@ a { color: inherit; text-decoration: none; }
   --border: rgba(255, 255, 255, 0.10);
   --input: rgba(255, 255, 255, 0.16);
   --ring: #8B5CF6;
+
+  /* ── App semantic tokens, dark ────────────────────────────────────────────
+     Components that use the token utilities (surface-*, text-ink-*, border-line)
+     flip here automatically. Near-black, not pure black — Linear/Vercel depth. */
+  --color-surface: #16161A;
+  --color-accent-light: #1E1633;
+  --surface-canvas: #16161A;
+  --surface-subtle: #121216;
+  --surface-muted: #101013;
+  --surface-page: #0A0A0C;
+  --surface-inverse: #F5F5F7;
+
+  --color-ink-1: #F4F4F6;
+  --color-ink-2: #B8B8BE;
+  --color-ink-3: #86868C;
+  --color-ink-4: #5C5C63;
+
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-line-strong: rgba(255, 255, 255, 0.16);
+  --color-hover: rgba(255, 255, 255, 0.05);
+  --color-hover-strong: rgba(255, 255, 255, 0.08);
+
+  /* Shadows read as ambient depth on dark, not gray smudges */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,0.55);
 }
 
 @theme inline {

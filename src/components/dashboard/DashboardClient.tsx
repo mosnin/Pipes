@@ -186,7 +186,7 @@ function SystemCard({
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}
-      className="system-card group border border-black/[0.08] rounded-[12px] p-4 cursor-pointer hover-lift transition-all duration-200 flex flex-col gap-3 min-h-[156px] hover:shadow-md-token"
+      className="system-card group border border-line rounded-[12px] p-4 cursor-pointer hover-lift transition-all duration-200 flex flex-col gap-3 min-h-[156px] hover:shadow-md-token"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -198,14 +198,14 @@ function SystemCard({
                 aria-hidden
               />
             )}
-            <h3 className="t-label font-semibold text-[#111] truncate group-hover:text-indigo-700 transition-colors">
+            <h3 className="t-label font-semibold text-ink-1 truncate group-hover:text-indigo-700 transition-colors">
               {row.name}
             </h3>
             {row.favorite && (
               <Star size={12} className="text-amber-400 fill-amber-400 shrink-0" aria-hidden="true" />
             )}
           </div>
-          <p className="t-label text-[#8E8E93] line-clamp-2 leading-snug">
+          <p className="t-label text-ink-3 line-clamp-2 leading-snug">
             {row.description || <span className="italic opacity-50">No description</span>}
           </p>
         </div>
@@ -219,7 +219,7 @@ function SystemCard({
                 aria-label="System options"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
-                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors opacity-0 group-hover:opacity-100"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors opacity-0 group-hover:opacity-100"
               >
                 <MoreHorizontal size={14} />
               </div>
@@ -301,7 +301,7 @@ function SystemCard({
       )}
 
       <div className="mt-auto flex items-center justify-between pt-1">
-        <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
+        <span className="inline-flex items-center gap-1 t-caption text-ink-3">
           <Clock size={10} aria-hidden />
           {formatRelativeDate(row.updatedAt)}
         </span>
@@ -687,9 +687,9 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       render: (row) => (
         <div className="flex items-center gap-2 min-w-0">
           {row.favorite && (
-            <Star size={12} className="text-[#3C3C43] fill-[#3C3C43] shrink-0" />
+            <Star size={12} className="text-ink-2 fill-[#3C3C43] shrink-0" />
           )}
-          <span className="t-label font-medium text-[#111] truncate">{row.name}</span>
+          <span className="t-label font-medium text-ink-1 truncate">{row.name}</span>
         </div>
       ),
     },
@@ -701,7 +701,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         row.archivedAt ? (
           <StatusBadge tone="warning">Archived</StatusBadge>
         ) : (
-          <span className="t-caption text-[#8E8E93]">--</span>
+          <span className="t-caption text-ink-3">--</span>
         ),
     },
     {
@@ -709,7 +709,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       header: "Tags",
       render: (row) =>
         row.tags.length === 0 ? (
-          <span className="t-caption text-[#C7C7CC]">--</span>
+          <span className="t-caption text-ink-4">--</span>
         ) : (
           <div className="flex gap-1 flex-wrap">
             {row.tags.slice(0, 3).map((tag) => (
@@ -726,7 +726,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       header: "Updated",
       width: "140px",
       render: (row) => (
-        <span className="t-label text-[#3C3C43]">{formatRelativeDate(row.updatedAt)}</span>
+        <span className="t-label text-ink-2">{formatRelativeDate(row.updatedAt)}</span>
       ),
     },
     {
@@ -735,10 +735,10 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       width: "140px",
       render: (row) => (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#F5F5F7] text-[#3C3C43] t-caption font-semibold">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--surface-subtle)] text-ink-2 t-caption font-semibold">
             {initials(row.createdBy)}
           </span>
-          <span className="t-label text-[#3C3C43] truncate">{row.createdBy}</span>
+          <span className="t-label text-ink-2 truncate">{row.createdBy}</span>
         </div>
       ),
     },
@@ -756,7 +756,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               aria-label="System options"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
-              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
             >
               <MoreHorizontal size={14} />
             </div>
@@ -844,11 +844,11 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   if (isEmptyWorkspace) {
     return (
       <>
-        <div className="grid-bg min-h-[75vh] flex items-center justify-center rounded-[16px] border border-black/[0.06]">
+        <div className="grid-bg min-h-[75vh] flex items-center justify-center rounded-[16px] border border-line">
           <div className="flex flex-col items-center text-center gap-6 w-full max-w-[660px] px-6">
             <div className="flex flex-col gap-2">
-              <h2 className="t-h2 text-[#111]">Your workspace is empty.</h2>
-              <p className="t-body text-[#3C3C43]">Describe your first loop and watch it appear on the canvas.</p>
+              <h2 className="t-h2 text-ink-1">Your workspace is empty.</h2>
+              <p className="t-body text-ink-2">Describe your first loop and watch it appear on the canvas.</p>
             </div>
             <div className="w-full">
               <ConversationInput
@@ -873,13 +873,13 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     setHeroPrompt(chip.prompt);
                     heroInputRef.current?.focus();
                   }}
-                  className="t-label text-[#3C3C43] hover:text-[#111] bg-white border border-black/[0.08] hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
+                  className="t-label text-ink-2 hover:text-ink-1 surface-canvas border border-line hover:border-line-strong rounded-full px-3 h-8 transition-colors"
                 >
                   {chip.label}
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3 t-caption text-[#8E8E93]">
+            <div className="flex items-center gap-3 t-caption text-ink-3">
               <button
                 type="button"
                 onClick={() => router.push("/templates")}
@@ -898,7 +898,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             </div>
             <Link
               href="/settings/tokens"
-              className="inline-flex items-center gap-1.5 t-caption text-[#8E8E93] hover:text-indigo-600 transition-colors border border-black/[0.06] hover:border-indigo-200 rounded-full px-3 py-1.5 bg-white/60"
+              className="inline-flex items-center gap-1.5 t-caption text-ink-3 hover:text-indigo-600 transition-colors border border-line hover:border-indigo-200 rounded-full px-3 py-1.5 surface-canvas/60"
             >
               <Bot size={11} className="shrink-0" aria-hidden />
               Connect to any AI agent via MCP
@@ -937,7 +937,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             onChange={(e) => setImportText(e.target.value)}
             className="font-mono"
           />
-          <p className="t-caption text-[#8E8E93] mt-2">
+          <p className="t-caption text-ink-3 mt-2">
             Validation runs after import. Errors will be shown in the editor.
           </p>
         </Dialog>
@@ -1003,7 +1003,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white border border-black/[0.08] rounded-[12px] overflow-hidden">
+      <div className="surface-canvas border border-line rounded-[12px] overflow-hidden">
         <Toolbar
           left={
             <div className="flex items-center gap-3 min-w-0">
@@ -1036,7 +1036,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortMode)}
                 aria-label="Sort"
-                className="h-9 rounded-lg border border-black/[0.08] bg-white px-2.5 t-label text-[#111] outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                className="h-9 rounded-lg border border-line surface-canvas px-2.5 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               >
                 <option value="recent">Recent</option>
                 <option value="name">Name</option>
@@ -1068,7 +1068,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         />
 
         {/* Mobile-only search row */}
-        <div className="md:hidden p-3 border-b border-black/[0.06]">
+        <div className="md:hidden p-3 border-b border-line">
           <SearchInput
             value={query}
             onChange={setQuery}
@@ -1205,10 +1205,10 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           </div>
           <div className="flex flex-col gap-2">
             {myListings.map((listing) => (
-              <div key={listing.id} className="flex items-center justify-between gap-3 bg-white rounded-xl border border-indigo-100 px-4 py-3">
+              <div key={listing.id} className="flex items-center justify-between gap-3 surface-canvas rounded-xl border border-indigo-100 px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="t-label font-medium text-[#111] truncate">{listing.title}</p>
-                  <p className="t-caption text-[#8E8E93]">
+                  <p className="t-label font-medium text-ink-1 truncate">{listing.title}</p>
+                  <p className="t-caption text-ink-3">
                     {listing.price === 0 ? "Free" : `$${listing.price}/mo`} · Under review
                   </p>
                 </div>
@@ -1281,7 +1281,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           </>
         }
       >
-        <p className="t-caption text-[#8E8E93]">
+        <p className="t-caption text-ink-3">
           To recover the system later, restore it first before deleting.
         </p>
       </Dialog>
@@ -1309,7 +1309,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           {/* Current tags */}
           <div className="flex flex-wrap gap-1.5 min-h-[32px]">
             {tagDraft.length === 0 ? (
-              <p className="t-caption text-[#C7C7CC] italic">No tags yet — add one below.</p>
+              <p className="t-caption text-ink-4 italic">No tags yet — add one below.</p>
             ) : (
               tagDraft.map((tag) => (
                 <span
@@ -1332,7 +1332,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           {/* Available tags from workspace */}
           {library.availableTags.filter((t) => !tagDraft.includes(t)).length > 0 && (
             <div className="flex flex-col gap-1">
-              <p className="t-caption text-[#8E8E93]">Existing tags in your workspace:</p>
+              <p className="t-caption text-ink-3">Existing tags in your workspace:</p>
               <div className="flex flex-wrap gap-1.5">
                 {library.availableTags
                   .filter((t) => !tagDraft.includes(t))
@@ -1341,7 +1341,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                       key={tag}
                       type="button"
                       onClick={() => addTag(tag)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F5F5F7] border border-black/[0.08] t-caption text-[#3C3C43] hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--surface-subtle)] border border-line t-caption text-ink-2 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
                     >
                       <Plus size={10} />
                       {tag}
@@ -1374,7 +1374,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               Add
             </Button>
           </div>
-          <p className="t-caption text-[#C7C7CC]">Press Enter or comma to add. Tags are lowercase.</p>
+          <p className="t-caption text-ink-4">Press Enter or comma to add. Tags are lowercase.</p>
         </div>
       </Dialog>
 
@@ -1418,7 +1418,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           onChange={(e) => setImportText(e.target.value)}
           className="font-mono"
         />
-        <p className="t-caption text-[#8E8E93] mt-2">
+        <p className="t-caption text-ink-3 mt-2">
           Validation runs after import. Errors will be shown in the editor.
         </p>
       </Dialog>

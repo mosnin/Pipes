@@ -106,11 +106,11 @@ export function AppShellClient({
   const sidebarWidth = collapsed ? "w-[56px]" : "w-[248px]";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
+    <div className="flex h-screen overflow-hidden surface-page">
       {/* Skip-to-content link for keyboard / AT users (WCAG 2.4.1). */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-white focus:text-[#111] focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-violet-500"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] surface-canvas focus:text-ink-1 focus:px-3 focus:py-1.5 focus:rounded-md focus:shadow-md focus:ring-2 focus:ring-violet-500"
       >
         Skip to content
       </a>
@@ -118,7 +118,7 @@ export function AppShellClient({
       <aside
         aria-label="Primary navigation"
         className={[
-          "flex flex-col shrink-0 h-full surface-muted border-r border-black/[0.06]",
+          "flex flex-col shrink-0 h-full surface-muted border-r border-line",
           "transition-[width] duration-150 ease-out",
           sidebarWidth,
         ].join(" ")}
@@ -126,7 +126,7 @@ export function AppShellClient({
         {/* Brand + workspace switcher */}
         <div
           className={[
-            "shrink-0 border-b border-black/[0.06]",
+            "shrink-0 border-b border-line",
             collapsed ? "px-2 py-3" : "px-3 py-3",
           ].join(" ")}
         >
@@ -137,9 +137,9 @@ export function AppShellClient({
               aria-label="Looper home"
             >
               {collapsed ? (
-                <span className="t-title font-bold tracking-[-0.04em] text-[#111] truncate">P</span>
+                <span className="t-title font-bold tracking-[-0.04em] text-ink-1 truncate">P</span>
               ) : (
-                <Wordmark size="sm" cover="#F5F5F7" />
+                <Wordmark size="sm" cover="var(--surface-muted)" />
               )}
             </Link>
             {!collapsed && (
@@ -148,7 +148,7 @@ export function AppShellClient({
                   type="button"
                   onClick={() => setCollapsed(true)}
                   aria-label="Collapse sidebar"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-black/[0.04] hover:text-[#111] transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-[var(--color-hover)] hover:text-ink-1 transition-colors"
                 >
                   <ChevronsLeft size={14} />
                 </button>
@@ -159,21 +159,21 @@ export function AppShellClient({
           {!collapsed && (
             <Link
               href="/settings/workspace"
-              className="mt-3 w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/70 transition-colors text-left"
+              className="mt-3 w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] transition-colors text-left"
               aria-label="Workspace settings"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white border border-black/[0.08] text-[10px] font-bold text-[#3C3C43] shrink-0">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md surface-canvas border border-line text-[10px] font-bold text-ink-2 shrink-0">
                 {workspace.name.slice(0, 2).toUpperCase()}
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block t-label font-semibold text-[#111] truncate leading-tight">
+                <span className="block t-label font-semibold text-ink-1 truncate leading-tight">
                   {workspace.name}
                 </span>
-                <span className="block t-micro text-[#8E8E93] truncate leading-tight">
+                <span className="block t-micro text-ink-3 truncate leading-tight">
                   {workspace.role} · {workspace.plan}
                 </span>
               </span>
-              <ChevronRight size={12} className="text-[#8E8E93] shrink-0" />
+              <ChevronRight size={12} className="text-ink-3 shrink-0" />
             </Link>
           )}
 
@@ -184,7 +184,7 @@ export function AppShellClient({
                   type="button"
                   onClick={() => setCollapsed(false)}
                   aria-label="Expand sidebar"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-black/[0.04] hover:text-[#111] transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-[var(--color-hover)] hover:text-ink-1 transition-colors"
                 >
                   <ChevronsRight size={14} />
                 </button>
@@ -207,13 +207,13 @@ export function AppShellClient({
         {/* Bottom: operate nav + user card */}
         <div
           className={[
-            "shrink-0 border-t border-black/[0.06]",
+            "shrink-0 border-t border-line",
             collapsed ? "px-1.5 py-2" : "px-2 py-2",
           ].join(" ")}
         >
           <BottomNavLinks showAdmin={showAdmin} collapsed={collapsed} />
 
-          <div className="my-2 h-px bg-black/[0.06] mx-1" />
+          <div className="my-2 h-px bg-[var(--color-line)] mx-1" />
 
           {/* User card */}
           {collapsed ? (
@@ -228,7 +228,7 @@ export function AppShellClient({
                 <Link
                   href="/api/auth/logout"
                   aria-label="Log out"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-red-50 hover:text-red-600 transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
                   <LogOut size={14} />
                 </Link>
@@ -240,10 +240,10 @@ export function AppShellClient({
                 {user.initials}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="t-label font-semibold text-[#111] truncate leading-tight">
+                <p className="t-label font-semibold text-ink-1 truncate leading-tight">
                   {user.name}
                 </p>
-                <p className="t-micro text-[#8E8E93] truncate leading-tight">
+                <p className="t-micro text-ink-3 truncate leading-tight">
                   {workspace.plan}
                 </p>
               </div>
@@ -253,7 +253,7 @@ export function AppShellClient({
                   <Link
                     href="/api/auth/logout"
                     aria-label="Log out"
-                    className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-red-50 hover:text-red-600 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-red-50 hover:text-red-600 transition-colors"
                   >
                     <LogOut size={14} />
                   </Link>
@@ -268,7 +268,7 @@ export function AppShellClient({
       <div className="flex flex-col flex-1 min-w-0 h-full">
         {/* Topbar */}
         <header
-          className="sticky top-0 z-30 flex items-center h-12 px-4 gap-4 border-b border-black/[0.08] bg-white/85 backdrop-blur-md"
+          className="sticky top-0 z-30 flex items-center h-12 px-4 gap-4 border-b border-line surface-canvas backdrop-blur-md"
           aria-label="Top bar"
         >
           {/* Left: breadcrumbs */}
@@ -319,7 +319,7 @@ export function AppShellClient({
               <Link
                 href="/docs"
                 aria-label="Help"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-black/[0.04] hover:text-[#111] transition-colors"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-[var(--color-hover)] hover:text-ink-1 transition-colors"
               >
                 <HelpCircle size={14} />
               </Link>
@@ -328,7 +328,7 @@ export function AppShellClient({
               <button
                 type="button"
                 aria-label="Notifications"
-                className="relative flex h-7 w-7 items-center justify-center rounded-md text-[#8E8E93] hover:bg-black/[0.04] hover:text-[#111] transition-colors"
+                className="relative flex h-7 w-7 items-center justify-center rounded-md text-ink-3 hover:bg-[var(--color-hover)] hover:text-ink-1 transition-colors"
               >
                 <Bell size={14} />
                 <span
@@ -350,7 +350,7 @@ export function AppShellClient({
         </header>
 
         {/* Scrollable content */}
-        <main id="main" className="flex-1 overflow-y-auto bg-white">{children}</main>
+        <main id="main" className="flex-1 overflow-y-auto surface-page">{children}</main>
       </div>
 
       <CommandPaletteWithDynamicItems

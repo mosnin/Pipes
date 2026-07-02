@@ -88,8 +88,8 @@ export function Select({ children, className, ...props }: SelectProps) {
   return (
     <select
       className={cn(
-        "w-full h-10 rounded-lg border border-black/[0.08] bg-white px-3 t-label",
-        "text-[#111] outline-none",
+        "w-full h-10 rounded-lg border border-line surface-canvas px-3 t-label",
+        "text-ink-1 outline-none",
         "focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
@@ -143,7 +143,7 @@ export type CardProps = {
 
 export function Card({ children, className }: CardProps) {
   return (
-    <HeroCard className={cn("bg-white border border-black/[0.08]", className)}>
+    <HeroCard className={cn("surface-canvas border border-line", className)}>
       <HeroCard.Content className="p-4">{children}</HeroCard.Content>
     </HeroCard>
   );
@@ -161,9 +161,9 @@ export type PanelProps = {
 
 export function Panel({ title, children, className }: PanelProps) {
   return (
-    <HeroCard className={cn("bg-white border border-black/[0.08]", className)}>
+    <HeroCard className={cn("surface-canvas border border-line", className)}>
       <HeroCard.Header className="px-4 pt-4 pb-0">
-        <HeroCard.Title className="t-label font-semibold text-[#111]">
+        <HeroCard.Title className="t-label font-semibold text-ink-1">
           {title}
         </HeroCard.Title>
       </HeroCard.Header>
@@ -186,7 +186,7 @@ export function Sidebar({ children, className }: SidebarProps) {
     <aside
       aria-label="Sidebar"
       className={cn(
-        "w-64 bg-[#F5F5F7] border-r border-black/[0.06] p-4 min-h-screen flex flex-col",
+        "w-64 bg-[var(--surface-subtle)] border-r border-line p-4 min-h-screen flex flex-col",
         className,
       )}
     >
@@ -209,7 +209,7 @@ export function Topbar({ left, right, className }: TopbarProps) {
   return (
     <header
       className={cn(
-        "flex justify-between items-center border-b border-black/[0.08] bg-white px-4 py-3",
+        "flex justify-between items-center border-b border-line surface-canvas px-4 py-3",
         className,
       )}
     >
@@ -307,18 +307,18 @@ export function EmptyState({
       role="status"
       aria-live="polite"
       className={cn(
-        "border border-dashed border-black/[0.12] rounded-xl p-10 text-center",
+        "border border-dashed border-line-strong rounded-xl p-10 text-center",
         "flex flex-col items-center gap-3",
         className,
       )}
     >
       {illustration != null && (
-        <div className="mb-1 text-[#C7C7CC]" aria-hidden="true">
+        <div className="mb-1 text-ink-4" aria-hidden="true">
           {illustration}
         </div>
       )}
-      <h3 className="t-label font-semibold text-[#111]">{title}</h3>
-      <p className="t-caption text-[#8E8E93]">{description}</p>
+      <h3 className="t-label font-semibold text-ink-1">{title}</h3>
+      <p className="t-caption text-ink-3">{description}</p>
       {action != null && <div className="mt-2">{action}</div>}
     </div>
   );
@@ -339,9 +339,9 @@ export function PageHeader({ title, subtitle, actions, className }: PageHeaderPr
   return (
     <div className={cn("flex items-start justify-between gap-4 mb-6", className)}>
       <div>
-        <h1 className="text-2xl font-bold text-[#111]">{title}</h1>
+        <h1 className="text-2xl font-bold text-ink-1">{title}</h1>
         {subtitle != null && (
-          <p className="mt-1 t-caption text-[#8E8E93]">{subtitle}</p>
+          <p className="mt-1 t-caption text-ink-3">{subtitle}</p>
         )}
       </div>
       {actions != null && (
@@ -364,9 +364,9 @@ export type SectionHeaderProps = {
 export function SectionHeader({ title, description, className }: SectionHeaderProps) {
   return (
     <div className={cn("mb-4", className)}>
-      <h2 className="t-title text-[#111]">{title}</h2>
+      <h2 className="t-title text-ink-1">{title}</h2>
       {description != null && (
-        <p className="mt-0.5 t-caption text-[#8E8E93]">{description}</p>
+        <p className="mt-0.5 t-caption text-ink-3">{description}</p>
       )}
     </div>
   );
@@ -417,8 +417,8 @@ export function CommentBubble({ author, text, className }: CommentBubbleProps) {
         className,
       )}
     >
-      <strong className="block t-label font-semibold text-[#111]">{author}</strong>
-      <p className="mt-0.5 t-label text-[#3C3C43]">{text}</p>
+      <strong className="block t-label font-semibold text-ink-1">{author}</strong>
+      <p className="mt-0.5 t-label text-ink-2">{text}</p>
     </article>
   );
 }
@@ -489,7 +489,7 @@ export type CardShellProps = {
 
 export function CardShell({ children, className, padded = false }: CardShellProps) {
   return (
-    <HeroCard className={cn("bg-white border border-black/[0.08]", className)}>
+    <HeroCard className={cn("surface-canvas border border-line", className)}>
       {padded ? (
         <HeroCard.Content className="p-4">{children}</HeroCard.Content>
       ) : (
@@ -654,16 +654,16 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "bg-white border border-[var(--color-line)] rounded-[var(--radius-card)] p-4 flex flex-col gap-2",
+        "surface-canvas border border-[var(--color-line)] rounded-[var(--radius-card)] p-4 flex flex-col gap-2",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="t-overline text-[#8E8E93]">{label}</span>
-        {icon != null && <span className="text-[#8E8E93] shrink-0">{icon}</span>}
+        <span className="t-overline text-ink-3">{label}</span>
+        {icon != null && <span className="text-ink-3 shrink-0">{icon}</span>}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="t-h2 t-num text-[#111]">{value}</span>
+        <span className="t-h2 t-num text-ink-1">{value}</span>
         {delta != null && (
           <span
             className="t-caption font-medium"
@@ -673,7 +673,7 @@ export function MetricCard({
           </span>
         )}
       </div>
-      {footer != null && <div className="t-caption text-[#8E8E93]">{footer}</div>}
+      {footer != null && <div className="t-caption text-ink-3">{footer}</div>}
     </div>
   );
 }
@@ -697,8 +697,8 @@ export function Toolbar({ left, right, sticky = false, dense = false, className 
         "flex items-center justify-between gap-3 border-b border-[var(--color-line)]",
         dense ? "py-2 px-3" : "py-3 px-4",
         sticky
-          ? "sticky top-0 z-30 backdrop-blur-md bg-white/80"
-          : "bg-white",
+          ? "sticky top-0 z-30 backdrop-blur-md surface-canvas"
+          : "surface-canvas",
         className,
       )}
     >
@@ -728,18 +728,18 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
       {items.map((item, idx) => {
         const isLast = idx === items.length - 1;
         const content = isLast ? (
-          <span className="font-semibold text-[#111]" aria-current="page">
+          <span className="font-semibold text-ink-1" aria-current="page">
             {item.label}
           </span>
         ) : item.href != null ? (
           <a
             href={item.href}
-            className="text-[#8E8E93] hover:text-[#111] transition-colors"
+            className="text-ink-3 hover:text-ink-1 transition-colors"
           >
             {item.label}
           </a>
         ) : (
-          <span className="text-[#8E8E93]">{item.label}</span>
+          <span className="text-ink-3">{item.label}</span>
         );
         return (
           <span key={`${item.label}-${idx}`} className="flex items-center gap-1">
@@ -747,7 +747,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
             {!isLast && (
               <ChevronRight
                 size={12}
-                className="text-[#C7C7CC] shrink-0"
+                className="text-ink-4 shrink-0"
                 aria-hidden="true"
               />
             )}
@@ -818,16 +818,16 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
-        className="w-full bg-white rounded-[16px] shadow-xl-token flex flex-col overflow-hidden"
+        className="w-full surface-canvas rounded-[16px] shadow-xl-token flex flex-col overflow-hidden"
         style={{ maxWidth: DIALOG_MAX_WIDTH[size] }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 pt-5 pb-3">
-          <h2 id="dialog-title" className="t-h3 font-semibold text-[#111]">
+          <h2 id="dialog-title" className="t-h3 font-semibold text-ink-1">
             {title}
           </h2>
           {description != null && (
-            <p className="mt-1 t-label text-[#3C3C43]">{description}</p>
+            <p className="mt-1 t-label text-ink-2">{description}</p>
           )}
         </div>
         <div className="px-5 py-3 max-h-[70vh] overflow-auto">{children}</div>
@@ -905,8 +905,8 @@ export function KbdHint({ keys, className }: KbdHintProps) {
           key={`${k}-${idx}`}
           className={cn(
             "inline-flex items-center justify-center min-w-[20px] h-5 px-1.5",
-            "rounded-md bg-[#F5F5F7] border border-[var(--color-line)]",
-            "text-[#3C3C43] t-micro font-medium",
+            "rounded-md bg-[var(--surface-subtle)] border border-[var(--color-line)]",
+            "text-ink-2 t-micro font-medium",
           )}
         >
           {k}
@@ -944,7 +944,7 @@ export function SegmentedControl({
     <div
       role="tablist"
       className={cn(
-        "inline-flex rounded-lg bg-[#F5F5F7] p-0.5",
+        "inline-flex rounded-lg bg-[var(--surface-subtle)] p-0.5",
         className,
       )}
     >
@@ -961,8 +961,8 @@ export function SegmentedControl({
               "rounded-md transition-all duration-150 t-label font-medium",
               size === "sm" ? "px-2.5 py-1" : "px-3 py-1.5",
               selected
-                ? "bg-white shadow-xs text-[#111]"
-                : "text-[#3C3C43] hover:text-[#111]",
+                ? "surface-canvas shadow-xs text-ink-1"
+                : "text-ink-2 hover:text-ink-1",
             )}
           >
             {item.label}
@@ -1049,7 +1049,7 @@ export function DataTable<T extends { id: string }>({
                 key={col.key}
                 style={col.width != null ? { width: col.width } : undefined}
                 className={cn(
-                  "t-overline text-[#8E8E93] px-3 py-2",
+                  "t-overline text-ink-3 px-3 py-2",
                   col.align === "right" && "text-right",
                   col.align === "center" && "text-center",
                   (col.align == null || col.align === "left") && "text-left",
@@ -1068,7 +1068,7 @@ export function DataTable<T extends { id: string }>({
               className={cn(
                 "border-b border-[var(--color-line)] transition-colors",
                 rowHeight,
-                onRowClick != null && "hover:bg-[#FAFAFA] cursor-pointer",
+                onRowClick != null && "hover:bg-[var(--color-hover)] cursor-pointer",
               )}
             >
               {columns.map((col) => {
@@ -1078,7 +1078,7 @@ export function DataTable<T extends { id: string }>({
                   <td
                     key={col.key}
                     className={cn(
-                      "px-3 t-label text-[#111]",
+                      "px-3 t-label text-ink-1",
                       rowPad,
                       col.align === "right" && "text-right",
                       col.align === "center" && "text-center",
@@ -1124,7 +1124,7 @@ export function SidebarNav({ sections, activeHref, className }: SidebarNavProps)
       {sections.map((section, sIdx) => (
         <div key={section.title ?? `section-${sIdx}`} className="flex flex-col gap-1">
           {section.title != null && (
-            <div className="t-overline text-[#8E8E93] px-2 mb-1">{section.title}</div>
+            <div className="t-overline text-ink-3 px-2 mb-1">{section.title}</div>
           )}
           {section.items.map((item) => {
             const active = item.href === activeHref;
@@ -1135,8 +1135,8 @@ export function SidebarNav({ sections, activeHref, className }: SidebarNavProps)
                 className={cn(
                   "flex items-center gap-2 px-2 py-1.5 rounded-md t-label transition-colors",
                   active
-                    ? "bg-white shadow-xs ring-1 ring-black/5 text-[#111]"
-                    : "text-[#3C3C43] hover:bg-white/60 hover:text-[#111]",
+                    ? "surface-canvas shadow-xs ring-1 ring-black/5 text-ink-1"
+                    : "text-ink-2 hover:surface-canvas/60 hover:text-ink-1",
                 )}
               >
                 {item.icon != null && (
@@ -1183,7 +1183,7 @@ export function SearchInput({
     >
       <Search
         size={14}
-        className="absolute left-3 text-[#8E8E93] pointer-events-none"
+        className="absolute left-3 text-ink-3 pointer-events-none"
         aria-hidden="true"
       />
       <input
@@ -1192,8 +1192,8 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          "w-full h-9 pl-8 pr-3 rounded-lg border border-black/[0.08] bg-white t-label",
-          "text-[#111] placeholder:text-[#8E8E93] outline-none",
+          "w-full h-9 pl-8 pr-3 rounded-lg border border-line surface-canvas t-label",
+          "text-ink-1 placeholder:text-ink-3 outline-none",
           "focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100",
           kbd != null && "pr-12",
         )}
@@ -1249,7 +1249,7 @@ export function InlineCode({ children, className }: InlineCodeProps) {
   return (
     <code
       className={cn(
-        "inline-flex items-center bg-[#F5F5F7] px-1.5 py-0.5 rounded-md t-caption text-[#111]",
+        "inline-flex items-center bg-[var(--surface-subtle)] px-1.5 py-0.5 rounded-md t-caption text-ink-1",
         "font-mono",
         className,
       )}

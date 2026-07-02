@@ -55,9 +55,9 @@ export type WordmarkProps = {
 
 export function Wordmark({
   size = "md",
-  color = "#111",
+  color = "var(--color-ink-1)",
   accent = "#7C3AED",
-  cover = "#FFFFFF",
+  cover = "var(--surface-canvas)",
   className,
 }: WordmarkProps) {
   const config = CONFIGS[size];
