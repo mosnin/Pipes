@@ -39,7 +39,7 @@ export function EditorStatusBar({
 
   return (
     <div
-      className="absolute left-0 right-0 bottom-0 z-20 flex items-center justify-between gap-3 px-3 py-1.5 border-t border-black/[0.08] bg-white/85 backdrop-blur-md"
+      className="absolute left-0 right-0 bottom-0 z-20 flex items-center justify-between gap-3 px-3 py-1.5 border-t border-line bg-white/85 backdrop-blur-md"
       style={{ borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}
     >
       <div className="flex items-center gap-2">
@@ -67,10 +67,10 @@ export function EditorStatusBar({
             <AvatarStack names={presenceNames} />
           </Tooltip>
         )}
-        <span className="t-caption text-[#8E8E93] tabular-nums">{Math.round(zoomLevel * 100)}%</span>
+        <span className="t-caption text-ink-3 tabular-nums">{Math.round(zoomLevel * 100)}%</span>
         <Tooltip content={connected ? "Connected" : "Offline"}>
-          <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
-            <Wifi size={12} className={connected ? "text-emerald-600" : "text-[#C7C7CC]"} />
+          <span className="inline-flex items-center gap-1 t-caption text-ink-3">
+            <Wifi size={12} className={connected ? "text-emerald-600" : "text-ink-4"} />
             {connected ? "Live" : "Offline"}
           </span>
         </Tooltip>

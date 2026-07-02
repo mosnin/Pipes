@@ -22,17 +22,17 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
     return (
       <div className="flex items-center justify-center w-full h-full min-h-[280px] surface-subtle">
-        <div className="bg-white border border-black/[0.08] rounded-[12px] shadow-md-token max-w-md w-full mx-4 p-6 flex flex-col items-center text-center gap-3">
+        <div className="surface-canvas border border-line rounded-[12px] shadow-md-token max-w-md w-full mx-4 p-6 flex flex-col items-center text-center gap-3">
           <div className="w-12 h-12 rounded-full bg-red-50 inline-flex items-center justify-center">
             <AlertTriangle className="text-red-600" size={22} />
           </div>
           <div>
-            <h3 className="t-h3 font-semibold text-[#111]">{this.props.area} crashed</h3>
-            <p className="t-label text-[#3C3C43] mt-1">
+            <h3 className="t-h3 font-semibold text-ink-1">{this.props.area} crashed</h3>
+            <p className="t-label text-ink-2 mt-1">
               This panel is temporarily unavailable. Reload to retry.
             </p>
             {this.state.message && (
-              <p className="t-caption text-[#8E8E93] mt-2 break-words">{this.state.message}</p>
+              <p className="t-caption text-ink-3 mt-2 break-words">{this.state.message}</p>
             )}
           </div>
           <div className="flex items-center gap-2 mt-2">

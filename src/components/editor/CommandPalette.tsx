@@ -154,11 +154,11 @@ export function CommandPalette({
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="w-full max-w-xl bg-white rounded-2xl shadow-xl-token overflow-hidden flex flex-col"
+        className="w-full max-w-xl surface-canvas rounded-2xl shadow-xl-token overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-black/[0.06]">
-          <Search size={14} className="text-[#8E8E93] shrink-0" aria-hidden />
+        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-line">
+          <Search size={14} className="text-ink-3 shrink-0" aria-hidden />
           <input
             ref={inputRef}
             type="text"
@@ -170,9 +170,9 @@ export function CommandPalette({
             placeholder="Type a command..."
             aria-label="Command search"
             data-testid="command-palette-input"
-            className="flex-1 bg-transparent outline-none t-label text-[#111] placeholder:text-[#8E8E93]"
+            className="flex-1 bg-transparent outline-none t-label text-ink-1 placeholder:text-ink-3"
           />
-          <span className="t-micro text-[#8E8E93]">Esc</span>
+          <span className="t-micro text-ink-3">Esc</span>
         </div>
         <div
           ref={listRef}
@@ -181,13 +181,13 @@ export function CommandPalette({
           aria-label="Commands"
         >
           {grouped.length === 0 && (
-            <p className="px-4 py-6 t-caption text-[#8E8E93] text-center">
+            <p className="px-4 py-6 t-caption text-ink-3 text-center">
               No commands match.
             </p>
           )}
           {grouped.map((group) => (
             <div key={group.section} className="py-1">
-              <p className="px-3 pt-2 pb-1 t-overline text-[#8E8E93] uppercase tracking-wide">
+              <p className="px-3 pt-2 pb-1 t-overline text-ink-3 uppercase tracking-wide">
                 {SECTION_LABEL[group.section]}
               </p>
               {group.items.map(({ item, index }) => {
@@ -210,13 +210,13 @@ export function CommandPalette({
                   >
                     <span
                       className={`flex-1 t-label truncate ${
-                        isActive ? "text-indigo-700" : "text-[#111]"
+                        isActive ? "text-indigo-700" : "text-ink-1"
                       }`}
                     >
                       {item.label}
                     </span>
                     {item.hint && (
-                      <span className="t-micro text-[#8E8E93] truncate">
+                      <span className="t-micro text-ink-3 truncate">
                         {item.hint}
                       </span>
                     )}
@@ -229,11 +229,11 @@ export function CommandPalette({
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between px-3 py-2 border-t border-black/[0.06] bg-[#FAFAFA]">
-          <span className="t-micro text-[#8E8E93]">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-line bg-[#FAFAFA]">
+          <span className="t-micro text-ink-3">
             {scopeLabel ? `Scope: ${scopeLabel}` : "Scope: global"}
           </span>
-          <span className="t-micro text-[#8E8E93]">
+          <span className="t-micro text-ink-3">
             Enter to run, Esc to close
           </span>
         </div>

@@ -1125,8 +1125,8 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     if (notFound) return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6">
         <p className="text-4xl">&#x2049;</p>
-        <h1 className="t-label font-semibold text-[#111]">Loop not found</h1>
-        <p className="t-caption text-[#8E8E93] max-w-xs">
+        <h1 className="t-label font-semibold text-ink-1">Loop not found</h1>
+        <p className="t-caption text-ink-3 max-w-xs">
           This loop may have been deleted or you do not have access to it.
         </p>
         <Link
@@ -1146,7 +1146,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
 
   return (
     <div>
-      <div className="sticky top-0 z-10 bg-white border-b border-black/[0.08] px-4 pt-2.5 pb-1.5 space-y-1.5">
+      <div className="sticky top-0 z-10 surface-canvas border-b border-line px-4 pt-2.5 pb-1.5 space-y-1.5">
 
         {/* Header: name + save state — no duplicate agent button */}
         <div className="flex items-center justify-between gap-4">
@@ -1161,12 +1161,12 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   if (e.key === "Enter") { e.currentTarget.blur(); }
                   if (e.key === "Escape") { setRenamingSystem(false); }
                 }}
-                className="t-label font-bold text-[#111] bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-xs"
+                className="t-label font-bold text-ink-1 bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-xs"
                 autoFocus
               />
             ) : (
               <h1
-                className="t-label font-bold text-[#111] truncate cursor-pointer hover:text-[#4F46E5] transition-colors"
+                className="t-label font-bold text-ink-1 truncate cursor-pointer hover:text-[#4F46E5] transition-colors"
                 title="Click to rename"
                 onClick={() => { setRenameValue(data.system.name); setRenamingSystem(true); }}
               >
@@ -1184,12 +1184,12 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   if (e.key === "Escape") setEditingDescription(false);
                 }}
                 placeholder="Add a description..."
-                className="t-caption text-[#3C3C43] bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-sm"
+                className="t-caption text-ink-2 bg-transparent border-0 border-b border-[#4F46E5] outline-none w-full max-w-sm"
                 autoFocus
               />
             ) : (
               <p
-                className="t-caption text-[#8E8E93] truncate cursor-pointer hover:text-[#3C3C43] transition-colors"
+                className="t-caption text-ink-3 truncate cursor-pointer hover:text-ink-2 transition-colors"
                 title="Click to edit description"
                 onClick={() => { setDescriptionDraft(data.system.description ?? ""); setEditingDescription(true); }}
               >
@@ -1207,7 +1207,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   const isPrivate = (data.system.visibility ?? "public") === "private";
                   toast.success(isPrivate ? "Link copied — only workspace members can open private loops" : "Link copied");
                 }}
-                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-black/[0.05] transition-colors"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-black/[0.05] transition-colors"
                 aria-label="Copy link"
               >
                 <Link2 size={14} />
@@ -1268,8 +1268,8 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           >
             <Shield size={14} /> Validate{validationReport.issues.filter((i) => i.severity === "error").length > 0 ? ` (${validationReport.issues.filter((i) => i.severity === "error").length})` : ""}
           </Button>
-          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Play size={14} /> Simulate</Button>
-          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-[#8E8E93] hover:text-[#3C3C43]"}><Wand2 size={14} /> AI</Button>
+          <Button variant={activeSystemPanel === "simulation" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("simulation")} className={activeSystemPanel === "simulation" ? "" : "text-ink-3 hover:text-ink-2"}><Play size={14} /> Simulate</Button>
+          <Button variant={activeSystemPanel === "ai" ? "secondary" : "ghost"} size="sm" onClick={() => toggleSystemPanel("ai")} className={activeSystemPanel === "ai" ? "" : "text-ink-3 hover:text-ink-2"}><Wand2 size={14} /> AI</Button>
           <Tooltip content={data?.entitlements?.versionHistory === false ? "Version history requires Pro" : "Save a named checkpoint of the current canvas"}>
             <Button
               variant="ghost"
@@ -1291,7 +1291,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   setSavingCheckpoint(false);
                 }
               }}
-              className={`${data?.entitlements?.versionHistory === false ? "text-[#C7C7CC]" : "text-[#8E8E93] hover:text-[#3C3C43]"} ${savedFlash ? "looper-saved-flash" : ""}`}
+              className={`${data?.entitlements?.versionHistory === false ? "text-ink-4" : "text-ink-3 hover:text-ink-2"} ${savedFlash ? "looper-saved-flash" : ""}`}
             >
               {savingCheckpoint ? <Spinner size="sm" /> : <History size={14} />}
               {savingCheckpoint ? null : (data?.versions.length ?? 0) > 0 ? `Checkpoint (${data!.versions.length})` : "Checkpoint"}
@@ -1299,7 +1299,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           </Tooltip>
           <Dropdown>
             <DropdownTrigger>
-              <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[#8E8E93] hover:text-[#3C3C43] hover:bg-[#F5F5F7] transition-colors cursor-pointer"><MoreHorizontal size={14} /></div>
+              <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-ink-3 hover:text-ink-2 hover:bg-[var(--surface-subtle)] transition-colors cursor-pointer"><MoreHorizontal size={14} /></div>
             </DropdownTrigger>
             <Dropdown.Popover>
               <DropdownMenu aria-label="More actions">
@@ -1357,7 +1357,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         {leftPaneOpen ? (
           <Panel title="Nodes">
             <div className="flex items-center justify-between mb-2">
-              <span className="t-caption text-[#8E8E93]">Library</span>
+              <span className="t-caption text-ink-3">Library</span>
               <Button size="sm" variant="ghost" onClick={() => setLeftPaneOpen(false)} aria-label="Collapse"><ChevronLeft size={14} /></Button>
             </div>
             <Button
@@ -1378,16 +1378,16 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                 .slice(0, 6);
               if (recentNodes.length === 0) return null;
               return (
-                <div className="mt-3 border-t border-black/[0.06] pt-3">
-                  <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Recents</p>
+                <div className="mt-3 border-t border-line pt-3">
+                  <p className="t-caption font-semibold uppercase tracking-wide text-ink-3 px-2 mb-1">Recents</p>
                   <div className="space-y-0.5">
                     {recentNodes.map((node) => (
                       <button
                         key={node.id}
                         onClick={() => { setSelectedNodeIds([node.id]); setFrameRequest((n) => n + 1); }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] text-left"
                       >
-                        <span className="t-label text-[#111] flex-1 truncate">{node.title}</span>
+                        <span className="t-label text-ink-1 flex-1 truncate">{node.title}</span>
                       </button>
                     ))}
                   </div>
@@ -1395,15 +1395,15 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
               );
             })()}
             {subsystems.length > 0 && (
-              <div className="mt-4 border-t border-black/[0.06] pt-3">
-                <p className="t-caption font-semibold uppercase tracking-wide text-[#8E8E93] px-2 mb-1">Groups</p>
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="t-caption font-semibold uppercase tracking-wide text-ink-3 px-2 mb-1">Groups</p>
                 {subsystems.map((subsystem) => {
                   const boundary = computeSubsystemBoundary(subsystem, pipes);
                   return (
-                    <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-black/[0.04] cursor-pointer"
+                    <div key={subsystem.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--color-hover)] cursor-pointer"
                          onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>
-                      <span className="t-label text-[#111] flex-1 truncate">{subsystem.name}</span>
-                      <span className="t-caption text-[#8E8E93]">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
+                      <span className="t-label text-ink-1 flex-1 truncate">{subsystem.name}</span>
+                      <span className="t-caption text-ink-3">{subsystem.nodeIds.length} · {boundary.inboundNodeIds.length}in {boundary.outboundNodeIds.length}out</span>
                     </div>
                   );
                 })}
@@ -1411,10 +1411,10 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             )}
           </Panel>
         ) : (
-          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+          <aside className="border border-line rounded-lg surface-canvas flex flex-col items-center py-2 gap-2">
             <button
               onClick={() => setLeftPaneOpen(true)}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Expand sidebar"
             >
               <ChevronRight size={16} />
@@ -1424,21 +1424,21 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                 const fallback = nodeLibraryCatalog[0];
                 if (fallback) insertNodeFromEntry(fallback, { mode: "canvas" });
               }}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Add node"
             >
               <Plus size={16} />
             </button>
             <button
               onClick={() => setLeftPaneOpen(true)}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Structure"
             >
               <Layers size={16} />
             </button>
             <button
               onClick={() => setLeftPaneOpen(true)}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Sub-loops"
             >
               <Boxes size={16} />
@@ -1456,18 +1456,18 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none" style={{ marginTop: 0 }}>
               <div className="pointer-events-auto text-center space-y-5 max-w-sm">
                 <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
-                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                  <div className="w-14 h-8 rounded-lg border border-line-strong surface-canvas" />
                   <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
                   <div className="w-16 h-10 rounded-lg border border-indigo-200 bg-indigo-50" />
                   <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
-                  <div className="w-14 h-8 rounded-lg border border-black/[0.12] bg-white" />
+                  <div className="w-14 h-8 rounded-lg border border-line-strong surface-canvas" />
                 </div>
                 <div>
-                  <p className="t-title font-bold text-[#111]">What should this loop do?</p>
-                  <p className="t-label text-[#8E8E93] mt-1">
+                  <p className="t-title font-bold text-ink-1">What should this loop do?</p>
+                  <p className="t-label text-ink-3 mt-1">
                     Describe it in one sentence and your agent builds the graph.
                   </p>
-                  <p className="t-caption text-[#C7C7CC] mt-2 italic">
+                  <p className="t-caption text-ink-4 mt-2 italic">
                     e.g. &ldquo;Watch GitHub for new PRs, summarize the diff, then post to Slack&rdquo;
                   </p>
                 </div>
@@ -1482,7 +1482,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   <button
                     type="button"
                     onClick={() => openInsertPalette({ mode: "canvas" })}
-                    className="t-caption text-[#8E8E93] hover:text-[#3C3C43] transition-colors"
+                    className="t-caption text-ink-3 hover:text-ink-2 transition-colors"
                   >
                     or add a node manually
                   </button>
@@ -1565,24 +1565,24 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         ) : null}
         </div>
         {!inspectorOpen && !activeSystemPanel ? (
-          <aside className="border border-black/[0.08] rounded-lg bg-white flex flex-col items-center py-2 gap-2">
+          <aside className="border border-line rounded-lg surface-canvas flex flex-col items-center py-2 gap-2">
             <button
               onClick={() => setInspectorOpen(true)}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Expand inspector"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => { setInspectorTab("config"); setInspectorOpen(true); }}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Config"
             >
               <Settings size={16} />
             </button>
             <button
               onClick={() => { setInspectorTab("advanced"); setInspectorOpen(true); }}
-              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
               aria-label="Advanced"
             >
               <MoreHorizontal size={16} />
@@ -1594,7 +1594,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             {activeSystemPanel === "validation" && (
               <div className="space-y-2">
                 {validationReport.issues.length === 0 ? (
-                  <p className="t-label text-[#8E8E93] py-2">No issues found.</p>
+                  <p className="t-label text-ink-3 py-2">No issues found.</p>
                 ) : (
                   validationReport.issues.map((issue) => {
                     const canNavigate = !!issue.nodeId;
@@ -1602,7 +1602,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       <div className="flex items-start gap-2">
                         <ValidationBadge severity={issue.severity} />
                         <div className="flex-1 min-w-0">
-                          <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+                          <p className="t-caption text-ink-2">{issue.message}</p>
                           {canNavigate && <p className="t-caption text-indigo-600 mt-0.5">Click to go to node</p>}
                         </div>
                       </div>
@@ -1611,7 +1611,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       <button
                         key={issue.id}
                         type="button"
-                        className="w-full text-left border border-black/[0.08] hover:border-indigo-300 rounded-lg p-2 transition-colors cursor-pointer"
+                        className="w-full text-left border border-line hover:border-indigo-300 rounded-lg p-2 transition-colors cursor-pointer"
                         onClick={() => { setSelectedNodeIds([issue.nodeId!]); setActiveSystemPanel(null); }}
                       >
                         {inner}
@@ -1625,26 +1625,26 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             )}
             {activeSystemPanel === "simulation" && (
               <div className="space-y-2">
-                <p className="t-caption text-[#8E8E93] mb-1">
+                <p className="t-caption text-ink-3 mb-1">
                   Static dry run. Traces the path one input would take and flags unreached nodes. It does not execute node logic.
                 </p>
-                <div className="t-label text-[#8E8E93] space-y-0.5 mb-2">
+                <div className="t-label text-ink-3 space-y-0.5 mb-2">
                   <p>Status: {sim.status}</p>
                   <p>Steps: {sim.steps.length}</p>
                   <p>Traversed pipes: {tracedEdgeIds.length}</p>
                 </div>
                 <Card>
-                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Branch decisions</h5>
-                  {traceSummary.branchDecisions.length === 0 ? <p className="t-caption text-[#8E8E93]">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                  <h5 className="t-label font-semibold text-ink-2 mb-1">Branch decisions</h5>
+                  {traceSummary.branchDecisions.length === 0 ? <p className="t-caption text-ink-3">No explicit branch labels in this run.</p> : traceSummary.branchDecisions.map((item) => <p key={item} className="t-caption text-ink-2">{item}</p>)}
                 </Card>
                 <Card>
-                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Loop summary</h5>
-                  {traceSummary.loopSummaries.length === 0 ? <p className="t-caption text-[#8E8E93]">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
+                  <h5 className="t-label font-semibold text-ink-2 mb-1">Loop summary</h5>
+                  {traceSummary.loopSummaries.length === 0 ? <p className="t-caption text-ink-3">No loop revisits detected.</p> : traceSummary.loopSummaries.map((item) => <p key={item} className="t-caption text-ink-2">{item}</p>)}
                 </Card>
                 <Card>
-                  <h5 className="t-label font-semibold text-[#3C3C43] mb-1">Blocked/invalid routes</h5>
-                  {traceSummary.blocked.length === 0 ? <p className="t-caption text-[#8E8E93]">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-[#3C3C43]">{item}</p>)}
-                  {invalidPipeIds.length > 0 ? <p className="t-caption text-[#8E8E93] mt-1">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
+                  <h5 className="t-label font-semibold text-ink-2 mb-1">Blocked/invalid routes</h5>
+                  {traceSummary.blocked.length === 0 ? <p className="t-caption text-ink-3">No blocked traces.</p> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-ink-2">{item}</p>)}
+                  {invalidPipeIds.length > 0 ? <p className="t-caption text-ink-3 mt-1">Validation errors reference pipes: {invalidPipeIds.join(", ")}</p> : null}
                 </Card>
                 <SimulationTelemetryCard systemId={systemId} />
               </div>
@@ -1695,7 +1695,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   {postingComment ? <Spinner size="sm" /> : "Post"}
                 </Button>
                 {data.comments.length === 0 ? (
-                  <p className="t-caption text-[#8E8E93] text-center py-4">No comments yet. {selectedNodeId ? "Comment on the selected node." : "Select a node to comment on it, or post a system-level comment."}</p>
+                  <p className="t-caption text-ink-3 text-center py-4">No comments yet. {selectedNodeId ? "Comment on the selected node." : "Select a node to comment on it, or post a system-level comment."}</p>
                 ) : (
                   <div className="space-y-2 mt-2">{data.comments.map((c) => {
                     {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
@@ -1706,10 +1706,10 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                     return (
                       <div key={c.id} className="border-l-2 border-indigo-400 pl-3 py-1">
                         <div className="flex items-baseline justify-between gap-2">
-                          <strong className="t-label font-semibold text-[#111] truncate">{displayName}</strong>
-                          <span className="t-caption text-[#C7C7CC] shrink-0 text-[10px]">{age}</span>
+                          <strong className="t-label font-semibold text-ink-1 truncate">{displayName}</strong>
+                          <span className="t-caption text-ink-4 shrink-0 text-[10px]">{age}</span>
                         </div>
-                        <p className="mt-0.5 t-label text-[#3C3C43]">{c.body}</p>
+                        <p className="mt-0.5 t-label text-ink-2">{c.body}</p>
                       </div>
                     );
                   })}</div>
@@ -1744,15 +1744,15 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       </Button>
                     </div>
                     {data.versions.length === 0 ? (
-                      <p className="t-caption text-[#8E8E93] text-center py-4">No versions yet. Save a version to capture the current state.</p>
+                      <p className="t-caption text-ink-3 text-center py-4">No versions yet. Save a version to capture the current state.</p>
                     ) : (
                       <div className="space-y-1">
                         {data.versions.slice().reverse().map((v) => (
-                          <div key={v.id} className="p-2.5 rounded-lg hover:bg-[#F5F5F7] group">
+                          <div key={v.id} className="p-2.5 rounded-lg hover:bg-[var(--surface-subtle)] group">
                             <div className="flex items-center justify-between gap-2">
                               <div className="min-w-0 flex-1">
-                                <p className="t-label font-medium text-[#111] truncate">{v.name}</p>
-                                <p className="t-caption text-[#8E8E93]">
+                                <p className="t-label font-medium text-ink-1 truncate">{v.name}</p>
+                                <p className="t-caption text-ink-3">
                                   {new Date(v.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                   {v.nodeCount !== undefined && <span className="ml-1.5">· {v.nodeCount} node{v.nodeCount !== 1 ? "s" : ""}</span>}
                                 </p>
@@ -1802,7 +1802,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   <LoopUpgradeGate reason="ai_generation" />
                 ) : !pendingSuggestion ? (
                   <>
-                    <p className="t-caption text-[#8E8E93] leading-relaxed">
+                    <p className="t-caption text-ink-3 leading-relaxed">
                       Describe a change and AI will draft it for you to review.
                     </p>
                     <div className="flex gap-2">
@@ -1839,13 +1839,13 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   </>
                 ) : (
                   <div className="space-y-3">
-                    <div className="bg-[#F5F5F7] border border-black/[0.06] px-3 py-2.5" style={{ borderRadius: "8px" }}>
-                      <p className="t-label font-semibold text-[#111] mb-0.5">{pendingSuggestion.summary}</p>
-                      <p className="t-caption text-[#8E8E93]">{(pendingSuggestion.changes ?? []).length} change{(pendingSuggestion.changes ?? []).length !== 1 ? "s" : ""} ready to apply</p>
+                    <div className="bg-[var(--surface-subtle)] border border-line px-3 py-2.5" style={{ borderRadius: "8px" }}>
+                      <p className="t-label font-semibold text-ink-1 mb-0.5">{pendingSuggestion.summary}</p>
+                      <p className="t-caption text-ink-3">{(pendingSuggestion.changes ?? []).length} change{(pendingSuggestion.changes ?? []).length !== 1 ? "s" : ""} ready to apply</p>
                     </div>
 
                     {(pendingSuggestion.changes ?? []).length > 0 && (
-                      <div className="border border-black/[0.06] overflow-hidden" style={{ borderRadius: "8px" }}>
+                      <div className="border border-line overflow-hidden" style={{ borderRadius: "8px" }}>
                         {(pendingSuggestion.changes ?? []).map((change: any, i: number) => {
                           const accepted = acceptedChangeIds.includes(change.id);
                           const dotColor = change.action === "addNode" || change.action === "addPipe" ? "bg-emerald-500" : change.action === "deleteNode" || change.action === "deletePipe" ? "bg-red-400" : "bg-amber-400";
@@ -1853,14 +1853,14 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                             <button
                               key={change.id}
                               type="button"
-                              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${i > 0 ? "border-t border-black/[0.05]" : ""} ${accepted ? "bg-white hover:bg-[#F9F9FB]" : "bg-[#FAFAFA] hover:bg-[#F5F5F7]"}`}
+                              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${i > 0 ? "border-t border-black/[0.05]" : ""} ${accepted ? "surface-canvas hover:bg-[#F9F9FB]" : "bg-[#FAFAFA] hover:bg-[var(--surface-subtle)]"}`}
                               onClick={() => setAcceptedChangeIds((prev) => accepted ? prev.filter((id) => id !== change.id) : [...prev, change.id])}
                             >
-                              <span className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center justify-center transition-colors ${accepted ? "bg-indigo-600 border-indigo-600" : "bg-white border-[#C7C7CC]"}`}>
+                              <span className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center justify-center transition-colors ${accepted ? "bg-indigo-600 border-indigo-600" : "surface-canvas border-[#C7C7CC]"}`}>
                                 {accepted && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                               </span>
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-                              <span className={`t-caption flex-1 truncate ${accepted ? "text-[#3C3C43]" : "text-[#8E8E93] line-through"}`}>{change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</span>
+                              <span className={`t-caption flex-1 truncate ${accepted ? "text-ink-2" : "text-ink-3 line-through"}`}>{change.action} · {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</span>
                             </button>
                           );
                         })}
@@ -1886,7 +1886,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-9 text-[#8E8E93]"
+                        className="h-9 text-ink-3"
                         onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}
                       >
                         Dismiss
@@ -1909,10 +1909,10 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   if (resData.ok) setMergePlan(resData.data);
                 }}>Plan Merge</Button>
                 {mergePlan?.ok ? <Card>
-                  <p className="t-label font-semibold text-[#111]">Import review pending</p>
-                  <p className="t-caption text-[#3C3C43]">Additions: {mergePlan.summary?.additions ?? 0}</p>
-                  <p className="t-caption text-[#3C3C43]">Updates: {mergePlan.summary?.updates ?? 0}</p>
-                  <p className="t-caption text-[#3C3C43]">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
+                  <p className="t-label font-semibold text-ink-1">Import review pending</p>
+                  <p className="t-caption text-ink-2">Additions: {mergePlan.summary?.additions ?? 0}</p>
+                  <p className="t-caption text-ink-2">Updates: {mergePlan.summary?.updates ?? 0}</p>
+                  <p className="t-caption text-ink-2">Conflicts: {mergePlan.summary?.conflicts ?? 0}</p>
                   <Input value={mergeStrategy} onChange={(e) => setMergeStrategy(e.target.value as "safe_upsert" | "replace_conflicts")} />
                   <Button onClick={async () => {
                     await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode: "existing", applyMerge: true, strategy: mergeStrategy, plan: mergePlan }) });
@@ -1941,7 +1941,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   </>
                 )}
                 <details className="group">
-                  <summary className="flex items-center gap-1 t-caption text-[#8E8E93] hover:text-[#3C3C43] cursor-pointer select-none list-none">
+                  <summary className="flex items-center gap-1 t-caption text-ink-3 hover:text-ink-2 cursor-pointer select-none list-none">
                     <ChevronRight size={12} className="transition-transform group-open:rotate-90" />
                     View raw schema (what agents receive)
                   </summary>
@@ -1968,7 +1968,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         </button>
                       </div>
                     ) : (
-                      <p className="t-label text-[#8E8E93] py-2">Loading…</p>
+                      <p className="t-label text-ink-3 py-2">Loading…</p>
                     )}
                   </div>
                 </details>
@@ -1979,25 +1979,25 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                 {data?.entitlements?.loopAnalytics === false ? (
                   <LoopUpgradeGate reason="loop_analytics" />
                 ) : analyticsLoading ? (
-                  <p className="t-label text-[#8E8E93] py-2">Loading analytics…</p>
+                  <p className="t-label text-ink-3 py-2">Loading analytics…</p>
                 ) : analyticsData ? (
                   <>
                     <div className="grid grid-cols-2 gap-2">
                       <Card>
-                        <p className="t-caption text-[#8E8E93] mb-0.5">Total builds</p>
-                        <p className="text-2xl font-bold text-[#111] tabular-nums">{analyticsData.versionCount}</p>
-                        <p className="t-caption text-[#8E8E93] mt-0.5">{analyticsData.recentBuildCount} in last 30 days</p>
+                        <p className="t-caption text-ink-3 mb-0.5">Total builds</p>
+                        <p className="text-2xl font-bold text-ink-1 tabular-nums">{analyticsData.versionCount}</p>
+                        <p className="t-caption text-ink-3 mt-0.5">{analyticsData.recentBuildCount} in last 30 days</p>
                       </Card>
                       <Card>
-                        <p className="t-caption text-[#8E8E93] mb-0.5">Current nodes</p>
-                        <p className="text-2xl font-bold text-[#111] tabular-nums">{analyticsData.nodeCount}</p>
-                        <p className="t-caption text-[#8E8E93] mt-0.5">{analyticsData.pipeCount} pipe{analyticsData.pipeCount !== 1 ? "s" : ""}</p>
+                        <p className="t-caption text-ink-3 mb-0.5">Current nodes</p>
+                        <p className="text-2xl font-bold text-ink-1 tabular-nums">{analyticsData.nodeCount}</p>
+                        <p className="t-caption text-ink-3 mt-0.5">{analyticsData.pipeCount} pipe{analyticsData.pipeCount !== 1 ? "s" : ""}</p>
                       </Card>
                     </div>
                     <Card>
-                      <h5 className="t-label font-semibold text-[#3C3C43] mb-2 flex items-center gap-1.5"><BarChart2 size={13} className="text-indigo-500" /> Node breakdown</h5>
+                      <h5 className="t-label font-semibold text-ink-2 mb-2 flex items-center gap-1.5"><BarChart2 size={13} className="text-indigo-500" /> Node breakdown</h5>
                       {Object.keys(analyticsData.nodesByType).length === 0 ? (
-                        <p className="t-caption text-[#8E8E93]">No nodes yet.</p>
+                        <p className="t-caption text-ink-3">No nodes yet.</p>
                       ) : (
                         <div className="space-y-1.5">
                           {Object.entries(analyticsData.nodesByType)
@@ -2009,8 +2009,8 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                                 <div key={type} className="flex items-center gap-2">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-0.5">
-                                      <span className="t-caption text-[#3C3C43] truncate">{type.replace(/_/g, " ")}</span>
-                                      <span className="t-caption text-[#8E8E93] shrink-0 ml-1">{count}</span>
+                                      <span className="t-caption text-ink-2 truncate">{type.replace(/_/g, " ")}</span>
+                                      <span className="t-caption text-ink-3 shrink-0 ml-1">{count}</span>
                                     </div>
                                     <div className="h-1 rounded-full bg-[#F2F2F7] overflow-hidden">
                                       <div className="h-full rounded-full bg-indigo-400" style={{ width: `${pct}%` }} />
@@ -2023,19 +2023,19 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                       )}
                     </Card>
                     <Card>
-                      <h5 className="t-label font-semibold text-[#3C3C43] mb-2">Loop timeline</h5>
+                      <h5 className="t-label font-semibold text-ink-2 mb-2">Loop timeline</h5>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="t-caption text-[#8E8E93]">Created</span>
-                          <span className="t-caption text-[#3C3C43]">{(() => {
+                          <span className="t-caption text-ink-3">Created</span>
+                          <span className="t-caption text-ink-2">{(() => {
                             {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
                             const d = Math.floor((Date.now() - new Date(analyticsData.createdAt).getTime()) / 86400000);
                             return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
                           })()}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="t-caption text-[#8E8E93]">Last updated</span>
-                          <span className="t-caption text-[#3C3C43]">{(() => {
+                          <span className="t-caption text-ink-3">Last updated</span>
+                          <span className="t-caption text-ink-2">{(() => {
                             {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
                             const d = Math.floor((Date.now() - new Date(analyticsData.updatedAt).getTime()) / 86400000);
                             return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
@@ -2045,7 +2045,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                     </Card>
                   </>
                 ) : (
-                  <p className="t-caption text-[#8E8E93]">Could not load analytics.</p>
+                  <p className="t-caption text-ink-3">Could not load analytics.</p>
                 )}
               </div>
             )}
@@ -2053,7 +2053,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
               <>
                 {selectedEdge ? (
                   <Card>
-                    <h4 className="t-label font-semibold text-[#3C3C43] mt-4 mb-2">Pipe semantics</h4>
+                    <h4 className="t-label font-semibold text-ink-2 mt-4 mb-2">Pipe semantics</h4>
                     <Input
                       value={pipeSemantics[selectedEdge.id]?.label ?? ""}
                       onChange={(e) => setPipeSemantics((prev) => ({ ...prev, [selectedEdge.id]: { ...prev[selectedEdge.id], pipeId: selectedEdge.id, routeKind: prev[selectedEdge.id]?.routeKind ?? "default", label: e.target.value } }))}
@@ -2085,7 +2085,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   <Card>
                     {occupancy.length > 1 ? <p className="t-caption text-amber-700 bg-amber-50 rounded px-2 py-0.5 mb-2">Occupied by {occupancy.map((p) => p.name).join(", ")}</p> : null}
                     {/* Inspector tabs: Config (node params) + Contract (port types). */}
-                    <div className="flex items-center justify-between gap-2 pb-2 mb-3 border-b border-black/[0.06]">
+                    <div className="flex items-center justify-between gap-2 pb-2 mb-3 border-b border-line">
                       <div className="flex gap-1">
                         {(["config", "advanced"] as InspectorTab[]).map((tab) => (
                           <button
@@ -2096,7 +2096,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                               "px-2 py-0.5 rounded t-caption font-semibold uppercase tracking-wide transition-colors",
                               inspectorTab === tab
                                 ? "bg-indigo-50 text-indigo-700"
-                                : "text-[#8E8E93] hover:text-[#111]",
+                                : "text-ink-3 hover:text-ink-1",
                             ].join(" ")}
                           >
                             {tab === "config" ? "Config" : "Contract"}
@@ -2113,7 +2113,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         </Tooltip>
                         <Dropdown>
                           <DropdownTrigger>
-                            <div role="button" tabIndex={0} aria-label="More inspector options" className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer text-xs"><MoreHorizontal size={13} /> More</div>
+                            <div role="button" tabIndex={0} aria-label="More inspector options" className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--surface-subtle)] transition-colors cursor-pointer text-xs"><MoreHorizontal size={13} /> More</div>
                           </DropdownTrigger>
                           <Dropdown.Popover>
                             <DropdownMenu aria-label="Inspector overflow">
@@ -2129,11 +2129,11 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         {(["input", "output"] as Array<"input" | "output">).map((side) => (
                           <div key={side} className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">{side}</p>
+                              <p className="t-caption font-semibold text-ink-2 uppercase tracking-wide">{side}</p>
                               <select
                                 value={selectedDefinition[side].portType}
                                 onChange={(e) => updateNodeDefinition(selectedNode.id, (cur) => ({ ...cur, [side]: { ...cur[side], portType: e.target.value as ContractType } }))}
-                                className="h-7 rounded border border-black/[0.08] bg-white px-1.5 t-caption text-[#111] outline-none focus:border-indigo-400"
+                                className="h-7 rounded border border-line surface-canvas px-1.5 t-caption text-ink-1 outline-none focus:border-indigo-400"
                               >
                                 {(["string","number","boolean","json","event","file","any"] as ContractType[]).map((t) => (
                                   <option key={t} value={t}>{t}</option>
@@ -2151,25 +2151,25 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                                 <select
                                   value={field.type}
                                   onChange={(e) => updateDefinitionField(side, field.id, { type: e.target.value as ContractType })}
-                                  className="h-8 rounded border border-black/[0.08] bg-white px-1 t-caption text-[#111] outline-none focus:border-indigo-400"
+                                  className="h-8 rounded border border-line surface-canvas px-1 t-caption text-ink-1 outline-none focus:border-indigo-400"
                                 >
                                   {(["string","number","boolean","json","event","file","any"] as ContractType[]).map((t) => (
                                     <option key={t} value={t}>{t}</option>
                                   ))}
                                 </select>
-                                <label className="flex items-center gap-0.5 t-caption text-[#8E8E93] shrink-0">
+                                <label className="flex items-center gap-0.5 t-caption text-ink-3 shrink-0">
                                   <input
                                     type="checkbox"
                                     checked={field.required}
                                     onChange={(e) => updateDefinitionField(side, field.id, { required: e.target.checked })}
-                                    className="rounded border-black/[0.12]"
+                                    className="rounded border-line-strong"
                                   />
                                   req
                                 </label>
                                 <button
                                   type="button"
                                   onClick={() => removeDefinitionField(side, field.id)}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-[#C7C7CC] hover:text-red-500"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-4 hover:text-red-500"
                                   aria-label="Remove field"
                                 >
                                   <X size={12} />
@@ -2194,11 +2194,11 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                           const fields = getConfigSchema(selectedNode.type as NodeType);
                           if (fields.length === 0) return null;
                           return (
-                            <div className="space-y-3 border-t border-black/[0.06] pt-3">
-                              <p className="t-caption font-semibold text-[#3C3C43] uppercase tracking-wide">Configuration</p>
+                            <div className="space-y-3 border-t border-line pt-3">
+                              <p className="t-caption font-semibold text-ink-2 uppercase tracking-wide">Configuration</p>
                               {fields.map((field) => (
                                 <div key={field.key} className="space-y-1">
-                                  <label className="t-caption font-medium text-[#3C3C43]">
+                                  <label className="t-caption font-medium text-ink-2">
                                     {field.label}
                                     {field.required && <span className="text-red-500 ml-0.5">*</span>}
                                   </label>
@@ -2217,9 +2217,9 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                                         type="checkbox"
                                         checked={Boolean(selectedNode.config?.[field.key] ?? field.defaultValue)}
                                         onChange={(e) => updateNodeConfig(selectedNode.id, field.key, e.target.checked)}
-                                        className="rounded border-black/[0.12]"
+                                        className="rounded border-line-strong"
                                       />
-                                      <span className="t-caption text-[#8E8E93]">{field.description ?? field.label}</span>
+                                      <span className="t-caption text-ink-3">{field.description ?? field.label}</span>
                                     </div>
                                   ) : field.type === "textarea" ? (
                                     <Textarea
@@ -2237,7 +2237,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                                     />
                                   )}
                                   {field.description && field.type !== "boolean" && (
-                                    <p className="t-caption text-[#8E8E93]">{field.description}</p>
+                                    <p className="t-caption text-ink-3">{field.description}</p>
                                   )}
                                 </div>
                               ))}
@@ -2258,10 +2258,10 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   </Card>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
-                    <div className="w-8 h-8 rounded-full bg-[#F5F5F7] flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-[var(--surface-subtle)] flex items-center justify-center">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#C7C7CC"/><rect x="9" y="9" width="5" height="5" rx="1" fill="#EBEBEB"/></svg>
                     </div>
-                    <p className="t-caption text-[#C7C7CC]">Click a node to edit it</p>
+                    <p className="t-caption text-ink-4">Click a node to edit it</p>
                   </div>
                 )}
               </>
@@ -2272,7 +2272,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
       </div>
       {paletteOpen ? (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-20" onClick={() => setPaletteOpen(false)}>
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-lg surface-canvas rounded-2xl shadow-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
             <div className="p-4 border-b border-slate-100">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-base font-semibold text-slate-800">Insert Node</h3>
@@ -2357,17 +2357,17 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
       >
         <div className="space-y-2">
           {validationReport.issues.length === 0 ? (
-            <p className="t-label text-[#8E8E93]">No issues found.</p>
+            <p className="t-label text-ink-3">No issues found.</p>
           ) : (
             validationReport.issues.map((issue) => (
               <div
                 key={issue.id}
-                className={["flex items-start gap-2 p-2 border border-black/[0.06] rounded-md", issue.nodeId ? "cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors" : ""].join(" ")}
+                className={["flex items-start gap-2 p-2 border border-line rounded-md", issue.nodeId ? "cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors" : ""].join(" ")}
                 onClick={issue.nodeId ? () => { setSelectedNodeIds([issue.nodeId!]); setValidationDialogOpen(false); } : undefined}
               >
                 <ValidationBadge severity={issue.severity} />
                 <div className="flex-1 min-w-0">
-                  <p className="t-caption text-[#3C3C43]">{issue.message}</p>
+                  <p className="t-caption text-ink-2">{issue.message}</p>
                   {issue.nodeId && <p className="t-caption text-indigo-600 mt-0.5">Click to select node</p>}
                 </div>
               </div>

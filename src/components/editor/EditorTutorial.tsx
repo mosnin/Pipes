@@ -159,7 +159,7 @@ function Pill({
   return (
     <div
       role="status"
-      className="absolute pointer-events-auto surface-muted border border-black/[0.08] shadow-xs rounded-full pl-3 pr-1.5 py-1.5 flex items-center gap-2 max-w-xs"
+      className="absolute pointer-events-auto surface-muted border border-line shadow-xs rounded-full pl-3 pr-1.5 py-1.5 flex items-center gap-2 max-w-xs"
       style={{
         ...style,
         transform,
@@ -168,12 +168,12 @@ function Pill({
       }}
     >
       <Arrow direction={arrow} />
-      <p className="t-caption text-[#3C3C43] whitespace-nowrap">{text}</p>
+      <p className="t-caption text-ink-2 whitespace-nowrap">{text}</p>
       <button
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss tip"
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[#8E8E93] hover:text-[#111] hover:bg-black/[0.06] transition-colors"
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-ink-3 hover:text-ink-1 hover:bg-black/[0.06] transition-colors"
       >
         <X size={11} />
       </button>

@@ -49,11 +49,11 @@ export function EditorLeftPane({
 
   if (collapsed) {
     return (
-      <aside className="w-12 border-r border-black/[0.08] bg-white flex flex-col items-center py-2 gap-2">
+      <aside className="w-12 border-r border-line surface-canvas flex flex-col items-center py-2 gap-2">
         <Tooltip content="Expand sidebar" side="right">
           <button
             onClick={onToggleCollapsed}
-            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
             aria-label="Expand sidebar"
           >
             <ChevronRight size={16} />
@@ -66,7 +66,7 @@ export function EditorLeftPane({
               const fallback = nodeLibraryCatalog[0];
               if (fallback) onInsertEntry(fallback);
             }}
-            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
             aria-label="Add step"
           >
             <Plus size={16} />
@@ -75,7 +75,7 @@ export function EditorLeftPane({
         <Tooltip content="Structure" side="right">
           <button
             onClick={onToggleCollapsed}
-            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
             aria-label="Structure"
           >
             <Layers size={16} />
@@ -84,7 +84,7 @@ export function EditorLeftPane({
         <Tooltip content="Sub-loops" side="right">
           <button
             onClick={onToggleCollapsed}
-            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43]"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2"
             aria-label="Sub-loops"
           >
             <Boxes size={16} />
@@ -120,8 +120,8 @@ export function EditorLeftPane({
   };
 
   return (
-    <aside className="w-[260px] shrink-0 border-r border-black/[0.08] bg-white flex flex-col">
-      <div className="p-2 border-b border-black/[0.06] flex items-center gap-1">
+    <aside className="w-[260px] shrink-0 border-r border-line surface-canvas flex flex-col">
+      <div className="p-2 border-b border-line flex items-center gap-1">
         <SegmentedControl
           size="sm"
           value={tab}
@@ -136,7 +136,7 @@ export function EditorLeftPane({
         <Tooltip content="Collapse sidebar" side="bottom">
           <button
             onClick={onToggleCollapsed}
-            className="w-7 h-7 inline-flex items-center justify-center rounded-md hover:bg-black/[0.04] text-[#3C3C43] shrink-0"
+            className="w-7 h-7 inline-flex items-center justify-center rounded-md hover:bg-[var(--color-hover)] text-ink-2 shrink-0"
             aria-label="Collapse sidebar"
           >
             <ChevronLeft size={14} />
@@ -156,35 +156,35 @@ export function EditorLeftPane({
           </Button>
           {/* Loop-native quick tiles */}
           <div className="space-y-1">
-            <p className="t-overline text-[#8E8E93] px-1">Loop steps</p>
+            <p className="t-overline text-ink-3 px-1">Loop steps</p>
             <div className="space-y-0.5">
               {loopSteps.map((entry) => (
                 <button
                   key={entry.nodeType}
                   onClick={() => onInsertEntry(entry)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] text-left"
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: LOOP_STEP_COLOR[entry.nodeType] ?? "#8E8E93" }}
                   />
-                  <span className="t-label text-[#111] flex-1 truncate">{entry.name}</span>
+                  <span className="t-label text-ink-1 flex-1 truncate">{entry.name}</span>
                 </button>
               ))}
             </div>
           </div>
           {recentTitles.length > 0 && (
             <div className="space-y-1">
-              <p className="t-overline text-[#8E8E93] px-1">Recents</p>
+              <p className="t-overline text-ink-3 px-1">Recents</p>
               <div className="space-y-0.5">
                 {recentTitles.map((entry) => (
                   <button
                     key={entry.id}
                     onClick={() => onSelectNode(entry.id)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] text-left"
                   >
-                    <Layers size={12} className="text-[#8E8E93] shrink-0" />
-                    <span className="t-label text-[#111] flex-1 truncate">{entry.title}</span>
+                    <Layers size={12} className="text-ink-3 shrink-0" />
+                    <span className="t-label text-ink-1 flex-1 truncate">{entry.title}</span>
                   </button>
                 ))}
               </div>
@@ -196,7 +196,7 @@ export function EditorLeftPane({
       {tab === "structure" && (
         <div className="flex-1 overflow-y-auto scrollbar-thin px-2 pt-2 pb-3">
           {nodes.length === 0 ? (
-            <p className="t-caption text-[#8E8E93] px-2 py-4 text-center">
+            <p className="t-caption text-ink-3 px-2 py-4 text-center">
               Add a node to see the structure tree.
             </p>
           ) : (
@@ -205,10 +205,10 @@ export function EditorLeftPane({
                 <button
                   key={node.id}
                   onClick={() => onSelectNode(node.id)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] text-left"
                 >
-                  <Layers size={12} className="text-[#8E8E93] shrink-0" />
-                  <span className="t-label text-[#111] truncate flex-1">{node.title}</span>
+                  <Layers size={12} className="text-ink-3 shrink-0" />
+                  <span className="t-label text-ink-1 truncate flex-1">{node.title}</span>
                 </button>
               ))}
             </div>
@@ -219,7 +219,7 @@ export function EditorLeftPane({
       {tab === "subsystems" && (
         <div className="flex-1 overflow-y-auto scrollbar-thin px-2 pt-2 pb-3">
           {subsystems.length === 0 ? (
-            <p className="t-caption text-[#8E8E93] px-2 py-4 text-center">
+            <p className="t-caption text-ink-3 px-2 py-4 text-center">
               Select 2+ nodes and group them to create a subsystem.
             </p>
           ) : (
@@ -230,11 +230,11 @@ export function EditorLeftPane({
                   <button
                     key={subsystem.id}
                     onClick={() => onSelectSubsystem(subsystem)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-black/[0.04] text-left"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--color-hover)] text-left"
                   >
-                    <Folder size={12} className="text-[#8E8E93] shrink-0" />
-                    <span className="t-label text-[#111] truncate flex-1">{subsystem.name}</span>
-                    <span className="t-caption text-[#8E8E93] shrink-0">
+                    <Folder size={12} className="text-ink-3 shrink-0" />
+                    <span className="t-label text-ink-1 truncate flex-1">{subsystem.name}</span>
+                    <span className="t-caption text-ink-3 shrink-0">
                       {subsystem.nodeIds.length} . {boundary.inboundNodeIds.length}/{boundary.outboundNodeIds.length}
                     </span>
                   </button>

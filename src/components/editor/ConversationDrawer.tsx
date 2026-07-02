@@ -324,7 +324,7 @@ export function ConversationDrawer({
           type="button"
           onClick={() => setCollapsed(false)}
           aria-label="Continue conversation"
-          className="inline-flex items-center gap-2 bg-white border border-black/[0.08] rounded-full shadow-md-token px-4 h-8 t-label text-[#3C3C43] hover:text-[#111] hover:border-black/[0.16] transition-colors"
+          className="inline-flex items-center gap-2 surface-canvas border border-line rounded-full shadow-md-token px-4 h-8 t-label text-ink-2 hover:text-ink-1 hover:border-black/[0.16] transition-colors"
         >
           <MessageSquare size={14} />
           Continue conversation
@@ -337,7 +337,7 @@ export function ConversationDrawer({
     <DrawerShell>
       <div className="w-full max-w-[720px] flex flex-col gap-2">
         {showActive ? (
-          <div className="relative bg-white border border-black/[0.08] rounded-2xl shadow-md-token flex flex-col overflow-hidden" style={{ height: 280 }}>
+          <div className="relative surface-canvas border border-line rounded-2xl shadow-md-token flex flex-col overflow-hidden" style={{ height: 280 }}>
             {turns && turns.length > 1 && onJumpToTurn ? (
               <TurnHistoryRail
                 turns={turns}
@@ -346,12 +346,12 @@ export function ConversationDrawer({
               />
             ) : null}
             <div className="flex items-center justify-between px-3 pt-2 pb-1">
-              <span className="t-caption text-[#8E8E93]">Looper</span>
+              <span className="t-caption text-ink-3">Looper</span>
               <button
                 type="button"
                 onClick={() => setCollapsed(true)}
                 aria-label="Minimize conversation"
-                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-black/[0.04]"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)]"
               >
                 <ChevronDown size={14} />
               </button>
@@ -443,13 +443,13 @@ function EmptyStarters({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 mb-1">
-      <p className="t-caption text-[#8E8E93]">{headline}</p>
-      <div className="flex items-center gap-1.5 text-[10px] text-[#C7C7CC] select-none" aria-hidden>
-        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">Describe</span>
+      <p className="t-caption text-ink-3">{headline}</p>
+      <div className="flex items-center gap-1.5 text-[10px] text-ink-4 select-none" aria-hidden>
+        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">Describe</span>
         <span aria-hidden>&#8594;</span>
-        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">AI builds</span>
+        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">AI builds</span>
         <span aria-hidden>&#8594;</span>
-        <span className="px-2 py-0.5 rounded-full border border-black/[0.06] bg-white/60">Share with any agent</span>
+        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">Share with any agent</span>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
         {STARTER_CHIPS.map((chip) => (
@@ -457,7 +457,7 @@ function EmptyStarters({
             key={chip.id}
             type="button"
             onClick={() => onPick(chip.prompt)}
-            className="t-label text-[#3C3C43] hover:text-[#111] bg-white border border-black/[0.08] hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
+            className="t-label text-ink-2 hover:text-ink-1 surface-canvas border border-line hover:border-black/[0.16] rounded-full px-3 h-8 transition-colors"
           >
             {chip.label}
           </button>

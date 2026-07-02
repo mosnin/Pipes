@@ -123,7 +123,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
     return (
       <div
         className={cn(
-          "relative w-full flex flex-col bg-white border border-black/[0.08] rounded-2xl shadow-md-token transition-colors duration-150 overflow-hidden",
+          "relative w-full flex flex-col surface-canvas border border-line rounded-2xl shadow-md-token transition-colors duration-150 overflow-hidden",
           focused && !isRunning ? "border-indigo-300 looper-input-focused" : "",
           isRunning ? "border-indigo-200" : "",
         )}
@@ -134,7 +134,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               <span className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-indigo-400 via-indigo-600 to-indigo-400 rounded-full pipes-progress-bar" />
             </div>
             {activeToolLabel ? (
-              <span className="t-mono t-caption text-[#8E8E93] shrink-0">{activeToolLabel}</span>
+              <span className="t-mono t-caption text-ink-3 shrink-0">{activeToolLabel}</span>
             ) : null}
           </div>
         ) : null}
@@ -158,7 +158,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
             className={cn(
               "flex-1 bg-transparent outline-none resize-none border-0 p-0",
               size === "hero" ? "t-body py-1" : "t-label py-1.5",
-              "text-[#111] placeholder:text-[#8E8E93] leading-[22px]",
+              "text-ink-1 placeholder:text-ink-3 leading-[22px]",
             )}
             style={{ minHeight: 22 }}
             disabled={hasError && placeholderHint === "failed" && !onRetry}
@@ -204,7 +204,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
         <div className="flex items-center justify-between px-3 pb-2 min-h-[16px]">
           <div className="flex items-center gap-2">
             {placeholderHint === "building" || placeholderHint === "spinning_up" ? (
-              <span className="inline-flex items-center gap-1.5 t-caption text-[#8E8E93]">
+              <span className="inline-flex items-center gap-1.5 t-caption text-ink-3">
                 <Spinner size="xs" />
                 {placeholderHint === "building" ? "Building..." : "Spinning up..."}
               </span>
@@ -213,18 +213,18 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
               <span className="t-caption text-amber-700">Connection failed.</span>
             ) : null}
             {!isRunning && !hasError && hintText ? (
-              <span className="t-caption text-[#C7C7CC]">{hintText}</span>
+              <span className="t-caption text-ink-4">{hintText}</span>
             ) : null}
           </div>
           {!isRunning && !hasError && trimmed.length > 0 ? (
-            <span className="t-caption text-[#C7C7CC] inline-flex items-center gap-1.5">
+            <span className="t-caption text-ink-4 inline-flex items-center gap-1.5">
               <KbdHint keys={["Enter"]} /> to send
             </span>
           ) : null}
           {isRunning && trimmed.length > 0 ? (
-            <span className="t-caption text-[#C7C7CC]">Ready to send when done</span>
+            <span className="t-caption text-ink-4">Ready to send when done</span>
           ) : isRunning ? (
-            <span className="t-caption text-[#C7C7CC] inline-flex items-center gap-1.5">
+            <span className="t-caption text-ink-4 inline-flex items-center gap-1.5">
               <KbdHint keys={["Esc"]} /> to stop
             </span>
           ) : null}

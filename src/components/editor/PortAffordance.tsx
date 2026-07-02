@@ -81,17 +81,17 @@ export function PortAffordance({
       role="dialog"
       aria-label={`${directionLabel} port`}
       data-testid="port-affordance"
-      className="fixed z-50 w-64 bg-white rounded-xl border border-black/[0.08] shadow-xl-token p-3"
+      className="fixed z-50 w-64 surface-canvas rounded-xl border border-line shadow-xl-token p-3"
       style={{
         left: Math.max(8, Math.min(anchor.x, window.innerWidth - 264)),
         top: Math.max(8, Math.min(anchor.y, window.innerHeight - 220)),
       }}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="t-caption font-semibold text-[#111]">
+        <span className="t-caption font-semibold text-ink-1">
           {directionLabel}
         </span>
-        <span className="t-micro text-[#8E8E93] uppercase">{typeLabel}</span>
+        <span className="t-micro text-ink-3 uppercase">{typeLabel}</span>
       </div>
 
       <div className="space-y-1.5 mb-3">
@@ -99,15 +99,15 @@ export function PortAffordance({
           <button
             type="button"
             onClick={() => onHighlightPipe?.(port.connectedPipeId!)}
-            className="w-full text-left px-2 py-1.5 rounded-md bg-[#F5F5F7] hover:bg-black/[0.04] transition-colors"
+            className="w-full text-left px-2 py-1.5 rounded-md bg-[var(--surface-subtle)] hover:bg-[var(--color-hover)] transition-colors"
           >
-            <p className="t-micro text-[#8E8E93]">Connected to</p>
-            <p className="t-caption text-[#111] truncate">
+            <p className="t-micro text-ink-3">Connected to</p>
+            <p className="t-caption text-ink-1 truncate">
               {port.connectedPeerTitle ?? port.connectedPipeId}
             </p>
           </button>
         ) : (
-          <p className="t-caption text-[#8E8E93]">No connection.</p>
+          <p className="t-caption text-ink-3">No connection.</p>
         )}
       </div>
 

@@ -141,7 +141,7 @@ export function PlanStepCard({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "group relative flex items-start gap-2 bg-white border border-black/[0.08] rounded-lg shadow-xs px-2.5 py-2 transition-colors",
+        "group relative flex items-start gap-2 surface-canvas border border-line rounded-lg shadow-xs px-2.5 py-2 transition-colors",
         enabled ? "" : "opacity-50",
         status === "running" ? "ring-1 ring-indigo-200 bg-indigo-50/30" : "",
         dragOver === "top" ? "border-t-2 border-t-indigo-400" : "",
@@ -163,7 +163,7 @@ export function PlanStepCard({
             "inline-flex items-center justify-center w-4 h-4 rounded border transition-colors",
             enabled
               ? "bg-indigo-600 border-indigo-600 text-white"
-              : "bg-white border-black/[0.16] text-transparent hover:border-black/[0.32]",
+              : "surface-canvas border-black/[0.16] text-transparent hover:border-black/[0.32]",
           )}
         >
           {enabled ? <Check size={10} strokeWidth={3} /> : null}
@@ -171,7 +171,7 @@ export function PlanStepCard({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="t-caption text-[#8E8E93] w-5 shrink-0 text-right">
+          <span className="t-caption text-ink-3 w-5 shrink-0 text-right">
             {index + 1}
           </span>
           {editing ? (
@@ -183,7 +183,7 @@ export function PlanStepCard({
               onBlur={commitLabel}
               onKeyDown={handleLabelKey}
               aria-label="Edit step label"
-              className="flex-1 t-label text-[#111] bg-transparent outline-none border-b border-indigo-300 px-0.5 py-0.5"
+              className="flex-1 t-label text-ink-1 bg-transparent outline-none border-b border-indigo-300 px-0.5 py-0.5"
             />
           ) : (
             <button
@@ -192,7 +192,7 @@ export function PlanStepCard({
               disabled={readOnly}
               className={cn(
                 "flex-1 text-left t-label truncate",
-                enabled ? "text-[#111]" : "text-[#8E8E93] line-through",
+                enabled ? "text-ink-1" : "text-ink-3 line-through",
               )}
             >
               {step.label}
@@ -205,7 +205,7 @@ export function PlanStepCard({
           ) : null}
         </div>
         {description ? (
-          <p className="t-caption text-[#8E8E93] pl-7 truncate">{description}</p>
+          <p className="t-caption text-ink-3 pl-7 truncate">{description}</p>
         ) : null}
       </div>
       <button
@@ -213,7 +213,7 @@ export function PlanStepCard({
         onKeyDown={handleHandleKey}
         aria-label={`Reorder step ${index + 1}`}
         disabled={readOnly}
-        className="shrink-0 inline-flex items-center justify-center w-5 h-5 mt-[1px] text-[#C7C7CC] hover:text-[#8E8E93] cursor-grab disabled:cursor-not-allowed"
+        className="shrink-0 inline-flex items-center justify-center w-5 h-5 mt-[1px] text-ink-4 hover:text-ink-3 cursor-grab disabled:cursor-not-allowed"
       >
         <GripVertical size={14} />
       </button>

@@ -80,8 +80,8 @@ function NpsToastBody({ onClose }: { onClose: () => void }) {
   }, [score, note, onClose]);
 
   return (
-    <div className="bg-white border border-black/[0.08] shadow-md-token rounded-2xl p-3 w-[300px] flex flex-col gap-2">
-      <p className="t-label text-[#111] font-medium">
+    <div className="surface-canvas border border-line shadow-md-token rounded-2xl p-3 w-[300px] flex flex-col gap-2">
+      <p className="t-label text-ink-1 font-medium">
         How likely are you to recommend Looper?
       </p>
       <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ function NpsToastBody({ onClose }: { onClose: () => void }) {
           onChange={(e) => setScore(e.target.value)}
           className="w-16"
         />
-        <span className="t-caption text-[#8E8E93]">0 = no, 10 = yes</span>
+        <span className="t-caption text-ink-3">0 = no, 10 = yes</span>
       </div>
       <Textarea
         value={note}

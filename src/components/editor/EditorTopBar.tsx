@@ -75,7 +75,7 @@ export function EditorTopBar({
   rightExtra,
 }: EditorTopBarProps) {
   return (
-    <header className="flex items-center justify-between gap-4 px-4 h-14 border-b border-black/[0.08] bg-white/95 backdrop-blur-md">
+    <header className="flex items-center justify-between gap-4 px-4 h-14 border-b border-line bg-white/95 backdrop-blur-md">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <Breadcrumbs
           items={[
@@ -86,9 +86,9 @@ export function EditorTopBar({
           className="hidden md:flex"
         />
         <div className="md:hidden min-w-0">
-          <h1 className="t-label font-semibold text-[#111] truncate">{systemName}</h1>
+          <h1 className="t-label font-semibold text-ink-1 truncate">{systemName}</h1>
           {systemDescription && (
-            <p className="t-caption text-[#8E8E93] truncate">{systemDescription}</p>
+            <p className="t-caption text-ink-3 truncate">{systemDescription}</p>
           )}
         </div>
       </div>
@@ -99,7 +99,7 @@ export function EditorTopBar({
         </StatusBadge>
         {versionLabel && (
           <Tooltip content="Current version">
-            <span className="inline-flex items-center gap-1 t-caption text-[#3C3C43] bg-[#F5F5F7] border border-black/[0.06] px-2 py-0.5 rounded-md">
+            <span className="inline-flex items-center gap-1 t-caption text-ink-2 bg-[var(--surface-subtle)] border border-line px-2 py-0.5 rounded-md">
               <History size={12} />
               {versionLabel}
             </span>
@@ -152,7 +152,7 @@ export function EditorTopBar({
         </Tooltip>
         <Dropdown>
           <DropdownTrigger>
-            <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[#8E8E93] hover:text-[#111] hover:bg-[#F5F5F7] transition-colors cursor-pointer">
+            <div role="button" tabIndex={0} aria-label="More actions" className="inline-flex items-center justify-center h-8 w-8 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--surface-subtle)] transition-colors cursor-pointer">
               <MoreHorizontal size={16} />
             </div>
           </DropdownTrigger>

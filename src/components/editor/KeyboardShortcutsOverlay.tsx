@@ -49,11 +49,11 @@ export function KeyboardShortcutsOverlay({
     >
       <div className="space-y-4">
         {grouped.length === 0 && (
-          <p className="t-label text-[#8E8E93]">No shortcuts registered.</p>
+          <p className="t-label text-ink-3">No shortcuts registered.</p>
         )}
         {grouped.map(([group, items]) => (
           <section key={group}>
-            <p className="t-overline text-[#8E8E93] uppercase tracking-wide mb-1.5">
+            <p className="t-overline text-ink-3 uppercase tracking-wide mb-1.5">
               {group}
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
@@ -62,7 +62,7 @@ export function KeyboardShortcutsOverlay({
                   key={sc.id}
                   className="flex items-center justify-between gap-2"
                 >
-                  <span className="t-caption text-[#3C3C43] truncate">
+                  <span className="t-caption text-ink-2 truncate">
                     {sc.label}
                   </span>
                   <KbdHint keys={comboToKeys(sc.combo)} />
@@ -71,7 +71,7 @@ export function KeyboardShortcutsOverlay({
             </div>
           </section>
         ))}
-        <p className="t-micro text-[#8E8E93] pt-2 border-t border-black/[0.06]">
+        <p className="t-micro text-ink-3 pt-2 border-t border-line">
           Press ? again to close, or Esc.
         </p>
       </div>

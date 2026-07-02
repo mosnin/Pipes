@@ -59,8 +59,8 @@ export function TurnHistoryRail({
                 isActive
                   ? "bg-indigo-600 text-white border border-indigo-600"
                   : turn.stale
-                    ? "bg-white text-[#8E8E93] border border-dashed border-black/[0.18] hover:border-black/[0.32]"
-                    : "bg-white text-[#3C3C43] border border-black/[0.16] hover:border-black/[0.32]",
+                    ? "surface-canvas text-ink-3 border border-dashed border-black/[0.18] hover:border-black/[0.32]"
+                    : "surface-canvas text-ink-2 border border-black/[0.16] hover:border-black/[0.32]",
               ].join(" ")}
               style={{ transitionDuration: "120ms" }}
             >

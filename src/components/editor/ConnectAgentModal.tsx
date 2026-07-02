@@ -212,12 +212,12 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
         {step === "capabilities" && (
           <section className="space-y-3">
             <div>
-              <h3 className="t-label font-semibold text-[#111]">Scope of access</h3>
-              <p className="t-caption text-[#8E8E93] mt-0.5">
+              <h3 className="t-label font-semibold text-ink-1">Scope of access</h3>
+              <p className="t-caption text-ink-3 mt-0.5">
                 Pick the capabilities this agent needs. Read-only by default.
               </p>
             </div>
-            <div className="border border-black/[0.08] rounded-[8px] divide-y divide-black/[0.06]">
+            <div className="border border-line rounded-[8px] divide-y divide-black/[0.06]">
               {ALL_CAPABILITIES.map((cap) => (
                 <label
                   key={cap.id}
@@ -238,7 +238,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
                         </span>
                       )}
                     </div>
-                    <p className="t-caption text-[#8E8E93] mt-0.5">{cap.description}</p>
+                    <p className="t-caption text-ink-3 mt-0.5">{cap.description}</p>
                   </div>
                 </label>
               ))}
@@ -252,8 +252,8 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
         {step === "expiration" && (
           <section className="space-y-3">
             <div>
-              <h3 className="t-label font-semibold text-[#111]">Token lifetime</h3>
-              <p className="t-caption text-[#8E8E93] mt-0.5">
+              <h3 className="t-label font-semibold text-ink-1">Token lifetime</h3>
+              <p className="t-caption text-ink-3 mt-0.5">
                 Shorter lifetimes are safer. You can rotate any token from Settings.
               </p>
             </div>
@@ -276,28 +276,28 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
         {step === "generate" && (
           <section className="space-y-3">
             <div>
-              <h3 className="t-label font-semibold text-[#111]">Review and generate</h3>
-              <p className="t-caption text-[#8E8E93] mt-0.5">
+              <h3 className="t-label font-semibold text-ink-1">Review and generate</h3>
+              <p className="t-caption text-ink-3 mt-0.5">
                 Confirm the scope before issuing the token.
               </p>
             </div>
-            <div className="border border-black/[0.08] rounded-[8px] p-3 space-y-2 bg-[var(--surface-subtle,#FAFAFA)]">
+            <div className="border border-line rounded-[8px] p-3 space-y-2 bg-[var(--surface-subtle,#FAFAFA)]">
               <div className="flex items-start justify-between gap-3">
-                <span className="t-caption text-[#8E8E93]">System</span>
-                <span className="t-label text-[#111] font-medium">{systemName}</span>
+                <span className="t-caption text-ink-3">System</span>
+                <span className="t-label text-ink-1 font-medium">{systemName}</span>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <span className="t-caption text-[#8E8E93]">Endpoint</span>
+                <span className="t-caption text-ink-3">Endpoint</span>
                 <InlineCode>{endpoint}</InlineCode>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <span className="t-caption text-[#8E8E93]">Lifetime</span>
-                <span className="t-label text-[#111]">
+                <span className="t-caption text-ink-3">Lifetime</span>
+                <span className="t-label text-ink-1">
                   {expiration === "never" ? "No expiration" : expiration === "1" ? "1 day" : expiration === "7" ? "7 days" : expiration === "365" ? "1 year" : `${expiration} days`}
                 </span>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <span className="t-caption text-[#8E8E93]">Capabilities</span>
+                <span className="t-caption text-ink-3">Capabilities</span>
                 <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
                   {capabilities.map((cap) => (
                     <InlineCode key={cap}>{cap}</InlineCode>
@@ -316,10 +316,10 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
             <div className="flex items-start gap-2">
               <Shield size={16} className={token ? "text-amber-600" : "text-red-500"} aria-hidden />
               <div>
-                <h3 className="t-label font-semibold text-[#111]">
+                <h3 className="t-label font-semibold text-ink-1">
                   {token ? "Copy your token now" : "Token generation failed"}
                 </h3>
-                <p className="t-caption text-[#8E8E93] mt-0.5">
+                <p className="t-caption text-ink-3 mt-0.5">
                   {token
                     ? "This secret will not be shown again. Store it in your agent secrets."
                     : "Check Settings > Developer for manual token creation."}
@@ -377,7 +377,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
                   type="button"
                   onClick={() => void handleTestToken()}
                   disabled={testStatus === "testing"}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-black/[0.08] bg-white t-caption font-medium text-[#3C3C43] hover:bg-[#F5F5F7] disabled:opacity-60 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line surface-canvas t-caption font-medium text-ink-2 hover:bg-[var(--surface-subtle)] disabled:opacity-60 transition-colors"
                 >
                   {testStatus === "testing" ? (
                     <Spinner size="xs" />
@@ -404,7 +404,7 @@ export function ConnectAgentModal({ systemId, systemName, open = true, onClose }
               </Link>
               <Link
                 href="/settings/tokens"
-                className="inline-flex items-center gap-1 t-caption text-[#3C3C43] hover:text-[#111]"
+                className="inline-flex items-center gap-1 t-caption text-ink-2 hover:text-ink-1"
               >
                 <Zap size={11} /> Manage tokens
               </Link>

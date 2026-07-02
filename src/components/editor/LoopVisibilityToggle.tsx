@@ -51,7 +51,7 @@ export function LoopVisibilityToggle({ systemId, currentVisibility, canSetPrivat
     return (
       <div className="flex items-center gap-1">
         <button
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[#F5F5F7] text-[#8E8E93] border border-black/[0.06] cursor-pointer hover:bg-[#EBEBED] transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-[var(--surface-subtle)] text-ink-3 border border-line cursor-pointer hover:bg-[#EBEBED] transition-colors"
           onClick={() => {
             toast.info("Upgrade to Pro to make this loop private.", { description: "Private loops require the Pro plan." });
           }}
@@ -63,7 +63,7 @@ export function LoopVisibilityToggle({ systemId, currentVisibility, canSetPrivat
         <button
           onClick={copyShareLink}
           title="Copy share link"
-          className="flex items-center justify-center w-6 h-6 rounded-md text-[#8E8E93] hover:bg-[#EBEBED] hover:text-[#3C3C43] transition-colors"
+          className="flex items-center justify-center w-6 h-6 rounded-md text-ink-3 hover:bg-[#EBEBED] hover:text-ink-2 transition-colors"
         >
           <Link2 size={12} />
         </button>
@@ -80,7 +80,7 @@ export function LoopVisibilityToggle({ systemId, currentVisibility, canSetPrivat
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
           isPrivate
             ? "bg-[#EEF2FF] text-[#4F46E5] border-[#C7D2FE]"
-            : "bg-[#F5F5F7] text-[#3C3C43] border-black/[0.06] hover:bg-[#EBEBED]"
+            : "bg-[var(--surface-subtle)] text-ink-2 border-line hover:bg-[#EBEBED]"
         }`}
       >
         {isPrivate ? <Lock size={12} /> : <Globe size={12} />}
@@ -90,7 +90,7 @@ export function LoopVisibilityToggle({ systemId, currentVisibility, canSetPrivat
         <button
           onClick={copyShareLink}
           title="Copy share link"
-          className="flex items-center justify-center w-6 h-6 rounded-md text-[#8E8E93] hover:bg-[#EBEBED] hover:text-[#3C3C43] transition-colors"
+          className="flex items-center justify-center w-6 h-6 rounded-md text-ink-3 hover:bg-[#EBEBED] hover:text-ink-2 transition-colors"
         >
           <Link2 size={12} />
         </button>

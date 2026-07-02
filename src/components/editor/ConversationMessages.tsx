@@ -176,18 +176,18 @@ function Bubble({
   if (role === "user") {
     return (
       <div className="flex flex-col items-end">
-        <span className="t-caption text-[#8E8E93] mb-1 pr-1">You</span>
+        <span className="t-caption text-ink-3 mb-1 pr-1">You</span>
         <div className="surface-muted rounded-2xl px-3 py-2 max-w-[80%]">
-          <p className="t-label text-[#111] whitespace-pre-wrap break-words">{text}</p>
+          <p className="t-label text-ink-1 whitespace-pre-wrap break-words">{text}</p>
         </div>
       </div>
     );
   }
   return (
     <div className="flex flex-col items-start">
-      <span className="t-caption text-[#8E8E93] mb-1 pl-1">Looper</span>
-      <div className="bg-white border border-black/[0.08] rounded-2xl px-3 py-2 max-w-[80%]">
-        <p className="t-label text-[#3C3C43] whitespace-pre-wrap break-words">{text}</p>
+      <span className="t-caption text-ink-3 mb-1 pl-1">Looper</span>
+      <div className="surface-canvas border border-line rounded-2xl px-3 py-2 max-w-[80%]">
+        <p className="t-label text-ink-2 whitespace-pre-wrap break-words">{text}</p>
       </div>
       {!streaming && text.length > 0 ? (
         <div className="pl-1 pt-0.5">
@@ -208,7 +208,7 @@ function ToolStrip({ records }: { records: AgentToolCallRecord[] }) {
   return (
     <div className="pl-1 space-y-0.5">
       {visible.map((r) => (
-        <p key={r.id} className="t-mono t-caption text-[#8E8E93] flex items-center gap-1.5">
+        <p key={r.id} className="t-mono t-caption text-ink-3 flex items-center gap-1.5">
           <span aria-hidden>...</span>
           <span>
             {r.toolName}
@@ -250,7 +250,7 @@ function SummaryLine({
 
   return (
     <div className="flex items-start justify-between gap-2 pl-1 pr-1">
-      <p className="t-caption t-num text-[#8E8E93] flex-1 min-w-0">{text}</p>
+      <p className="t-caption t-num text-ink-3 flex-1 min-w-0">{text}</p>
       <div className="flex items-center gap-1.5 shrink-0 pt-px">
         <PostBuildSuccess
           onOpenInClaude={onOpenInClaude}
@@ -353,7 +353,7 @@ function ThumbButton({
           ? "text-indigo-600 bg-indigo-50"
           : active && fading
             ? "text-indigo-500 hover:text-indigo-600"
-            : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]",
+            : "text-ink-3 hover:text-ink-2 hover:bg-[var(--color-hover)]",
       )}
       style={{ transition: "color 200ms ease, background-color 200ms ease" }}
     >

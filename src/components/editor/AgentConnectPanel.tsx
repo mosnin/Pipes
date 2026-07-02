@@ -89,9 +89,9 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
 
       {/* MCP endpoint */}
       <div className="space-y-1">
-        <p className="t-caption text-[#3C3C43]">MCP endpoint</p>
+        <p className="t-caption text-ink-2">MCP endpoint</p>
         <div className="flex items-center gap-1.5">
-          <code className="flex-1 bg-white border border-indigo-100 rounded-md px-2 py-1 t-caption font-mono text-indigo-700 truncate text-[10px]">
+          <code className="flex-1 surface-canvas border border-indigo-100 rounded-md px-2 py-1 t-caption font-mono text-indigo-700 truncate text-[10px]">
             {mcpEndpoint}
           </code>
           <button
@@ -106,19 +106,19 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
 
       {/* Token section */}
       <div className="space-y-1.5">
-        <p className="t-caption text-[#3C3C43]">Access token</p>
+        <p className="t-caption text-ink-2">Access token</p>
 
         {loading ? (
           <div className="flex items-center gap-2 py-1">
             <Spinner size="xs" />
-            <span className="t-caption text-[#8E8E93]">Loading tokens...</span>
+            <span className="t-caption text-ink-3">Loading tokens...</span>
           </div>
         ) : createdSecret ? (
           /* Newly created token — show full value once */
           <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 space-y-1.5">
             <p className="t-caption font-semibold text-amber-800">Save this token — shown once</p>
             <div className="flex items-center gap-1.5">
-              <code className="flex-1 bg-white border border-amber-200 rounded-md px-2 py-1 t-caption font-mono text-amber-800 truncate text-[10px]">
+              <code className="flex-1 surface-canvas border border-amber-200 rounded-md px-2 py-1 t-caption font-mono text-amber-800 truncate text-[10px]">
                 {createdSecret.secret}
               </code>
               <button
@@ -140,10 +140,10 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
           /* Show first token preview */
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
-              <code className="flex-1 bg-white border border-indigo-100 rounded-md px-2 py-1 t-caption font-mono text-indigo-700 truncate text-[10px]">
+              <code className="flex-1 surface-canvas border border-indigo-100 rounded-md px-2 py-1 t-caption font-mono text-indigo-700 truncate text-[10px]">
                 {tokens[0].tokenPreview}
               </code>
-              <span className="t-caption text-[#8E8E93] shrink-0">{tokens[0].name}</span>
+              <span className="t-caption text-ink-3 shrink-0">{tokens[0].name}</span>
             </div>
             <button
               onClick={() => setShowForm(true)}
@@ -166,13 +166,13 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
 
         {/* Inline create form */}
         {showForm && !createdSecret && (
-          <div className="rounded-lg bg-white border border-indigo-200 p-2 space-y-2">
+          <div className="rounded-lg surface-canvas border border-indigo-200 p-2 space-y-2">
             <input
               type="text"
               value={newTokenName}
               onChange={(e) => setNewTokenName(e.target.value)}
               placeholder="Token name"
-              className="w-full px-2 py-1 rounded-md border border-black/[0.08] t-caption outline-none focus:border-indigo-400 text-[#111]"
+              className="w-full px-2 py-1 rounded-md border border-line t-caption outline-none focus:border-indigo-400 text-ink-1"
               onKeyDown={(e) => { if (e.key === "Enter") void handleCreateToken(); }}
             />
             <div className="flex gap-2">
@@ -186,7 +186,7 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="px-2 py-1 rounded-md bg-[#F5F5F7] t-caption text-[#3C3C43] hover:bg-[#EBEBED] transition-colors"
+                className="px-2 py-1 rounded-md bg-[var(--surface-subtle)] t-caption text-ink-2 hover:bg-[#EBEBED] transition-colors"
               >
                 Cancel
               </button>
@@ -197,7 +197,7 @@ export function AgentConnectPanel({ systemId, mcpReadWrite }: AgentConnectPanelP
 
       {/* How to use */}
       <div className="space-y-1 pt-1 border-t border-indigo-100">
-        <ul className="space-y-0.5 t-caption text-[#3C3C43]">
+        <ul className="space-y-0.5 t-caption text-ink-2">
           <li>&#x2022; <strong>Claude Projects:</strong> Add MCP server with your token</li>
           <li>&#x2022; <strong>GPT Actions:</strong> Bearer auth with your token</li>
           <li>&#x2022; <strong>Any agent:</strong> <code className="font-mono text-indigo-700">Authorization: Bearer &lt;token&gt;</code></li>

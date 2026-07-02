@@ -100,7 +100,7 @@ export function PostBuildSuccess({
           type="button"
           onClick={handleDiff}
           aria-label="See diff"
-          className="inline-flex items-center gap-1 t-caption text-[#8E8E93] hover:text-[#111] px-1.5 h-6 rounded-md hover:bg-black/[0.04] transition-colors"
+          className="inline-flex items-center gap-1 t-caption text-ink-3 hover:text-ink-1 px-1.5 h-6 rounded-md hover:bg-[var(--color-hover)] transition-colors"
         >
           <GitCompare size={12} />
           <span>See diff</span>
@@ -111,7 +111,7 @@ export function PostBuildSuccess({
           type="button"
           onClick={handleRevert}
           aria-label="Revert this turn"
-          className="inline-flex items-center gap-1 t-caption text-[#8E8E93] hover:text-[#111] px-1.5 h-6 rounded-md hover:bg-black/[0.04] transition-colors"
+          className="inline-flex items-center gap-1 t-caption text-ink-3 hover:text-ink-1 px-1.5 h-6 rounded-md hover:bg-[var(--color-hover)] transition-colors"
         >
           <RotateCcw size={12} />
           <span>Revert</span>

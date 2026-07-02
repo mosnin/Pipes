@@ -96,16 +96,16 @@ export function EditorInspector({
 
   if (!selectedNode && !selectedEdge) {
     return (
-      <aside className="w-[320px] shrink-0 border-l border-black/[0.08] bg-white flex flex-col">
-        <div className="px-4 py-3 border-b border-black/[0.06]">
-          <h3 className="t-label font-semibold text-[#111]">Inspector</h3>
+      <aside className="w-[320px] shrink-0 border-l border-line surface-canvas flex flex-col">
+        <div className="px-4 py-3 border-b border-line">
+          <h3 className="t-label font-semibold text-ink-1">Inspector</h3>
         </div>
         <div className="flex-1 p-4">
           <EmptyState
             title="Nothing selected"
             description="Click a node or pipe on the canvas to inspect it."
             action={
-              <span className="inline-flex items-center gap-1 t-caption text-[#8E8E93]">
+              <span className="inline-flex items-center gap-1 t-caption text-ink-3">
                 <Mouse size={12} /> Tap any node to begin
               </span>
             }
@@ -118,14 +118,14 @@ export function EditorInspector({
   if (selectedEdge && !selectedNode) {
     const semantics = pipeSemantics[selectedEdge.id];
     return (
-      <aside className="w-[320px] shrink-0 border-l border-black/[0.08] bg-white flex flex-col">
-        <div className="px-4 py-3 border-b border-black/[0.06] flex items-center justify-between">
-          <h3 className="t-label font-semibold text-[#111]">Pipe</h3>
+      <aside className="w-[320px] shrink-0 border-l border-line surface-canvas flex flex-col">
+        <div className="px-4 py-3 border-b border-line flex items-center justify-between">
+          <h3 className="t-label font-semibold text-ink-1">Pipe</h3>
           <Badge tone="neutral">{semantics?.routeKind ?? "default"}</Badge>
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-3 space-y-3">
           <div>
-            <label className="t-caption font-medium text-[#3C3C43] block mb-1">Label</label>
+            <label className="t-caption font-medium text-ink-2 block mb-1">Label</label>
             <Input
               value={semantics?.label ?? ""}
               onChange={(e) =>
@@ -139,7 +139,7 @@ export function EditorInspector({
             />
           </div>
           <div>
-            <label className="t-caption font-medium text-[#3C3C43] block mb-1">Condition</label>
+            <label className="t-caption font-medium text-ink-2 block mb-1">Condition</label>
             <Input
               value={semantics?.conditionLabel ?? ""}
               onChange={(e) =>
@@ -153,7 +153,7 @@ export function EditorInspector({
             />
           </div>
           <div>
-            <label className="t-caption font-medium text-[#3C3C43] block mb-1">Route kind</label>
+            <label className="t-caption font-medium text-ink-2 block mb-1">Route kind</label>
             <Select
               value={semantics?.routeKind ?? "default"}
               onChange={(e) =>
@@ -171,7 +171,7 @@ export function EditorInspector({
             </Select>
           </div>
           <div>
-            <label className="t-caption font-medium text-[#3C3C43] block mb-1">Notes</label>
+            <label className="t-caption font-medium text-ink-2 block mb-1">Notes</label>
             <Textarea
               value={semantics?.notes ?? ""}
               onChange={(e) =>
@@ -201,12 +201,12 @@ export function EditorInspector({
     });
 
   return (
-    <aside key={selectedNode.id} className="w-[320px] shrink-0 border-l border-black/[0.08] bg-white flex flex-col">
-      <div className="px-4 py-3 border-b border-black/[0.06]">
+    <aside key={selectedNode.id} className="w-[320px] shrink-0 border-l border-line surface-canvas flex flex-col">
+      <div className="px-4 py-3 border-b border-line">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="t-label font-semibold text-[#111] truncate">{selectedNode.title}</h3>
-            <p className="t-caption text-[#8E8E93]">{selectedNode.type}</p>
+            <h3 className="t-label font-semibold text-ink-1 truncate">{selectedNode.title}</h3>
+            <p className="t-caption text-ink-3">{selectedNode.type}</p>
           </div>
           <Badge tone="neutral">{selectedNode.type}</Badge>
         </div>
@@ -223,7 +223,7 @@ export function EditorInspector({
               className={`px-2 py-1 t-caption rounded-md font-medium transition-colors ${
                 tab === tabItem.id
                   ? "bg-indigo-50 text-indigo-700"
-                  : "text-[#8E8E93] hover:text-[#3C3C43] hover:bg-black/[0.04]"
+                  : "text-ink-3 hover:text-ink-2 hover:bg-[var(--color-hover)]"
               }`}
             >
               {tabItem.label}
@@ -272,9 +272,9 @@ export function EditorInspector({
                             onChange={(e) =>
                               onUpdateNodeConfig(selectedNode.id, field.key, e.target.checked)
                             }
-                            className="rounded border-black/[0.12]"
+                            className="rounded border-line-strong"
                           />
-                          <span className="t-caption text-[#3C3C43]">{field.label}</span>
+                          <span className="t-caption text-ink-2">{field.label}</span>
                         </label>
                       ) : field.type === "textarea" ? (
                         <Textarea
@@ -329,7 +329,7 @@ export function EditorInspector({
               />
             </Field>
             <CardShell padded className="bg-[var(--surface-subtle,#FAFAFA)]">
-              <p className="t-overline text-[#8E8E93] mb-2">Config notes</p>
+              <p className="t-overline text-ink-3 mb-2">Config notes</p>
               <Textarea
                 value={safeDefinition.configNotes ?? ""}
                 onChange={(e) =>
@@ -349,7 +349,7 @@ export function EditorInspector({
           <div className="space-y-5">
             {/* Identity */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Identity</p>
+              <p className="t-overline text-ink-3">Identity</p>
               <Field label="Summary">
                 <Input
                   value={safeDefinition.overview.summary ?? ""}
@@ -400,11 +400,11 @@ export function EditorInspector({
               </div>
             </section>
 
-            <div className="border-t border-black/[0.06]" />
+            <div className="border-t border-line" />
 
             {/* Inputs */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Inputs</p>
+              <p className="t-overline text-ink-3">Inputs</p>
               <HelpText>Schema: {summarizeContract(safeDefinition.input)}</HelpText>
               <Field label="Port type">
                 <Select
@@ -450,7 +450,7 @@ export function EditorInspector({
                 />
               </Field>
               <div className="flex items-center justify-between">
-                <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.input.fields.length})</p>
+                <p className="t-overline text-ink-3">Fields ({safeDefinition.input.fields.length})</p>
                 <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("input")}>
                   <Plus size={12} /> Field
                 </Button>
@@ -486,7 +486,7 @@ export function EditorInspector({
                         </option>
                       ))}
                     </Select>
-                    <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
+                    <label className="inline-flex items-center gap-2 t-caption text-ink-2">
                       <input
                         type="checkbox"
                         checked={field.required}
@@ -509,11 +509,11 @@ export function EditorInspector({
               ))}
             </section>
 
-            <div className="border-t border-black/[0.06]" />
+            <div className="border-t border-line" />
 
             {/* Outputs */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Outputs</p>
+              <p className="t-overline text-ink-3">Outputs</p>
               <HelpText>Schema: {summarizeContract(safeDefinition.output)}</HelpText>
               <Field label="Port type">
                 <Select
@@ -559,7 +559,7 @@ export function EditorInspector({
                 />
               </Field>
               <div className="flex items-center justify-between">
-                <p className="t-overline text-[#8E8E93]">Fields ({safeDefinition.output.fields.length})</p>
+                <p className="t-overline text-ink-3">Fields ({safeDefinition.output.fields.length})</p>
                 <Button variant="outline" size="sm" onPress={() => onAddDefinitionField("output")}>
                   <Plus size={12} /> Field
                 </Button>
@@ -595,7 +595,7 @@ export function EditorInspector({
                         </option>
                       ))}
                     </Select>
-                    <label className="inline-flex items-center gap-2 t-caption text-[#3C3C43]">
+                    <label className="inline-flex items-center gap-2 t-caption text-ink-2">
                       <input
                         type="checkbox"
                         checked={field.required}
@@ -626,11 +626,11 @@ export function EditorInspector({
               ))}
             </section>
 
-            <div className="border-t border-black/[0.06]" />
+            <div className="border-t border-line" />
 
             {/* Notes */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Notes</p>
+              <p className="t-overline text-ink-3">Notes</p>
               <Field label="Assumptions">
                 <Textarea
                   value={safeDefinition.overview.assumptions ?? ""}
@@ -681,12 +681,12 @@ export function EditorInspector({
               </Field>
             </section>
 
-            <div className="border-t border-black/[0.06]" />
+            <div className="border-t border-line" />
 
             {/* Validation */}
             <section className="space-y-2">
-              <p className="t-overline text-[#8E8E93]">Validation</p>
-              <p className="t-caption text-[#8E8E93]">Definition checks</p>
+              <p className="t-overline text-ink-3">Validation</p>
+              <p className="t-caption text-ink-3">Definition checks</p>
               {definitionIssues.length === 0 ? (
                 <Badge tone="good">No definition issues</Badge>
               ) : (
@@ -694,12 +694,12 @@ export function EditorInspector({
                   <CardShell key={issue} padded>
                     <div className="flex items-start gap-2">
                       <ValidationBadge severity="warning" />
-                      <p className="t-caption text-[#3C3C43]">{issue}</p>
+                      <p className="t-caption text-ink-2">{issue}</p>
                     </div>
                   </CardShell>
                 ))
               )}
-              <p className="t-caption text-[#8E8E93] mt-3">Compatibility hints</p>
+              <p className="t-caption text-ink-3 mt-3">Compatibility hints</p>
               {compatibilityHints.length === 0 ? (
                 <HelpText>No connected nodes to compare.</HelpText>
               ) : (
@@ -707,7 +707,7 @@ export function EditorInspector({
                   <CardShell key={`${hint.nodeTitle}_${index}`} padded>
                     <div className="flex items-start gap-2">
                       <ValidationBadge severity={hint.hint.compatible ? "info" : "warning"} />
-                      <p className="t-caption text-[#3C3C43]">
+                      <p className="t-caption text-ink-2">
                         {hint.direction} . {hint.nodeTitle}: {hint.hint.reason}
                       </p>
                     </div>
@@ -716,11 +716,11 @@ export function EditorInspector({
               )}
             </section>
 
-            <div className="border-t border-black/[0.06]" />
+            <div className="border-t border-line" />
 
             {/* Docs */}
             <section className="space-y-3">
-              <p className="t-overline text-[#8E8E93]">Docs</p>
+              <p className="t-overline text-ink-3">Docs</p>
               <Field label="Linked asset">
                 <Input
                   value={safeDefinition.overview.linkedAsset ?? ""}
@@ -765,7 +765,7 @@ export function EditorInspector({
         )}
       </div>
 
-      <div className="border-t border-black/[0.06] px-3 py-2 flex items-center gap-1 flex-wrap">
+      <div className="border-t border-line px-3 py-2 flex items-center gap-1 flex-wrap">
         <Tooltip content={<span className="inline-flex items-center gap-1">Add downstream <KbdHint keys={["Shift", "O"]} /></span>}>
           <Button variant="ghost" size="sm" onPress={onAddDownstream}>
             <Plus size={12} /> Down
@@ -800,7 +800,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label className="t-caption font-medium text-[#3C3C43] block">
+      <label className="t-caption font-medium text-ink-2 block">
         {label}
         {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>

@@ -120,13 +120,13 @@ export function PlanEditor({
       role="region"
       aria-label="Plan editor"
       data-testid="plan-editor"
-      className="bg-white border border-black/[0.08] rounded-xl shadow-xs p-3"
+      className="surface-canvas border border-line rounded-xl shadow-xs p-3"
     >
       <div className="flex items-center justify-between mb-2">
-        <p className="t-caption text-[#8E8E93]">
+        <p className="t-caption text-ink-3">
           {isBuilding ? "Building..." : "Plan"}
         </p>
-        <span className="t-caption t-num text-[#8E8E93]">
+        <span className="t-caption t-num text-ink-3">
           {enabledCount} of {steps.length} steps
         </span>
       </div>
@@ -156,7 +156,7 @@ export function PlanEditor({
                 "inline-flex items-center justify-center h-8 px-3 rounded-full t-label transition-colors",
                 enabledCount > 0
                   ? "bg-[#4F46E5] text-white hover:bg-indigo-700"
-                  : "bg-[#F5F5F7] text-[#C7C7CC] cursor-not-allowed",
+                  : "bg-[var(--surface-subtle)] text-ink-4 cursor-not-allowed",
               )}
             >
               Build edited plan
@@ -164,7 +164,7 @@ export function PlanEditor({
             <button
               type="button"
               onClick={onAbort}
-              className="inline-flex items-center justify-center h-8 px-3 rounded-full t-label text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04]"
+              className="inline-flex items-center justify-center h-8 px-3 rounded-full t-label text-ink-2 hover:text-ink-1 hover:bg-[var(--color-hover)]"
             >
               Discard
             </button>
@@ -173,7 +173,7 @@ export function PlanEditor({
           <button
             type="button"
             onClick={onAbort}
-            className="inline-flex items-center justify-center h-8 px-3 rounded-full t-label text-[#3C3C43] hover:text-[#111] hover:bg-black/[0.04]"
+            className="inline-flex items-center justify-center h-8 px-3 rounded-full t-label text-ink-2 hover:text-ink-1 hover:bg-[var(--color-hover)]"
           >
             Stop
           </button>
