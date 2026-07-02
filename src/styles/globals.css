@@ -27,7 +27,7 @@
   /* Ink */
   --color-ink-1: #111111; /* primary text    */
   --color-ink-2: #3C3C43; /* secondary text  */
-  --color-ink-3: #8E8E93; /* tertiary / muted */
+  --color-ink-3: #6B6B70; /* tertiary / muted — darkened from #8E8E93 to clear WCAG AA (~4.6:1 on white) */
   --color-ink-4: #C7C7CC; /* placeholder / disabled */
 
   /* Borders */

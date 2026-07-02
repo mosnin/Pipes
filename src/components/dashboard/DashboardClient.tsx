@@ -47,7 +47,6 @@ import {
 } from "@/components/ui";
 import type { DataTableColumn } from "@/components/ui";
 import { EmptyCanvas } from "@/components/illustrations";
-import { MentalModelCard } from "@/components/MentalModelCard";
 import { MobileGate } from "@/components/mobile/MobileGate";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
 
@@ -947,9 +946,6 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
   return (
     <div className="flex flex-col gap-6">
-      {/* One-shot mental model card. Fires once per browser on first dashboard
-          mount. Manages its own SSR-safe localStorage gate and never re-shows. */}
-      <MentalModelCard />
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <MetricCard
