@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addEdge,
   Background,
@@ -16,12 +16,16 @@ import {
   type Edge,
   type Node,
   type OnSelectionChangeParams,
-  useEdgesState,
-  useNodesState,
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { NodeTypeBadge } from "@/components/ui";
+
+// Module-level stable references prevent @xyflow/react v12 StoreUpdater from
+// detecting "changes" for props that never actually change.
+const STABLE_FIT_VIEW_OPTIONS = { padding: 0.2, duration: 300 };
+const STABLE_SNAP_GRID: [number, number] = [16, 16];
+const STABLE_PAN_ON_DRAG: number[] = [1, 2];
 
 type EditorNodeData = {
   title: string;
@@ -236,8 +240,8 @@ export function EditorCanvas({
   onViewportSettled?: (nodeCount: number, edgeCount: number) => void;
   onPortClick?: (info: { nodeId: string; direction: "input" | "output"; anchor: { x: number; y: number } }) => void;
 }) {
-  const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes] = useState<Node[]>(initialNodes);
+  const [edges, setEdges] = useState<Edge[]>(initialEdges);
   const nodeTypes = useMemo(() => ({ pipesNode: PipesNode }), []);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ nodeIds: string[]; edgeIds: string[] }>({ nodeIds: [], edgeIds: [] });
@@ -252,8 +256,46 @@ export function EditorCanvas({
   const seenNodeIdsRef = useRef<Set<string>>(new Set(initialNodes.map((n) => n.id)));
   const seenEdgeIdsRef = useRef<Set<string>>(new Set(initialEdges.map((e) => e.id)));
 
-  useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
-  useEffect(() => setEdges(initialEdges), [initialEdges, setEdges]);
+  // Sync external node/edge arrays into ReactFlow's internal state, but ONLY
+  // when the content actually changes. The mock-mode poll returns a new array
+  // reference every 1.5 s even when nothing changed; a naive useEffect dep on
+  // the reference triggers setNodes → displayNodes recomputes → StoreUpdater
+  // fires → Zustand setNodes → forceStoreRerender → re-render → repeat.
+  const prevInitialNodesRef = useRef(initialNodes);
+  const prevInitialEdgesRef = useRef(initialEdges);
+  useEffect(() => {
+    const prev = prevInitialNodesRef.current;
+    const curr = initialNodes;
+    if (prev === curr) return;
+    const changed =
+      prev.length !== curr.length ||
+      curr.some((n, i) => {
+        const p = prev[i];
+        return (
+          n.id !== p?.id ||
+          n.data?.title !== p?.data?.title ||
+          n.data?.type !== p?.data?.type ||
+          n.position.x !== p?.position.x ||
+          n.position.y !== p?.position.y
+        );
+      });
+    if (changed) {
+      prevInitialNodesRef.current = curr;
+      setNodes(curr);
+    }
+  }, [initialNodes, setNodes]);
+  useEffect(() => {
+    const prev = prevInitialEdgesRef.current;
+    const curr = initialEdges;
+    if (prev === curr) return;
+    const changed =
+      prev.length !== curr.length ||
+      curr.some((e, i) => e.id !== prev[i]?.id || e.source !== prev[i]?.source || e.target !== prev[i]?.target);
+    if (changed) {
+      prevInitialEdgesRef.current = curr;
+      setEdges(curr);
+    }
+  }, [initialEdges, setEdges]);
 
   // Detect newly-arrived node ids on every initialNodes update. Each new id
   // joins the fresh set and is removed after ARRIVAL_LIFETIME_MS, which is
@@ -309,13 +351,23 @@ export function EditorCanvas({
     return () => window.clearTimeout(timer);
   }, [initialEdges]);
 
-  const onNodesChange = (changes: NodeChange<Node>[]) => {
-    onNodesChangeBase(changes);
+  // All callbacks passed to <ReactFlow> must be stable (useCallback) because
+  // @xyflow/react v12's StoreUpdater tracks them by reference. A new function
+  // on every render → store.setState({ onNodesChange: fn }) → Zustand update
+  // → forceStoreRerender → re-render → new function → infinite loop.
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
+  // Only handle alignment guide logic here — do NOT call setNodes inside
+  // onNodesChange. Propagating dimension/select/position changes to React state
+  // would cause displayNodes to recompute, which re-triggers StoreUpdater in
+  // @xyflow/react v12, which calls Zustand setNodes again, ad infinitum.
+  const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
     const active = changes.find((c) => c.type === "position" && c.dragging && c.id === draggingId) as
       | { id: string; position?: { x: number; y: number } }
       | undefined;
     if (!active || !active.position) return;
-    const peer = nodes.find(
+    const peer = nodesRef.current.find(
       (n) =>
         n.id !== draggingId &&
         (Math.abs((n.position.x ?? 0) - (active.position?.x ?? 0)) <= ALIGN_THRESHOLD ||
@@ -329,26 +381,111 @@ export function EditorCanvas({
         y: Math.abs(peer.position.y - (active.position?.y ?? 0)) <= ALIGN_THRESHOLD ? peer.position.y : undefined,
       });
     }
-  };
+  }, [draggingId]);
 
-  const validConnection = (connection: Connection | Edge) => {
+  const validConnection = useCallback((connection: Connection | Edge) => {
     if (!connection.source || !connection.target) return false;
     const valid = String(connection.source) !== String(connection.target);
     setConnectingValid(valid);
     return valid;
-  };
+  }, []);
 
-  const handleSelection = (params: OnSelectionChangeParams) => {
+  const handleSelection = useCallback((params: OnSelectionChangeParams) => {
     const nodeIds = (params.nodes ?? []).map((n) => n.id);
     const edgeIds = (params.edges ?? []).map((e) => e.id);
     setSelection({ nodeIds, edgeIds });
     onSelectionChange(nodeIds, edgeIds);
     onSelectNode(nodeIds[0]);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSelectionChange, onSelectNode]);
 
   const previewLookup = useMemo(() => new Map((previewItems ?? []).map((item) => [item.entityId, item])), [previewItems]);
   const highlightedNodeSet = useMemo(() => new Set(highlightedNodeIds ?? []), [highlightedNodeIds]);
   const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeIds ?? []), [highlightedEdgeIds]);
+
+  // Memoize the transformed node/edge arrays so ReactFlow receives a stable
+  // reference when nothing visual has actually changed. Without this, the
+  // inline .map() creates a new array on every render, which triggers
+  // @xyflow/react v12's StoreUpdater → onNodesChange → setNodes → re-render
+  // → new .map() reference → infinite "Maximum update depth exceeded" loop.
+  const selectionNodeIds = selection.nodeIds;
+  const selectionEdgeIds = selection.edgeIds;
+  const displayNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const preview = previewLookup.get(node.id);
+        const highlighted = highlightedNodeSet.has(node.id);
+        const isSelected = selectionNodeIds.includes(node.id);
+        const isArrived = freshNodeIds.has(node.id);
+        const isPulsing = pulsingNodeId === node.id;
+        const previewBorder =
+          preview?.previewKind === "deletion"
+            ? `2px dashed ${TOKEN_DANGER}`
+            : preview?.previewKind === "movement"
+              ? "2px dashed #D97706"
+              : preview?.previewKind === "connection"
+                ? `2px solid ${TOKEN_INDIGO_600}`
+                : undefined;
+        const animatingShadow = isArrived || isPulsing;
+        return {
+          ...node,
+          data: {
+            ...(node.data as EditorNodeData),
+            arrived: isArrived,
+            pulsing: isPulsing,
+          },
+          style: {
+            ...(node.style ?? {}),
+            border:
+              previewBorder ??
+              (highlighted
+                ? `2px solid ${regionStatus === "applied" ? "#059669" : TOKEN_INDIGO_600}`
+                : isSelected
+                  ? `2px solid ${TOKEN_INDIGO_600}`
+                  : undefined),
+            boxShadow: animatingShadow
+              ? undefined
+              : isSelected
+                ? `0 0 0 4px rgba(99,102,241,0.18), 0 4px 14px rgba(0,0,0,0.10)`
+                : highlighted
+                  ? "0 0 0 4px rgba(99,102,241,0.15)"
+                  : undefined,
+            opacity: preview?.previewKind === "deletion" ? 0.68 : 1,
+          },
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodes, previewLookup, highlightedNodeSet, regionStatus, selectionNodeIds, freshNodeIds, pulsingNodeId],
+  );
+  const displayEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const highlighted = highlightedEdgeSet.has(edge.id);
+        const isSelected = selectionEdgeIds.includes(edge.id);
+        const isError = edge.style?.stroke === TOKEN_DANGER;
+        const isFresh = freshEdgeIds.has(edge.id);
+        return {
+          ...edge,
+          className: [edge.className, isFresh ? "looper-edge-stream" : null].filter(Boolean).join(" ") || undefined,
+          style: {
+            stroke: highlighted
+              ? regionStatus === "applied"
+                ? "#059669"
+                : TOKEN_INDIGO_600
+              : isSelected
+                ? TOKEN_INDIGO_600
+                : isError
+                  ? TOKEN_DANGER
+                  : TOKEN_INK_3,
+            strokeWidth: highlighted ? 3.5 : isSelected ? 2.5 : 1.5,
+            strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : undefined,
+          },
+          animated: isSelected || edge.animated || highlighted,
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [edges, highlightedEdgeSet, regionStatus, selectionEdgeIds, freshEdgeIds],
+  );
 
   // Delegated handler for port clicks. xyflow renders <div class="react-flow__handle">
   // children of <div class="react-flow__node" data-id="...">. We listen on the
@@ -385,6 +522,90 @@ export function EditorCanvas({
     node.addEventListener("pointerdown", onPointerDown, true);
     return () => node.removeEventListener("pointerdown", onPointerDown, true);
   }, [onPortClick]);
+
+  // Stable callbacks for ReactFlow props — all must be useCallback to prevent
+  // @xyflow/react v12 StoreUpdater from detecting spurious "changes" that
+  // trigger Zustand updates → forceStoreRerender → infinite render loop.
+  const nodesLengthRef = useRef(nodes.length);
+  nodesLengthRef.current = nodes.length;
+  const edgesLengthRef = useRef(edges.length);
+  edgesLengthRef.current = edges.length;
+
+  const connectingLineStyle = useMemo(
+    () => ({ stroke: connectingValid === false ? TOKEN_DANGER : TOKEN_INDIGO_500, strokeWidth: 2 }),
+    [connectingValid],
+  );
+
+  const handleInit = useCallback(() => {
+    onViewportSettled?.(nodesLengthRef.current, edgesLengthRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onViewportSettled]);
+
+  const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+    onSelectNode(node.id);
+  }, [onSelectNode]);
+
+  const handlePaneClick = useCallback((event: React.MouseEvent) => {
+    if (event.detail >= 2) {
+      onRequestInsert({ mode: "canvas", at: { x: event.clientX, y: event.clientY } });
+      return;
+    }
+    onSelectNode(undefined);
+    onSelectionChange([], []);
+    setSelection({ nodeIds: [], edgeIds: [] });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSelectNode, onSelectionChange, onRequestInsert]);
+
+  const handleConnectStart = useCallback(() => setConnectingValid(null), []);
+  const handleConnectEnd = useCallback(() => setConnectingValid(null), []);
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (connection.source && connection.target && connection.source !== connection.target) {
+      setEdges((eds) => addEdge({ ...connection, type: "smoothstep" }, eds));
+      onConnect(connection.source, connection.target);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onConnect, setEdges]);
+
+  const handleEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    onDeleteEdge(edge.id);
+  }, [onDeleteEdge]);
+
+  const handleEdgeDoubleClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    onRequestInsert({ mode: "selectedEdge", edgeId: edge.id, at: { x: event.clientX, y: event.clientY } });
+  }, [onRequestInsert]);
+
+  const handleNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
+    onRequestInsert({ mode: "selectedNode", nodeId: node.id, at: { x: event.clientX, y: event.clientY } });
+  }, [onRequestInsert]);
+
+  const handleNodesDelete = useCallback((deleted: Node[]) => {
+    onDeleteNodes(deleted.map((n) => n.id));
+  }, [onDeleteNodes]);
+
+  const handleNodeDragStart = useCallback((_: React.MouseEvent, node: Node) => {
+    setDraggingId(node.id);
+  }, []);
+
+  const draggingIdRef = useRef(draggingId);
+  draggingIdRef.current = draggingId;
+  const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
+    if (draggingIdRef.current === node.id) onMove(node.id, node.position.x, node.position.y);
+    setDraggingId(null);
+    setGuide({});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onMove]);
+
+  const handleMove = useCallback((_: unknown, viewport: { zoom: number }) => {
+    onZoomChange?.(viewport.zoom);
+  }, [onZoomChange]);
+
+  const handleEscapeClear = useCallback(() => {
+    setSelection({ nodeIds: [], edgeIds: [] });
+    onSelectionChange([], []);
+    onSelectNode(undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSelectionChange, onSelectNode]);
 
   return (
     <div ref={wrapRef} className="editor-canvas relative w-full h-full" style={{ position: "relative" }}>
@@ -448,84 +669,17 @@ export function EditorCanvas({
         />
       ) : null}
       <ReactFlow
-        nodes={nodes.map((node) => {
-          const preview = previewLookup.get(node.id);
-          const highlighted = highlightedNodeSet.has(node.id);
-          const isSelected = selection.nodeIds.includes(node.id);
-          const isArrived = freshNodeIds.has(node.id);
-          const isPulsing = pulsingNodeId === node.id;
-          const previewBorder =
-            preview?.previewKind === "deletion"
-              ? `2px dashed ${TOKEN_DANGER}`
-              : preview?.previewKind === "movement"
-                ? "2px dashed #D97706"
-                : preview?.previewKind === "connection"
-                  ? `2px solid ${TOKEN_INDIGO_600}`
-                  : undefined;
-          // The arrival glow is owned by the keyframe; while it is playing we
-          // skip the static selection box-shadow so the two do not fight. The
-          // pulsing ring also drives box-shadow on its own.
-          const animatingShadow = isArrived || isPulsing;
-          return {
-            ...node,
-            data: {
-              ...(node.data as EditorNodeData),
-              arrived: isArrived,
-              pulsing: isPulsing,
-            },
-            style: {
-              ...(node.style ?? {}),
-              border:
-                previewBorder ??
-                (highlighted
-                  ? `2px solid ${regionStatus === "applied" ? "#059669" : TOKEN_INDIGO_600}`
-                  : isSelected
-                    ? `2px solid ${TOKEN_INDIGO_600}`
-                    : undefined),
-              boxShadow: animatingShadow
-                ? undefined
-                : isSelected
-                  ? `0 0 0 4px rgba(99,102,241,0.18), 0 4px 14px rgba(0,0,0,0.10)`
-                  : highlighted
-                    ? "0 0 0 4px rgba(99,102,241,0.15)"
-                    : undefined,
-              opacity: preview?.previewKind === "deletion" ? 0.68 : 1,
-            },
-          };
-        })}
-        edges={edges.map((edge) => {
-          const highlighted = highlightedEdgeSet.has(edge.id);
-          const isSelected = selection.edgeIds.includes(edge.id);
-          const isError = edge.style?.stroke === TOKEN_DANGER;
-          const isFresh = freshEdgeIds.has(edge.id);
-          return {
-            ...edge,
-            className: [edge.className, isFresh ? "looper-edge-stream" : null].filter(Boolean).join(" ") || undefined,
-            style: {
-              stroke: highlighted
-                ? regionStatus === "applied"
-                  ? "#059669"
-                  : TOKEN_INDIGO_600
-                : isSelected
-                  ? TOKEN_INDIGO_600
-                  : isError
-                    ? TOKEN_DANGER
-                    : TOKEN_INK_3,
-              strokeWidth: highlighted ? 3.5 : isSelected ? 2.5 : 1.5,
-              strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : undefined,
-            },
-            animated: isSelected || edge.animated || highlighted,
-          };
-        })}
+        nodes={displayNodes}
+        edges={displayEdges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2, duration: 300 }}
+        fitViewOptions={STABLE_FIT_VIEW_OPTIONS}
         minZoom={0.18}
         maxZoom={2.6}
         snapToGrid
-        snapGrid={[16, 16]}
+        snapGrid={STABLE_SNAP_GRID}
         selectionOnDrag
-        panOnDrag={[1, 2]}
+        panOnDrag={STABLE_PAN_ON_DRAG}
         panOnScroll
         zoomOnPinch
         zoomOnScroll
@@ -533,55 +687,29 @@ export function EditorCanvas({
         multiSelectionKeyCode={"Shift"}
         deleteKeyCode={null}
         connectionLineType={ConnectionLineType.SmoothStep}
-        connectionLineStyle={{ stroke: connectingValid === false ? TOKEN_DANGER : TOKEN_INDIGO_500, strokeWidth: 2 }}
+        connectionLineStyle={connectingLineStyle}
         isValidConnection={validConnection}
-        onInit={() => onViewportSettled?.(nodes.length, edges.length)}
-        onNodeClick={(_, node) => onSelectNode(node.id)}
-        onPaneClick={(event) => {
-          if (event.detail >= 2) {
-            onRequestInsert({ mode: "canvas", at: { x: event.clientX, y: event.clientY } });
-            return;
-          }
-          onSelectNode(undefined);
-          onSelectionChange([], []);
-          setSelection({ nodeIds: [], edgeIds: [] });
-        }}
+        onInit={handleInit}
+        onNodeClick={handleNodeClick}
+        onPaneClick={handlePaneClick}
         onSelectionChange={handleSelection}
-        onConnectStart={() => setConnectingValid(null)}
-        onConnectEnd={() => setConnectingValid(null)}
-        onConnect={(connection: Connection) => {
-          if (connection.source && connection.target && connection.source !== connection.target) {
-            setEdges((eds) => addEdge({ ...connection, type: "smoothstep" }, eds));
-            onConnect(connection.source, connection.target);
-          }
-        }}
-        onEdgeClick={(_, edge) => onDeleteEdge(edge.id)}
-        onEdgeDoubleClick={(event, edge) =>
-          onRequestInsert({ mode: "selectedEdge", edgeId: edge.id, at: { x: event.clientX, y: event.clientY } })
-        }
-        onNodeDoubleClick={(event, node) =>
-          onRequestInsert({ mode: "selectedNode", nodeId: node.id, at: { x: event.clientX, y: event.clientY } })
-        }
-        onNodesDelete={(deleted) => onDeleteNodes(deleted.map((n) => n.id))}
-        onNodeDragStart={(_, node) => setDraggingId(node.id)}
-        onNodeDragStop={(_, node) => {
-          if (draggingId === node.id) onMove(node.id, node.position.x, node.position.y);
-          setDraggingId(null);
-          setGuide({});
-        }}
+        onConnectStart={handleConnectStart}
+        onConnectEnd={handleConnectEnd}
+        onConnect={handleConnect}
+        onEdgeClick={handleEdgeClick}
+        onEdgeDoubleClick={handleEdgeDoubleClick}
+        onNodeDoubleClick={handleNodeDoubleClick}
+        onNodesDelete={handleNodesDelete}
+        onNodeDragStart={handleNodeDragStart}
+        onNodeDragStop={handleNodeDragStop}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onMove={(_, viewport) => onZoomChange?.(viewport.zoom)}
+        onMove={handleMove}
       >
         <CanvasCommands
           fitRequest={fitRequest}
           frameRequest={frameRequest}
           selectedNodeIds={selection.nodeIds}
-          onEscapeClear={() => {
-            setSelection({ nodeIds: [], edgeIds: [] });
-            onSelectionChange([], []);
-            onSelectNode(undefined);
-          }}
+          onEscapeClear={handleEscapeClear}
         />
         <Background
           variant={BackgroundVariant.Dots}

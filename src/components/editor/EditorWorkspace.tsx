@@ -422,16 +422,23 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
   // below.
   const nodesRef = useRef<GraphNode[]>(nodes);
   const pipesRef = useRef<GraphPipe[]>(pipes);
+  const subsystemsRef = useRef<Subsystem[]>(subsystems);
+  const nodeDefinitionsRef = useRef<Record<string, NodeDefinition>>(nodeDefinitions);
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { pipesRef.current = pipes; }, [pipes]);
+  useEffect(() => { subsystemsRef.current = subsystems; }, [subsystems]);
+  useEffect(() => { nodeDefinitionsRef.current = nodeDefinitions; }, [nodeDefinitions]);
 
   const enqueue = useCallback((action: EditorGraphAction) => {
     userInteractedAtRef.current = Date.now();
-    const applied = localApply(nodes, pipes, action);
+    const applied = localApply(nodesRef.current, pipesRef.current, action);
+    nodesRef.current = applied.nodes;
+    pipesRef.current = applied.pipes;
     setNodes(applied.nodes);
     setPipes(applied.pipes);
     setQueue((prev) => [...prev, { action, id: crypto.randomUUID(), retries: 0 }]);
-  }, [nodes, pipes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const recordAction = useCallback((forward: EditorGraphAction, inverse: EditorGraphAction, coalesceKey?: string) => {
     enqueue(forward);
@@ -1039,6 +1046,81 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     }));
   }, [activeTurnId, completedTurns]);
 
+  // Stable callbacks for EditorCanvas. All must be useCallback with minimal
+  // or ref-based deps so @xyflow/react v12's StoreUpdater never sees a new
+  // function reference between renders — new references trigger Zustand
+  // setState → forceStoreRerender → re-render → new references → infinite loop.
+  const handleCanvasSelectNode = useCallback((id?: string) => {
+    if (!id) { setSelectedNodeIds([]); return; }
+    const subsystem = subsystemsRef.current.find((item) => item.id === id);
+    if (subsystem) { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); return; }
+    setSelectedNodeIds([id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCanvasSelectionChange = useCallback((nodeIds: string[], edgeIds: string[]) => {
+    setSelectedNodeIds(nodeIds);
+    setSelectedEdgeIds(edgeIds);
+  }, []);
+
+  const handleCanvasConnect = useCallback((source: string, target: string) => {
+    const clientPipeId = `tmp_pipe_${Math.random().toString(36).slice(2, 9)}`;
+    recordAction({ action: "addPipe", systemId, fromNodeId: source, toNodeId: target, clientPipeId }, { action: "deletePipe", pipeId: clientPipeId });
+  }, [recordAction, systemId]);
+
+  const handleCanvasMove = useCallback((nodeId: string, x: number, y: number) => {
+    const node = nodesRef.current.find((n) => n.id === nodeId);
+    if (!node) return;
+    recordAction({ action: "updateNode", nodeId, position: { x, y } }, { action: "updateNode", nodeId, position: node.position }, `move:${nodeId}`);
+  }, [recordAction]);
+
+  const handleCanvasDeleteEdge = useCallback((edgeId: string) => {
+    const edge = pipesRef.current.find((p) => p.id === edgeId);
+    if (!edge?.fromNodeId || !edge.toNodeId) return;
+    recordAction({ action: "deletePipe", pipeId: edgeId }, { action: "addPipe", systemId, fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId });
+  }, [recordAction, systemId]);
+
+  const handleCanvasDeleteNodes = useCallback((nodeIds: string[]) => {
+    for (const nodeId of nodeIds) {
+      const node = nodesRef.current.find((n) => n.id === nodeId);
+      if (!node) continue;
+      recordAction({ action: "deleteNode", nodeId }, { action: "addNode", systemId, type: node.type, title: node.title, description: node.description, x: node.position.x, y: node.position.y });
+    }
+  }, [recordAction, systemId]);
+
+  const handleCanvasRequestInsert = useCallback((request: InsertRequest) => {
+    openInsertPalette(request);
+  }, [openInsertPalette]);
+
+  const handleCanvasPortClick = useCallback((info: { nodeId: string; direction: "input" | "output"; anchor: { x: number; y: number } }) => {
+    const def = nodeDefinitionsRef.current[info.nodeId];
+    const portType = info.direction === "input"
+      ? (def?.input.portType ?? "any")
+      : (def?.output.portType ?? "any");
+    const connected = pipesRef.current.find((p) =>
+      info.direction === "output"
+        ? p.fromNodeId === info.nodeId
+        : p.toNodeId === info.nodeId,
+    );
+    const peerId = info.direction === "output" ? connected?.toNodeId : connected?.fromNodeId;
+    const peer = peerId ? nodesRef.current.find((n) => n.id === peerId) : undefined;
+    setPortAffordance({
+      anchor: info.anchor,
+      port: {
+        nodeId: info.nodeId,
+        direction: info.direction,
+        portType,
+        connectedPipeId: connected?.id,
+        connectedPeerTitle: peer?.title,
+      },
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCanvasViewportSettled = useCallback((nodeCount: number, edgeCount: number) => {
+    if (nodeCount + edgeCount > 100) trackSignal("slow_render_threshold", { nodeCount, edgeCount });
+  }, [trackSignal]);
+
   if (!data) {
     if (notFound) return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-6">
@@ -1418,59 +1500,16 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             highlightedEdgeIds={reviewRegion?.pipeIds ?? []}
             regionStatus={reviewRegion?.status}
             pulsingNodeId={agentTargetNodeId}
-            onSelectNode={(id) => {
-              if (!id) { setSelectedNodeIds([]); return; }
-              const subsystem = subsystems.find((item) => item.id === id);
-              if (subsystem) { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); return; }
-              setSelectedNodeIds([id]);
-            }}
-            onSelectionChange={(nodeIds, edgeIds) => { setSelectedNodeIds(nodeIds); setSelectedEdgeIds(edgeIds); }}
-            onConnect={(source, target) => { const clientPipeId = `tmp_pipe_${Math.random().toString(36).slice(2, 9)}`; recordAction({ action: "addPipe", systemId, fromNodeId: source, toNodeId: target, clientPipeId }, { action: "deletePipe", pipeId: clientPipeId }); }}
-            onMove={(nodeId, x, y) => {
-              const node = nodes.find((n) => n.id === nodeId);
-              if (!node) return;
-              recordAction({ action: "updateNode", nodeId, position: { x, y } }, { action: "updateNode", nodeId, position: node.position }, `move:${nodeId}`);
-            }}
-            onDeleteEdge={(edgeId) => {
-              const edge = pipes.find((p) => p.id === edgeId);
-              if (!edge?.fromNodeId || !edge.toNodeId) return;
-              recordAction({ action: "deletePipe", pipeId: edgeId }, { action: "addPipe", systemId, fromNodeId: edge.fromNodeId, toNodeId: edge.toNodeId });
-            }}
-            onDeleteNodes={(nodeIds) => {
-              for (const nodeId of nodeIds) {
-                const node = nodes.find((n) => n.id === nodeId);
-                if (!node) continue;
-                recordAction({ action: "deleteNode", nodeId }, { action: "addNode", systemId, type: node.type, title: node.title, description: node.description, x: node.position.x, y: node.position.y });
-              }
-            }}
-            onRequestInsert={(request) => openInsertPalette(request)}
+            onSelectNode={handleCanvasSelectNode}
+            onSelectionChange={handleCanvasSelectionChange}
+            onConnect={handleCanvasConnect}
+            onMove={handleCanvasMove}
+            onDeleteEdge={handleCanvasDeleteEdge}
+            onDeleteNodes={handleCanvasDeleteNodes}
+            onRequestInsert={handleCanvasRequestInsert}
             onZoomChange={setZoomLevel}
-            onPortClick={(info) => {
-              const def = nodeDefinitions[info.nodeId];
-              const portType = info.direction === "input"
-                ? (def?.input.portType ?? "any")
-                : (def?.output.portType ?? "any");
-              const connected = pipes.find((p) =>
-                info.direction === "output"
-                  ? p.fromNodeId === info.nodeId
-                  : p.toNodeId === info.nodeId,
-              );
-              const peerId = info.direction === "output" ? connected?.toNodeId : connected?.fromNodeId;
-              const peer = peerId ? nodes.find((n) => n.id === peerId) : undefined;
-              setPortAffordance({
-                anchor: info.anchor,
-                port: {
-                  nodeId: info.nodeId,
-                  direction: info.direction,
-                  portType,
-                  connectedPipeId: connected?.id,
-                  connectedPeerTitle: peer?.title,
-                },
-              });
-            }}
-            onViewportSettled={(nodeCount, edgeCount) => {
-              if (nodeCount + edgeCount > 100) trackSignal("slow_render_threshold", { nodeCount, edgeCount });
-            }}
+            onPortClick={handleCanvasPortClick}
+            onViewportSettled={handleCanvasViewportSettled}
           />
         </EditorErrorBoundary>
         <ConversationDrawer
