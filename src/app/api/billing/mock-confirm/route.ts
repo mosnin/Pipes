@@ -13,21 +13,26 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const plan = searchParams.get("plan") as "Pro" | "Builder" | null;
-  const workspaceId = searchParams.get("workspaceId");
-  const returnUrl = searchParams.get("returnUrl") ?? "/settings/billing";
+  const rawReturnUrl = searchParams.get("returnUrl") ?? "/settings/billing";
 
-  if (!plan || !workspaceId || !["Pro", "Builder"].includes(plan)) {
+  if (!plan || !["Pro", "Builder"].includes(plan)) {
     return NextResponse.redirect(new URL("/settings/billing?status=cancel", request.url));
   }
 
+  // Only allow relative paths to prevent open-redirect attacks.
+  const safeReturnUrl =
+    rawReturnUrl.startsWith("/") && !rawReturnUrl.startsWith("//")
+      ? rawReturnUrl
+      : "/settings/billing";
+
   try {
-    const { repositories } = await getServerApp();
+    const { ctx, repositories } = await getServerApp();
     await repositories.entitlements.upsertPlanState({
-      workspaceId,
+      workspaceId: ctx.workspaceId,
       plan,
       status: "active",
     });
-    const destination = new URL(returnUrl, request.url);
+    const destination = new URL(safeReturnUrl, request.url);
     destination.searchParams.set("upgrade", "success");
     destination.searchParams.set("plan", plan);
     return NextResponse.redirect(destination);

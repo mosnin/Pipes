@@ -95,16 +95,6 @@ export default function HomePage() {
         <div className="relative mx-auto w-full max-w-7xl px-6 pt-24 pb-12">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
             <div className="lg:col-span-7">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 t-caption font-semibold uppercase tracking-[0.08em] text-violet-700"
-                style={{ fontSize: 11 }}
-              >
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 rounded-full bg-violet-500"
-                />
-                Co-author loops with your agent
-              </span>
               <HeroAnimatedHeadline />
               <HeroAnimatedSubtitle>
                 {HOMEPAGE_SUBTITLE}

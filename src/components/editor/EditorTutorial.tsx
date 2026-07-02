@@ -118,24 +118,20 @@ export function EditorTutorial({ promptStarted, leftPaneOpened, agentViewSeen }:
   }, []);
 
   if (!seen) return null;
-  if (seen["1"] && seen["2"] && seen["3"]) return null;
+
+  const activePill = PILLS.find((pill) => !seen[pill.id]) ?? null;
+  if (!activePill) return null;
 
   return (
     <div className="absolute inset-0 z-30 pointer-events-none" aria-hidden={false}>
-      {PILLS.map((pill) => {
-        if (seen[pill.id]) return null;
-        return (
-          <Pill
-            key={pill.id}
-            text={pill.text}
-            style={pill.style}
-            arrow={pill.arrow}
-            visible={mounted || reduceMotion}
-            reduceMotion={reduceMotion}
-            onDismiss={() => dismissPill(pill.id)}
-          />
-        );
-      })}
+      <Pill
+        text={activePill.text}
+        style={activePill.style}
+        arrow={activePill.arrow}
+        visible={mounted || reduceMotion}
+        reduceMotion={reduceMotion}
+        onDismiss={() => dismissPill(activePill.id)}
+      />
     </div>
   );
 }

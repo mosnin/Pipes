@@ -111,7 +111,9 @@ export class PaddleBillingService implements BillingService {
     const signatureHeader = request.headers.get("paddle-signature");
     const raw = await request.text();
     // Paddle signs as "ts=<unix>;h1=<hmac-sha256 of `${ts}:${rawBody}`>".
-    if (env.PADDLE_WEBHOOK_SECRET && signatureHeader) {
+    // If a webhook secret is configured, the signature header is mandatory.
+    if (env.PADDLE_WEBHOOK_SECRET) {
+      if (!signatureHeader) throw new Error("Missing Paddle-Signature header.");
       const parts = Object.fromEntries(
         signatureHeader.split(";").map((p) => {
           const [k, v] = p.split("=");

@@ -704,6 +704,7 @@ export function EditorCanvas({
         onNodeDragStop={handleNodeDragStop}
         onNodesChange={onNodesChange}
         onMove={handleMove}
+        proOptions={{ hideAttribution: true }}
       >
         <CanvasCommands
           fitRequest={fitRequest}
