@@ -107,13 +107,17 @@ body {
   font-feature-settings: "cv11", "ss01";
 }
 
-/* Headlines: Inter Tight at 800 weight is the single biggest typography upgrade */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  font-weight: 800;
-  color: #0A0A0F;
+/* Headlines: Inter Tight at 800 weight is the single biggest typography upgrade.
+   Lives in @layer base so utility classes (text-white on dark surfaces) can
+   override it — un-layered rules would silently beat every Tailwind utility. */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    font-weight: 800;
+    color: #0A0A0F;
+  }
 }
 
 a { color: inherit; text-decoration: none; }
