@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ArrowRight, LayoutDashboard } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useOptionalUser } from "@/lib/auth/client";
 import { Wordmark } from "@/components/Wordmark";
 import { navItems } from "@/lib/marketing/nav-data";
 import type { NavItem } from "@/lib/marketing/nav-data";
@@ -23,7 +23,7 @@ export type MobileFullPageMenuProps = {
 };
 
 export function MobileFullPageMenu({ open, onClose }: MobileFullPageMenuProps) {
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useOptionalUser();
   const showDashboard = clientRuntimeFlags.useMocks || Boolean(isSignedIn);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusableRef = useRef<HTMLAnchorElement | null>(null);

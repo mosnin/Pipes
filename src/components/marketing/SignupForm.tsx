@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { SignUp } from "@clerk/nextjs";
+import { clientRuntimeFlags } from "@/lib/env/client";
 
 // Clerk's <SignUp> wrapped with our design tokens. The Clerk component owns
 // the auth wiring; we only style it to match the design system: indigo
@@ -11,6 +13,28 @@ import { SignUp } from "@clerk/nextjs";
 // straight to the dashboard. Existing returning sessions still land on the
 // dashboard via Clerk's middleware.
 export function SignupForm() {
+  if (clientRuntimeFlags.useMocks) {
+    return (
+      <div className="w-full max-w-sm mx-auto">
+        <h1 className="t-h1 text-[#111]">Create your workspace.</h1>
+        <p className="mt-3 t-body text-[#3C3C43]">
+          One sentence. Watch your first system build itself.
+        </p>
+        <div className="mt-8">
+          <Link
+            href="/welcome"
+            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
+          >
+            Create your workspace
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+          <p className="mt-4 text-center t-caption text-[#8E8E93]">
+            Demo environment — no account needed.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="w-full max-w-sm mx-auto">
       <h1 className="t-h1 text-[#111]">Create your workspace.</h1>

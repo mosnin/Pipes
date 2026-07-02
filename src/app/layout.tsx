@@ -6,6 +6,7 @@ import "@/styles/globals.css";
 import { Providers } from "@/components/Providers";
 import { SoundProvider } from "@/lib/sound/SoundProvider";
 import { ClerkProvider } from "@clerk/nextjs";
+import { runtimeFlags } from "@/lib/env";
 
 // Geist Sans + Geist Mono — Vercel's official open-source typefaces, shipped
 // as variable fonts via the `geist` npm package. No asset files required.
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const body = (
+    <body className="min-h-screen bg-white antialiased">
+      <SoundProvider>
+        <Providers>{children}</Providers>
+      </SoundProvider>
+    </body>
+  );
   return (
     <html
       lang="en"
@@ -44,13 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <ClerkProvider>
-        <body className="min-h-screen bg-white antialiased">
-          <SoundProvider>
-            <Providers>{children}</Providers>
-          </SoundProvider>
-        </body>
-      </ClerkProvider>
+      {runtimeFlags.useMocks ? body : <ClerkProvider>{body}</ClerkProvider>}
     </html>
   );
 }

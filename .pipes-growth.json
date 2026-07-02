@@ -6,6 +6,20 @@
         "source": "direct"
       },
       "at": "2026-06-24T06:02:03.994Z"
+    },
+    {
+      "event": "logged_out_signup_entry_source",
+      "metadata": {
+        "source": "direct"
+      },
+      "at": "2026-07-02T07:55:31.185Z"
+    },
+    {
+      "event": "logged_out_signup_entry_source",
+      "metadata": {
+        "source": "direct"
+      },
+      "at": "2026-07-02T08:08:46.488Z"
     }
   ]
 }

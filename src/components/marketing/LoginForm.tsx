@@ -1,12 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { SignIn } from "@clerk/nextjs";
+import { clientRuntimeFlags } from "@/lib/env/client";
 
 // Clerk's <SignIn> wrapped with our design tokens. Mirrors SignupForm so the
 // two screens feel like one product. Returning users land back on the
 // dashboard, not the welcome wizard.
+// In mock mode ClerkProvider is not mounted, so render the demo entry instead
+// of a Clerk widget that can never load.
 export function LoginForm() {
+  if (clientRuntimeFlags.useMocks) {
+    return (
+      <div className="w-full max-w-sm mx-auto">
+        <h1 className="t-h1 text-[#111]">Sign in.</h1>
+        <p className="mt-3 t-body text-[#3C3C43]">
+          Pick up where your team left off.
+        </p>
+        <div className="mt-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-6 t-label font-semibold text-white transition-colors hover:bg-violet-700"
+          >
+            Continue to your workspace
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+          <p className="mt-4 text-center t-caption text-[#8E8E93]">
+            Demo environment — no account needed.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="w-full max-w-sm mx-auto">
       <h1 className="t-h1 text-[#111]">Sign in.</h1>

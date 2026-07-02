@@ -23,6 +23,7 @@ import {
   HeroAnimatedCtas,
   HeroAnimatedSide,
 } from "@/components/marketing/HeroAnimatedHeadline";
+import { LoopCircuit } from "@/components/marketing/LoopCircuit";
 
 const HOMEPAGE_TITLE = "Build agent loops, visually.";
 const HOMEPAGE_SUBTITLE =
@@ -132,7 +133,7 @@ export default function HomePage() {
             </div>
             <div className="hidden lg:col-span-5 lg:block">
               <HeroAnimatedSide>
-                <HeroSidePreview />
+                <LoopCircuit />
               </HeroAnimatedSide>
             </div>
           </div>
@@ -549,83 +550,3 @@ function PocketScene() {
     </svg>
   );
 }
-
-/* HeroSidePreview                                                            */
-/* A small static preview rendered next to the hero copy on desktop. It hints */
-/* at what the scroll demo will play before the user scrolls.                */
-
-function HeroSidePreview() {
-  return (
-    <div
-      className="relative w-full"
-      aria-hidden="true"
-    >
-      {/* Main violet gradient card */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-6"
-        style={{
-          background: "linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%)",
-          boxShadow: "0 8px 40px rgba(124,58,237,0.30)",
-        }}
-      >
-        <div className="flex items-start justify-between mb-5">
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
-              Agent loops running
-            </p>
-            <p style={{ fontSize: 30, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
-              +88.4%
-            </p>
-          </div>
-          <div
-            style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M2 8h12M2 4h12M2 12h8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 5, height: 52, marginBottom: 4 }}>
-          {[28,38,32,52,44,58,50,66,74,62,80,88].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: `${h}%`,
-                background: i > 8 ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.22)",
-                borderRadius: "3px 3px 0 0",
-              }}
-            />
-          ))}
-        </div>
-        <div
-          style={{ position: "absolute", width: 130, height: 130, right: -24, bottom: -24, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }}
-        />
-        <div
-          style={{ position: "absolute", width: 72, height: 72, right: 20, bottom: 20, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }}
-        />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-        {([
-          { label: "Node types", value: "27", sub: "+3 this month" },
-          { label: "MCP tools", value: "11", sub: "Fully scoped" },
-        ] as const).map((s) => (
-          <div
-            key={s.label}
-            style={{
-              background: "white",
-              borderRadius: 14,
-              padding: "16px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(124,58,237,0.05)",
-            }}
-          >
-            <p style={{ fontSize: 10, fontWeight: 600, color: "#8E8E93", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{s.label}</p>
-            <p style={{ fontSize: 28, fontWeight: 700, color: "#111", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{s.value}</p>
-            <p style={{ fontSize: 10, color: "#8E8E93", marginTop: 3 }}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-

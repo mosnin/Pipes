@@ -356,6 +356,7 @@ export function EditorCanvas({
   // on every render → store.setState({ onNodesChange: fn }) → Zustand update
   // → forceStoreRerender → re-render → new function → infinite loop.
   const nodesRef = useRef(nodes);
+  // eslint-disable-next-line react-hooks/refs -- intentional latest-ref pattern; see crash-fix note above
   nodesRef.current = nodes;
 
   // Only handle alignment guide logic here — do NOT call setNodes inside
@@ -527,8 +528,10 @@ export function EditorCanvas({
   // @xyflow/react v12 StoreUpdater from detecting spurious "changes" that
   // trigger Zustand updates → forceStoreRerender → infinite render loop.
   const nodesLengthRef = useRef(nodes.length);
+  // eslint-disable-next-line react-hooks/refs -- intentional latest-ref pattern; see crash-fix note above
   nodesLengthRef.current = nodes.length;
   const edgesLengthRef = useRef(edges.length);
+  // eslint-disable-next-line react-hooks/refs -- intentional latest-ref pattern; see crash-fix note above
   edgesLengthRef.current = edges.length;
 
   const connectingLineStyle = useMemo(
@@ -588,6 +591,7 @@ export function EditorCanvas({
   }, []);
 
   const draggingIdRef = useRef(draggingId);
+  // eslint-disable-next-line react-hooks/refs -- intentional latest-ref pattern; see crash-fix note above
   draggingIdRef.current = draggingId;
   const handleNodeDragStop = useCallback((_: React.MouseEvent, node: Node) => {
     if (draggingIdRef.current === node.id) onMove(node.id, node.position.x, node.position.y);

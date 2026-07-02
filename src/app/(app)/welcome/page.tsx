@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
+import { useOptionalUser } from "@/lib/auth/client";
 import { OnboardingStepRole } from "@/components/onboarding/OnboardingStepRole";
 import { OnboardingStepStarter } from "@/components/onboarding/OnboardingStepStarter";
 import { OnboardingStepLaunch } from "@/components/onboarding/OnboardingStepLaunch";
@@ -26,7 +26,7 @@ export default function WelcomePage() {
     useOnboardingState();
   const [shouldRender, setShouldRender] = useState(false);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const { user } = useUser();
+  const { user } = useOptionalUser();
 
   useEffect(() => {
     if (!hydrated) return;

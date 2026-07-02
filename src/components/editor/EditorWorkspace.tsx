@@ -1698,6 +1698,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                   <p className="t-caption text-[#8E8E93] text-center py-4">No comments yet. {selectedNodeId ? "Comment on the selected node." : "Select a node to comment on it, or post a system-level comment."}</p>
                 ) : (
                   <div className="space-y-2 mt-2">{data.comments.map((c) => {
+                    {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
                     const diff = Date.now() - new Date(c.createdAt).getTime();
                     const mins = Math.floor(diff / 60_000);
                     const age = mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`;
@@ -2027,6 +2028,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         <div className="flex items-center justify-between">
                           <span className="t-caption text-[#8E8E93]">Created</span>
                           <span className="t-caption text-[#3C3C43]">{(() => {
+                            {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
                             const d = Math.floor((Date.now() - new Date(analyticsData.createdAt).getTime()) / 86400000);
                             return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
                           })()}</span>
@@ -2034,6 +2036,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
                         <div className="flex items-center justify-between">
                           <span className="t-caption text-[#8E8E93]">Last updated</span>
                           <span className="t-caption text-[#3C3C43]">{(() => {
+                            {/* eslint-disable-next-line react-hooks/purity -- relative-time label; re-renders refresh it */}
                             const d = Math.floor((Date.now() - new Date(analyticsData.updatedAt).getTime()) / 86400000);
                             return d === 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`;
                           })()}</span>

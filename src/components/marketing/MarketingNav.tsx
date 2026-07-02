@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Menu, ArrowRight, LayoutDashboard } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useOptionalUser } from "@/lib/auth/client";
 import { Wordmark } from "@/components/Wordmark";
 import { MegaMenu } from "./MegaMenu";
 import { MobileFullPageMenu } from "./MobileFullPageMenu";
@@ -33,7 +33,7 @@ export function MarketingNav() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { isSignedIn } = useUser();
+  const { isSignedIn } = useOptionalUser();
   const showDashboard = clientRuntimeFlags.useMocks || Boolean(isSignedIn);
 
   const closeTimerRef = useRef<number | null>(null);
