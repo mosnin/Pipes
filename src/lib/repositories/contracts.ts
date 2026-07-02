@@ -78,6 +78,12 @@ export interface MembershipsRepository {
 export interface SystemsRepository {
   list(workspaceId: string): Promise<SystemRecord[]>;
   create(input: { workspaceId: string; userId: string; name: string; description: string }): Promise<string>;
+  /**
+   * Returns the owning workspace id for a system, or null if the system does
+   * not exist. Used for cross-tenant authorization (see assertSystemInWorkspace)
+   * without paying the cost of loading the full bundle.
+   */
+  getWorkspaceId(systemId: string): Promise<string | null>;
   getBundle(systemId: string): Promise<SystemBundle>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;

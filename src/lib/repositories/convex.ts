@@ -81,6 +81,14 @@ export function createConvexRepositories(): RepositorySet {
         const id = await convexCreateSystem(input.workspaceId, input.userId, input.name, input.description);
         return String(id);
       },
+      async getWorkspaceId(systemId) {
+        try {
+          const data = await convexSystemBundle(systemId);
+          return data?.system ? String(data.system.workspaceId) : null;
+        } catch {
+          return null;
+        }
+      },
       async getBundle(systemId) {
         const data = await convexSystemBundle(systemId);
         return {

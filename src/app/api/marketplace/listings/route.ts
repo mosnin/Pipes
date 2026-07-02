@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { failure, success } from "@/lib/api/response";
+import { safeFailure, success } from "@/lib/api/response";
 import { getServerApp } from "@/lib/composition/server";
 
 export async function GET() {
@@ -8,6 +8,6 @@ export async function GET() {
     const listings = await services.systems.getListings(ctx);
     return NextResponse.json(success(listings));
   } catch (err) {
-    return NextResponse.json(failure((err as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(err), { status: 400 });
   }
 }

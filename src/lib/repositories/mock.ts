@@ -146,6 +146,10 @@ export function createMockRepositories(): RepositorySet {
         store.writeDb(db);
         return systemId;
       },
+      async getWorkspaceId(systemId) {
+        const system = store.readDb().systems.find((s) => s.id === systemId);
+        return system ? system.workspaceId : null;
+      },
       async getBundle(systemId) {
         return getBundle(systemId);
       },

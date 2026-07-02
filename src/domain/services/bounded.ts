@@ -38,6 +38,18 @@ export class EntitlementService {
 
 export class SystemService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
+  /**
+   * Resource-level authorization. Role checks (ensureCanEdit) prove the caller
+   * has a role in THEIR workspace; they do not prove the target system belongs
+   * to it. Without this, a valid user in workspace A could read/edit/delete any
+   * other tenant's system by passing its id (IDOR). Every system-scoped method
+   * must bind the systemId to ctx.workspaceId here.
+   */
+  private async assertSystemInWorkspace(ctx: AppContext, systemId: string) {
+    const owner = await this.repos.systems.getWorkspaceId(systemId);
+    if (owner === null) throw new Error("System not found.");
+    if (owner !== ctx.workspaceId) throw new Error("Not found.");
+  }
   async list(ctx: AppContext) { this.access.ensureCanView(ctx); return (await this.repos.systems.list(ctx.workspaceId)).filter((s) => !s.archivedAt); }
   async listAll(ctx: AppContext) { this.access.ensureCanView(ctx); return this.repos.systems.list(ctx.workspaceId); }
   async create(ctx: AppContext, input: { name: string; description?: string; visibility?: "public" | "private" }) {
@@ -55,12 +67,13 @@ export class SystemService {
     }
     return created;
   }
-  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
-  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
-  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
-  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.delete(systemId); }
+  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.getBundle(systemId); }
+  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.archive(systemId); }
+  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.restore(systemId); }
+  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.delete(systemId); }
   async duplicate(ctx: AppContext, systemId: string): Promise<string> {
     this.access.ensureCanEdit(ctx);
+    await this.assertSystemInWorkspace(ctx, systemId);
     const bundle = await this.repos.systems.getBundle(systemId);
     const newId = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: `${bundle.system.name} Copy`, description: bundle.system.description });
     const nodeIdMap = new Map<string, string>();
@@ -79,16 +92,19 @@ export class SystemService {
   }
   async rename(ctx: AppContext, systemId: string, name: string) {
     this.access.ensureCanEdit(ctx);
+    await this.assertSystemInWorkspace(ctx, systemId);
     const trimmed = name.trim().slice(0, 120);
     if (!trimmed) throw new Error("Name cannot be empty.");
     await this.repos.systems.rename(systemId, trimmed);
   }
   async updateDescription(ctx: AppContext, systemId: string, description: string) {
     this.access.ensureCanEdit(ctx);
+    await this.assertSystemInWorkspace(ctx, systemId);
     await this.repos.systems.updateDescription(systemId, description.trim().slice(0, 500));
   }
   async setVisibility(ctx: AppContext, systemId: string, visibility: "public" | "private") {
     this.access.ensureCanEdit(ctx);
+    await this.assertSystemInWorkspace(ctx, systemId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
     if (visibility === "private" && !limits.privateLoops) {
       throw new Error("Private loops require Pro. Upgrade to keep this loop private.");
@@ -98,6 +114,7 @@ export class SystemService {
 
   async publishListing(ctx: AppContext, systemId: string, input: { description: string; price: number }) {
     this.access.ensureCanEdit(ctx);
+    await this.assertSystemInWorkspace(ctx, systemId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
     if (!limits.marketplaceSelling) throw new Error("Marketplace selling requires Pro. Upgrade to publish your loop.");
     const bundle = await this.repos.systems.getBundle(systemId);
@@ -117,8 +134,17 @@ export class SystemService {
 
 export class GraphService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
+  private async assertSystemInWorkspace(ctx: AppContext, systemId: string) {
+    const owner = await this.repos.systems.getWorkspaceId(systemId);
+    if (owner === null) throw new Error("System not found.");
+    if (owner !== ctx.workspaceId) throw new Error("Not found.");
+  }
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
+    // Actions carrying a systemId are bound to the caller's workspace here.
+    // (Node/pipe-id-only actions are additionally guarded at the graph repo,
+    // which resolves the owning system before mutating.)
+    if (payload.systemId) await this.assertSystemInWorkspace(ctx, payload.systemId);
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
     if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position, config: payload.config });
     if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);

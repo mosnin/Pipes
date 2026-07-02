@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
+import { safeFailure } from "@/lib/api/response";
 import { getListing } from "@/lib/marketplace/catalog";
 import { gateX402 } from "@/lib/payments/middleware";
 import { settlementResponseHeader } from "@/lib/payments/x402";
@@ -48,6 +49,6 @@ export async function POST(req: Request) {
     if (gate.amountUsd > 0 && receipt) res.headers.set("x-payment-response", receipt);
     return res;
   } catch (err) {
-    return NextResponse.json({ ok: false, error: (err as Error).message }, { status: 400 });
+    return NextResponse.json(safeFailure(err), { status: 400 });
   }
 }
