@@ -8,15 +8,7 @@ const config = [
       "node_modules/**",
       "convex/_generated/**",
       "playwright-report/**",
-      "test-results/**",
-      // Vendored registry components (shadcn/ncdai/shark/pixel-perfect).
-      // Re-voiced per DESIGN.md as they're integrated; not held to our lint.
-      "src/components/fx/**",
-      "src/components/charts/**",
-      "src/components/pixel-perfect/**",
-      "src/components/templates/**",
-      "src/components/kibo-ui/**",
-      "src/components/theme/**"
+      "test-results/**"
     ]
   },
   ...nextVitals,
