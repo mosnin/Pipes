@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerApp } from "@/lib/composition/server";
-import { failure, success } from "@/lib/api/response";
+import { failure, safeFailure, success } from "@/lib/api/response";
 
 const ImportModeSchema = z.enum(["new", "existing"]);
 const MergeStrategySchema = z.enum(["safe_upsert", "replace_conflicts"]);
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(success(await services.importExport.importSchema(ctx, body.schema, body.mode, body.targetSystemId)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(error), { status: 400 });
   }
 }

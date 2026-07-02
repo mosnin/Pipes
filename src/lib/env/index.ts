@@ -65,7 +65,24 @@ export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-flash";
 export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 
 export function resolveRuntimeMode(): { mode: EffectiveRuntimeMode; warning?: string } {
-  if (env.LOOPER_USE_MOCKS) return { mode: "mock" };
+  const isProduction = env.NODE_ENV === "production";
+
+  if (env.LOOPER_USE_MOCKS) {
+    if (isProduction) {
+      // Mock mode bypasses all authentication and authorization.
+      // Set LOOPER_STRICT_PRODUCTION=true to turn this warning into a hard failure
+      // once a proper production deployment is configured.
+      if (process.env.LOOPER_STRICT_PRODUCTION === "true") {
+        throw new Error(
+          "LOOPER_USE_MOCKS=true is not allowed when LOOPER_STRICT_PRODUCTION=true. " +
+          "Disable mock mode or remove the strict flag."
+        );
+      }
+      console.error("[SECURITY] LOOPER_USE_MOCKS=true in production — all authentication is bypassed. Set LOOPER_STRICT_PRODUCTION=true to block this.");
+    }
+    return { mode: "mock" };
+  }
+
   const missing: string[] = [];
   if (!env.CONVEX_URL) missing.push("CONVEX_URL");
   if (!(env.CLERK_SECRET_KEY && (env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? env.CLERK_PUBLISHABLE_KEY))) missing.push("CLERK_SECRET_KEY/NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");

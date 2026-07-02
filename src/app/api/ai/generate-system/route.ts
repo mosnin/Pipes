@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerApp } from "@/lib/composition/server";
-import { failure, success } from "@/lib/api/response";
+import { failure, safeFailure, success } from "@/lib/api/response";
 import { AiSystemDraftSchema } from "@/lib/ai/index";
 
 const GenerateRequestSchema = z.object({
@@ -39,6 +39,6 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(success(await services.ai.generateDraft(ctx, parsed.data)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(error), { status: 400 });
   }
 }

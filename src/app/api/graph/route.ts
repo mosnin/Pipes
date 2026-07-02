@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { failure, success } from "@/lib/api/response";
+import { failure, safeFailure, success } from "@/lib/api/response";
 import { getServerApp } from "@/lib/composition/server";
 
 const PositionSchema = z.object({ x: z.number(), y: z.number() });
@@ -46,6 +46,6 @@ export async function POST(request: Request) {
     const result = await services.graph.mutate(ctx, parsed.data);
     return NextResponse.json(success({ ok: true, result }));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return NextResponse.json(safeFailure(error), { status: 400 });
   }
 }
