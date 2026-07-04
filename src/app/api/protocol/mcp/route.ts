@@ -106,7 +106,12 @@ async function dispatchTool(tool: string, input: Record<string, any>, o: ToolCon
       requireCapability(ctx, "graph:write", input.systemId);
       const actions = Array.isArray(input.actions) ? input.actions : [input.action].filter(Boolean);
       const results: unknown[] = [];
-      for (const action of actions) results.push(await services.graph.mutate(ctx, action));
+      for (const action of actions) {
+        // Force every action onto the tool-scoped system so it can't be
+        // redirected at another workspace's system; the service then verifies
+        // the caller owns it.
+        results.push(await services.graph.mutate(ctx, { ...action, systemId: input.systemId }));
+      }
       await audit("protocol.graph.batch_mutate", { targetType: "system", targetId: input.systemId, systemId: input.systemId, metadata: { actionCount: results.length } });
       return { results, count: results.length };
     }

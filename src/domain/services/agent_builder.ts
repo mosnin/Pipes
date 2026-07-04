@@ -628,11 +628,11 @@ export class AgentRunService {
 
   private async applyPayloadThroughTrustedPath(ctx: AppContext, payload: GraphActionPayload, systemId: string) {
     if (payload.actionType === "add_node") return this.graph.mutate(ctx, { action: "addNode", systemId, type: payload.nodeType, title: payload.title, description: payload.description, x: payload.position.x, y: payload.position.y });
-    if (payload.actionType === "update_node") return this.graph.mutate(ctx, { action: "updateNode", nodeId: payload.nodeId, title: payload.title, description: payload.description });
-    if (payload.actionType === "move_node") return this.graph.mutate(ctx, { action: "updateNode", nodeId: payload.nodeId, position: payload.position });
-    if (payload.actionType === "delete_node") return this.graph.mutate(ctx, { action: "deleteNode", nodeId: payload.nodeId });
+    if (payload.actionType === "update_node") return this.graph.mutate(ctx, { action: "updateNode", systemId, nodeId: payload.nodeId, title: payload.title, description: payload.description });
+    if (payload.actionType === "move_node") return this.graph.mutate(ctx, { action: "updateNode", systemId, nodeId: payload.nodeId, position: payload.position });
+    if (payload.actionType === "delete_node") return this.graph.mutate(ctx, { action: "deleteNode", systemId, nodeId: payload.nodeId });
     if (payload.actionType === "add_pipe") return this.graph.mutate(ctx, { action: "addPipe", systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
-    if (payload.actionType === "delete_pipe") return this.graph.mutate(ctx, { action: "deletePipe", pipeId: payload.pipeId });
+    if (payload.actionType === "delete_pipe") return this.graph.mutate(ctx, { action: "deletePipe", systemId, pipeId: payload.pipeId });
     if (payload.actionType === "add_annotation") return this.repos.comments.add({ systemId, authorId: ctx.userId, body: payload.body, nodeId: payload.nodeId });
     if (payload.actionType === "create_version_checkpoint") return this.versions.create(ctx, systemId, payload.name);
     if (payload.actionType === "request_review" || payload.actionType === "no_op_explanation") return;

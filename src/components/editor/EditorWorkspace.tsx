@@ -341,7 +341,9 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
     if (inFlight || queue.length === 0) return;
     const next = queue[0];
     setInFlight(true);
-    fetch("/api/graph", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(next.action) })
+    // Stamp the target system onto every action so the server can verify the
+    // caller owns it (and that the node/pipe lives in it) before mutating.
+    fetch("/api/graph", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...next.action, systemId }) })
       .then(async (res) => {
         const body = await res.json();
         if (!res.ok || !body.ok) throw new Error(body.error ?? "save failed");
@@ -358,7 +360,7 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
         }
       })
       .finally(() => setInFlight(false));
-  }, [inFlight, queue, trackSignal]);
+  }, [inFlight, queue, trackSignal, systemId]);
 
   useEffect(() => {
     const key = `pipes_recovery_${systemId}`;

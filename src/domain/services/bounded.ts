@@ -19,6 +19,56 @@ import { migrateDocument, needsMigration } from "@/domain/looper_schema_v1/migra
 function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 
+/**
+ * Resource-ownership guard (IDOR protection).
+ *
+ * A role check (`ensureCanView`/`ensureCanEdit`) only proves the caller has a
+ * role in THEIR OWN workspace — it says nothing about whether the `systemId`
+ * they passed belongs to that workspace. Without this guard any authenticated
+ * user could read or mutate any other workspace's system by guessing its id.
+ *
+ * Loads the system and confirms it belongs to `ctx.workspaceId`. Throws the
+ * non-revealing "System not found" for both a missing system and one owned by
+ * another workspace, so a caller can never even probe for the existence of
+ * data outside their workspace. Returns the bundle so callers that already
+ * need it don't fetch twice.
+ */
+async function assertSystemOwned(
+  repos: RepositorySet,
+  ctx: AppContext,
+  systemId: string
+): Promise<void> {
+  // `getWorkspaceId` resolves the owning workspace directly (and includes
+  // archived systems), so this correctly authorizes operations on archived
+  // loops (restore/delete) that `getBundle` would hide.
+  const owner = await repos.systems.getWorkspaceId(systemId);
+  if (owner === null || owner !== ctx.workspaceId) throw new Error("System not found");
+}
+
+/**
+ * Ownership guard for callers that also need the system's contents. Confirms
+ * ownership (archived-safe) then returns the bundle. Throws the non-revealing
+ * "System not found" for a system that is missing or owned by another
+ * workspace.
+ */
+async function requireOwnedSystem(
+  repos: RepositorySet,
+  ctx: AppContext,
+  systemId: string
+): Promise<SystemBundle> {
+  await assertSystemOwned(repos, ctx, systemId);
+  let bundle: SystemBundle | null = null;
+  try {
+    bundle = await repos.systems.getBundle(systemId);
+  } catch {
+    bundle = null;
+  }
+  if (!bundle?.system || bundle.system.workspaceId !== ctx.workspaceId) {
+    throw new Error("System not found");
+  }
+  return bundle;
+}
+
 export class AccessService {
   ensureCanView = assertCanView;
   ensureCanEdit = assertCanEdit;
@@ -38,18 +88,6 @@ export class EntitlementService {
 
 export class SystemService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
-  /**
-   * Resource-level authorization. Role checks (ensureCanEdit) prove the caller
-   * has a role in THEIR workspace; they do not prove the target system belongs
-   * to it. Without this, a valid user in workspace A could read/edit/delete any
-   * other tenant's system by passing its id (IDOR). Every system-scoped method
-   * must bind the systemId to ctx.workspaceId here.
-   */
-  private async assertSystemInWorkspace(ctx: AppContext, systemId: string) {
-    const owner = await this.repos.systems.getWorkspaceId(systemId);
-    if (owner === null) throw new Error("System not found.");
-    if (owner !== ctx.workspaceId) throw new Error("Not found.");
-  }
   async list(ctx: AppContext) { this.access.ensureCanView(ctx); return (await this.repos.systems.list(ctx.workspaceId)).filter((s) => !s.archivedAt); }
   async listAll(ctx: AppContext) { this.access.ensureCanView(ctx); return this.repos.systems.list(ctx.workspaceId); }
   async create(ctx: AppContext, input: { name: string; description?: string; visibility?: "public" | "private" }) {
@@ -67,14 +105,13 @@ export class SystemService {
     }
     return created;
   }
-  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.getBundle(systemId); }
-  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.archive(systemId); }
-  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.restore(systemId); }
-  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.assertSystemInWorkspace(ctx, systemId); return this.repos.systems.delete(systemId); }
+  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return requireOwnedSystem(this.repos, ctx, systemId); }
+  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.archive(systemId); }
+  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.restore(systemId); }
+  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.delete(systemId); }
   async duplicate(ctx: AppContext, systemId: string): Promise<string> {
     this.access.ensureCanEdit(ctx);
-    await this.assertSystemInWorkspace(ctx, systemId);
-    const bundle = await this.repos.systems.getBundle(systemId);
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
     const newId = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: `${bundle.system.name} Copy`, description: bundle.system.description });
     const nodeIdMap = new Map<string, string>();
     for (const node of bundle.nodes) {
@@ -92,19 +129,19 @@ export class SystemService {
   }
   async rename(ctx: AppContext, systemId: string, name: string) {
     this.access.ensureCanEdit(ctx);
-    await this.assertSystemInWorkspace(ctx, systemId);
+    await assertSystemOwned(this.repos, ctx, systemId);
     const trimmed = name.trim().slice(0, 120);
     if (!trimmed) throw new Error("Name cannot be empty.");
     await this.repos.systems.rename(systemId, trimmed);
   }
   async updateDescription(ctx: AppContext, systemId: string, description: string) {
     this.access.ensureCanEdit(ctx);
-    await this.assertSystemInWorkspace(ctx, systemId);
+    await assertSystemOwned(this.repos, ctx, systemId);
     await this.repos.systems.updateDescription(systemId, description.trim().slice(0, 500));
   }
   async setVisibility(ctx: AppContext, systemId: string, visibility: "public" | "private") {
     this.access.ensureCanEdit(ctx);
-    await this.assertSystemInWorkspace(ctx, systemId);
+    await assertSystemOwned(this.repos, ctx, systemId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
     if (visibility === "private" && !limits.privateLoops) {
       throw new Error("Private loops require Pro. Upgrade to keep this loop private.");
@@ -114,10 +151,9 @@ export class SystemService {
 
   async publishListing(ctx: AppContext, systemId: string, input: { description: string; price: number }) {
     this.access.ensureCanEdit(ctx);
-    await this.assertSystemInWorkspace(ctx, systemId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
     if (!limits.marketplaceSelling) throw new Error("Marketplace selling requires Pro. Upgrade to publish your loop.");
-    const bundle = await this.repos.systems.getBundle(systemId);
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
     return this.repos.marketplaceListings.create({
       systemId,
       workspaceId: ctx.workspaceId,
@@ -134,27 +170,39 @@ export class SystemService {
 
 export class GraphService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
-  private async assertSystemInWorkspace(ctx: AppContext, systemId: string) {
-    const owner = await this.repos.systems.getWorkspaceId(systemId);
-    if (owner === null) throw new Error("System not found.");
-    if (owner !== ctx.workspaceId) throw new Error("Not found.");
-  }
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
-    // Actions carrying a systemId are bound to the caller's workspace here.
-    // (Node/pipe-id-only actions are additionally guarded at the graph repo,
-    // which resolves the owning system before mutating.)
-    if (payload.systemId) await this.assertSystemInWorkspace(ctx, payload.systemId);
+    // Every graph action must name the system it targets, and that system must
+    // belong to the caller's workspace. For node/pipe-scoped actions we also
+    // confirm the referenced node/pipe actually lives in that system — a
+    // caller can only touch nodes/pipes inside a system they own.
+    if (!payload.systemId || typeof payload.systemId !== "string") throw new Error("Invalid graph action");
+    const bundle = await requireOwnedSystem(this.repos, ctx, payload.systemId);
+    const nodeInSystem = (nodeId: string) => bundle.nodes.some((n) => n.id === nodeId);
+    const pipeInSystem = (pipeId: string) => bundle.pipes.some((p) => p.id === pipeId);
+
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
-    if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position, config: payload.config });
-    if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);
-    if (payload.action === "addPipe") return this.repos.graph.addPipe({ systemId: payload.systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
-    if (payload.action === "deletePipe") return this.repos.graph.deletePipe(payload.pipeId);
+    if (payload.action === "updateNode") {
+      if (!nodeInSystem(payload.nodeId)) throw new Error("Not found");
+      return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position, config: payload.config });
+    }
+    if (payload.action === "deleteNode") {
+      if (!nodeInSystem(payload.nodeId)) throw new Error("Not found");
+      return this.repos.graph.deleteNode(payload.nodeId);
+    }
+    if (payload.action === "addPipe") {
+      if (!nodeInSystem(payload.fromNodeId) || !nodeInSystem(payload.toNodeId)) throw new Error("Not found");
+      return this.repos.graph.addPipe({ systemId: payload.systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
+    }
+    if (payload.action === "deletePipe") {
+      if (!pipeInSystem(payload.pipeId)) throw new Error("Not found");
+      return this.repos.graph.deletePipe(payload.pipeId);
+    }
   }
 }
 
-export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
-export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
+export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await assertSystemOwned(this.repos, ctx, input.systemId); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
+export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await assertSystemOwned(this.repos, ctx, body.systemId); await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
 
 export class ProductSignalService {
   constructor(private readonly repos: RepositorySet) {}
@@ -179,7 +227,7 @@ export class SchemaExportService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async export(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
-    const bundle = await this.repos.systems.getBundle(systemId);
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
     const systems = await this.repos.systems.list(ctx.workspaceId);
     const members = await this.repos.memberships.list(ctx.workspaceId);
     return serializeLooperSchema({
@@ -198,9 +246,9 @@ export class SchemaExportService {
 
 export class VersionService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly exportService: SchemaExportService, private readonly entitlementService: EntitlementService) {}
-  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.versions.list(systemId); }
-  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
-  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); LooperSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
+  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.versions.list(systemId); }
+  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
+  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); LooperSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
 }
 
 export class CollaborationService {
@@ -265,6 +313,10 @@ export class ProtocolService {
   }
   async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string; expiresInDays?: number | null }) {
     await this.ensureCanManageTokens(ctx);
+    // A token scoped to a system must only ever be scoped to one this
+    // workspace owns — otherwise it would mint a credential for someone
+    // else's system.
+    if (input.systemId) await assertSystemOwned(this.repos, ctx, input.systemId);
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
@@ -495,13 +547,13 @@ export class ImportExportService {
   }
   async applyMerge(ctx: AppContext, plan: any, strategy: "safe_upsert" | "replace_conflicts" = "safe_upsert") {
     await this.versions.create(ctx, plan.targetSystemId, "Pre-merge snapshot");
-    for (const update of plan.updates ?? []) await this.graph.mutate(ctx, update);
+    for (const update of plan.updates ?? []) await this.graph.mutate(ctx, { ...update, systemId: plan.targetSystemId });
     for (const add of plan.additions ?? []) await this.graph.mutate(ctx, { ...add, systemId: plan.targetSystemId });
     if (strategy === "replace_conflicts") {
       for (const conflict of plan.conflicts ?? []) {
         const bundle = await this.systems.getBundle(ctx, plan.targetSystemId);
         const match = bundle.nodes.find((n) => n.title.toLowerCase() === String(conflict.title).toLowerCase());
-        if (match) await this.graph.mutate(ctx, { action: "updateNode", nodeId: match.id, title: conflict.title, description: `Replaced during merge as ${conflict.importType}` });
+        if (match) await this.graph.mutate(ctx, { action: "updateNode", systemId: plan.targetSystemId, nodeId: match.id, title: conflict.title, description: `Replaced during merge as ${conflict.importType}` });
       }
     }
     await this.signals.track(ctx, "import_merged", { targetSystemId: plan.targetSystemId, additions: plan.summary?.additions ?? 0, updates: plan.summary?.updates ?? 0, conflicts: plan.summary?.conflicts ?? 0, strategy });

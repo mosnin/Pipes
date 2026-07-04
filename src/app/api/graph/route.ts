@@ -18,13 +18,14 @@ const GraphActionSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("updateNode"),
+    systemId: z.string(),
     nodeId: z.string(),
     title: z.string().optional(),
     description: z.string().optional(),
     position: PositionSchema.optional(),
     config: z.record(z.unknown()).optional(),
   }),
-  z.object({ action: z.literal("deleteNode"), nodeId: z.string() }),
+  z.object({ action: z.literal("deleteNode"), systemId: z.string(), nodeId: z.string() }),
   z.object({
     action: z.literal("addPipe"),
     systemId: z.string(),
@@ -32,7 +33,7 @@ const GraphActionSchema = z.discriminatedUnion("action", [
     toNodeId: z.string(),
     clientPipeId: z.string().optional(),
   }),
-  z.object({ action: z.literal("deletePipe"), pipeId: z.string() }),
+  z.object({ action: z.literal("deletePipe"), systemId: z.string(), pipeId: z.string() }),
 ]);
 
 export async function POST(request: Request) {
