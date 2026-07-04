@@ -4,9 +4,64 @@ import { v } from "convex/values";
 
 const now = () => new Date().toISOString();
 
+// ── Authorization at the Convex boundary ────────────────────────────────────
+// The browser subscribes to some of these functions DIRECTLY (e.g. the editor's
+// getSystemBundle live query), so a role check in the Next.js service layer is
+// not enough — the data functions themselves must authorize the caller. Every
+// caller (browser via ConvexProviderWithClerk, server via forwarded Clerk
+// token) presents a Clerk identity; we resolve it to a user and confirm
+// workspace membership before returning or mutating system data. Missing and
+// cross-workspace resources both surface the same non-revealing "System not
+// found" so callers can't probe for data outside their workspace.
+//
+// Requires convex/auth.config.ts (Clerk JWT template "convex") to be
+// configured on the Convex deployment.
+async function requireUser(ctx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Unauthenticated");
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_external", (q) => q.eq("externalId", identity.subject))
+    .first();
+  if (!user) throw new Error("Unauthenticated");
+  return user;
+}
+
+async function requireWorkspaceAccess(ctx, workspaceId) {
+  const user = await requireUser(ctx);
+  const member = await ctx.db
+    .query("workspace_members")
+    .withIndex("by_workspace_user", (q) => q.eq("workspaceId", workspaceId).eq("userId", user._id))
+    .first();
+  if (!member) throw new Error("System not found");
+  return { user, member };
+}
+
+async function requireSystemAccess(ctx, systemId) {
+  const system = await ctx.db.get(systemId);
+  if (!system) throw new Error("System not found");
+  await requireWorkspaceAccess(ctx, system.workspaceId);
+  return system;
+}
+
+async function requireNodeAccess(ctx, nodeId) {
+  const node = await ctx.db.get(nodeId);
+  if (!node) throw new Error("System not found");
+  await requireWorkspaceAccess(ctx, node.systemId);
+  return node;
+}
+
+async function requirePipeAccess(ctx, pipeId) {
+  const pipe = await ctx.db.get(pipeId);
+  if (!pipe) throw new Error("System not found");
+  await requireWorkspaceAccess(ctx, pipe.systemId);
+  return pipe;
+}
+
 export const listSystemPresence = query({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
     const rows = await ctx.db.query("system_presence").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect();
     const cutoff = new Date(Date.now() - 120_000).toISOString();
     return rows.filter((r) => r.lastSeenAt > cutoff);
@@ -33,28 +88,39 @@ export const provisionUser = mutation({
 export const listSystems = query({
   args: { workspaceId: v.id("workspaces") },
   handler: async (ctx, args) => {
+    await requireWorkspaceAccess(ctx, args.workspaceId);
     return ctx.db.query("systems").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
   }
 });
 
 export const createSystem = mutation({
   args: { workspaceId: v.id("workspaces"), userId: v.id("users"), name: v.string(), description: v.string() },
-  handler: async (ctx, args) => ctx.db.insert("systems", { ...args, createdBy: args.userId, createdAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireWorkspaceAccess(ctx, args.workspaceId);
+    return ctx.db.insert("systems", { ...args, createdBy: args.userId, createdAt: now(), updatedAt: now() });
+  }
 });
 
 export const archiveSystem = mutation({
   args: { systemId: v.id("systems") },
-  handler: async (ctx, args) => ctx.db.patch(args.systemId, { archivedAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.patch(args.systemId, { archivedAt: now(), updatedAt: now() });
+  }
 });
 
 
 export const restoreSystem = mutation({
   args: { systemId: v.id("systems") },
-  handler: async (ctx, args) => ctx.db.patch(args.systemId, { archivedAt: undefined, updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.patch(args.systemId, { archivedAt: undefined, updatedAt: now() });
+  }
 });
 export const getSystemBundle = query({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
     const [system, nodes, pipes, comments, versions, presence] = await Promise.all([
       ctx.db.get(args.systemId),
       ctx.db.query("system_nodes").withIndex("by_system", (q) => q.eq("systemId", args.systemId)).collect(),
@@ -75,6 +141,7 @@ export const getSystemBundle = query({
 export const addNode = mutation({
   args: { systemId: v.id("systems"), type: v.string(), title: v.string(), description: v.optional(v.string()), x: v.number(), y: v.number() },
   handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
     const nodeId = await ctx.db.insert("system_nodes", { systemId: args.systemId, type: args.type, title: args.title, description: args.description, position: { x: args.x, y: args.y }, portIds: [`${Math.random().toString(36).slice(2)}_in`, `${Math.random().toString(36).slice(2)}_out`], config: {}, createdAt: now(), updatedAt: now() });
     return nodeId;
   }
@@ -83,8 +150,7 @@ export const addNode = mutation({
 export const updateNode = mutation({
   args: { nodeId: v.id("system_nodes"), title: v.optional(v.string()), description: v.optional(v.string()), x: v.optional(v.number()), y: v.optional(v.number()), config: v.optional(v.any()) },
   handler: async (ctx, args) => {
-    const node = await ctx.db.get(args.nodeId);
-    if (!node) return;
+    const node = await requireNodeAccess(ctx, args.nodeId);
     await ctx.db.patch(args.nodeId, { title: args.title ?? node.title, description: args.description ?? node.description, position: { x: args.x ?? node.position.x, y: args.y ?? node.position.y }, config: args.config ?? node.config, updatedAt: now() });
   }
 });
@@ -92,8 +158,7 @@ export const updateNode = mutation({
 export const deleteNode = mutation({
   args: { nodeId: v.id("system_nodes") },
   handler: async (ctx, args) => {
-    const node = await ctx.db.get(args.nodeId);
-    if (!node) return;
+    const node = await requireNodeAccess(ctx, args.nodeId);
     const pipes = await ctx.db.query("system_pipes").withIndex("by_system", (q) => q.eq("systemId", node.systemId)).collect();
     for (const pipe of pipes) {
       if (pipe.fromNodeId === args.nodeId || pipe.toNodeId === args.nodeId) await ctx.db.delete(pipe._id);
@@ -104,32 +169,50 @@ export const deleteNode = mutation({
 
 export const addPipe = mutation({
   args: { systemId: v.id("systems"), fromNodeId: v.id("system_nodes"), fromPortId: v.string(), toNodeId: v.id("system_nodes"), toPortId: v.string() },
-  handler: async (ctx, args) => ctx.db.insert("system_pipes", { ...args, createdAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.insert("system_pipes", { ...args, createdAt: now(), updatedAt: now() });
+  }
 });
 
 export const deletePipe = mutation({
   args: { pipeId: v.id("system_pipes") },
-  handler: async (ctx, args) => ctx.db.delete(args.pipeId)
+  handler: async (ctx, args) => {
+    await requirePipeAccess(ctx, args.pipeId);
+    return ctx.db.delete(args.pipeId);
+  }
 });
 
 export const addComment = mutation({
   args: { systemId: v.id("systems"), authorId: v.id("users"), body: v.string(), nodeId: v.optional(v.id("system_nodes")) },
-  handler: async (ctx, args) => ctx.db.insert("system_comments", { ...args, createdAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.insert("system_comments", { ...args, createdAt: now(), updatedAt: now() });
+  }
 });
 
 export const addVersion = mutation({
   args: { systemId: v.id("systems"), authorId: v.id("users"), name: v.string(), snapshot: v.string() },
-  handler: async (ctx, args) => ctx.db.insert("system_versions", { ...args, createdAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.insert("system_versions", { ...args, createdAt: now() });
+  }
 });
 
 export const setSystemVisibility = mutation({
   args: { systemId: v.id("systems"), visibility: v.string() },
-  handler: async (ctx, args) => ctx.db.patch(args.systemId, { visibility: args.visibility, updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.patch(args.systemId, { visibility: args.visibility, updatedAt: now() });
+  }
 });
 
 export const renameSystem = mutation({
   args: { systemId: v.id("systems"), name: v.string() },
-  handler: async (ctx, args) => ctx.db.patch(args.systemId, { name: args.name, updatedAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.patch(args.systemId, { name: args.name, updatedAt: now() });
+  }
 });
 
 // Restore a system to a saved looper_schema_v1 snapshot. Replaces the system's
@@ -138,6 +221,7 @@ export const renameSystem = mutation({
 export const restoreVersionSnapshot = mutation({
   args: { systemId: v.id("systems"), snapshot: v.string() },
   handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
     const doc = JSON.parse(args.snapshot);
     const data = doc.looper_schema_v1 ?? doc;
     const snapNodes = (data.nodes ?? []).filter((n) => String(n.systemId) === String(args.systemId) || !n.systemId);
@@ -193,7 +277,10 @@ export const restoreVersionSnapshot = mutation({
 
 export const createMarketplaceListing = mutation({
   args: { systemId: v.id("systems"), workspaceId: v.id("workspaces"), title: v.string(), description: v.string(), price: v.number() },
-  handler: async (ctx, args) => ctx.db.insert("marketplace_listings", { ...args, createdAt: now() })
+  handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
+    return ctx.db.insert("marketplace_listings", { ...args, createdAt: now() });
+  }
 });
 
 export const listMarketplaceListingsByWorkspace = query({
@@ -243,6 +330,7 @@ export const getUsageTotal = query({
 export const upsertPresence = mutation({
   args: { systemId: v.id("systems"), userId: v.id("users"), sessionId: v.string(), selectedNodeId: v.optional(v.id("system_nodes")), editingTarget: v.optional(v.string()), cursorX: v.optional(v.number()), cursorY: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    await requireSystemAccess(ctx, args.systemId);
     const existing = await ctx.db.query("system_presence").withIndex("by_system_user_session", (q) => q.eq("systemId", args.systemId).eq("userId", args.userId).eq("sessionId", args.sessionId)).first();
     const payload = { systemId: args.systemId, userId: args.userId, sessionId: args.sessionId, selectedNodeId: args.selectedNodeId, editingTarget: args.editingTarget, cursor: args.cursorX !== undefined && args.cursorY !== undefined ? { x: args.cursorX, y: args.cursorY } : undefined, lastSeenAt: now(), updatedAt: now() };
     if (existing) await ctx.db.patch(existing._id, payload); else await ctx.db.insert("system_presence", payload);
