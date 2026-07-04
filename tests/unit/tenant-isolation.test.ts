@@ -9,8 +9,10 @@ const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
 // Regression guard for the cross-tenant IDOR found in the security audit:
 // role checks proved the caller had a role in THEIR workspace but never bound
 // the target systemId to it, so any user could read/edit/delete another
-// tenant's system by passing its id. SystemService.assertSystemInWorkspace
-// closes this. These tests must never regress.
+// tenant's system by passing its id. The service-layer ownership guards close
+// this, returning the SAME non-revealing "System not found" for both a
+// cross-tenant system and a nonexistent one (no existence oracle). These tests
+// must never regress.
 describe("cross-tenant isolation (IDOR)", () => {
   beforeEach(() => {
     if (fs.existsSync(DB_FILE)) fs.unlinkSync(DB_FILE);
@@ -27,10 +29,10 @@ describe("cross-tenant isolation (IDOR)", () => {
     const sysId = await services.systems.create(alice, { name: "Alice secret loop" });
 
     // Bob, a legitimate user in his OWN workspace, must not reach Alice's system.
-    await expect(services.systems.getBundle(bob, sysId)).rejects.toThrow("Not found.");
-    await expect(services.systems.delete(bob, sysId)).rejects.toThrow("Not found.");
-    await expect(services.systems.rename(bob, sysId, "hacked")).rejects.toThrow("Not found.");
-    await expect(services.systems.archive(bob, sysId)).rejects.toThrow("Not found.");
+    await expect(services.systems.getBundle(bob, sysId)).rejects.toThrow(/System not found/);
+    await expect(services.systems.delete(bob, sysId)).rejects.toThrow(/System not found/);
+    await expect(services.systems.rename(bob, sysId, "hacked")).rejects.toThrow(/System not found/);
+    await expect(services.systems.archive(bob, sysId)).rejects.toThrow(/System not found/);
 
     // Alice still has full access to her own system.
     const bundle = await services.systems.getBundle(alice, sysId);
@@ -41,6 +43,6 @@ describe("cross-tenant isolation (IDOR)", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const alice = await repos.users.provision({ externalId: "mock|alice2", email: "alice2@a.test", name: "Alice" });
-    await expect(services.systems.getBundle(alice, "sys_does_not_exist")).rejects.toThrow("System not found.");
+    await expect(services.systems.getBundle(alice, "sys_does_not_exist")).rejects.toThrow(/System not found/);
   });
 });
