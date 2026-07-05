@@ -1453,44 +1453,11 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
           onDismiss={() => setReviewPreviewItems([])}
         />
         <EditorErrorBoundary area="Canvas" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-          {nodes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none" style={{ marginTop: 0 }}>
-              <div className="pointer-events-auto text-center space-y-5 max-w-sm">
-                <div className="flex items-center justify-center gap-3 select-none" aria-hidden>
-                  <div className="w-14 h-8 rounded-lg border border-line-strong surface-canvas" />
-                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
-                  <div className="w-16 h-10 rounded-lg border border-indigo-200 bg-indigo-50" />
-                  <div className="w-5 h-0.5 bg-black/[0.12] rounded" />
-                  <div className="w-14 h-8 rounded-lg border border-line-strong surface-canvas" />
-                </div>
-                <div>
-                  <p className="t-title font-bold text-ink-1">What should this loop do?</p>
-                  <p className="t-label text-ink-3 mt-1">
-                    Describe it in one sentence and your agent builds the graph.
-                  </p>
-                  <p className="t-caption text-ink-4 mt-2 italic">
-                    e.g. &ldquo;Watch GitHub for new PRs, summarize the diff, then post to Slack&rdquo;
-                  </p>
-                </div>
-                <Button
-                  variant="primary"
-                  onClick={() => setPromptFocusSignal((n) => n + 1)}
-                  className="h-10 px-6 font-semibold"
-                >
-                  <Bot size={14} /> Start describing
-                </Button>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => openInsertPalette({ mode: "canvas" })}
-                    className="t-caption text-ink-3 hover:text-ink-2 transition-colors"
-                  >
-                    or add a node manually
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* The empty canvas used to carry a full centered "What should this
+              loop do?" overlay AND the docked describe composer below it — two
+              invitations to do the same thing, which collided on narrower
+              viewports. The composer (ConversationDrawer) is the single front
+              door now; it owns the empty state with the ghost-node hint. */}
           <EditorCanvas
             initialNodes={flowView.flowNodes}
             initialEdges={presentedEdges}

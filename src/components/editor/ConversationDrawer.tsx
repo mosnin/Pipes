@@ -441,16 +441,13 @@ function EmptyStarters({
   headline: string;
   onPick: (prompt: string) => void;
 }) {
+  // The canvas already shows the ghost-node hint and "Describe your system in
+  // the chat to get started" at center, pointing here. So the composer's empty
+  // state is just the example chips above the input — no duplicate headline or
+  // second ghost cluster. (headline retained in the prop for the input label.)
+  void headline;
   return (
     <div className="flex flex-col items-center gap-3 mb-1">
-      <p className="t-caption text-ink-3">{headline}</p>
-      <div className="flex items-center gap-1.5 text-[10px] text-ink-4 select-none" aria-hidden>
-        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">Describe</span>
-        <span aria-hidden>&#8594;</span>
-        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">AI builds</span>
-        <span aria-hidden>&#8594;</span>
-        <span className="px-2 py-0.5 rounded-full border border-line bg-white/60">Share with any agent</span>
-      </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
         {STARTER_CHIPS.map((chip) => (
           <button

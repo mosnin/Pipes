@@ -145,17 +145,17 @@ function EmptyCanvasHint() {
       <svg width="196" height="68" viewBox="0 0 196 68" fill="none" aria-hidden="true">
         <line x1="62" y1="34" x2="90" y2="34" stroke="rgba(79,70,229,0.22)" strokeWidth="1.5" strokeDasharray="3 2.5" />
         <line x1="106" y1="34" x2="134" y2="34" stroke="rgba(79,70,229,0.22)" strokeWidth="1.5" strokeDasharray="3 2.5" />
-        <rect x="6" y="18" width="56" height="32" rx="10" fill="white" stroke="rgba(0,0,0,0.09)" strokeWidth="1" />
-        <rect x="72" y="18" width="52" height="32" rx="10" fill="white" stroke="rgba(0,0,0,0.09)" strokeWidth="1" />
-        <rect x="134" y="18" width="56" height="32" rx="10" fill="#EEF2FF" stroke="rgba(79,70,229,0.35)" strokeWidth="1.5" />
-        <circle cx="12" cy="34" r="2" fill="rgba(79,70,229,0.45)" />
-        <circle cx="184" cy="34" r="2" fill="rgba(79,70,229,0.45)" />
+        <rect x="6" y="18" width="56" height="32" rx="10" fill="var(--surface-canvas)" stroke="var(--color-line-strong)" strokeWidth="1" />
+        <rect x="72" y="18" width="52" height="32" rx="10" fill="var(--surface-canvas)" stroke="var(--color-line-strong)" strokeWidth="1" />
+        <rect x="134" y="18" width="56" height="32" rx="10" fill="var(--color-accent-light)" stroke="rgba(124,58,237,0.45)" strokeWidth="1.5" />
+        <circle cx="12" cy="34" r="2" fill="rgba(124,58,237,0.5)" />
+        <circle cx="184" cy="34" r="2" fill="rgba(124,58,237,0.5)" />
       </svg>
       <p
         style={{
           marginTop: 14,
           fontSize: 13,
-          color: "rgba(0,0,0,0.26)",
+          color: "var(--color-ink-3)",
           letterSpacing: "-0.01em",
           fontWeight: 500,
         }}

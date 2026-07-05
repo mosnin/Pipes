@@ -60,7 +60,7 @@ export const runtimeFlags = {
   hasAgentRunner: Boolean(env.LOOPER_AGENT_ENDPOINT_URL)
 };
 
-export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-flash";
+export const DEFAULT_OPENROUTER_MODEL = "deepseek/deepseek-v4-pro";
 
 export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 
