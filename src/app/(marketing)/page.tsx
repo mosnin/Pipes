@@ -23,7 +23,7 @@ import {
   HeroAnimatedCtas,
   HeroAnimatedSide,
 } from "@/components/marketing/HeroAnimatedHeadline";
-import { LoopCircuit } from "@/components/marketing/LoopCircuit";
+import { HeroLoopDemo } from "@/components/marketing/HeroLoopDemo";
 
 const HOMEPAGE_TITLE = "Describe the loop. It builds itself.";
 const HOMEPAGE_SUBTITLE =
@@ -133,7 +133,7 @@ export default function HomePage() {
             </div>
             <div className="hidden lg:col-span-5 lg:block">
               <HeroAnimatedSide>
-                <LoopCircuit />
+                <HeroLoopDemo />
               </HeroAnimatedSide>
             </div>
           </div>
