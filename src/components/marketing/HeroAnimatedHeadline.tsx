@@ -2,7 +2,12 @@
 
 import { motion } from "framer-motion";
 
-const words = ["Build", "agent", "loops,", "visually."];
+// The headline IS the magic moment: you describe the loop, it builds itself.
+// The second sentence is set apart on its own line for rhythm.
+const lines = [
+  ["Describe", "the", "loop."],
+  ["It", "builds", "itself."],
+];
 
 const container = {
   hidden: {},
@@ -30,20 +35,27 @@ export function HeroAnimatedHeadline() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="mt-6 text-[#111] flex flex-wrap"
+      className="mt-6 text-[#111]"
       style={{
         fontSize: "clamp(44px, 7vw, 84px)",
         lineHeight: 1.02,
         letterSpacing: "-0.045em",
         fontWeight: 700,
-        gap: "0 0.22em",
       }}
-      aria-label="Build agent loops, visually."
+      aria-label="Describe the loop. It builds itself."
     >
-      {words.map((w) => (
-        <motion.span key={w} variants={word} style={{ display: "inline-block" }}>
-          {w}
-        </motion.span>
+      {lines.map((line, i) => (
+        <span key={i} className="flex flex-wrap" style={{ gap: "0 0.22em" }}>
+          {line.map((w) => (
+            <motion.span
+              key={w}
+              variants={word}
+              style={{ display: "inline-block", color: i === 1 ? "#7C3AED" : undefined }}
+            >
+              {w}
+            </motion.span>
+          ))}
+        </span>
       ))}
     </motion.h1>
   );

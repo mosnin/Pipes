@@ -25,9 +25,9 @@ import {
 } from "@/components/marketing/HeroAnimatedHeadline";
 import { LoopCircuit } from "@/components/marketing/LoopCircuit";
 
-const HOMEPAGE_TITLE = "Build agent loops, visually.";
+const HOMEPAGE_TITLE = "Describe the loop. It builds itself.";
 const HOMEPAGE_SUBTITLE =
-  "Describe a loop. Watch it appear on the canvas. Refine it with your agent. Share or sell it.";
+  "A typed, versioned agent loop your whole team and every agent read from one MCP token — Claude, LangGraph, AutoGen, or your own.";
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {

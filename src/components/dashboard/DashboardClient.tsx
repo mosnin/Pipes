@@ -946,6 +946,42 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Front door — the describe prompt is the primary way to make a loop,
+          always present, not just on the empty state. One door to the magic. */}
+      <div className="surface-canvas border border-line rounded-[16px] p-5 shadow-sm-token">
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <p className="t-overline text-violet-700">Describe a loop</p>
+          <span className="t-caption text-ink-3 hidden sm:block">One sentence. Pipes draws every step.</span>
+        </div>
+        <ConversationInput
+          ref={heroInputRef}
+          value={heroPrompt}
+          onChange={setHeroPrompt}
+          onSend={() => void startSystemFromPrompt(heroPrompt)}
+          onStop={() => {}}
+          isRunning={heroSubmitting}
+          hasError={false}
+          placeholderHint={heroSubmitting ? "building" : "idle"}
+          size="hero"
+          placeholder="Describe the loop you want to build…"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {DASHBOARD_STARTERS.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => {
+                setHeroPrompt(chip.prompt);
+                heroInputRef.current?.focus();
+              }}
+              className="t-label text-ink-2 hover:text-ink-1 surface-muted hover:surface-canvas border border-line hover:border-line-strong rounded-full px-3 h-8 transition-colors"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <MetricCard
@@ -1057,7 +1093,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
               </Button>
               <Button variant="primary" size="sm" onPress={createSystem}>
                 <Plus size={14} />
-                New System
+                New Loop
               </Button>
             </div>
           }
@@ -1128,7 +1164,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                     </Button>
                     <Button variant="primary" size="sm" onPress={createSystem}>
                       <Plus size={14} />
-                      New System
+                      New Loop
                     </Button>
                   </div>
                 )
