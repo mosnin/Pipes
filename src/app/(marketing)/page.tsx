@@ -24,6 +24,7 @@ import {
   HeroAnimatedSide,
 } from "@/components/marketing/HeroAnimatedHeadline";
 import { HeroLoopDemo } from "@/components/marketing/HeroLoopDemo";
+import { WorksWithStrip } from "@/components/marketing/WorksWithStrip";
 
 const HOMEPAGE_TITLE = "Describe the loop. It builds itself.";
 const HOMEPAGE_SUBTITLE =
@@ -145,6 +146,12 @@ export default function HomePage() {
           Shows immediately: canvas, inspector, Claude MCP panel.
          ─────────────────────────────────────────────────────────────────── */}
       <ProductMockup />
+
+      {/* ───────────────────────────────────────────────────────────────────
+          WORKS WITH — the honest logo strip: agent runtimes that read a loop
+          via one MCP token. Not customer endorsements.
+         ─────────────────────────────────────────────────────────────────── */}
+      <WorksWithStrip />
 
       {/* ───────────────────────────────────────────────────────────────────
           METRICS — counters that count up from 0 the first time they enter
