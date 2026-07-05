@@ -721,14 +721,14 @@ export function EditorCanvas({
           gap={24}
           size={1}
           color="rgba(0,0,0,0.09)"
-          style={{ background: "#F8F7FC" }}
+          style={{ background: "var(--surface-page)" }}
         />
         <MiniMap
           pannable
           zoomable
           style={{
-            background: "#FFFFFF",
-            border: `1px solid ${TOKEN_INK_LINE_LIGHT}`,
+            background: "var(--surface-canvas)",
+            border: "1px solid var(--color-line-strong)",
             borderRadius: 8,
           }}
           nodeColor={(node) => {
@@ -737,15 +737,15 @@ export function EditorCanvas({
             if (t === "Evaluator" || t === "HumanReview" || t === "Checkpoint") return "#D97706";
             return TOKEN_INDIGO_500;
           }}
-          maskColor="rgba(255,255,255,0.55)"
+          maskColor="var(--rf-mask)"
         />
         <Controls
           showInteractive={false}
           style={{
-            background: "#FFFFFF",
-            border: `1px solid ${TOKEN_INK_LINE_LIGHT}`,
+            background: "var(--surface-canvas)",
+            border: "1px solid var(--color-line-strong)",
             borderRadius: 8,
-            color: TOKEN_INK_2,
+            color: "var(--color-ink-2)",
           }}
         />
       </ReactFlow>

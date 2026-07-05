@@ -420,8 +420,8 @@ export function BuildClient() {
                   className={[
                     "flex items-start gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     parallelism === opt.value
-                      ? "border-violet-300 bg-violet-50 text-violet-700"
-                      : "border-line surface-canvas text-ink-2 hover:border-black/[0.15]",
+                      ? "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-500/15 dark:text-violet-200"
+                      : "border-line surface-canvas text-ink-2 hover:border-line-strong",
                   ].join(" ")}
                 >
                   <div>

@@ -25,7 +25,7 @@ export function BuildStudio({ initialMode = "describe" }: { initialMode?: BuildM
       <div
         role="tablist"
         aria-label="How to build your loop"
-        className="inline-flex self-start rounded-[10px] border border-line bg-white p-1 shadow-xs"
+        className="inline-flex self-start rounded-[10px] border border-line surface-canvas p-1 shadow-xs"
       >
         {MODES.map((m) => {
           const selected = m.id === mode;
