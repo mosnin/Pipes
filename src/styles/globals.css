@@ -752,8 +752,11 @@ a { color: inherit; text-decoration: none; }
   --radius: 12px;
 }
 
-.dark,
-[data-color-scheme="dark"] {
+/* :root-qualified so these beat Tailwind's @theme :root light tokens, which
+   share specificity (0,1,0) with a bare attribute selector and would otherwise
+   win on source order. :root[...] is (0,2,0) and always wins. */
+:root.dark,
+:root[data-color-scheme="dark"] {
   --background: #0A0A0C;
   --foreground: #F5F5F7;
   --card: #16161A;

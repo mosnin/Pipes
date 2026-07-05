@@ -84,15 +84,15 @@ function NavRow({
     "text-[13px] font-medium",
     collapsed ? "justify-center h-8 w-8 mx-auto" : "gap-2.5 px-2 py-1.5",
     active
-      ? "bg-white shadow-xs ring-1 ring-black/5 text-[#111]"
-      : "text-[#3C3C43] hover:bg-white/60 hover:text-[#111]",
+      ? "surface-canvas shadow-xs ring-1 ring-[var(--color-line-strong)] text-ink-1"
+      : "text-ink-2 hover:bg-[var(--color-hover)] hover:text-ink-1",
   ].join(" ");
 
   const iconWrap = (
     <span
       className={[
         "shrink-0 inline-flex items-center justify-center transition-colors duration-100",
-        active ? "text-indigo-600" : "text-[#8E8E93] group-hover:text-[#3C3C43]",
+        active ? "text-indigo-500" : "text-ink-3 group-hover:text-ink-2",
       ].join(" ")}
     >
       {item.icon}
