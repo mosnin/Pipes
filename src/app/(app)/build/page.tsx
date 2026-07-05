@@ -1,10 +1,10 @@
 import { Breadcrumbs, PageHeader } from "@/components/ui";
-import { BuildClient } from "@/components/build/BuildClient";
+import { BuildStudio } from "@/components/build/BuildStudio";
 import { getServerApp } from "@/lib/composition/server";
 
 export const metadata = {
-  title: "Workflow Builder — Pipes",
-  description: "Describe a goal. Agents plan and build the optimal DAG workflow — no human graph-drawing required.",
+  title: "Build — Pipes",
+  description: "Turn intent into a loop: describe a goal in plain language, or compile an existing document. One place to build.",
 };
 
 export default async function BuildPage() {
@@ -13,14 +13,14 @@ export default async function BuildPage() {
   return (
     <div className="surface-subtle min-h-screen">
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <Breadcrumbs items={[{ label: "Workspace" }, { label: "Workflow Builder" }]} />
+        <Breadcrumbs items={[{ label: "Workspace" }, { label: "Build" }]} />
         <div className="mt-3 mb-8">
           <PageHeader
-            title="Workflow Builder"
-            subtitle="Describe a goal in plain language. The AI plans the optimal DAG — with parallel branches, checkpoints, and agent hand-offs — so you never draw a graph by hand."
+            title="Build a loop"
+            subtitle="Describe a goal and watch the agent plan it, or compile a document you already have. Either way, one typed loop comes out."
           />
         </div>
-        <BuildClient />
+        <BuildStudio initialMode="describe" />
       </div>
     </div>
   );
