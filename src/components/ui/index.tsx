@@ -41,10 +41,14 @@ export type ButtonProps = ButtonRootProps & {
 };
 
 export function Button({ className, variant = "primary", ...props }: ButtonProps) {
+  // HeroUI's ghost variant has no themed color in our setup (no HeroUIProvider),
+  // so it defaults to dark ink and vanishes on dark surfaces. Give it a themeable
+  // default that callers can still override — cn/twMerge lets a later class win.
+  const variantDefault = variant === "ghost" ? "text-ink-2 hover:text-ink-1" : undefined;
   return (
     <HeroButton
       variant={variant}
-      className={cn(className)}
+      className={cn(variantDefault, className)}
       {...props}
     />
   );

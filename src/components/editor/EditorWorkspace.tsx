@@ -8,7 +8,6 @@ import { AvatarStack, Badge, Button, Card, CommentBubble, Dialog, Input, Panel, 
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Separator, Spinner } from "@heroui/react";
 import { BarChart2, Bot, Boxes, ChevronLeft, ChevronRight, Copy, Download, History, Layers, Link2, Maximize2, MessageCircle, MoreHorizontal, Play, Plus, Redo2, Settings, Shield, Star, Trash2, Undo2, Wand2, X, Zap } from "lucide-react";
 import { ConnectAgentModal } from "@/components/editor/ConnectAgentModal";
-import { EditorTutorial } from "@/components/editor/EditorTutorial";
 import { getTutorialSeen } from "@/lib/feedback/storage";
 import { validateSystem } from "@/domain/validation";
 import { simulateSystem } from "@/domain/simulation";
@@ -1558,13 +1557,11 @@ function EditorWorkspaceView({ systemId, data, notFound, reload, initialPrompt }
             />
           );
         })() : null}
-        {nodes.length === 0 && pipes.length === 0 && !tutorialSeen ? (
-          <EditorTutorial
-            promptStarted={tutorialPromptStarted}
-            leftPaneOpened={tutorialLeftPaneOpened}
-            agentViewSeen={tutorialAgentViewSeen}
-          />
-        ) : null}
+        {/* The empty-canvas coachmark used to render here, but its floating pills
+            overlapped the centered "What should this loop do?" overlay and the
+            persistent describe composer — three competing invitations on one
+            empty canvas. The centered overlay teaches the same describe→build
+            idea more clearly, so it owns the first-run moment now. */}
         </div>
         {!inspectorOpen && !activeSystemPanel ? (
           <aside className="border border-line rounded-lg surface-canvas flex flex-col items-center py-2 gap-2">

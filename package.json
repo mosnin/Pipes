@@ -17,7 +17,7 @@
     "@heroui/react": "^3.0.3",
     "@tailwindcss/postcss": "^4.2.4",
     "@tremor/react": "^3.18.0",
-    "@xyflow/react": "12.8.5",
+    "@xyflow/react": "^12.8.5",
     "clsx": "2.1.1",
     "convex": "^1.35.1",
     "framer-motion": "^12.38.0",
