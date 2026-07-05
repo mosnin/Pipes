@@ -89,7 +89,7 @@ export default function TrustPage() {
               },
               {
                 label: "AI prompt data",
-                value: "Sent to OpenAI. Not stored by Looper beyond session.",
+                value: "Sent to OpenAI. Not stored by Pipes beyond session.",
               },
               {
                 label: "Audit log retention",
@@ -107,7 +107,7 @@ export default function TrustPage() {
             ))}
           </div>
           <a
-            href="https://looper.dev/privacy"
+            href="https://pipes.dev/privacy"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 t-caption text-indigo-600 hover:text-indigo-700 mt-4"

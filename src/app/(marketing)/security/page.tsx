@@ -13,9 +13,9 @@ import {
 } from "@/lib/marketing/security-data";
 
 export const metadata = {
-  title: "Security - Looper",
+  title: "Security - Pipes",
   description:
-    "How Looper keeps workspace data inside the workspace. Authentication, encryption, audit, isolation, and compliance posture.",
+    "How Pipes keeps workspace data inside the workspace. Authentication, encryption, audit, isolation, and compliance posture.",
 };
 
 export default function SecurityPage() {
@@ -192,7 +192,7 @@ export default function SecurityPage() {
             </div>
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <a
-                href="mailto:trust@looper.dev?subject=Compliance%20review%20request"
+                href="mailto:trust@pipes.dev?subject=Compliance%20review%20request"
                 className="inline-flex h-12 items-center gap-1.5 rounded-full bg-white px-6 t-label font-semibold text-[#4F46E5] transition-colors hover:bg-white/90"
               >
                 Talk to trust

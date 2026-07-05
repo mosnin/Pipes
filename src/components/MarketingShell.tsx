@@ -110,7 +110,7 @@ function MarketingFooter() {
             <Link
               href="/"
               className="group relative flex items-center w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 rounded-md"
-              aria-label="Looper home"
+              aria-label="Pipes home"
             >
               <Wordmark size="lg" />
               <span
@@ -146,7 +146,7 @@ function MarketingFooter() {
         {/* Bottom strip */}
         <div className="mt-14 pt-6 border-t border-black/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="t-caption text-[#8E8E93]">
-            &copy; {year} Looper, Inc. All rights reserved.
+            &copy; {year} Pipes, Inc. All rights reserved.
           </p>
 
           <div className="flex items-center gap-4">

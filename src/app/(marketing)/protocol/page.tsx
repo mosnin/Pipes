@@ -10,9 +10,9 @@ import { SectionBadge } from "@/components/marketing/SectionBadge";
 import { ProtocolReadingProgress } from "@/components/marketing/ProtocolReadingProgress";
 
 export const metadata = {
-  title: "One token. Every agent reads the loop. - Looper Loop API",
+  title: "One token. Every agent reads the loop. - Pipes Loop API",
   description:
-    "Looper speaks MCP. Hand any agent a Bearer token and it reads the loop — steps, connections, evaluators — exactly the way your team does.",
+    "Pipes speaks MCP. Hand any agent a Bearer token and it reads the loop — steps, connections, evaluators — exactly the way your team does.",
 };
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -24,7 +24,7 @@ const QUICKSTART_SAMPLES: ReadonlyArray<ProtocolCodeSample> = [
     id: "typescript",
     label: "TypeScript",
     code: `// List the systems in your workspace.
-const res = await fetch("https://app.looper.dev/api/protocol/mcp", {
+const res = await fetch("https://app.pipes.dev/api/protocol/mcp", {
   method: "POST",
   headers: {
     "authorization": \`Bearer \${process.env.LOOPER_TOKEN}\`,
@@ -46,7 +46,7 @@ console.log(ok, data.length, requestId);`,
 
 # List the systems in your workspace.
 res = requests.post(
-    "https://app.looper.dev/api/protocol/mcp",
+    "https://app.pipes.dev/api/protocol/mcp",
     headers={
         "Authorization": f"Bearer {os.environ['LOOPER_TOKEN']}",
         "Content-Type": "application/json",
@@ -62,7 +62,7 @@ print(payload["ok"], len(payload["data"]), payload["requestId"])`,
     id: "bash",
     label: "cURL",
     code: `# List the systems in your workspace.
-curl -sS https://app.looper.dev/api/protocol/mcp \\
+curl -sS https://app.pipes.dev/api/protocol/mcp \\
   -H "Authorization: Bearer $LOOPER_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{"tool":"list_systems","input":{}}'`,
@@ -76,7 +76,7 @@ curl -sS https://app.looper.dev/api/protocol/mcp \\
       "command": "npx",
       "args": ["-y", "@looper/mcp-client"],
       "env": {
-        "LOOPER_BASE_URL": "https://app.looper.dev",
+        "LOOPER_BASE_URL": "https://app.pipes.dev",
         "LOOPER_TOKEN": "ptk_live_..."
       }
     }
@@ -625,7 +625,7 @@ export default function ProtocolPage() {
               <p className="mt-3 t-body text-[#3C3C43]">
                 The runner executes inside a Modal sandbox. Container isolation.
                 No shared state across turns. No outbound network besides the
-                model endpoint and the Looper service layer. The blast radius of
+                model endpoint and the Pipes service layer. The blast radius of
                 a misbehaving turn is the turn.
               </p>
             </header>

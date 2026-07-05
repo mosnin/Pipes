@@ -59,7 +59,7 @@ export function BlogIndex({ posts, tags }: BlogIndexProps) {
               <span className="t-overline text-[#8E8E93]">Blog</span>
               <h1 className="t-display text-[#111]">Notes from the team.</h1>
               <p className="t-body text-[#3C3C43]">
-                Posts about how we build Looper. Mostly engineering. Occasionally
+                Posts about how we build Pipes. Mostly engineering. Occasionally
                 company.
               </p>
             </div>

@@ -56,7 +56,7 @@ export class HandoffGenerationService {
     const criteria: HandoffAcceptanceCriteria[] = [
       { id: id("hac"), packageId: pkg.id, title: "Components mapped", description: "All major components map to implementation milestones.", status: "satisfied" },
       { id: id("hac"), packageId: pkg.id, title: "Risks explicit", description: "Known risks and ambiguities are listed, not hidden.", status: unresolved.length > 0 ? "pending" : "satisfied" },
-      { id: id("hac"), packageId: pkg.id, title: "Bounded scope", description: "Handoff does not imply direct execution in Looper.", status: "satisfied" }
+      { id: id("hac"), packageId: pkg.id, title: "Bounded scope", description: "Handoff does not imply direct execution in Pipes.", status: "satisfied" }
     ];
 
     const generation: HandoffGenerationRecord = { id: id("hgen"), packageId: pkg.id, systemId: pkg.systemId, target: input.target, assumptions, unresolvedAmbiguities: unresolved, createdAt: now() };
@@ -103,7 +103,7 @@ export class HandoffGenerationService {
     return [
       { id: id("hart"), packageId: pkg.id, type: "implementation_plan", target, title: "Implementation plan", content: `Objective: ${input.systemDescription}\nComponents:\n- ${input.components.join("\n- ")}\nInterfaces:\n- ${input.interfaces.join("\n- ")}\nRisks:\n- ${(input.risks[0] ?? "No high-severity evaluation risk recorded")}`, sourceRefs: [pkg.systemId], createdAt: now() },
       { id: id("hart"), packageId: pkg.id, type: "task_breakdown", target, title: "Task breakdown", content: `Recommended build order:\n${buildOrder}\nDependencies: ${input.pipeCount} pipe relationships\nAcceptance criteria: aligned with package criteria.`, sourceRefs: [pkg.systemId], createdAt: now() },
-      { id: id("hart"), packageId: pkg.id, type: "coding_agent_prompt", target, title: `${target} execution prompt`, content: `Context: ${input.systemName} with ${input.nodeCount} components.\nObjective: deliver build-ready implementation with preserved policy and review safety.\nConstraints: no provider internals, no second mutation authority, preserve typed contracts.\nBoundaries: Looper is design/handoff, not runtime execution engine.\nTarget outputs: implementation plan, milestones, test updates, rollout notes.\nAcceptance criteria: all package criteria plus unresolved ambiguities listed.\nStyle: ${codexTone}`,
+      { id: id("hart"), packageId: pkg.id, type: "coding_agent_prompt", target, title: `${target} execution prompt`, content: `Context: ${input.systemName} with ${input.nodeCount} components.\nObjective: deliver build-ready implementation with preserved policy and review safety.\nConstraints: no provider internals, no second mutation authority, preserve typed contracts.\nBoundaries: Pipes is design/handoff, not runtime execution engine.\nTarget outputs: implementation plan, milestones, test updates, rollout notes.\nAcceptance criteria: all package criteria plus unresolved ambiguities listed.\nStyle: ${codexTone}`,
         sourceRefs: [pkg.systemId], createdAt: now() },
       { id: id("hart"), packageId: pkg.id, type: "architecture_spec", target, title: "Architecture spec", content: `Domain summary: ${input.systemDescription}\nState/control flow: ${input.pipeCount} system links, explicit review gates preserved.\nImportant interfaces: ${input.interfaces.slice(0, 8).join("; ")}\nFailure modes: ${(input.risks[0] ?? "policy conflict")}; ${(input.risks[1] ?? "missing contract detail")}`,
         sourceRefs: [pkg.systemId], createdAt: now() },

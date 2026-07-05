@@ -72,7 +72,7 @@ const TOPICS: Record<Topic, TopicContent> = {
       <>
         <DocsSection id="node-types" title="Node kinds">
           <p className="t-body text-[#3C3C43] leading-relaxed mb-3">
-            Looper ships with {nodeTypeValues.length} typed node kinds, from{" "}
+            Pipes ships with {nodeTypeValues.length} typed node kinds, from{" "}
             <InlineCode>Agent</InlineCode> and <InlineCode>Tool</InlineCode> to
             loop-native steps like <InlineCode>LoopControl</InlineCode>,{" "}
             <InlineCode>Checkpoint</InlineCode>, <InlineCode>Evaluator</InlineCode>,
@@ -246,7 +246,7 @@ Content-Type: application/json
         </DocsSection>
         <DocsSection id="import" title="Import a document">
           <p className="t-body text-[#3C3C43] leading-relaxed mb-3">
-            Paste a schema document into the import dialog and Looper creates a
+            Paste a schema document into the import dialog and Pipes creates a
             new loop from its contents. Validation runs on import; any error is
             shown in the editor so you fix it before you build on top of it.
           </p>
@@ -285,8 +285,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ topic: string }> }) {
   const { topic } = await params;
   const content = TOPICS[topic as Topic];
-  if (!content) return { title: "Docs - Looper" };
-  return { title: `${content.title} - Looper Docs`, description: content.intro };
+  if (!content) return { title: "Docs - Pipes" };
+  return { title: `${content.title} - Pipes Docs`, description: content.intro };
 }
 
 export default async function DocsTopicPage({ params }: { params: Promise<{ topic: string }> }) {

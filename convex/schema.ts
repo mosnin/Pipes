@@ -507,7 +507,7 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_kind", ["kind"]),
-  // Future: loop execution state (schema only — no runtime in Looper v1)
+  // Future: loop execution state (schema only — no runtime in Pipes v1)
   loop_runs: defineTable({
     systemId: v.id("systems"),
     workspaceId: v.id("workspaces"),

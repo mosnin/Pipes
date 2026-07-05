@@ -15,7 +15,7 @@ import type { ReplayTickState } from "@/lib/marketing/playground-replay";
 
 export interface CompareInlineDemoProps {
   competitor: string;
-  /** Starter id to drive the Looper panel. Defaults to customer-support-triage. */
+  /** Starter id to drive the Pipes panel. Defaults to customer-support-triage. */
   templateId?: string;
   /** Estimated hand-build time on the competitor side, e.g. "~15 min typical". */
   estimatedManualTime?: string;
@@ -56,19 +56,19 @@ export function CompareInlineDemo({
             <span className="t-overline text-[#8E8E93]">Side by side</span>
             <h2 className="t-h2 text-[#111]">One sentence vs. one hour.</h2>
             <p className="t-label text-[#3C3C43] leading-relaxed">
-              The Looper canvas runs live. The right side is illustrative.
+              The Pipes canvas runs live. The right side is illustrative.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* Looper side */}
+            {/* Pipes side */}
             <article
               className="rounded-2xl border border-violet-200 bg-white p-5 flex flex-col gap-4"
               data-testid="compare-inline-pipes"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-col gap-0.5">
-                  <span className="t-overline text-violet-600">Looper</span>
+                  <span className="t-overline text-violet-600">Pipes</span>
                   <h3 className="t-h3 text-[#111]">Describe. Watch.</h3>
                 </div>
                 {elapsed ? (
@@ -91,7 +91,7 @@ export function CompareInlineDemo({
                   speed={1.2}
                   aspectClassName="aspect-[16/10]"
                   onComplete={handleComplete}
-                  ariaLabel="Looper building the system"
+                  ariaLabel="Pipes building the system"
                 />
               </div>
               <p className="t-caption text-[#8E8E93] leading-relaxed">

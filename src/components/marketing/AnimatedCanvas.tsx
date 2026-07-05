@@ -115,7 +115,7 @@ export function AnimatedCanvas({
       role="img"
       aria-label={
         ariaLabel ??
-        "Looper canvas. Nodes appear and connections draw between them as you scroll."
+        "Pipes canvas. Nodes appear and connections draw between them as you scroll."
       }
       data-testid="animated-canvas"
     >

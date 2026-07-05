@@ -4,9 +4,9 @@ import { ChangelogTimeline } from "@/components/marketing/ChangelogTimeline";
 import { changelogEntries } from "@/lib/marketing/changelog-data";
 
 export const metadata = {
-  title: "Changelog - Looper",
+  title: "Changelog - Pipes",
   description:
-    "What shipped on Looper. Builder turns, schema migrations, MCP capabilities, editor improvements. Read the timeline.",
+    "What shipped on Pipes. Builder turns, schema migrations, MCP capabilities, editor improvements. Read the timeline.",
 };
 
 export default function ChangelogPage() {

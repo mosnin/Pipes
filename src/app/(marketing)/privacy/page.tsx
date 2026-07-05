@@ -1,9 +1,9 @@
 import { LegalDocument, type LegalSection } from "@/components/marketing/LegalDocument";
 
 export const metadata = {
-  title: "Privacy Policy - Looper",
+  title: "Privacy Policy - Pipes",
   description:
-    "What data Looper collects, why, and the control you have over it.",
+    "What data Pipes collects, why, and the control you have over it.",
 };
 
 const SECTIONS: ReadonlyArray<LegalSection> = [

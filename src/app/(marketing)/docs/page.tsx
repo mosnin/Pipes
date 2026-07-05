@@ -7,9 +7,9 @@ import type { DocsNavCategory } from "@/components/marketing/DocsSidebar";
 import type { DocsRailHeading } from "@/components/marketing/DocsRightRail";
 
 export const metadata = {
-  title: "Docs for the staff engineer wiring this up - Looper",
+  title: "Docs for the staff engineer wiring this up - Pipes",
   description:
-    "Concepts, guides, and reference for the staff engineer wiring Looper into a multi-agent system.",
+    "Concepts, guides, and reference for the staff engineer wiring Pipes into a multi-agent system.",
 };
 
 // ── Navigation tree ─────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export const tools = [
   { name: "validate", description: "Run the static validator." },
 ] as const;`;
 
-const SAMPLE_MCP_CURL = `curl https://app.looper.dev/api/protocol/mcp \\
+const SAMPLE_MCP_CURL = `curl https://app.pipes.dev/api/protocol/mcp \\
   -X POST \\
   -H "Authorization: Bearer ptk_live_replace_me" \\
   -H "Content-Type: application/json" \\
@@ -180,9 +180,9 @@ Cmd+Enter   Run the static validator
 Esc         Close any open dialog or panel`;
 
 const SAMPLE_TEMPLATE_TS = `// Create a starter from your current system
-import { Looper } from "@looper/sdk";
+import { Pipes } from "@looper/sdk";
 
-const looper = new Looper({ token: process.env.LOOPER_TOKEN });
+const looper = new Pipes({ token: process.env.LOOPER_TOKEN });
 
 await looper.templates.create({
   sourceSystemId: "sys_01HQK3D2NXR4M9F7Z8AVB6PJTK",
@@ -215,7 +215,7 @@ export default function DocsPage() {
       {/* Getting started ─────────────────────────────────────────────────── */}
       <DocsSection id="quickstart" title="Quickstart" eyebrow="Getting started">
         <p className="t-body text-[#3C3C43] leading-relaxed mb-3">
-          Four steps. None of them are install steps. Looper runs in the browser;
+          Four steps. None of them are install steps. Pipes runs in the browser;
           you sign in and you type.
         </p>
         <ol className="flex flex-col gap-2 t-body text-[#3C3C43] leading-relaxed pl-0 list-none mb-3">
@@ -224,7 +224,7 @@ export default function DocsPage() {
               1
             </span>
             <span>
-              Sign in at <InlineCode>app.looper.dev</InlineCode>. A free
+              Sign in at <InlineCode>app.pipes.dev</InlineCode>. A free
               workspace is created with you as the only member.
             </span>
           </li>
@@ -573,7 +573,7 @@ versions:write       validation:read`}
       <DocsSection id="templates-browse" title="Browse starters">
         <p className="t-body text-[#3C3C43] leading-relaxed mb-3">
           Open the starters gallery from the editor empty state or from{" "}
-          <InlineCode>app.looper.dev/templates</InlineCode>. Each card opens to
+          <InlineCode>app.pipes.dev/templates</InlineCode>. Each card opens to
           a preview with the canonical prompt; pressing return on the prompt
           runs the agent and writes a new system into your workspace.
         </p>
@@ -635,7 +635,7 @@ versions:write       validation:read`}
         </p>
         <DocsCodeBlock
           language="bash"
-          code={`curl -X DELETE https://app.looper.dev/api/protocol/tokens/tok_01HQK4 \\
+          code={`curl -X DELETE https://app.pipes.dev/api/protocol/tokens/tok_01HQK4 \\
   -H "Authorization: Bearer ptk_admin_replace_me"`}
         />
       </DocsSection>

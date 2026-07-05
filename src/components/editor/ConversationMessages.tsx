@@ -185,7 +185,7 @@ function Bubble({
   }
   return (
     <div className="flex flex-col items-start">
-      <span className="t-caption text-ink-3 mb-1 pl-1">Looper</span>
+      <span className="t-caption text-ink-3 mb-1 pl-1">Pipes</span>
       <div className="surface-canvas border border-line rounded-2xl px-3 py-2 max-w-[80%]">
         <p className="t-label text-ink-2 whitespace-pre-wrap break-words">{text}</p>
       </div>

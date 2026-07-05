@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   const requirements = buildPaymentRequirements({
     priceUsd: listing.price,
     resource: `marketplace:${listing.id}`,
-    description: `Install "${listing.title}" from the Looper marketplace`,
+    description: `Install "${listing.title}" from the Pipes marketplace`,
   });
   const payer = `looper:${ctx.workspaceId}`;
   const payment = signDevVoucher(requirements.resource, requirements.maxAmountRequired, payer);

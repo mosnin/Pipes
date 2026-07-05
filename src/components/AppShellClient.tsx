@@ -134,12 +134,12 @@ export function AppShellClient({
             <Link
               href="/dashboard"
               className="flex items-center min-w-0 flex-1 px-1"
-              aria-label="Looper home"
+              aria-label="Pipes home"
             >
               {collapsed ? (
                 <span className="t-title font-bold tracking-[-0.04em] text-ink-1 truncate">P</span>
               ) : (
-                <Wordmark size="sm" cover="var(--surface-muted)" />
+                <Wordmark size="sm" />
               )}
             </Link>
             {!collapsed && (

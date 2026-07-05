@@ -4,12 +4,12 @@ import { BlogIndex } from "./BlogIndex";
 
 const TITLE = "Notes from the team.";
 const SUBTITLE =
-  "Posts about how we build Looper. Mostly engineering. Occasionally company.";
+  "Posts about how we build Pipes. Mostly engineering. Occasionally company.";
 
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(TITLE)}&subtitle=${encodeURIComponent(SUBTITLE)}`;
 
 export const metadata: Metadata = {
-  title: "Blog - Looper",
+  title: "Blog - Pipes",
   description: SUBTITLE,
   openGraph: {
     title: TITLE,

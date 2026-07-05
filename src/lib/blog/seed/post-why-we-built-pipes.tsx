@@ -11,7 +11,7 @@ import {
 import type { BlogPost, BlogTocEntry } from "@/lib/blog/types";
 
 /**
- * Post: Why we built Looper.
+ * Post: Why we built Pipes.
  *
  * Origin story. Locked voice. No hype. Specific about what changed.
  */
@@ -150,8 +150,8 @@ function PostBody() {
       </P>
       <P>
         The product we want to build is the product we wanted to use
-        last year. We are dogfooding it now. We use Looper to describe
-        Looper. The graph is checked into the repo and the agent edits
+        last year. We are dogfooding it now. We use Pipes to describe
+        Pipes. The graph is checked into the repo and the agent edits
         it in conversation when we add a node type. When we got tired of
         the editor for a feature, we changed the editor. When we got
         tired of the canvas for a beat, we changed the canvas.
@@ -183,12 +183,12 @@ function PostBody() {
 
 export const post: BlogPost = {
   slug: "why-we-built-pipes",
-  title: "Why we built Looper",
+  title: "Why we built Pipes",
   excerpt:
     "Re-explaining the system to every model in every chat is the bug. The diagram is the artifact that should survive the conversation. This is the origin story.",
   author: {
     name: "Devansh Rao",
-    role: "Founder, Looper",
+    role: "Founder, Pipes",
   },
   date: "2025-12-12",
   tags: ["Company"],

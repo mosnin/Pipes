@@ -15,7 +15,7 @@ import { ProtocolError, mapProtocolError, mcpErrorPayload } from "@/lib/protocol
 //      dispatcher below.
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
-const SERVER_INFO = { name: "looper", version: "1.0.0" };
+const SERVER_INFO = { name: "pipes", version: "1.0.0" };
 
 type ToolContext = {
   ctx: Awaited<ReturnType<typeof getProtocolContext>>["ctx"];
@@ -227,7 +227,7 @@ export async function POST(request: Request) {
           protocolVersion: MCP_PROTOCOL_VERSION,
           capabilities: { tools: { listChanged: false } },
           serverInfo: SERVER_INFO,
-          instructions: "Looper exposes your agent loops as tools. Call tools/list to see them; each is gated by the capabilities on your token.",
+          instructions: "Pipes exposes your agent loops as tools. Call tools/list to see them; each is gated by the capabilities on your token.",
         });
       }
       if (method === "ping") {

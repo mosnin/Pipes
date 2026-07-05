@@ -406,7 +406,7 @@ export default function SystemHandoffPage({
                   Create a new handoff package
                 </p>
                 <p className="t-caption text-[#8E8E93] mt-0.5">
-                  Pick a target audience. Looper will tailor artifacts for it.
+                  Pick a target audience. Pipes will tailor artifacts for it.
                 </p>
               </CardHeader>
               <CardBody>

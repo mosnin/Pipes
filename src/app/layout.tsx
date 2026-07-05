@@ -21,7 +21,7 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Looper", template: "%s · Looper" },
+  title: { default: "Pipes", template: "%s · Pipes" },
   description: "One map your team and your agents both read.",
 };
 

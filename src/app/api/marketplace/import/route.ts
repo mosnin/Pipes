@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const gate = await gateX402(req, {
     resource: `marketplace:${listing.id}`,
     priceUsd: listing.price,
-    description: `Install "${listing.title}" from the Looper marketplace`,
+    description: `Install "${listing.title}" from the Pipes marketplace`,
   });
   if (!gate.ok) return gate.response;
 

@@ -133,7 +133,7 @@ describe("protocol token and hardening flow", () => {
     const init = await initRes.json();
     expect(init.jsonrpc).toBe("2.0");
     expect(init.id).toBe(1);
-    expect(init.result.serverInfo.name).toBe("looper");
+    expect(init.result.serverInfo.name).toBe("pipes");
     expect(init.result.capabilities.tools).toBeTruthy();
 
     // notifications/initialized -> 202, no body

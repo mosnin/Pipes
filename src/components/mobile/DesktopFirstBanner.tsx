@@ -44,7 +44,7 @@ export function DesktopFirstBanner() {
     >
       <div className="flex-1 min-w-0">
         <p className="t-label font-semibold text-[#111] leading-tight">
-          Looper is built for desktop.
+          Pipes is built for desktop.
         </p>
         <p className="t-caption text-[#3C3C43] leading-snug mt-0.5">
           Read and share here. Editing feels right with a keyboard.

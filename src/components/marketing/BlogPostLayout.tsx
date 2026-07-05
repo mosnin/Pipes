@@ -203,7 +203,7 @@ export function BlogPostLayout({
                 href="/signup"
                 className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-violet-600 text-white t-label font-semibold hover:bg-violet-700 transition-colors"
               >
-                Try Looper
+                Try Pipes
                 <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </div>

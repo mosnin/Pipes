@@ -46,7 +46,7 @@ export default function FeedbackPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Feedback"
-        subtitle="Tell us what is working, what is broken, or what you wish Looper could do."
+        subtitle="Tell us what is working, what is broken, or what you wish Pipes could do."
       />
 
       {submitted ? (
@@ -128,7 +128,7 @@ export default function FeedbackPage() {
               {
                 label: "Email support",
                 description: "Billing, data, and enterprise inquiries",
-                href: "mailto:support@looper.dev",
+                href: "mailto:support@pipes.dev",
               },
             ].map((item) => (
               <div key={item.label} className="flex items-center justify-between gap-4 py-3">

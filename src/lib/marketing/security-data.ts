@@ -178,10 +178,10 @@ export const bugBounty = {
   title: "Coordinated disclosure",
   body:
     "If you have found a vulnerability, write us before you publish. We respond within one business day and credit reporters in our hall of fame once a fix ships. Critical issues are eligible for a bounty starting at 1,500 USD; we set the band based on severity and reach.",
-  contact: "security@looper.dev",
+  contact: "security@pipes.dev",
   pgpFingerprint: "F2D4 8B7E 0A9C 4F62 5D38  6B41 9C72 E1A5 8F44 21BC",
   scope: [
-    "looper.dev and any subdomain ending in looper.dev",
+    "pipes.dev and any subdomain ending in pipes.dev",
     "Public API surfaces under /api",
     "The MCP endpoint at /api/protocol/mcp",
     "Agent token mint, list, revoke flows",
@@ -199,7 +199,7 @@ export const documentationLinks: ReadonlyArray<DocumentationLink> = [
     title: "SOC 2 Type I observation report",
     description:
       "Latest report covering the controls in place during the observation window. Available to qualified buyers under NDA.",
-    href: "mailto:trust@looper.dev?subject=SOC%202%20report%20request",
+    href: "mailto:trust@pipes.dev?subject=SOC%202%20report%20request",
     cta: "Request access",
   },
   {
@@ -207,7 +207,7 @@ export const documentationLinks: ReadonlyArray<DocumentationLink> = [
     title: "Data processing agreement",
     description:
       "Pre-signed DPA template for GDPR and UK data transfers. Countersigned within two business days.",
-    href: "mailto:trust@looper.dev?subject=DPA%20request",
+    href: "mailto:trust@pipes.dev?subject=DPA%20request",
     cta: "Request DPA",
   },
   {

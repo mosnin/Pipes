@@ -36,7 +36,7 @@ export async function generateMetadata({
   const template = publicContentService.getTemplate(slug);
   if (!template) return { title: "Starter not found" };
   return {
-    title: `${template.title} starter - Looper`,
+    title: `${template.title} starter - Pipes`,
     description: `${template.description} ${template.preview}`,
   };
 }
@@ -110,7 +110,7 @@ export default async function TemplateDetailPage({
         </div>
       )}
 
-      {/* 3. Looper section */}
+      {/* 3. Pipes section */}
       {catalogEntry && catalogEntry.pipes.length > 0 && (
         <section className="mt-12 sm:mt-16 px-4 sm:px-6">
           <div className="mx-auto max-w-7xl">

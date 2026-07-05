@@ -1,9 +1,9 @@
 import { LegalDocument, type LegalSection } from "@/components/marketing/LegalDocument";
 
 export const metadata = {
-  title: "Data Processing Agreement - Looper",
+  title: "Data Processing Agreement - Pipes",
   description:
-    "How Looper processes personal data on behalf of customers under applicable data protection law.",
+    "How Pipes processes personal data on behalf of customers under applicable data protection law.",
 };
 
 const SECTIONS: ReadonlyArray<LegalSection> = [
@@ -13,7 +13,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
     body: (
       <p>
         For personal data contained in your content, you are the data
-        controller and Looper is the data processor. We process that data only
+        controller and Pipes is the data processor. We process that data only
         on your documented instructions, which include your use of the Service
         and these terms.
       </p>
@@ -136,7 +136,7 @@ export default function DpaPage() {
       lastUpdated="June 2026"
       intro={
         <p>
-          This Data Processing Agreement describes how Looper processes personal
+          This Data Processing Agreement describes how Pipes processes personal
           data on your behalf when you use the Service. It supplements our Terms
           of Service and applies where data protection law requires it.
         </p>

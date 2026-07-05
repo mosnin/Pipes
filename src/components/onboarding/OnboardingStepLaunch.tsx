@@ -135,7 +135,7 @@ export function OnboardingStepLaunch({
           nodeEnd={0.6}
           edgeStart={0.45}
           edgeEnd={0.95}
-          ariaLabel={`Looper canvas building ${title}.`}
+          ariaLabel={`Pipes canvas building ${title}.`}
           className="w-full h-auto"
         />
       </div>

@@ -153,11 +153,11 @@ function IllustrationReview() {
 
 function IllustrationTokens() {
   return (
-    <svg viewBox="0 0 480 320" className="w-full h-auto" role="img" aria-label="Agent token connecting Looper to Claude, LangGraph, and AutoGen">
+    <svg viewBox="0 0 480 320" className="w-full h-auto" role="img" aria-label="Agent token connecting Pipes to Claude, LangGraph, and AutoGen">
       <rect width="480" height="320" fill="#F8F7FC" rx="16" />
-      {/* Looper center */}
+      {/* Pipes center */}
       <rect x="180" y="124" width="120" height="56" rx="12" fill="#4F46E5" />
-      <text x="240" y="148" fontSize="12" fontWeight="800" fill="white" textAnchor="middle" fontFamily="system-ui">Looper</text>
+      <text x="240" y="148" fontSize="12" fontWeight="800" fill="white" textAnchor="middle" fontFamily="system-ui">Pipes</text>
       <text x="240" y="164" fontSize="9" fill="rgba(255,255,255,0.7)" textAnchor="middle" fontFamily="system-ui">MCP endpoint</text>
       {/* Token key visual */}
       <rect x="196" y="88" width="88" height="28" rx="8" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="1" />
@@ -193,9 +193,9 @@ function IllustrationImportExport() {
   return (
     <svg viewBox="0 0 480 320" className="w-full h-auto" role="img" aria-label="Import and export loop data between formats">
       <rect width="480" height="320" fill="#F8F7FC" rx="16" />
-      {/* Looper center */}
+      {/* Pipes center */}
       <rect x="184" y="128" width="112" height="52" rx="12" fill="#4F46E5" />
-      <text x="240" y="150" fontSize="11" fontWeight="800" fill="white" textAnchor="middle" fontFamily="system-ui">Looper</text>
+      <text x="240" y="150" fontSize="11" fontWeight="800" fill="white" textAnchor="middle" fontFamily="system-ui">Pipes</text>
       <text x="240" y="166" fontSize="8" fill="rgba(255,255,255,0.7)" textAnchor="middle" fontFamily="system-ui">looper_schema_v1</text>
       {/* Format pills */}
       {[
@@ -239,7 +239,7 @@ const FEATURES: Record<string, FeatureData> = {
     eyebrow: "Canvas editor",
     title: "Draw agent loops by typing one sentence.",
     tagline: "The canvas is your authoring surface. Type a sentence and your agent draws the first pass. Drag to correct. The loop your team reviews is the loop your agents read.",
-    description: "The Looper editor is a visual canvas built for the way agent systems actually get designed: fast iteration, collaborative review, and a single source of truth that both humans and agents can read.",
+    description: "The Pipes editor is a visual canvas built for the way agent systems actually get designed: fast iteration, collaborative review, and a single source of truth that both humans and agents can read.",
     capabilities: [
       {
         title: "Type to build",
@@ -268,8 +268,8 @@ const FEATURES: Record<string, FeatureData> = {
     slug: "schema",
     eyebrow: "Schema",
     title: "27 typed node kinds. One contract every agent reads.",
-    tagline: "Every node in Looper has a type. LLM agents, evaluators, tool calls, human review gates, checkpoints — all defined in a single versioned schema that your team and your agents share.",
-    description: "The Looper schema is the contract between your system design and every agent that runs it. When a node says it is an Evaluator, every agent knows exactly what that means.",
+    tagline: "Every node in Pipes has a type. LLM agents, evaluators, tool calls, human review gates, checkpoints — all defined in a single versioned schema that your team and your agents share.",
+    description: "The Pipes schema is the contract between your system design and every agent that runs it. When a node says it is an Evaluator, every agent knows exactly what that means.",
     capabilities: [
       {
         title: "One schema for build and run",
@@ -299,11 +299,11 @@ const FEATURES: Record<string, FeatureData> = {
     eyebrow: "Versions",
     title: "Promote a version. Roll it back in one click.",
     tagline: "Every saved checkpoint becomes a version. Promote the right one to production, roll back to any earlier state, and let your agents always read the version you intended.",
-    description: "Looper tracks every meaningful state of your system as a named version. Promoting to production is a deliberate act. Rolling back is instantaneous.",
+    description: "Pipes tracks every meaningful state of your system as a named version. Promoting to production is a deliberate act. Rolling back is instantaneous.",
     capabilities: [
       {
         title: "Every checkpoint is a version",
-        body: "Hit save and Looper records the full graph state as a named checkpoint. Build a history of named versions as your system evolves — no separate CI step required.",
+        body: "Hit save and Pipes records the full graph state as a named checkpoint. Build a history of named versions as your system evolves — no separate CI step required.",
       },
       {
         title: "Promote to production",
@@ -329,7 +329,7 @@ const FEATURES: Record<string, FeatureData> = {
     eyebrow: "Review",
     title: "Comment on any node. Approve changes like a PR.",
     tagline: "Threaded comments live on nodes, not in a sidebar chat. Your team reviews the system the same way developers review code — with context, resolution, and a clear audit trail.",
-    description: "Looper brings pull-request-style review to system design. Every comment is anchored to a node. Threads resolve when the issue is fixed. Nothing gets lost in Slack.",
+    description: "Pipes brings pull-request-style review to system design. Every comment is anchored to a node. Threads resolve when the issue is fixed. Nothing gets lost in Slack.",
     capabilities: [
       {
         title: "Node-anchored threads",
@@ -359,7 +359,7 @@ const FEATURES: Record<string, FeatureData> = {
     eyebrow: "Tokens",
     title: "Hand any agent a key. It reads the loop.",
     tagline: "Create a Bearer token, set its capability scopes, and paste it into Claude, LangGraph, AutoGen, or any MCP-compatible agent. The agent reads the same loop your team sees.",
-    description: "Looper tokens are the bridge between your system design and every agent that runs it. One token. Scoped capabilities. Works with any agent that speaks MCP.",
+    description: "Pipes tokens are the bridge between your system design and every agent that runs it. One token. Scoped capabilities. Works with any agent that speaks MCP.",
     capabilities: [
       {
         title: "Scoped capabilities",
@@ -367,7 +367,7 @@ const FEATURES: Record<string, FeatureData> = {
       },
       {
         title: "Works with any MCP client",
-        body: "Claude, LangGraph, AutoGen, CrewAI, or your own agent. If it speaks MCP, it reads Looper. Paste the Bearer token and point it at the endpoint.",
+        body: "Claude, LangGraph, AutoGen, CrewAI, or your own agent. If it speaks MCP, it reads Pipes. Paste the Bearer token and point it at the endpoint.",
       },
       {
         title: "Rotate without changing the agent",
@@ -388,8 +388,8 @@ const FEATURES: Record<string, FeatureData> = {
     slug: "import-export",
     eyebrow: "Import and export",
     title: "Your graph, readable anywhere.",
-    tagline: "Export the full graph as looper_schema_v1 JSON. Import from existing diagramming tools. The loop you build in Looper is never locked in — it is a portable, versioned artifact.",
-    description: "A system design is only valuable if it can travel. Looper exports as a portable JSON schema that any tool, agent, or human can read and work with.",
+    tagline: "Export the full graph as looper_schema_v1 JSON. Import from existing diagramming tools. The loop you build in Pipes is never locked in — it is a portable, versioned artifact.",
+    description: "A system design is only valuable if it can travel. Pipes exports as a portable JSON schema that any tool, agent, or human can read and work with.",
     capabilities: [
       {
         title: "Export as looper_schema_v1 JSON",
@@ -425,7 +425,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const feature = FEATURES[slug];
   if (!feature) return {};
   return {
-    title: `${feature.title} — Looper`,
+    title: `${feature.title} — Pipes`,
     description: feature.tagline,
   };
 }

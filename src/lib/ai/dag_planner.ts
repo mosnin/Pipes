@@ -164,7 +164,7 @@ export function planDag(req: DagPlanRequest): Promise<AgentDag> {
     user: `GOAL: ${req.goal}${context}\n\nPARALLELISM PREFERENCE: ${req.parallelism}`,
     schema: AgentDagSchema,
     temperature: 0.2,
-    title: "Looper DAG Planner",
+    title: "Pipes DAG Planner",
     mock: () => MOCK_DAG,
   });
 }

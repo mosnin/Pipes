@@ -32,7 +32,7 @@ describe("CompareFeatureMatrix", () => {
   it("renders the matrix with a sticky header showing the competitor name", () => {
     render(<CompareFeatureMatrix competitor="Figma" rows={ROWS} />);
     expect(screen.getByTestId("compare-feature-matrix")).toBeTruthy();
-    expect(screen.getByText("Looper")).toBeTruthy();
+    expect(screen.getByText("Pipes")).toBeTruthy();
     expect(screen.getByText("Figma")).toBeTruthy();
     expect(screen.getByText("Feature")).toBeTruthy();
   });

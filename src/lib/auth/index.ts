@@ -49,7 +49,7 @@ class ClerkService implements AuthService {
     return {
       externalId: `clerk|${clerkUser.id}`,
       email,
-      name: clerkUser.fullName ?? clerkUser.username ?? "Looper User"
+      name: clerkUser.fullName ?? clerkUser.username ?? "Pipes User"
     };
   }
 

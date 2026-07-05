@@ -31,7 +31,7 @@ const HOMEPAGE_SUBTITLE =
 const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(HOMEPAGE_TITLE)}&subtitle=${encodeURIComponent(HOMEPAGE_SUBTITLE)}`;
 
 export const metadata = {
-  title: HOMEPAGE_TITLE + " - Looper",
+  title: HOMEPAGE_TITLE + " - Pipes",
   description: HOMEPAGE_SUBTITLE,
   openGraph: {
     title: HOMEPAGE_TITLE,
@@ -76,7 +76,7 @@ export default function HomePage() {
           sticky inner can read scroll progress through it.
          ─────────────────────────────────────────────────────────────────── */}
       <section
-        aria-label="Looper hero"
+        aria-label="Pipes hero"
         className="relative flex min-h-[92vh] items-center overflow-hidden bg-white"
       >
         {/* Subtle violet bloom */}
@@ -141,7 +141,7 @@ export default function HomePage() {
       </section>
 
       {/* ───────────────────────────────────────────────────────────────────
-          PRODUCT MOCKUP — static browser-chrome preview of the Looper UI.
+          PRODUCT MOCKUP — static browser-chrome preview of the Pipes UI.
           Shows immediately: canvas, inspector, Claude MCP panel.
          ─────────────────────────────────────────────────────────────────── */}
       <ProductMockup />
@@ -286,14 +286,14 @@ export default function HomePage() {
       </ScrollSection>
 
       {/* ───────────────────────────────────────────────────────────────────
-          SECTION 5 — How teams ship with Looper. Rotating quotes.
+          SECTION 5 — How teams ship with Pipes. Rotating quotes.
           rounded-[40px]
          ─────────────────────────────────────────────────────────────────── */}
-      <ScrollSection tone="white" radius={40} ariaLabel="What you can build with Looper">
+      <ScrollSection tone="white" radius={40} ariaLabel="What you can build with Pipes">
         <div className="mx-auto max-w-4xl">
           <RevealStack className="mb-10 flex flex-col gap-3 text-center">
             <RevealItem as="span" className="t-overline text-violet-700">
-              What teams build with Looper
+              What teams build with Pipes
             </RevealItem>
             <RevealItem as="h2" className="text-[#111]">
               <span
@@ -403,7 +403,7 @@ function PocketScene() {
       viewBox="0 0 280 480"
       className="h-auto w-full max-w-[300px]"
       role="img"
-      aria-label="A phone frame showing the same Looper graph: planner, guard, coder, with a Claude reply below."
+      aria-label="A phone frame showing the same Pipes graph: planner, guard, coder, with a Claude reply below."
     >
       {/* Phone shell */}
       <rect
@@ -437,7 +437,7 @@ function PocketScene() {
       {/* Top chrome */}
       <g>
         <text x="44" y="64" fontSize="9" fontWeight="600" fill="#fff">
-          Looper
+          Pipes
         </text>
         <text x="78" y="64" fontSize="8" fill="#8E8E93">
           sys_8a72

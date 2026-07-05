@@ -32,7 +32,11 @@ afterEach(() => {
 describe("MarketingNav — pill nav", () => {
   it("renders the wordmark and the auth actions", () => {
     render(<MarketingNav />);
-    expect(screen.getAllByText("Looper").length).toBeGreaterThan(0);
+    // The wordmark renders "Pipes" with the "i" in its own span, so assert on
+    // the wordmark testid and its full textContent rather than a single node.
+    const marks = screen.getAllByTestId("wordmark");
+    expect(marks.length).toBeGreaterThan(0);
+    expect(marks[0].textContent).toBe("Pipes");
     // In mock mode (NEXT_PUBLIC_LOOPER_USE_MOCKS !== "false"), the nav shows
     // a "Dashboard" link instead of the sign-in/sign-up pair.
     expect(screen.getByRole("link", { name: /dashboard/i })).toBeTruthy();

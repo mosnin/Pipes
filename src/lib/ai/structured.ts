@@ -50,7 +50,7 @@ async function viaOpenRouter<S extends ZodType>(req: StructuredRequest<S>): Prom
     headers: {
       authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
       "content-type": "application/json",
-      "X-Title": req.title ?? "Looper",
+      "X-Title": req.title ?? "Pipes",
       "HTTP-Referer": env.NEXT_PUBLIC_APP_URL,
     },
     body: JSON.stringify({

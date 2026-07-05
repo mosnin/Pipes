@@ -71,7 +71,7 @@ export class PaddleBillingService implements BillingService {
     return { authorization: `Bearer ${env.PADDLE_API_KEY ?? ""}`, "content-type": "application/json" };
   }
 
-  // Map a Looper plan to its Paddle price id (set per environment).
+  // Map a Pipes plan to its Paddle price id (set per environment).
   private priceFor(plan: Plan): string | undefined {
     if (plan === "Pro") return env.PADDLE_PRICE_PRO;
     if (plan === "Builder" || plan === "Team") return env.PADDLE_PRICE_BUILDER;

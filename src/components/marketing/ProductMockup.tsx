@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 /**
  * ProductMockup
  *
- * A static, always-visible product preview that shows the Looper UI in a
+ * A static, always-visible product preview that shows the Pipes UI in a
  * browser-chrome frame. No scroll-driven animation — the UI is immediately
  * readable on page load, the way Linear, Figma, and Vercel present theirs.
  *
@@ -49,7 +49,7 @@ export function ProductMockup() {
     <section
       id="product-preview"
       className="px-4 sm:px-6"
-      aria-label="Looper product preview"
+      aria-label="Pipes product preview"
     >
       <div className="mx-auto max-w-7xl pb-8 pt-4">
         {/* Section label */}
@@ -92,7 +92,7 @@ export function ProductMockup() {
                 <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z" stroke="#8E8E93" strokeWidth="1.5" />
                 <path d="M2 12h20M12 2c-2.76 3.45-4 6.93-4 10s1.24 6.55 4 10M12 2c2.76 3.45 4 6.93 4 10s-1.24 6.55-4 10" stroke="#8E8E93" strokeWidth="1.5" />
               </svg>
-              <span style={{ fontSize: 11, color: "#3C3C43" }}>app.looper.dev/systems/sys_8a72</span>
+              <span style={{ fontSize: 11, color: "#3C3C43" }}>app.pipes.dev/systems/sys_8a72</span>
             </div>
             {/* App header actions */}
             <div className="ml-auto flex items-center gap-2">
@@ -371,7 +371,7 @@ export function ProductMockup() {
                   style={{ background: "#F5F3FF", border: "1px solid rgba(124,58,237,0.15)", maxWidth: "85%" }}
                 >
                   <p style={{ fontSize: 11, color: "#3C3C43", lineHeight: 1.4 }}>
-                    What is in my Looper loop?
+                    What is in my Pipes loop?
                   </p>
                 </div>
 

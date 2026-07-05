@@ -51,10 +51,10 @@ function getSystemData(systemId: string) {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { systemId } = await params;
   const data = getSystemData(systemId);
-  if (!data) return { title: "Loop not found — Looper" };
+  if (!data) return { title: "Loop not found — Pipes" };
   return {
-    title: `${data.system.name} — Looper`,
-    description: data.system.description || `A loop with ${data.nodes.length} nodes built in Looper.`,
+    title: `${data.system.name} — Pipes`,
+    description: data.system.description || `A loop with ${data.nodes.length} nodes built in Pipes.`,
   };
 }
 
@@ -84,7 +84,7 @@ export default async function PublicSystemPage({ params }: Params) {
           <div className="w-6 h-6 rounded-md bg-[#4F46E5] flex items-center justify-center">
             <span className="text-white text-[10px] font-bold">L</span>
           </div>
-          Looper
+          Pipes
         </Link>
         <Link
           href="/signup"
@@ -157,7 +157,7 @@ export default async function PublicSystemPage({ params }: Params) {
             </div>
             {overflow > 0 && (
               <p className="text-xs text-[#8E8E93] mt-3">
-                +{overflow} more {overflow === 1 ? "node" : "nodes"} — open in Looper to see all
+                +{overflow} more {overflow === 1 ? "node" : "nodes"} — open in Pipes to see all
               </p>
             )}
           </div>
@@ -167,7 +167,7 @@ export default async function PublicSystemPage({ params }: Params) {
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6 text-center">
           <h3 className="text-base font-semibold text-indigo-900 mb-1">Build loops like this</h3>
           <p className="text-sm text-indigo-700 mb-4">
-            Looper is a visual canvas for designing agent loops that your team and AI both understand.
+            Pipes is a visual canvas for designing agent loops that your team and AI both understand.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link

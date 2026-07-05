@@ -4,7 +4,7 @@
 // production hostname.
 
 export const APP_BASE_URL: string =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://looper.dev";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://pipes.dev";
 
 /**
  * Build an absolute canonical URL from a relative path. Trailing slashes are

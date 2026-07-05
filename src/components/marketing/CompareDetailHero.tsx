@@ -6,7 +6,7 @@ import { MetricCard } from "@/components/ui";
 /**
  * CompareDetailHero
  *
- * Hero for /compare/[slug]. Looper vs X treatment with two big paired
+ * Hero for /compare/[slug]. Pipes vs X treatment with two big paired
  * monograms and a 3-metric strip pulled from the live matrix data.
  */
 
@@ -50,13 +50,13 @@ export function CompareDetailHero({
             <div className="flex flex-col gap-6 max-w-3xl">
               {/* Paired big monograms */}
               <div className="flex items-center gap-4">
-                <BigMonogram letter="P" tone="ink" label="Looper" />
+                <BigMonogram letter="P" tone="ink" label="Pipes" />
                 <span className="t-overline text-[#8E8E93]">vs</span>
                 <BigMonogram letter={initial} tone="muted" label={competitor} />
               </div>
 
               <h1 className="t-display text-[#111]">
-                Looper vs {competitor}.
+                Pipes vs {competitor}.
               </h1>
               <p className="t-body text-[#3C3C43] max-w-xl">
                 {summary}
@@ -66,11 +66,11 @@ export function CompareDetailHero({
             {/* Three metric cards from real matrix data */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
               <MetricCard
-                label="Looper wins"
+                label="Pipes wins"
                 value={pipesWins}
                 delta={`+${pipesWins}`}
                 deltaTone="up"
-                footer="Capabilities only Looper ships"
+                footer="Capabilities only Pipes ships"
               />
               <MetricCard
                 label="Shared"

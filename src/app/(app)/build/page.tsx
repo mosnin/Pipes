@@ -3,7 +3,7 @@ import { BuildClient } from "@/components/build/BuildClient";
 import { getServerApp } from "@/lib/composition/server";
 
 export const metadata = {
-  title: "Workflow Builder — Looper",
+  title: "Workflow Builder — Pipes",
   description: "Describe a goal. Agents plan and build the optimal DAG workflow — no human graph-drawing required.",
 };
 

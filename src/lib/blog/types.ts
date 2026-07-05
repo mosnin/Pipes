@@ -14,7 +14,7 @@ export type BlogTag = "Engineering" | "Agent" | "Product" | "Company";
 export interface BlogAuthor {
   /** Full name, e.g. "Mira Patel". Used for the byline and avatar initials. */
   name: string;
-  /** Role, e.g. "Staff engineer, Looper"./ */
+  /** Role, e.g. "Staff engineer, Pipes"./ */
   role: string;
 }
 

@@ -68,7 +68,7 @@ export function CompareFeatureMatrix({
               <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#111] text-white text-[10px] font-bold">
                 P
               </span>
-              Looper
+              Pipes
             </div>
             <div className="col-span-3 px-5 py-4 t-overline text-[#8E8E93] flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#F5F5F7] border border-black/[0.06] text-[#111] text-[10px] font-bold">

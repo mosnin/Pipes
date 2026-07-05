@@ -9,7 +9,7 @@ import type { ComparisonGroup } from "@/components/marketing/PricingComparisonTa
 import type { FaqItem } from "@/components/marketing/PricingFaq";
 
 export const metadata = {
-  title: "Per seat. Per workspace. Decide later. - Looper",
+  title: "Per seat. Per workspace. Decide later. - Pipes",
   description:
     "Per-workspace pricing. Start free. Pay only when your team is ready to ship.",
 };
@@ -368,7 +368,7 @@ const EVERY_TIER = [
   },
   {
     title: "MCP-ready by design",
-    body: "Hand any agent a token. It reads through the Looper Protocol. No bespoke client to ship.",
+    body: "Hand any agent a token. It reads through the Pipes Protocol. No bespoke client to ship.",
   },
   {
     title: "Optimistic edits",
@@ -416,7 +416,7 @@ const FAQS: readonly FaqItem[] = [
   },
   {
     id: "faq-mcp",
-    question: "What is the Looper Protocol?",
+    question: "What is the Pipes Protocol?",
     answer:
       "A token-authenticated read and write surface for the same graph the agent built. MCP and REST. Every external agent and tool reads the same contract your team reviewed.",
   },
@@ -533,7 +533,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-2xl text-center flex flex-col items-center gap-4">
           <p className="t-overline text-[#8E8E93]">Ready to build?</p>
           <h3 className="text-[28px] font-bold leading-tight text-[#111]" style={{ letterSpacing: "-0.02em" }}>
-            Join builders shipping agent loops with Looper.
+            Join builders shipping agent loops with Pipes.
           </h3>
           <p className="t-body text-[#3C3C43] max-w-md">
             Free to start. No card required. Describe your first loop in one sentence.

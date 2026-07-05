@@ -1,9 +1,9 @@
 import { LegalDocument, type LegalSection } from "@/components/marketing/LegalDocument";
 
 export const metadata = {
-  title: "Terms of Service - Looper",
+  title: "Terms of Service - Pipes",
   description:
-    "The terms that govern your use of Looper. Plain language where we can manage it.",
+    "The terms that govern your use of Pipes. Plain language where we can manage it.",
 };
 
 const SECTIONS: ReadonlyArray<LegalSection> = [
@@ -13,8 +13,8 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
     body: (
       <>
         <p>
-          By creating a workspace or using Looper (the &quot;Service&quot;), you agree
-          to these Terms of Service. If you are using Looper on behalf of an
+          By creating a workspace or using Pipes (the &quot;Service&quot;), you agree
+          to these Terms of Service. If you are using Pipes on behalf of an
           organization, you represent that you have authority to bind that
           organization to these terms.
         </p>
@@ -47,7 +47,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
     heading: "3. Acceptable use",
     body: (
       <>
-        <p>You agree not to use Looper to:</p>
+        <p>You agree not to use Pipes to:</p>
         <ul className="list-disc pl-5 flex flex-col gap-1.5">
           <li>Violate any law or the rights of others.</li>
           <li>Build systems that send unsolicited bulk messages or malware.</li>
@@ -113,7 +113,7 @@ const SECTIONS: ReadonlyArray<LegalSection> = [
     heading: "7. Limitation of liability",
     body: (
       <p>
-        To the maximum extent permitted by law, Looper is not liable for
+        To the maximum extent permitted by law, Pipes is not liable for
         indirect, incidental, or consequential damages. Our total liability for
         any claim is limited to the amount you paid us in the twelve months
         before the claim.
@@ -153,7 +153,7 @@ export default function TermsPage() {
       lastUpdated="June 2026"
       intro={
         <p>
-          These terms govern your use of Looper. We have kept them as short and
+          These terms govern your use of Pipes. We have kept them as short and
           plain as we responsibly can. Read them; they are the agreement between
           us.
         </p>

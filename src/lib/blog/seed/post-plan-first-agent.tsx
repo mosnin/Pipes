@@ -354,7 +354,7 @@ export const post: BlogPost = {
     "We rewrote the agent twice before we kept the third version. The third one writes the plan, the plan passes a gate, then the tools fire. Here is what changed and why.",
   author: {
     name: "Mira Patel",
-    role: "Staff engineer, Looper",
+    role: "Staff engineer, Pipes",
   },
   date: "2026-04-08",
   tags: ["Engineering", "Agent"],

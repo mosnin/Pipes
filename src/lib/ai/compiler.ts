@@ -24,7 +24,7 @@ Valid node types (use ONLY these): Node, Agent, Tool, Model, Prompt, Memory, Inp
 
 Layout: x starts at 80, increments by 200 per step. y=160 for main flow, y=60 for success branch, y=280 for failure/alternate branch. Minimum 5 nodes.`;
 
-const AUTO_DETECT_PROMPT = `You are a Looper skill compiler. First, identify what kind of document this is (SOP, API spec, technical documentation, or book/framework), then apply the appropriate compilation rules.
+const AUTO_DETECT_PROMPT = `You are a Pipes skill compiler. First, identify what kind of document this is (SOP, API spec, technical documentation, or book/framework), then apply the appropriate compilation rules.
 
 Auto-detection rules:
 - SOPs: numbered steps, procedures, roles, escalation paths, "if X then Y" flows
@@ -40,7 +40,7 @@ Book/framework compilation rules: stages/phases → Action nodes; cyclical model
 ${BASE_SCHEMA_INSTRUCTION}`;
 
 const SYSTEM_PROMPTS: Record<DocType, string> = {
-  sop: `You are a Looper skill compiler specializing in Standard Operating Procedures.
+  sop: `You are a Pipes skill compiler specializing in Standard Operating Procedures.
 Extract every step, decision, and exception path from the SOP and map it to a precise agent graph.
 
 Mapping rules:
@@ -58,7 +58,7 @@ Mapping rules:
 
 ${BASE_SCHEMA_INSTRUCTION}`,
 
-  api_spec: `You are a Looper skill compiler specializing in API specifications.
+  api_spec: `You are a Pipes skill compiler specializing in API specifications.
 Convert this API spec into an agent graph showing how an AI would orchestrate calls to achieve a goal.
 
 Mapping rules:
@@ -75,7 +75,7 @@ Mapping rules:
 
 ${BASE_SCHEMA_INSTRUCTION}`,
 
-  documentation: `You are a Looper skill compiler specializing in technical documentation.
+  documentation: `You are a Pipes skill compiler specializing in technical documentation.
 Extract every workflow, process, and capability described in the docs and model it as an executable agent graph.
 
 Mapping rules:
@@ -92,7 +92,7 @@ Mapping rules:
 
 ${BASE_SCHEMA_INSTRUCTION}`,
 
-  book: `You are a Looper skill compiler specializing in books, frameworks, and long-form content.
+  book: `You are a Pipes skill compiler specializing in books, frameworks, and long-form content.
 Distill the key frameworks, decision models, and processes into an executable agent graph.
 
 Mapping rules:
@@ -237,7 +237,7 @@ export function compileDocument(req: CompileRequest): Promise<CompiledGraph> {
     user: `DOCUMENT TO COMPILE:\n\n${req.content}`,
     schema: AiSystemDraftSchema,
     temperature: 0.15,
-    title: "Looper Skill Compiler",
+    title: "Pipes Skill Compiler",
     mock: () => mockResult,
   });
 }

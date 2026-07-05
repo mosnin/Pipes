@@ -346,7 +346,7 @@ export function ConversationDrawer({
               />
             ) : null}
             <div className="flex items-center justify-between px-3 pt-2 pb-1">
-              <span className="t-caption text-ink-3">Looper</span>
+              <span className="t-caption text-ink-3">Pipes</span>
               <button
                 type="button"
                 onClick={() => setCollapsed(true)}

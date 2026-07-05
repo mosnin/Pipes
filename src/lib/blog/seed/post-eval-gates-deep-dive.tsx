@@ -319,7 +319,7 @@ export const post: BlogPost = {
     "The agent is non-deterministic. The graph is deterministic. The gap is where the bugs live. We sit two gates in the middle and let them veto.",
   author: {
     name: "Mira Patel",
-    role: "Staff engineer, Looper",
+    role: "Staff engineer, Pipes",
   },
   date: "2026-05-21",
   tags: ["Engineering", "Agent"],

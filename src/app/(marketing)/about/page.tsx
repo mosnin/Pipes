@@ -5,9 +5,9 @@ import { starterTemplates } from "@/domain/templates/catalog";
 import { nodeTypeValues } from "@/domain/looper_schema_v1/schema";
 
 export const metadata = {
-  title: "About - Looper",
+  title: "About - Pipes",
   description:
-    "Why Looper exists: one loop definition that humans and agents both read.",
+    "Why Pipes exists: one loop definition that humans and agents both read.",
 };
 
 const PRINCIPLES = [
@@ -44,7 +44,7 @@ export default function AboutPage() {
               Build agent loops the way you think about them.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl t-body leading-relaxed text-[#3C3C43]">
-              Agent systems are loops: plan, act, observe, repeat. Looper makes
+              Agent systems are loops: plan, act, observe, repeat. Pipes makes
               that loop visible, typed, and shareable, so the map in your head
               matches the one your agents run.
             </p>
@@ -72,7 +72,7 @@ export default function AboutPage() {
               human and machine, sees the change.
             </p>
             <p>
-              So Looper is small on purpose. A real graph editor. A handful of
+              So Pipes is small on purpose. A real graph editor. A handful of
               typed node kinds. One protocol endpoint. An agent that builds with
               you instead of generating a picture and walking away.
             </p>

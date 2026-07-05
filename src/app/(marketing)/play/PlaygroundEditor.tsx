@@ -573,7 +573,7 @@ function ConversationStrip({
               className={m.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}
             >
               <span className="t-caption text-[#8E8E93] mb-0.5 px-1">
-                {m.role === "user" ? "You" : "Looper"}
+                {m.role === "user" ? "You" : "Pipes"}
               </span>
               <div
                 className={

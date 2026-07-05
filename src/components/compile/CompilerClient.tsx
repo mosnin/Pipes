@@ -659,7 +659,7 @@ export function CompilerClient() {
       )}
       <div className="flex items-center justify-between">
         <p className="t-caption text-ink-3" style={{ fontSize: 11 }}>
-          SOP, API spec, docs, or book — Looper figures out the rest. <kbd className="rounded border border-line-strong bg-[var(--surface-subtle)] px-1 py-0.5 font-mono text-ink-2" style={{ fontSize: 10 }}>⌘↵</kbd> to compile.
+          SOP, API spec, docs, or book — Pipes figures out the rest. <kbd className="rounded border border-line-strong bg-[var(--surface-subtle)] px-1 py-0.5 font-mono text-ink-2" style={{ fontSize: 10 }}>⌘↵</kbd> to compile.
         </p>
         <button
           onClick={handleCompile}

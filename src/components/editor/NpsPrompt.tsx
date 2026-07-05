@@ -82,7 +82,7 @@ function NpsToastBody({ onClose }: { onClose: () => void }) {
   return (
     <div className="surface-canvas border border-line shadow-md-token rounded-2xl p-3 w-[300px] flex flex-col gap-2">
       <p className="t-label text-ink-1 font-medium">
-        How likely are you to recommend Looper?
+        How likely are you to recommend Pipes?
       </p>
       <div className="flex items-center gap-2">
         <Input

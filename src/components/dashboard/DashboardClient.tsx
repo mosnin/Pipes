@@ -215,7 +215,7 @@ function SystemCard({
               <div
                 role="button"
                 tabIndex={0}
-                aria-label="System options"
+                aria-label="Loop options"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
                 className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors opacity-0 group-hover:opacity-100"
@@ -224,7 +224,7 @@ function SystemCard({
               </div>
             </DropdownTrigger>
             <Dropdown.Popover>
-              <DropdownMenu aria-label="System actions">
+              <DropdownMenu aria-label="Loop actions">
                 <DropdownItem id="fav" onAction={onToggleFavorite}>
                   <span className="flex items-center gap-2 t-label">
                     <Star size={14} />
@@ -371,7 +371,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         const res = await fetch(`/api/library?${params}`);
         const data = await res.json();
         if (data.ok) setLibrary(data.data);
-        else toast.error(data.error ?? "Could not load your systems.");
+        else toast.error(data.error ?? "Could not load your loops.");
       } catch {
         toast.error("Could not load your systems. Check your connection.");
       } finally {
@@ -407,17 +407,17 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       const res = await fetch("/api/systems", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "Untitled System" }),
+        body: JSON.stringify({ name: "Untitled loop" }),
       });
       const data = await res.json();
       if (data.ok) {
-        toast.success("System created", { id });
+        toast.success("Loop created", { id });
         router.push(`/systems/${data.data.systemId}?rename=1`);
       } else {
-        toast.error(data.error ?? "Failed to create system", { id });
+        toast.error(data.error ?? "Failed to create loop", { id });
       }
     } catch {
-      toast.error("Failed to create system", { id });
+      toast.error("Failed to create loop", { id });
     }
   };
 
@@ -447,10 +447,10 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           toast.success("Building...", { id });
           router.push(`/systems/${data.data.systemId}?prompt=${encodeURIComponent(text)}`);
         } else {
-          toast.error(data.error ?? "Failed to create system", { id });
+          toast.error(data.error ?? "Failed to create loop", { id });
         }
       } catch {
-        toast.error("Failed to create system", { id });
+        toast.error("Failed to create loop", { id });
       } finally {
         setHeroSubmitting(false);
       }
@@ -470,7 +470,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       });
       const data = await res.json();
       if (data.ok && data.data.ok) {
-        toast.success("System imported", { id });
+        toast.success("Loop imported", { id });
         setShowImport(false);
         setImportText("");
         router.push(`/systems/${data.data.systemId}`);
@@ -752,7 +752,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             <div
               role="button"
               tabIndex={0}
-              aria-label="System options"
+              aria-label="Loop options"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
               className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
@@ -761,7 +761,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             </div>
           </DropdownTrigger>
           <Dropdown.Popover>
-            <DropdownMenu aria-label="System actions">
+            <DropdownMenu aria-label="Loop actions">
               <DropdownItem id="fav" onAction={() => handleToggleFavorite(row)}>
                 <span className="flex items-center gap-2 t-label">
                   <Star size={14} />
@@ -949,7 +949,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <MetricCard
-          label="Total systems"
+          label="Total loops"
           value={stats.total}
           footer={`${stats.active} active`}
         />
@@ -1021,7 +1021,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 <SearchInput
                   value={query}
                   onChange={setQuery}
-                  placeholder="Search systems"
+                  placeholder="Search loops"
                 />
               </div>
             </div>
@@ -1068,7 +1068,7 @@ function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           <SearchInput
             value={query}
             onChange={setQuery}
-            placeholder="Search systems"
+            placeholder="Search loops"
           />
         </div>
 

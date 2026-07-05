@@ -42,7 +42,7 @@ class OpenAiStreamingProvider implements AgentStreamingProvider {
         stream: true,
         temperature: 0.2,
         messages: [
-          { role: "system", content: "You are Looper system-building assistant. Explain intent and expected impact succinctly." },
+          { role: "system", content: "You are Pipes system-building assistant. Explain intent and expected impact succinctly." },
           { role: "user", content: `System: ${input.systemName ?? "Untitled"}. Summary: ${input.systemDescription ?? ""}. Request: ${input.message}` }
         ]
       })

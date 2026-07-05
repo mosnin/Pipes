@@ -3,7 +3,7 @@ import { MarketplaceGallery } from "./MarketplaceGallery";
 import { MARKETPLACE_LISTINGS } from "@/lib/marketplace/catalog";
 
 export const metadata: Metadata = {
-  title: "Loop Marketplace - Looper",
+  title: "Loop Marketplace - Pipes",
   description: "Ready-to-use loop templates for research, support, code review, sales, and more. Import any loop into your workspace in one click.",
 };
 

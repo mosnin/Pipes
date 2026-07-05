@@ -3,9 +3,9 @@ import { SectionBadge } from "@/components/marketing/SectionBadge";
 import { caseStudies } from "@/lib/marketing/customers-data";
 
 export const metadata = {
-  title: "Scenarios - Looper",
+  title: "Scenarios - Pipes",
   description:
-    "Example scenarios showing how engineering, support, sales, data, and operations teams describe multi-agent systems with Looper.",
+    "Example scenarios showing how engineering, support, sales, data, and operations teams describe multi-agent systems with Pipes.",
 };
 
 const CATEGORY_ORDER = ["Engineering", "Support", "Sales", "Data", "Operations"] as const;
@@ -57,7 +57,7 @@ export default function UseCasesPage() {
               Five workloads. One typed graph.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl t-body leading-relaxed text-[#3C3C43]">
-              Example scenarios showing how different teams describe multi-agent systems with Looper.
+              Example scenarios showing how different teams describe multi-agent systems with Pipes.
               Pick the discipline that looks like yours.
             </p>
             <p className="mt-4 t-caption text-[#8E8E93]">
@@ -129,7 +129,7 @@ export default function UseCasesPage() {
                 Build the first real story.
               </h2>
               <p className="mt-4 max-w-lg t-body text-white/80">
-                Describe your system in a sentence. Looper draws the graph. Your team and your agents
+                Describe your system in a sentence. Pipes draws the graph. Your team and your agents
                 read the same map. Ship it and tell us how it went.
               </p>
             </div>

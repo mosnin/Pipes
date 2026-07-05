@@ -64,13 +64,13 @@ export function CompareCard({
           </p>
         </div>
 
-        {/* Visual hint - two stacked rails. Looper rail is filled, competitor rail is empty */}
+        {/* Visual hint - two stacked rails. Pipes rail is filled, competitor rail is empty */}
         <div
           aria-hidden="true"
           className="flex flex-col gap-1.5 mt-1"
         >
           <div className="flex items-center gap-2">
-            <span className="t-caption font-medium text-[#111] w-14">Looper</span>
+            <span className="t-caption font-medium text-[#111] w-14">Pipes</span>
             <div className="relative flex-1 h-1.5 rounded-full bg-[#F5F5F7] overflow-hidden">
               <div
                 className="absolute inset-y-0 left-0 rounded-full bg-violet-600"

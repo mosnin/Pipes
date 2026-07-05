@@ -3,8 +3,8 @@ import { ArrowUpRight, Mail, MessageSquare, Shield } from "lucide-react";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Contact - Looper",
-  description: "Talk to the Looper team. Sales, support, and security.",
+  title: "Contact - Pipes",
+  description: "Talk to the Pipes team. Sales, support, and security.",
 };
 
 const SOURCE_INTRO: Record<string, string> = {
@@ -13,7 +13,7 @@ const SOURCE_INTRO: Record<string, string> = {
   customers_contact:
     "Want to talk to someone before you commit? We are happy to walk through your use case.",
   use_cases_contact:
-    "Have a use case in mind? Describe it and we will tell you honestly whether Looper fits.",
+    "Have a use case in mind? Describe it and we will tell you honestly whether Pipes fits.",
   careers:
     "Reaching out about working together? Tell us what you have built and what you would build here.",
   dpa: "Need a countersigned DPA? Tell us your entity name and we will send one over.",
@@ -24,23 +24,23 @@ const CHANNELS = [
   {
     icon: MessageSquare,
     title: "Sales",
-    body: "Plans, seats, procurement, and anything about rolling Looper out to a team.",
-    action: "sales@looper.dev",
-    href: "mailto:sales@looper.dev",
+    body: "Plans, seats, procurement, and anything about rolling Pipes out to a team.",
+    action: "sales@pipes.dev",
+    href: "mailto:sales@pipes.dev",
   },
   {
     icon: Mail,
     title: "Support",
     body: "Questions about your workspace, the editor, the protocol, or your loops.",
-    action: "support@looper.dev",
-    href: "mailto:support@looper.dev",
+    action: "support@pipes.dev",
+    href: "mailto:support@pipes.dev",
   },
   {
     icon: Shield,
     title: "Security",
     body: "Report a vulnerability or request our security documentation and DPA.",
-    action: "security@looper.dev",
-    href: "mailto:security@looper.dev",
+    action: "security@pipes.dev",
+    href: "mailto:security@pipes.dev",
   },
 ];
 

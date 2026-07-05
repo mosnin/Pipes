@@ -47,7 +47,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
               Reload panel
             </Button>
             <a
-              href="mailto:support@looper.dev"
+              href="mailto:support@pipes.dev"
               className="t-label text-indigo-600 hover:text-indigo-700 transition-colors"
             >
               Report issue

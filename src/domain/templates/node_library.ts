@@ -29,7 +29,7 @@ export type InsertContext = {
 export const primaryNodeLibraryEntry: NodeLibraryEntry = {
   nodeType: "Node",
   name: "New step",
-  description: "Describe what this step does. Looper treats every step uniformly -- you decide what it does.",
+  description: "Describe what this step does. Pipes treats every step uniformly -- you decide what it does.",
   category: "Core",
   inputTypes: ["any"],
   outputTypes: ["any"],

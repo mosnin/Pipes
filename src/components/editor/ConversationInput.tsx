@@ -154,7 +154,7 @@ export const ConversationInput = forwardRef<ConversationInputHandle, Conversatio
             onBlur={() => setFocused(false)}
             placeholder={finalPlaceholder}
             rows={1}
-            aria-label="Chat with Looper"
+            aria-label="Chat with Pipes"
             className={cn(
               "flex-1 bg-transparent outline-none resize-none border-0 p-0",
               size === "hero" ? "t-body py-1" : "t-label py-1.5",

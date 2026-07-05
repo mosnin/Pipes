@@ -26,11 +26,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = getPostBySlug(slug);
   if (post === null) {
-    return { title: "Post not found - Looper" };
+    return { title: "Post not found - Pipes" };
   }
   const OG_IMAGE_URL = `/api/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.excerpt)}`;
   return {
-    title: `${post.title} - Looper`,
+    title: `${post.title} - Pipes`,
     description: post.excerpt,
     openGraph: {
       title: post.title,

@@ -2,7 +2,7 @@ import type { Plan } from "@/domain/looper_schema_v1/schema";
 
 export type Entitlements = {
   maxSystems: number;
-  // Loop-specific gates (Looper product)
+  // Loop-specific gates (Pipes product)
   maxPublicLoops: number;
   privateLoops: boolean;
   marketplaceSelling: boolean;

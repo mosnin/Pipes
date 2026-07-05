@@ -177,7 +177,7 @@ export const NODE_CONFIG_SCHEMAS: Partial<Record<NodeType, ConfigFieldDef[]>> = 
     { key: "maxIterations", label: "Max iterations override", type: "number", placeholder: "Inherit from sub-loop" },
   ],
   Subsystem: [
-    { key: "systemId", label: "Looper system ID", type: "text", placeholder: "sys_abc123", required: true },
+    { key: "systemId", label: "Pipes system ID", type: "text", placeholder: "sys_abc123", required: true },
     { key: "passContext", label: "Pass parent context", type: "boolean", defaultValue: true },
     { key: "timeout", label: "Execution timeout (ms)", type: "number", placeholder: "60000", defaultValue: 60000 },
     { key: "onError", label: "On sub-system error", type: "select", options: [{ value: "propagate", label: "Propagate error" }, { value: "fallback", label: "Use fallback output" }, { value: "skip", label: "Skip and continue" }], defaultValue: "propagate" },

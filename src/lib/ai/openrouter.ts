@@ -44,7 +44,7 @@ function randId(prefix: string): string {
 
 function buildSystemPrompt(): string {
   return [
-    "You are Looper's Loop Architect. You build agent loops as typed graphs on a canvas.",
+    "You are Pipes' Loop Architect. You build agent loops as typed graphs on a canvas.",
     "",
     "A loop is a directed graph of typed nodes connected by pipes. You build it by calling tools.",
     "",
@@ -153,7 +153,7 @@ async function callOpenRouter(messages: ChatMessage[]): Promise<{
       headers: {
         authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
         "content-type": "application/json",
-        "X-Title": "Looper",
+        "X-Title": "Pipes",
         "HTTP-Referer": env.NEXT_PUBLIC_APP_URL,
       },
       body: JSON.stringify({

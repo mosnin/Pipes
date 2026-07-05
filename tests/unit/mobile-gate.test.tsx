@@ -75,7 +75,7 @@ describe("DesktopFirstBanner", () => {
   it("renders the desktop-first message on first visit", async () => {
     render(<DesktopFirstBanner />);
     // The banner hydrates from localStorage in an effect; wait for it.
-    expect(await screen.findByText(/Looper is built for desktop/i)).toBeTruthy();
+    expect(await screen.findByText(/Pipes is built for desktop/i)).toBeTruthy();
   });
 
   it("persists the dismissal and stays hidden after re-render", async () => {
@@ -84,7 +84,7 @@ describe("DesktopFirstBanner", () => {
     act(() => {
       dismiss.click();
     });
-    expect(screen.queryByText(/Looper is built for desktop/i)).toBeNull();
+    expect(screen.queryByText(/Pipes is built for desktop/i)).toBeNull();
     expect(localStorage.getItem("pipes-mobile-warning-dismissed")).toBe("1");
     unmount();
     render(<DesktopFirstBanner />);
@@ -93,6 +93,6 @@ describe("DesktopFirstBanner", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(screen.queryByText(/Looper is built for desktop/i)).toBeNull();
+    expect(screen.queryByText(/Pipes is built for desktop/i)).toBeNull();
   });
 });

@@ -6,8 +6,8 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 /**
  * CompareStrip
  *
- * Side-by-side panels: "Before Looper" (a wall of mermaid text) vs
- * "After Looper" (a typed sentence -> a structured graph). Renders as
+ * Side-by-side panels: "Before Pipes" (a wall of mermaid text) vs
+ * "After Pipes" (a typed sentence -> a structured graph). Renders as
  * two stacked panels on mobile, side by side on desktop.
  */
 
@@ -167,7 +167,7 @@ export function CompareStrip() {
             className="t-caption text-violet-700"
             style={{ fontSize: 11 }}
           >
-            Looper built it. Your team and your agent read the same graph.
+            Pipes built it. Your team and your agent read the same graph.
           </p>
         </div>
       </motion.div>

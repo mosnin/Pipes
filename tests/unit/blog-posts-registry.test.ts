@@ -90,7 +90,7 @@ describe("blog post registry", () => {
     for (const p of getAllPosts()) {
       expect(p.author.name.length).toBeGreaterThan(2);
       expect(p.author.role.length).toBeGreaterThan(2);
-      expect(/Looper/.test(p.author.role)).toBe(true);
+      expect(/Pipes/.test(p.author.role)).toBe(true);
     }
   });
 

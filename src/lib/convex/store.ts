@@ -142,7 +142,7 @@ function seed(): DbShape {
   const system = sampleData.systems[0];
   return {
     users: [{ id: "usr_1", externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera", createdAt: new Date().toISOString() }],
-    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Looper Lab", slug: "looper-lab", plan: "Pro", createdAt: new Date().toISOString() }],
+    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Pipes Lab", slug: "looper-lab", plan: "Pro", createdAt: new Date().toISOString() }],
     memberships: [{ id: "mem_1", workspaceId: "wks_1", userId: "usr_1", role: "Owner", createdAt: new Date().toISOString() }],
     systems: [{
       id: system.id,

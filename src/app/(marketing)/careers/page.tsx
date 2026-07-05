@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { SectionBadge } from "@/components/marketing/SectionBadge";
 
 export const metadata = {
-  title: "Careers - Looper",
+  title: "Careers - Pipes",
   description:
     "We are a small team building the loop layer for agent systems. How we work, and how to reach us.",
 };

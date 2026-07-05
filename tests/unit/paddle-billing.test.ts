@@ -8,7 +8,7 @@ const mockedEnv = vi.hoisted(() => ({
     PADDLE_ENVIRONMENT: "sandbox",
     PADDLE_PRICE_PRO: "pri_pro",
     PADDLE_PRICE_BUILDER: "pri_builder",
-    NEXT_PUBLIC_APP_URL: "https://app.looper.dev",
+    NEXT_PUBLIC_APP_URL: "https://app.pipes.dev",
   } as Record<string, string | undefined>,
   runtimeFlags: { useMocks: false, hasPaddle: true } as { useMocks: boolean; hasPaddle: boolean },
 }));
@@ -34,8 +34,8 @@ describe("PaddleBillingService", () => {
     const res = await svc.createCheckoutSession({
       workspaceId: "ws_1",
       plan: "Pro",
-      successUrl: "https://app.looper.dev/settings/billing?status=success",
-      cancelUrl: "https://app.looper.dev/settings/billing?status=cancel",
+      successUrl: "https://app.pipes.dev/settings/billing?status=success",
+      cancelUrl: "https://app.pipes.dev/settings/billing?status=cancel",
     });
     expect(res.checkoutUrl).toBe("https://sandbox-checkout.paddle.com/txn_1");
 
@@ -91,7 +91,7 @@ describe("PaddleBillingService", () => {
 
   it("returns the billing return url when no customer id is known for the portal", async () => {
     const svc = new PaddleBillingService();
-    const res = await svc.createPortalSession({ workspaceId: "ws_1", returnUrl: "https://app.looper.dev/settings/billing" });
-    expect(res.portalUrl).toBe("https://app.looper.dev/settings/billing");
+    const res = await svc.createPortalSession({ workspaceId: "ws_1", returnUrl: "https://app.pipes.dev/settings/billing" });
+    expect(res.portalUrl).toBe("https://app.pipes.dev/settings/billing");
   });
 });

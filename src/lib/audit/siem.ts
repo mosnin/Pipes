@@ -34,7 +34,7 @@ export function forwardAuditEvent(event: AuditEvent): void {
     try {
       const body = JSON.stringify(event);
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (secret) headers["X-Looper-Signature"] = sign(body, secret);
+      if (secret) headers["X-Pipes-Signature"] = sign(body, secret);
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
       try {

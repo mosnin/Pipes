@@ -8,7 +8,7 @@ export const sampleData: LooperSchemaDocument = {
     { id: "usr_1", email: "owner@pipes.local", name: "Alex Rivera", createdAt: "2026-01-01T00:00:00.000Z" }
   ],
   workspaces: [
-    { id: "wks_1", name: "Looper Lab", slug: "looper-lab", ownerId: "usr_1", plan: "Pro", createdAt: "2026-01-01T00:00:00.000Z" }
+    { id: "wks_1", name: "Pipes Lab", slug: "looper-lab", ownerId: "usr_1", plan: "Pro", createdAt: "2026-01-01T00:00:00.000Z" }
   ],
   systems: [
     {
