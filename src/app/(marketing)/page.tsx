@@ -78,7 +78,7 @@ export default function HomePage() {
          ─────────────────────────────────────────────────────────────────── */}
       <section
         aria-label="Pipes hero"
-        className="relative flex min-h-[92vh] items-center overflow-hidden bg-white"
+        className="relative flex min-h-[92vh] items-start overflow-hidden bg-white lg:items-center"
       >
         {/* Subtle violet bloom */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -131,6 +131,12 @@ export default function HomePage() {
                   </Link>
                 </div>
               </HeroAnimatedCtas>
+              {/* Mobile: the magic moment reaches phones too — the same loop
+                  demo, in flow below the CTAs. Desktop shows it in the side
+                  column instead (below), so it renders exactly once per view. */}
+              <div className="mt-12 lg:hidden">
+                <HeroLoopDemo />
+              </div>
             </div>
             <div className="hidden lg:col-span-5 lg:block">
               <HeroAnimatedSide>
