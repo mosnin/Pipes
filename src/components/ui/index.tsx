@@ -40,15 +40,20 @@ export type ButtonProps = ButtonRootProps & {
   className?: string;
 };
 
+// HeroUI variants carry no themed colors in our setup (no HeroUIProvider), so
+// ghost renders dark-on-dark and outline renders as a white box in dark mode.
+// Give the un-themed variants themeable defaults; callers can still override
+// since cn/twMerge lets a later class win.
+const VARIANT_DEFAULTS: Partial<Record<string, string>> = {
+  ghost: "text-ink-2 hover:text-ink-1",
+  outline: "surface-canvas text-ink-1 border border-line hover:border-line-strong",
+};
+
 export function Button({ className, variant = "primary", ...props }: ButtonProps) {
-  // HeroUI's ghost variant has no themed color in our setup (no HeroUIProvider),
-  // so it defaults to dark ink and vanishes on dark surfaces. Give it a themeable
-  // default that callers can still override — cn/twMerge lets a later class win.
-  const variantDefault = variant === "ghost" ? "text-ink-2 hover:text-ink-1" : undefined;
   return (
     <HeroButton
       variant={variant}
-      className={cn(variantDefault, className)}
+      className={cn(VARIANT_DEFAULTS[variant as string], className)}
       {...props}
     />
   );
