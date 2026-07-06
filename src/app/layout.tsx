@@ -44,8 +44,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
   try {
+    // Dark mode is an in-product experience only. The marketing site is a
+    // light-only brand surface, so a dark-mode user must not carry the app
+    // theme onto it (it renders on a white canvas and would go low-contrast).
+    // Decide before first paint from the pathname — no flash either way.
+    var p = location.pathname;
+    var app = /^\\/(dashboard|build|compile|settings|systems|admin|welcome|s)(\\/|$)/.test(p);
     var t = localStorage.getItem('looper-theme');
-    var d = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var d = app && (t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.setAttribute('data-color-scheme', d ? 'dark' : 'light');
   } catch(e) {}
 `,

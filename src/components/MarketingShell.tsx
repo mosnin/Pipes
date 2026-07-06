@@ -1,9 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { Wordmark } from "@/components/Wordmark";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { RouteTransition } from "@/components/marketing/RouteTransition";
+
+// The marketing site is a light-only brand surface. If a dark-mode app user
+// reaches it via client-side navigation (the head script only runs on full
+// loads), force the scheme back to light so nothing renders low-contrast on
+// the white canvas. On unmount we leave it — the next app route re-applies
+// the saved theme through its own shell.
+function useForceLightScheme() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.getAttribute("data-color-scheme");
+    root.setAttribute("data-color-scheme", "light");
+    return () => {
+      if (prev && prev !== "light") root.setAttribute("data-color-scheme", prev);
+    };
+  }, []);
+}
 
 // ---------------------------------------------------------------------------
 // Data
@@ -184,6 +201,7 @@ function MarketingFooter() {
 // ---------------------------------------------------------------------------
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
+  useForceLightScheme();
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Skip-to-content link for keyboard / AT users (WCAG 2.4.1). */}
