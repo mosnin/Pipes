@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { env, runtimeFlags } from "@/lib/env";
+import { generateStructured } from "@/lib/ai/structured";
 
 export const AiDraftNodeSchema = z.object({ id: z.string(), type: z.string(), title: z.string(), description: z.string().optional(), x: z.number(), y: z.number() });
 export const AiDraftPipeSchema = z.object({ fromNodeId: z.string(), toNodeId: z.string() });
@@ -48,49 +48,41 @@ const deterministicDraft: z.infer<typeof AiSystemDraftSchema> = {
   warnings: ["Human approval may be required for high-risk intents."]
 };
 
-class MockAiService implements AiService {
-  async generateSystemFromPrompt(input: GenerateSystemRequest) {
-    return { ...deterministicDraft, systemName: input.systemName ?? deterministicDraft.systemName, assumptions: [`Generated from prompt: ${input.prompt}`] };
-  }
-  async suggestSystemEdits() {
-    return AiEditSuggestionSchema.parse({
-      summary: "Add a monitor node and improve naming.",
-      changes: [{ action: "addNode", payload: { type: "Monitor", title: "Latency Monitor", x: 500, y: 320 } }],
-      assumptions: ["Assumes latency is critical."],
-      warnings: []
-    });
-  }
-}
+const SYSTEM_DRAFT_PROMPT =
+  "You output strict JSON matching this shape: { systemName: string, description: string, nodes: [{ id: string, type: string, title: string, description?: string, x: number, y: number }], pipes: [{ fromNodeId: string, toNodeId: string }], assumptions: string[], warnings: string[] }. Build a complete agent loop with at least 3 nodes, a clear entry and exit, laid out left to right.";
 
-class OpenAiService implements AiService {
-  private model = process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
+const EDIT_SUGGESTION_PROMPT =
+  "You output strict JSON: { summary: string, changes: [{ action: 'addNode'|'updateNode'|'deleteNode'|'addPipe'|'deletePipe', nodeId?: string, pipeId?: string, payload?: object }], assumptions: string[], warnings: string[] }.";
 
-  async generateSystemFromPrompt(input: GenerateSystemRequest) {
-    const prompt = `Return JSON only. Build a structured agentic system draft. Prompt: ${input.prompt}`;
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "authorization": `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ model: this.model, temperature: 0.2, messages: [{ role: "system", content: "You output strict JSON matching the schema." }, { role: "user", content: prompt }] })
-    });
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    return AiSystemDraftSchema.parse(JSON.parse(text));
-  }
-
-  async suggestSystemEdits(input: { prompt: string; systemSummary: string; nodes: Array<{ id: string; title: string; type: string }> }) {
-    const prompt = `Return JSON only. Suggest structured changes. Prompt: ${input.prompt}. System: ${input.systemSummary}. Nodes: ${JSON.stringify(input.nodes)}`;
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "authorization": `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ model: this.model, temperature: 0.2, messages: [{ role: "system", content: "You output strict JSON matching the schema." }, { role: "user", content: prompt }] })
-    });
-    const body = await res.json();
-    const text = body?.choices?.[0]?.message?.content ?? "{}";
-    return AiEditSuggestionSchema.parse(JSON.parse(text));
-  }
-}
-
+// Both methods are the same structured-generation call with different prompts,
+// schemas, and mock fallbacks — provider selection lives in generateStructured.
 export function getAiService(): AiService {
-  if (runtimeFlags.useMocks || !runtimeFlags.hasOpenAI) return new MockAiService();
-  return new OpenAiService();
+  return {
+    generateSystemFromPrompt(input: GenerateSystemRequest) {
+      return generateStructured({
+        system: SYSTEM_DRAFT_PROMPT,
+        user: `Build an agent loop for: ${input.prompt}`,
+        schema: AiSystemDraftSchema,
+        mock: () => ({
+          ...deterministicDraft,
+          systemName: input.systemName ?? deterministicDraft.systemName,
+          assumptions: [`Generated from prompt: ${input.prompt}`],
+        }),
+      });
+    },
+    suggestSystemEdits(input) {
+      return generateStructured({
+        system: EDIT_SUGGESTION_PROMPT,
+        user: `Request: ${input.prompt}. System: ${input.systemSummary}. Nodes: ${JSON.stringify(input.nodes)}`,
+        schema: AiEditSuggestionSchema,
+        mock: () =>
+          AiEditSuggestionSchema.parse({
+            summary: "Add a monitor node and improve naming.",
+            changes: [{ action: "addNode", payload: { type: "Monitor", title: "Latency Monitor", x: 500, y: 320 } }],
+            assumptions: ["Assumes latency is critical."],
+            warnings: [],
+          }),
+      });
+    },
+  };
 }

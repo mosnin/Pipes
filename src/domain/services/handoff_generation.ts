@@ -108,7 +108,29 @@ export class HandoffGenerationService {
       { id: id("hart"), packageId: pkg.id, type: "architecture_spec", target, title: "Architecture spec", content: `Domain summary: ${input.systemDescription}\nState/control flow: ${input.pipeCount} system links, explicit review gates preserved.\nImportant interfaces: ${input.interfaces.slice(0, 8).join("; ")}\nFailure modes: ${(input.risks[0] ?? "policy conflict")}; ${(input.risks[1] ?? "missing contract detail")}`,
         sourceRefs: [pkg.systemId], createdAt: now() },
       { id: id("hart"), packageId: pkg.id, type: "qa_checklist", target, title: "QA checklist", content: `- Validate schema and contract compatibility\n- Verify critical paths for ${input.systemName}\n- Ensure unresolved ambiguities are tracked\n- Confirm policy and approval safeguards still hold`, sourceRefs: [pkg.systemId], createdAt: now() },
-      { id: id("hart"), packageId: pkg.id, type: "risk_register", target, title: "Risk register", content: `Assumptions:\n- ${input.assumptions.join("\n- ")}\nUnresolved:\n- ${(input.unresolved[0] ?? "none captured")}`, sourceRefs: [pkg.systemId], createdAt: now() }
+      { id: id("hart"), packageId: pkg.id, type: "risk_register", target, title: "Risk register", content: `Assumptions:\n- ${input.assumptions.join("\n- ")}\nUnresolved:\n- ${(input.unresolved[0] ?? "none captured")}`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "system_summary", target, title: "System summary", content: `${input.systemName} is a ${input.nodeCount}-component agentic system designed to ${input.systemDescription}. Primary data flow: ${input.interfaces.slice(0, 3).join(" → ")}. Key patterns: ${input.promotedPatterns.slice(0, 3).join(", ") || "standard agent loop"}. The system exposes ${input.pipeCount} pipe interface(s) across its component graph.`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "dependency_manifest", target, title: "Dependency manifest", content: `Pipe interfaces (node→node connections):\n- ${input.interfaces.join("\n- ") || "none"}\n\nNode component dependencies:\n- ${input.components.join("\n- ") || "none"}`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "api_contract_summary", target, title: "API contract summary", content: `System entry/exit contracts derived from interfaces and components.\n\nInterfaces:\n- ${input.interfaces.slice(0, 8).join("\n- ") || "none"}\n\nComponents (with types):\n- ${input.components.slice(0, 8).join("\n- ") || "none"}\n\nInput contract: data enters via the first pipe interface and is processed by upstream components.\nOutput contract: results exit via terminal components with no further downstream pipe.`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "data_model_summary", target, title: "Data model summary", content: `Data models inferred from component types:\n${input.components.map((c) => {
+        const lower = c.toLowerCase();
+        if (lower.includes("memory")) return `- ${c} → Stateful context store`;
+        if (lower.includes("datastore")) return `- ${c} → Persistent structured records`;
+        if (lower.includes("model")) return `- ${c} → LLM inference payloads`;
+        if (lower.includes("tool")) return `- ${c} → External API request/response`;
+        if (lower.includes("humanapproval") || lower.includes("human_approval")) return `- ${c} → Human review decision record`;
+        return `- ${c} → Typed data payload`;
+      }).join("\n") || "- No components available to infer data models."}`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "environment_manifest", target, title: "Environment manifest", content: `Infrastructure/service dependencies inferred from components:\n${input.components.map((c) => {
+        const lower = c.toLowerCase();
+        if (lower.includes("tool")) return `- ${c} → External API endpoints`;
+        if (lower.includes("model")) return `- ${c} → LLM inference provider`;
+        if (lower.includes("memory")) return `- ${c} → Vector/key-value store`;
+        if (lower.includes("humanapproval") || lower.includes("human_approval")) return `- ${c} → Human-in-the-loop review queue`;
+        if (lower.includes("datastore")) return `- ${c} → Persistent database / object store`;
+        return `- ${c} → Internal compute`;
+      }).join("\n") || "- No components available to infer environment dependencies."}`, sourceRefs: [pkg.systemId], createdAt: now() },
+      { id: id("hart"), packageId: pkg.id, type: "rollout_checklist", target, title: "Rollout checklist", content: `Step-by-step deployment checklist for ${input.systemName}:\n1. Validate all pipe interface contracts against schema.\n2. Run integration tests for each pipe interface:\n${input.interfaces.slice(0, 6).map((iface, i) => `   ${i + 1}. Test: ${iface}`).join("\n") || "   (no interfaces defined)"}\n3. Review policy and approval gates (HumanApproval nodes, risk flags).\n4. Set up monitoring and alerting for all component endpoints.\n5. Confirm rollback plan: restore previous system version from version history.\n6. Obtain sign-off on unresolved ambiguities:\n${input.unresolved.slice(0, 4).map((u) => `   - ${u}`).join("\n") || "   (none pending)"}`, sourceRefs: [pkg.systemId], createdAt: now() }
     ];
   }
 

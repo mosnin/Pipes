@@ -2,10 +2,10 @@
 
 ## Authorization model
 
-Pipes uses a simple **internal operator allowlist** by email via `PIPES_ADMIN_ALLOWLIST`.
+Looper uses a simple **internal operator allowlist** by email via `LOOPER_ADMIN_ALLOWLIST`.
 
 - `src/lib/admin/access.ts` parses and normalizes the allowlist.
-- In mock mode (`PIPES_USE_MOCKS=true`), `owner@pipes.local` is allowed by default.
+- In mock mode (`LOOPER_USE_MOCKS=true`), `owner@pipes.local` is allowed by default.
 - Admin API routes call `services.access.ensureInternalOperator(identity.email)`.
 
 This is intentionally separate from workspace collaboration roles.

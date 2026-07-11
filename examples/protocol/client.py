@@ -24,5 +24,5 @@ if __name__ == "__main__":
     system_id = created.get("data", {}).get("systemId")
     if system_id:
         print("schema", call(f"/api/protocol/systems/{system_id}/schema"))
-        print("template", call("/api/protocol/templates/single-agent-loop/instantiate", method="POST", payload={"name": "Py Template"}, idem_key="python-template-1"))
+        print("template", call("/api/protocol/templates/multi-agent-handoff/instantiate", method="POST", payload={"name": "Py Template"}, idem_key="python-template-1"))
         print("graph", call("/api/protocol/graph", method="POST", payload={"action": "addNode", "systemId": system_id, "type": "Agent", "title": "Py Node", "x": 140, "y": 140}))

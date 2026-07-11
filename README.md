@@ -1,6 +1,6 @@
-# Pipes
+# Looper
 
-Pipes is a visual and machine-readable system design platform for agentic systems.
+Looper is a visual and machine-readable system design platform for agentic systems.
 
 ## Structured creation milestone
 This pass adds:
@@ -37,8 +37,8 @@ This pass adds:
 ## Run in mock mode
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=true
-# NEXT_PUBLIC_PIPES_USE_MOCKS=true
+# LOOPER_USE_MOCKS=true
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=true
 npm install
 npm run dev
 ```
@@ -46,8 +46,8 @@ npm run dev
 ## Run in real provider mode
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=false
-# NEXT_PUBLIC_PIPES_USE_MOCKS=false
+# LOOPER_USE_MOCKS=false
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=false
 # CONVEX_URL=...
 # NEXT_PUBLIC_CONVEX_URL=...
 # OPENAI_API_KEY=...
@@ -77,12 +77,12 @@ npm run test
 - internal operator support surface: `/admin`
 - internal insights surface: `/admin/insights`
 - richer audit filtering + CSV export: `/settings/audit`
-- internal operator auth model: `PIPES_ADMIN_ALLOWLIST` (mock fallback: `owner@pipes.local`)
+- internal operator auth model: `LOOPER_ADMIN_ALLOWLIST` (mock fallback: `owner@looper.local`)
 
 ## Enterprise trust and scale pass
 - workspace trust settings: `/settings/trust`
 - workspace export manifest endpoint: `GET /api/settings/export/workspace`
-- enterprise auth readiness model: shared vs `sso_ready` (Auth0 connection metadata + allowed domain validation)
+- enterprise auth readiness model: shared vs `sso_ready` (SSO connection metadata + allowed domain validation)
 - safer permission admin: owner immutability, explicit role-change confirmation, audited role changes
 - bounded lifecycle posture: archive/restore for systems, workspace deactivate/reactivate, no hard delete
 - see `docs/enterprise_trust.md` for supported vs deferred enterprise controls
@@ -169,7 +169,7 @@ Agent runs now persist explicit evaluation artifacts (run quality, proposal-batc
 
 ## Collaborative agent building
 
-Pipes now supports explicit collaborative run review: shared run presence, threaded review comments on proposal batches/diff items, collaborative approval input with owner/admin final authority, persisted handoff records, and first-class revision requests. These artifacts are inspectable and auditable, and do not create a second mutation path.
+Looper now supports explicit collaborative run review: shared run presence, threaded review comments on proposal batches/diff items, collaborative approval input with owner/admin final authority, persisted handoff records, and first-class revision requests. These artifacts are inspectable and auditable, and do not create a second mutation path.
 
 ## Agent policy and operational control
 
@@ -183,7 +183,7 @@ This milestone adds explicit run control (pause/resume/cancel/retry/fork), repla
 
 ## Implementation handoff and delivery
 
-Pipes can now generate typed implementation handoff packages from accepted persisted system state. Packages include structured artifacts (implementation plan, architecture spec, task breakdown, coding-agent prompt pack, QA checklist, risk register), support target variants (human, Codex, Claude Code, general LLM), require review before export, and provide deterministic markdown/JSON/prompt-pack exports.
+Looper can now generate typed implementation handoff packages from accepted persisted system state. Packages include structured artifacts (implementation plan, architecture spec, task breakdown, coding-agent prompt pack, QA checklist, risk register), support target variants (human, Codex, Claude Code, general LLM), require review before export, and provide deterministic markdown/JSON/prompt-pack exports.
 
 
 ## Real runtime stack: Agents SDK + Modal + Convex authority

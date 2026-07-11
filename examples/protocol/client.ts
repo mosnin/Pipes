@@ -26,7 +26,7 @@ async function main() {
   if (!systemId) return;
 
   console.log("schema", await call(`/api/protocol/systems/${systemId}/schema`));
-  console.log("template", await call("/api/protocol/templates/single-agent-loop/instantiate", {
+  console.log("template", await call("/api/protocol/templates/multi-agent-handoff/instantiate", {
     method: "POST",
     headers: { "idempotency-key": "example-template-1" },
     body: JSON.stringify({ name: "Template from SDK" })

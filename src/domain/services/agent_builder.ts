@@ -513,22 +513,22 @@ export class AgentRunService {
       try {
         if (!isSkillAllowedForRole(task.skillId, task.role)) throw new Error("skill_role_mismatch");
         const executionInput: SubAgentExecutionRequest = { role: task.role, skillId: task.skillId, contextPack, userMessage: input.message };
-        const policySnapshot = await this.policyService.resolveRunPolicySnapshot(input.ctx, { runId: input.run.id, systemId: input.run.systemId });
-        const execution = await this.runtimeService.executeSubAgent(input.ctx, { task: { id: task.id, runId: task.runId, workspaceId: task.workspaceId, role: task.role, skillId: task.skillId, contextPack }, request: executionInput, policy: policySnapshot });
+        const execResult = await this.subAgentExecutor.execute({ ...executionInput, task: { id: task.id, runId: task.runId } });
+        const executionMode = execResult.metadata.executionMode;
         const heuristicConflicts = (idx > 0 && input.message.toLowerCase().includes("delet"))
           || contextPack.relevantValidationIssues.some((issue) => issue.toLowerCase().includes("delete"));
         const conflictSignals = heuristicConflicts
-          ? Array.from(new Set([...execution.output.conflictSignals, "potential_destructive_change"]))
-          : execution.output.conflictSignals;
+          ? Array.from(new Set([...execResult.output.conflictSignals, "potential_destructive_change"]))
+          : execResult.output.conflictSignals;
         const result = await this.repos.agentBuilder.addSubAgentResult({
           taskId: task.id,
           runId: input.run.id,
           workspaceId: input.run.workspaceId,
           systemId: input.run.systemId,
-          planSummary: execution.output.planRefinement ?? `Refined plan for ${subsystem.id}: ${getSkillDefinition(task.skillId)?.purpose ?? "analyze"} using bounded context.`,
-          critique: execution.output.critique ?? (contextPack.relevantValidationIssues[0] ? `Top issue: ${contextPack.relevantValidationIssues[0]}` : "No blocking validation issue in scope."),
-          proposedActionTypes: execution.output.proposalInputs.map((item) => item.actionType),
-          openQuestions: execution.output.openQuestions,
+          planSummary: execResult.output.planRefinement ?? `Refined plan for ${subsystem.id}: ${getSkillDefinition(task.skillId)?.purpose ?? "analyze"} using bounded context.`,
+          critique: execResult.output.critique ?? (contextPack.relevantValidationIssues[0] ? `Top issue: ${contextPack.relevantValidationIssues[0]}` : "No blocking validation issue in scope."),
+          proposedActionTypes: execResult.output.proposalInputs.map((item) => item.actionType),
+          openQuestions: execResult.output.openQuestions,
           conflictSignals,
           createdAt: now()
         });
@@ -540,7 +540,7 @@ export class AgentRunService {
           skillId: task.skillId,
           inputSummary: skill.inputSummary,
           status: "completed",
-          outputSummary: `${result.planSummary ?? ""} [${execution.metadata.target}:${execution.metadata.harness}]`,
+          outputSummary: `${result.planSummary ?? ""} [${executionMode}:${execResult.metadata.provider}]`,
           createdAt: skill.createdAt,
           completedAt: now()
         });
@@ -628,11 +628,11 @@ export class AgentRunService {
 
   private async applyPayloadThroughTrustedPath(ctx: AppContext, payload: GraphActionPayload, systemId: string) {
     if (payload.actionType === "add_node") return this.graph.mutate(ctx, { action: "addNode", systemId, type: payload.nodeType, title: payload.title, description: payload.description, x: payload.position.x, y: payload.position.y });
-    if (payload.actionType === "update_node") return this.graph.mutate(ctx, { action: "updateNode", nodeId: payload.nodeId, title: payload.title, description: payload.description });
-    if (payload.actionType === "move_node") return this.graph.mutate(ctx, { action: "updateNode", nodeId: payload.nodeId, position: payload.position });
-    if (payload.actionType === "delete_node") return this.graph.mutate(ctx, { action: "deleteNode", nodeId: payload.nodeId });
+    if (payload.actionType === "update_node") return this.graph.mutate(ctx, { action: "updateNode", systemId, nodeId: payload.nodeId, title: payload.title, description: payload.description });
+    if (payload.actionType === "move_node") return this.graph.mutate(ctx, { action: "updateNode", systemId, nodeId: payload.nodeId, position: payload.position });
+    if (payload.actionType === "delete_node") return this.graph.mutate(ctx, { action: "deleteNode", systemId, nodeId: payload.nodeId });
     if (payload.actionType === "add_pipe") return this.graph.mutate(ctx, { action: "addPipe", systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
-    if (payload.actionType === "delete_pipe") return this.graph.mutate(ctx, { action: "deletePipe", pipeId: payload.pipeId });
+    if (payload.actionType === "delete_pipe") return this.graph.mutate(ctx, { action: "deletePipe", systemId, pipeId: payload.pipeId });
     if (payload.actionType === "add_annotation") return this.repos.comments.add({ systemId, authorId: ctx.userId, body: payload.body, nodeId: payload.nodeId });
     if (payload.actionType === "create_version_checkpoint") return this.versions.create(ctx, systemId, payload.name);
     if (payload.actionType === "request_review" || payload.actionType === "no_op_explanation") return;

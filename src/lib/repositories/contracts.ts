@@ -1,4 +1,4 @@
-import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, RunStatus, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal, GraphActionProposalStatus } from "@/domain/agent_builder/actions";
 import type { PlanRevision, ProposalBatch, RoleActivity, StageRecord } from "@/domain/agent_builder/staged";
@@ -31,11 +31,12 @@ export type SystemRecord = {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string;
+  visibility?: "public" | "private";
 };
 
 export type NodeRecord = { id: string; systemId: string; type: string; title: string; description?: string; position: { x: number; y: number }; portIds: string[] };
 export type PipeRecord = { id: string; systemId: string; fromPortId: string; toPortId: string; fromNodeId?: string; toNodeId?: string };
-export type CommentRecord = { id: string; systemId: string; authorId: string; body: string; nodeId?: string; createdAt: string };
+export type CommentRecord = { id: string; systemId: string; authorId: string; authorName?: string; body: string; nodeId?: string; createdAt: string };
 export type VersionRecord = { id: string; systemId: string; name: string; authorId: string; createdAt: string; snapshot: string };
 export type PresenceRecord = { id: string; systemId: string; userId: string; name: string; selectedNodeId?: string; editingTarget?: string; cursor?: { x: number; y: number }; updatedAt: string };
 
@@ -53,27 +54,48 @@ export interface UsersRepository {
   findByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
 }
 
+export interface WorkspaceRecord {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  description?: string;
+}
+
 export interface WorkspacesRepository {
   getPlan(workspaceId: string): Promise<Plan>;
+  get(workspaceId: string): Promise<WorkspaceRecord | null>;
+  update(workspaceId: string, patch: { name?: string; description?: string }): Promise<void>;
 }
 
 export interface MembershipsRepository {
   add(workspaceId: string, userId: string, role: Role): Promise<void>;
   list(workspaceId: string): Promise<Array<{ userId: string; role: Role }>>;
   updateRole(workspaceId: string, userId: string, role: Role): Promise<void>;
+  remove(workspaceId: string, userId: string): Promise<void>;
 }
 
 export interface SystemsRepository {
   list(workspaceId: string): Promise<SystemRecord[]>;
   create(input: { workspaceId: string; userId: string; name: string; description: string }): Promise<string>;
+  /**
+   * Returns the owning workspace id for a system, or null if the system does
+   * not exist. Used for cross-tenant authorization (see assertSystemInWorkspace)
+   * without paying the cost of loading the full bundle.
+   */
+  getWorkspaceId(systemId: string): Promise<string | null>;
   getBundle(systemId: string): Promise<SystemBundle>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
+  delete(systemId: string): Promise<void>;
+  setVisibility(systemId: string, visibility: "public" | "private"): Promise<void>;
+  rename(systemId: string, name: string): Promise<void>;
+  updateDescription(systemId: string, description: string): Promise<void>;
 }
 
 export interface GraphRepository {
   addNode(input: { systemId: string; type: string; title: string; description?: string; x: number; y: number }): Promise<string>;
-  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number } }): Promise<void>;
+  updateNode(input: { nodeId: string; title?: string; description?: string; position?: { x: number; y: number }; config?: Record<string, unknown> }): Promise<void>;
   deleteNode(nodeId: string): Promise<void>;
   addPipe(input: { systemId: string; fromNodeId: string; toNodeId: string }): Promise<string>;
   deletePipe(pipeId: string): Promise<void>;
@@ -93,7 +115,7 @@ export interface VersionsRepository {
 export interface InvitesRepository {
   add(input: { workspaceId: string; email: string; role: Role; token: string; invitedBy: string; expiresAt: string }): Promise<void>;
   list(workspaceId: string): Promise<Array<{ token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string }>>;
-  getByToken(token: string): Promise<{ workspaceId: string; token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string } | null>;
+  getByToken(token: string): Promise<{ workspaceId: string; token: string; email: string; role: Role; status: "pending" | "accepted" | "canceled" | "expired"; expiresAt: string; invitedBy?: string } | null>;
   accept(token: string, userId: string): Promise<void>;
   cancel(token: string): Promise<void>;
 }
@@ -105,13 +127,33 @@ export interface PresenceRepository {
 
 export interface EntitlementsRepository {
   getPlan(workspaceId: string): Promise<Plan>;
-  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus }>;
+  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }>;
   upsertPlanState(input: { workspaceId: string; plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }): Promise<void>;
 }
 
 export type FeedbackStatus = "new" | "reviewing" | "closed";
 export type FeedbackCategory = "bug" | "ux" | "feature_request" | "reliability" | "billing" | "other";
 export type FeedbackSeverity = "low" | "medium" | "high";
+
+export type FeedbackEntryKind = "thumbs" | "nps" | "free_text";
+export type FeedbackVerdict = "up" | "down";
+
+export type FeedbackEntryRecord = {
+  id: string;
+  userId: string;
+  workspaceId?: string;
+  kind: FeedbackEntryKind;
+  targetType?: string;
+  targetId?: string;
+  conversationId?: string;
+  turnId?: string;
+  verdict?: FeedbackVerdict;
+  score?: number;
+  surface?: string;
+  text?: string;
+  note?: string;
+  createdAt: string;
+};
 
 export interface FeedbackRepository {
   create(input: {
@@ -145,6 +187,92 @@ export interface FeedbackRepository {
     updatedAt: string;
   }>>;
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
+  record(input: Omit<FeedbackEntryRecord, "id" | "createdAt">): Promise<FeedbackEntryRecord>;
+  listEntries(opts?: { userId?: string; kind?: FeedbackEntryKind; limit?: number }): Promise<FeedbackEntryRecord[]>;
+}
+
+export type AgentTurnToolCallRecord = {
+  id: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  ok: boolean;
+  action?: Record<string, unknown>;
+  error?: string;
+};
+
+export type AgentConversationRecord = {
+  id: string;
+  systemId: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CostSnapshot = {
+  tokensIn?: number;
+  tokensOut?: number;
+  dollars?: number;
+  model?: string;
+  provider?: string;
+};
+
+export type AgentTurnRecord = {
+  id: string;
+  conversationId: string;
+  index: number;
+  prompt: string;
+  toolCalls: AgentTurnToolCallRecord[];
+  finalMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  cancelled: boolean;
+  costSnapshot?: CostSnapshot;
+};
+
+export interface AgentConversationsRepository {
+  createConversation(input: { systemId: string; userId: string }): Promise<AgentConversationRecord>;
+  getConversation(conversationId: string): Promise<AgentConversationRecord | null>;
+  listConversations(input: { userId: string; systemId: string }): Promise<AgentConversationRecord[]>;
+  touchConversation(conversationId: string): Promise<void>;
+  createTurn(input: { conversationId: string; index: number; prompt: string; startedAt: string }): Promise<AgentTurnRecord>;
+  listTurns(conversationId: string): Promise<AgentTurnRecord[]>;
+  appendToolCall(input: { turnId: string; toolCall: AgentTurnToolCallRecord; costSnapshot?: CostSnapshot }): Promise<void>;
+  completeTurn(input: { turnId: string; finalMessage?: string; completedAt: string; cancelled: boolean; costSnapshot?: CostSnapshot }): Promise<void>;
+}
+
+export type MetricsSampleRecord = {
+  id: string;
+  kind: "latency" | "counter" | "error";
+  label: string;
+  value: number;
+  tags?: Record<string, string>;
+  ts: string;
+};
+
+export type AggregatedMetricsResult = {
+  latencyHourly: Array<{ ts: string; p50: number; p95: number }>;
+  buildsDaily: Array<{ date: string; count: number }>;
+  errorsHourly: Array<{ ts: string; count: number }>;
+  costWeekly: Array<{ date: string; tokensIn: number; tokensOut: number }>;
+};
+
+export interface MetricsRepository {
+  recordSample(input: { kind: "latency" | "counter" | "error"; label: string; value: number; tags?: Record<string, string>; ts: string }): Promise<void>;
+  listSamples(input?: { kind?: "latency" | "counter" | "error"; label?: string; sinceTs?: string; limit?: number }): Promise<MetricsSampleRecord[]>;
+  listAggregated(opts?: { nowMs?: number; latencyHours?: number; buildDays?: number; errorHours?: number; costDays?: number; sampleCap?: number }): Promise<AggregatedMetricsResult>;
+}
+
+export type AgentRunnerMetricRecord = {
+  userId: string;
+  workspaceId: string;
+  monthKey: string;
+  buildsUsed: number;
+  updatedAt: string;
+};
+
+export interface AgentRunnerMetricsRepository {
+  getMonthly(input: { userId: string; monthKey: string }): Promise<AgentRunnerMetricRecord | null>;
+  incrementMonthly(input: { userId: string; workspaceId: string; monthKey: string; delta: number }): Promise<AgentRunnerMetricRecord>;
 }
 
 export type RepositorySet = {
@@ -160,10 +288,10 @@ export type RepositorySet = {
   entitlements: EntitlementsRepository;
   feedback: FeedbackRepository;
   agentTokens: {
-    create(input: { workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string }): Promise<{ id: string }>;
-    list(workspaceId: string): Promise<Array<{ id: string; name: string; capabilities: string[]; systemId?: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string }>>;
+    create(input: { workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; expiresAt?: string }): Promise<{ id: string }>;
+    list(workspaceId: string): Promise<Array<{ id: string; name: string; capabilities: string[]; systemId?: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string; expiresAt?: string }>>;
     revoke(id: string): Promise<void>;
-    findByHash(tokenHash: string): Promise<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; createdByUserId: string; revokedAt?: string } | null>;
+    findByHash(tokenHash: string): Promise<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; createdByUserId: string; revokedAt?: string; expiresAt?: string } | null>;
     touchLastUsed(id: string): Promise<void>;
   };
   audits: {
@@ -262,6 +390,22 @@ export type RepositorySet = {
     getRuntimeUsageRecord(input: { runId: string }): Promise<RuntimeUsageRecord | null>;
     addEscalationRecord(input: Omit<EscalationRecord, "id">): Promise<EscalationRecord>;
     listEscalationRecords(input: { runId: string }): Promise<EscalationRecord[]>;
+  };
+  agentConversations: AgentConversationsRepository;
+  agentRunnerMetrics: AgentRunnerMetricsRepository;
+  metrics: MetricsRepository;
+  marketplaceListings: {
+    create(input: { systemId: string; workspaceId: string; title: string; description: string; price: number }): Promise<string>;
+    listByWorkspace(workspaceId: string): Promise<Array<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string }>>;
+    get(listingId: string): Promise<{ id: string; systemId: string; workspaceId: string; title: string; description: string; price: number; createdAt: string } | null>;
+  };
+  payments: {
+    // Idempotent on idempotencyKey: a repeated key returns the existing
+    // settlement id with replayed=true and records nothing new.
+    recordSettlement(input: { workspaceId: string; resourceId: string; amountUsd: number; payer: string; scheme: string; txHash?: string; idempotencyKey?: string }): Promise<{ id: string; replayed: boolean }>;
+    listSettlements(workspaceId: string): Promise<Array<{ id: string; workspaceId: string; resourceId: string; amountUsd: number; payer: string; scheme: string; txHash?: string; createdAt: string }>>;
+    recordUsage(input: { workspaceId: string; meter: string; units: number; resourceId: string }): Promise<void>;
+    getUsageTotal(input: { workspaceId: string; meter: string; sinceIso?: string }): Promise<{ units: number }>;
   };
   agentMemory: {
     addMemoryEntry(input: Omit<MemoryEntry, "id">): Promise<MemoryEntry>;

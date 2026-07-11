@@ -1,14 +1,14 @@
-import type { PipesSchemaDocument } from "@/domain/pipes_schema_v1/schema";
+import type { LooperSchemaDocument } from "@/domain/looper_schema_v1/schema";
 
 export const sampleSystemId = "sys_support_router";
 
-export const sampleData: PipesSchemaDocument = {
-  version: "pipes_schema_v1",
+export const sampleData: LooperSchemaDocument = {
+  version: "looper_schema_v1",
   users: [
     { id: "usr_1", email: "owner@pipes.local", name: "Alex Rivera", createdAt: "2026-01-01T00:00:00.000Z" }
   ],
   workspaces: [
-    { id: "wks_1", name: "Pipes Lab", slug: "pipes-lab", ownerId: "usr_1", plan: "Pro", createdAt: "2026-01-01T00:00:00.000Z" }
+    { id: "wks_1", name: "Pipes Lab", slug: "looper-lab", ownerId: "usr_1", plan: "Pro", createdAt: "2026-01-01T00:00:00.000Z" }
   ],
   systems: [
     {

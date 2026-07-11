@@ -1,6 +1,6 @@
 # Product Signals (Post-Launch Iteration Pass)
 
-Pipes uses a **bounded product-signal model** stored through the existing audit boundary (`action = signal.<event>`).
+Looper uses a **bounded product-signal model** stored through the existing audit boundary (`action = signal.<event>`).
 
 ## Canonical events
 

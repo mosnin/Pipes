@@ -29,10 +29,36 @@ export default defineSchema({
     createdBy: v.id("users"),
     name: v.string(),
     description: v.string(),
+    visibility: v.optional(v.string()),
     archivedAt: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string()
   }).index("by_workspace", ["workspaceId"]),
+  marketplace_listings: defineTable({
+    systemId: v.id("systems"),
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    description: v.string(),
+    price: v.number(),
+    createdAt: v.string()
+  }).index("by_workspace", ["workspaceId"]),
+  payment_settlements: defineTable({
+    workspaceId: v.id("workspaces"),
+    resourceId: v.string(),
+    amountUsd: v.number(),
+    payer: v.string(),
+    scheme: v.string(),
+    txHash: v.optional(v.string()),
+    idempotencyKey: v.optional(v.string()),
+    createdAt: v.string()
+  }).index("by_workspace", ["workspaceId"]).index("by_idempotency", ["idempotencyKey"]),
+  usage_events: defineTable({
+    workspaceId: v.id("workspaces"),
+    meter: v.string(),
+    units: v.number(),
+    resourceId: v.string(),
+    createdAt: v.string()
+  }).index("by_workspace_meter", ["workspaceId", "meter"]),
   system_nodes: defineTable({
     systemId: v.id("systems"),
     type: v.string(),
@@ -89,7 +115,8 @@ export default defineSchema({
     createdByUserId: v.id("users"),
     createdAt: v.string(),
     lastUsedAt: v.optional(v.string()),
-    revokedAt: v.optional(v.string())
+    revokedAt: v.optional(v.string()),
+    expiresAt: v.optional(v.string())
   }).index("by_workspace", ["workspaceId"]).index("by_token_hash", ["tokenHash"]),
   audit_events: defineTable({
     actorType: v.union(v.literal("user"), v.literal("agent")),
@@ -432,5 +459,78 @@ export default defineSchema({
     strategyId: v.optional(v.id("builder_strategies")),
     summary: v.string(),
     createdAt: v.string()
-  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"])
+  }).index("by_system", ["systemId"]).index("by_to_run", ["toRunId"]),
+  agent_conversations: defineTable({
+    systemId: v.id("systems"),
+    userId: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_system", ["systemId"]).index("by_user_system", ["userId", "systemId"]),
+  agent_turns: defineTable({
+    conversationId: v.id("agent_conversations"),
+    index: v.number(),
+    prompt: v.string(),
+    toolCalls: v.array(v.object({
+      id: v.string(),
+      toolName: v.string(),
+      arguments: v.any(),
+      ok: v.boolean(),
+      action: v.optional(v.any()),
+      error: v.optional(v.string())
+    })),
+    finalMessage: v.optional(v.string()),
+    startedAt: v.string(),
+    completedAt: v.optional(v.string()),
+    cancelled: v.boolean()
+  }).index("by_conversation", ["conversationId"]),
+  agent_runner_metrics: defineTable({
+    userId: v.string(),
+    workspaceId: v.string(),
+    monthKey: v.string(),
+    buildsUsed: v.number(),
+    updatedAt: v.string()
+  }).index("by_user_month", ["userId", "monthKey"]),
+  feedback_entries: defineTable({
+    userId: v.string(),
+    workspaceId: v.optional(v.string()),
+    kind: v.string(),
+    targetType: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    conversationId: v.optional(v.string()),
+    turnId: v.optional(v.string()),
+    verdict: v.optional(v.string()),
+    score: v.optional(v.number()),
+    surface: v.optional(v.string()),
+    text: v.optional(v.string()),
+    note: v.optional(v.string()),
+    createdAt: v.string()
+  })
+    .index("by_user", ["userId"])
+    .index("by_kind", ["kind"]),
+  // Future: loop execution state (schema only — no runtime in Pipes v1)
+  loop_runs: defineTable({
+    systemId: v.id("systems"),
+    workspaceId: v.id("workspaces"),
+    triggeredBy: v.union(v.literal("user"), v.literal("agent"), v.literal("schedule")),
+    triggeredById: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("running"),
+      v.literal("paused"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    iterationCount: v.number(),
+    maxIterations: v.optional(v.number()),
+    currentStepId: v.optional(v.string()),
+    inputJson: v.optional(v.string()),
+    outputJson: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    startedAt: v.optional(v.string()),
+    pausedAt: v.optional(v.string()),
+    completedAt: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  }).index("by_system", ["systemId"]).index("by_workspace", ["workspaceId"])
 });

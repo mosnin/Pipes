@@ -6,6 +6,7 @@ import { createMockRepositories } from "@/lib/repositories/mock";
 import { hashAgentToken, hasCapability, type AgentCapability } from "@/lib/protocol/tokens";
 import { getServerApp } from "@/lib/composition/server";
 import { ProtocolError } from "@/lib/protocol/errors";
+import { getEntitlements } from "@/domain/templates/plans";
 
 function createRepositories() {
   return !runtimeFlags.useMocks && runtimeFlags.hasConvex
@@ -19,16 +20,21 @@ function readBearer(request: Request) {
   return header.slice(7).trim();
 }
 
-export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices> }> {
+export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices>; repositories: ReturnType<typeof createRepositories> }> {
   const bearer = readBearer(request);
   if (!bearer) {
-    return getServerApp();
+    const app = await getServerApp();
+    return { ctx: app.ctx, services: app.services, repositories: app.repositories };
   }
   const repositories = createRepositories();
   const token = await repositories.agentTokens.findByHash(hashAgentToken(bearer));
   if (!token || token.revokedAt) throw new ProtocolError("AUTH_INVALID", "Invalid protocol token.", 401);
+  if (token.expiresAt && new Date(token.expiresAt) < new Date()) throw new ProtocolError("AUTH_EXPIRED", "Protocol token has expired.", 401);
   await repositories.agentTokens.touchLastUsed(token.id);
   const plan = await repositories.entitlements.getPlan(token.workspaceId);
+  if (!getEntitlements(plan).apiMcpAccess) {
+    throw new ProtocolError("PLAN_LIMIT", "MCP access requires a Pro or higher plan.", 403);
+  }
   const ctx: AppContext = {
     userId: token.createdByUserId,
     workspaceId: token.workspaceId,
@@ -39,7 +45,7 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
     capabilities: token.capabilities,
     systemScope: token.systemId
   };
-  return { ctx, services: createBoundedServices(repositories) };
+  return { ctx, services: createBoundedServices(repositories), repositories };
 }
 
 export function requireCapability(ctx: AppContext, capability: AgentCapability, systemId?: string) {

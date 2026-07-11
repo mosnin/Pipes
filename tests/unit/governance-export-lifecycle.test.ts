@@ -19,7 +19,7 @@ describe("governance export and lifecycle", () => {
 
     const manifest = await services.governance.workspaceExportManifest(ctx);
     expect(manifest.exportVersion).toBe("workspace_manifest_v1");
-    expect(manifest.schemaVersion).toBe("pipes_schema_v1");
+    expect(manifest.schemaVersion).toBe("looper_schema_v1");
     expect(manifest.systems.length).toBeGreaterThan(0);
   });
 

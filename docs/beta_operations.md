@@ -15,7 +15,7 @@ This playbook supports a controlled beta launch with bounded operator tools, rap
 2. Run `npm run test:e2e` where browser runtime is available.
 3. Validate critical routes listed in `/admin/release` checklist.
 4. Confirm provider readiness flags in `/admin/release`.
-5. Confirm operator allowlist (`PIPES_ADMIN_ALLOWLIST`) in real mode.
+5. Confirm operator allowlist (`LOOPER_ADMIN_ALLOWLIST`) in real mode.
 
 ## Launch day checks
 1. Freeze non-critical merges.

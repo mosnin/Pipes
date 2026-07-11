@@ -1,8 +1,49 @@
 import { store } from "@/lib/convex/store";
-import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import { aggregateAll, seedMockSamples } from "@/lib/observability/metrics-aggregation";
 
 const now = () => new Date().toISOString();
+
+let mockMetricsSeeded = false;
+
+function ensureMockMetricsSeeded(): void {
+  if (mockMetricsSeeded) return;
+  // Avoid seeding during Next.js production build prerendering. Multiple
+  // worker processes share the on-disk mock DB file; concurrent writes from
+  // a fat seed can corrupt the JSON. The admin dashboard runs at request
+  // time, not at build time, so build-phase seeding is unnecessary anyway.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const db = store.readDb();
+  db.metricsSamples = db.metricsSamples ?? [];
+  if (db.metricsSamples.length > 0) {
+    mockMetricsSeeded = true;
+    return;
+  }
+  const seeded = seedMockSamples(Date.now());
+  for (const sample of seeded) {
+    db.metricsSamples.push({
+      id: store.createId("met"),
+      kind: sample.kind,
+      label: sample.label,
+      value: sample.value,
+      tags: sample.tags,
+      ts: sample.ts
+    });
+  }
+  if (db.metricsSamples.length > 10_000) {
+    db.metricsSamples = db.metricsSamples.slice(-10_000);
+  }
+  store.writeDb(db);
+  mockMetricsSeeded = true;
+}
+
+export function resetMockMetricsSeedForTests(): void {
+  mockMetricsSeeded = false;
+}
 
 async function provision(identity: { externalId: string; email: string; name: string }): Promise<AppContext> {
   const db = store.readDb();
@@ -34,7 +75,7 @@ function getBundle(systemId: string): SystemBundle {
     pipes: db.pipes
       .filter((p) => p.systemId === systemId)
       .map((p) => ({ ...p, fromNodeId: db.nodes.find((n) => n.portIds.includes(p.fromPortId))?.id, toNodeId: db.nodes.find((n) => n.portIds.includes(p.toPortId))?.id })),
-    comments: db.comments.filter((c) => c.systemId === systemId),
+    comments: db.comments.filter((c) => c.systemId === systemId).map((c) => ({ ...c, authorName: usersById.get(c.authorId)?.name })),
     versions: db.versions.filter((v) => v.systemId === systemId),
     presence: db.presence.filter((p) => p.systemId === systemId).map((p) => ({ ...p, name: usersById.get(p.userId)?.name ?? p.name }))
   };
@@ -52,7 +93,22 @@ export function createMockRepositories(): RepositorySet {
     workspaces: {
       async getPlan(workspaceId) {
         return store.readDb().planState.find((p) => p.workspaceId === workspaceId)?.plan ?? "Free";
-      }
+      },
+      async get(workspaceId) {
+        const db = store.readDb();
+        const ws = db.workspaces.find((w: { id: string }) => w.id === workspaceId);
+        if (!ws) return null;
+        const plan = db.planState.find((p: { workspaceId: string }) => p.workspaceId === workspaceId)?.plan ?? "Free";
+        return { id: ws.id, name: ws.name, slug: ws.slug, plan, description: ws.description };
+      },
+      async update(workspaceId, patch) {
+        const db = store.readDb();
+        const ws = db.workspaces.find((w: { id: string }) => w.id === workspaceId);
+        if (!ws) throw new Error("Workspace not found");
+        if (patch.name !== undefined) ws.name = patch.name;
+        if (patch.description !== undefined) ws.description = patch.description;
+        store.writeDb(db);
+      },
     },
     memberships: {
       async add(workspaceId, userId, role) {
@@ -72,6 +128,11 @@ export function createMockRepositories(): RepositorySet {
         if (!row) throw new Error("Membership not found.");
         row.role = role;
         store.writeDb(db);
+      },
+      async remove(workspaceId, userId) {
+        const db = store.readDb();
+        db.memberships = db.memberships.filter((m) => !(m.workspaceId === workspaceId && m.userId === userId));
+        store.writeDb(db);
       }
     },
     systems: {
@@ -84,6 +145,10 @@ export function createMockRepositories(): RepositorySet {
         db.systems.push({ id: systemId, workspaceId: input.workspaceId, name: input.name, description: input.description, createdBy: input.userId, createdAt: now(), updatedAt: now() });
         store.writeDb(db);
         return systemId;
+      },
+      async getWorkspaceId(systemId) {
+        const system = store.readDb().systems.find((s) => s.id === systemId);
+        return system ? system.workspaceId : null;
       },
       async getBundle(systemId) {
         return getBundle(systemId);
@@ -103,6 +168,39 @@ export function createMockRepositories(): RepositorySet {
         delete system.archivedAt;
         system.updatedAt = now();
         store.writeDb(db);
+      },
+      async delete(systemId) {
+        const db = store.readDb();
+        db.systems = db.systems.filter((s) => s.id !== systemId);
+        db.nodes = db.nodes.filter((n) => n.systemId !== systemId);
+        db.pipes = db.pipes.filter((p) => p.systemId !== systemId);
+        db.comments = db.comments.filter((c) => c.systemId !== systemId);
+        db.versions = db.versions.filter((v) => v.systemId !== systemId);
+        store.writeDb(db);
+      },
+      async setVisibility(systemId, visibility) {
+        const db = store.readDb();
+        const idx = db.systems.findIndex((s) => s.id === systemId);
+        if (idx >= 0) {
+          db.systems[idx] = { ...db.systems[idx], visibility, updatedAt: now() };
+          store.writeDb(db);
+        }
+      },
+      async rename(systemId, name) {
+        const db = store.readDb();
+        const system = db.systems.find((s) => s.id === systemId);
+        if (!system) throw new Error("System not found.");
+        system.name = name;
+        system.updatedAt = now();
+        store.writeDb(db);
+      },
+      async updateDescription(systemId, description) {
+        const db = store.readDb();
+        const system = db.systems.find((s) => s.id === systemId);
+        if (!system) throw new Error("System not found.");
+        system.description = description;
+        system.updatedAt = now();
+        store.writeDb(db);
       }
     },
     graph: {
@@ -120,6 +218,7 @@ export function createMockRepositories(): RepositorySet {
         if (input.title !== undefined) node.title = input.title;
         if (input.description !== undefined) node.description = input.description;
         if (input.position) node.position = input.position;
+        if (input.config !== undefined) node.config = input.config;
         store.writeDb(db);
       },
       async deleteNode(nodeId) {
@@ -187,7 +286,7 @@ export function createMockRepositories(): RepositorySet {
       async getByToken(token) {
         const invite = store.readDb().invites.find((i) => i.token === token) ?? null;
         if (!invite) return null;
-        return { workspaceId: invite.workspaceId, token: invite.token, email: invite.email, role: invite.role, status: invite.status, expiresAt: invite.expiresAt };
+        return { workspaceId: invite.workspaceId, token: invite.token, email: invite.email, role: invite.role, status: invite.status, expiresAt: invite.expiresAt, invitedBy: invite.invitedBy };
       },
       async accept(token, userId) {
         const db = store.readDb();
@@ -226,7 +325,7 @@ export function createMockRepositories(): RepositorySet {
       },
       async getPlanState(workspaceId) {
         const row = store.readDb().planState.find((p) => p.workspaceId === workspaceId);
-        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing" };
+        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing", externalCustomerId: row?.externalCustomerId, externalSubscriptionId: row?.externalSubscriptionId };
       },
       async upsertPlanState(input) {
         const db = store.readDb();
@@ -284,6 +383,39 @@ export function createMockRepositories(): RepositorySet {
         row.status = input.status;
         row.updatedAt = now();
         store.writeDb(db);
+      },
+      async record(input) {
+        const db = store.readDb();
+        db.feedbackEntries = db.feedbackEntries ?? [];
+        const id = store.createId("fbe");
+        const row = {
+          id,
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          kind: input.kind,
+          targetType: input.targetType,
+          targetId: input.targetId,
+          conversationId: input.conversationId,
+          turnId: input.turnId,
+          verdict: input.verdict,
+          score: input.score,
+          surface: input.surface,
+          text: input.text,
+          note: input.note,
+          createdAt: now()
+        };
+        db.feedbackEntries.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listEntries(opts) {
+        const db = store.readDb();
+        const entries = db.feedbackEntries ?? [];
+        let rows = entries.slice();
+        if (opts?.userId) rows = rows.filter((row) => row.userId === opts.userId);
+        if (opts?.kind) rows = rows.filter((row) => row.kind === opts.kind);
+        rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        return rows.slice(0, opts?.limit ?? 200);
       }
     },
     agentTokens: {
@@ -299,7 +431,8 @@ export function createMockRepositories(): RepositorySet {
           tokenHash: input.tokenHash,
           tokenPreview: input.tokenPreview,
           createdByUserId: input.createdByUserId,
-          createdAt: now()
+          createdAt: now(),
+          expiresAt: input.expiresAt
         });
         store.writeDb(db);
         return { id };
@@ -316,7 +449,8 @@ export function createMockRepositories(): RepositorySet {
             createdByUserId: token.createdByUserId,
             createdAt: token.createdAt,
             lastUsedAt: token.lastUsedAt,
-            revokedAt: token.revokedAt
+            revokedAt: token.revokedAt,
+            expiresAt: token.expiresAt
           }));
       },
       async revoke(id) {
@@ -336,7 +470,8 @@ export function createMockRepositories(): RepositorySet {
           capabilities: token.capabilities,
           systemId: token.systemId,
           createdByUserId: token.createdByUserId,
-          revokedAt: token.revokedAt
+          revokedAt: token.revokedAt,
+          expiresAt: token.expiresAt
         };
       },
       async touchLastUsed(id) {
@@ -921,9 +1056,191 @@ export function createMockRepositories(): RepositorySet {
       },
       async listEscalationRecords(input) { return store.readDb().escalationRecords.filter((row) => row.runId === input.runId); }
     },
+    agentConversations: {
+      async createConversation(input) {
+        const db = store.readDb();
+        const id = store.createId("ac");
+        const row = { id, systemId: input.systemId, userId: input.userId, createdAt: now(), updatedAt: now() };
+        db.agentConversations.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async getConversation(conversationId) {
+        return store.readDb().agentConversations.find((row) => row.id === conversationId) ?? null;
+      },
+      async listConversations(input) {
+        return store.readDb().agentConversations.filter((row) => row.userId === input.userId && row.systemId === input.systemId);
+      },
+      async touchConversation(conversationId) {
+        const db = store.readDb();
+        const row = db.agentConversations.find((item) => item.id === conversationId);
+        if (!row) return;
+        row.updatedAt = now();
+        store.writeDb(db);
+      },
+      async createTurn(input) {
+        const db = store.readDb();
+        const id = store.createId("at");
+        const row = { id, conversationId: input.conversationId, index: input.index, prompt: input.prompt, toolCalls: [], startedAt: input.startedAt, cancelled: false };
+        db.agentTurns.push(row);
+        store.writeDb(db);
+        return row;
+      },
+      async listTurns(conversationId) {
+        return store.readDb().agentTurns.filter((row) => row.conversationId === conversationId).sort((a, b) => a.index - b.index);
+      },
+      async appendToolCall(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.toolCalls = [...row.toolCalls, input.toolCall];
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
+        store.writeDb(db);
+      },
+      async completeTurn(input) {
+        const db = store.readDb();
+        const row = db.agentTurns.find((item) => item.id === input.turnId);
+        if (!row) return;
+        row.finalMessage = input.finalMessage;
+        row.completedAt = input.completedAt;
+        row.cancelled = input.cancelled;
+        if (input.costSnapshot) row.costSnapshot = input.costSnapshot;
+        store.writeDb(db);
+      }
+    },
+    metrics: {
+      async recordSample(input) {
+        const db = store.readDb();
+        db.metricsSamples = db.metricsSamples ?? [];
+        db.metricsSamples.push({
+          id: store.createId("met"),
+          kind: input.kind,
+          label: input.label,
+          value: input.value,
+          tags: input.tags,
+          ts: input.ts
+        });
+        if (db.metricsSamples.length > 5000) {
+          db.metricsSamples = db.metricsSamples.slice(-5000);
+        }
+        store.writeDb(db);
+      },
+      async listSamples(opts) {
+        ensureMockMetricsSeeded();
+        const db = store.readDb();
+        const rows = (db.metricsSamples ?? []).slice();
+        const filtered = rows
+          .filter((row) => !opts?.kind || row.kind === opts.kind)
+          .filter((row) => !opts?.label || row.label === opts.label)
+          .filter((row) => !opts?.sinceTs || row.ts >= opts.sinceTs)
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1));
+        return filtered.slice(0, opts?.limit ?? 500);
+      },
+      async listAggregated(opts) {
+        ensureMockMetricsSeeded();
+        const db = store.readDb();
+        const nowMs = opts?.nowMs ?? Date.now();
+        const cap = Math.max(1, opts?.sampleCap ?? 10_000);
+        // Pull the most recent `cap` samples (already capped to 10k in store).
+        const rows = (db.metricsSamples ?? [])
+          .slice()
+          .sort((a, b) => (a.ts < b.ts ? 1 : -1))
+          .slice(0, cap);
+        return aggregateAll(rows, nowMs, {
+          latencyHours: opts?.latencyHours,
+          buildDays: opts?.buildDays,
+          errorHours: opts?.errorHours,
+          costDays: opts?.costDays
+        });
+      }
+    },
+    agentRunnerMetrics: {
+      async getMonthly(input) {
+        const db = store.readDb();
+        const row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        return row ? { ...row } : null;
+      },
+      async incrementMonthly(input) {
+        const db = store.readDb();
+        let row = db.agentRunnerMetrics.find((m) => m.userId === input.userId && m.monthKey === input.monthKey);
+        if (!row) {
+          row = {
+            userId: input.userId,
+            workspaceId: input.workspaceId,
+            monthKey: input.monthKey,
+            buildsUsed: Math.max(0, input.delta),
+            updatedAt: now()
+          };
+          db.agentRunnerMetrics.push(row);
+        } else {
+          row.buildsUsed = Math.max(0, (row.buildsUsed ?? 0) + input.delta);
+          row.workspaceId = input.workspaceId;
+          row.updatedAt = now();
+        }
+        store.writeDb(db);
+        return { ...row };
+      }
+    },
+    marketplaceListings: {
+      async create(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("mpl"), createdAt: now() };
+        (db as any).marketplaceListings = [...((db as any).marketplaceListings ?? []), row];
+        store.writeDb(db);
+        return row.id;
+      },
+      async listByWorkspace(workspaceId) {
+        const db = store.readDb();
+        return ((db as any).marketplaceListings ?? []).filter((r: any) => r.workspaceId === workspaceId);
+      },
+      async get(listingId) {
+        const db = store.readDb();
+        return ((db as any).marketplaceListings ?? []).find((r: any) => r.id === listingId) ?? null;
+      },
+    },
+    payments: {
+      async recordSettlement(input) {
+        const db = store.readDb();
+        const existing = input.idempotencyKey
+          ? ((db as any).paymentSettlements ?? []).find((r: any) => r.idempotencyKey === input.idempotencyKey)
+          : undefined;
+        if (existing) return { id: existing.id, replayed: true };
+        const row = { ...input, id: store.createId("pay"), createdAt: now() };
+        (db as any).paymentSettlements = [...((db as any).paymentSettlements ?? []), row];
+        store.writeDb(db);
+        return { id: row.id, replayed: false };
+      },
+      async listSettlements(workspaceId) {
+        const db = store.readDb();
+        return ((db as any).paymentSettlements ?? []).filter((r: any) => r.workspaceId === workspaceId);
+      },
+      async recordUsage(input) {
+        const db = store.readDb();
+        const row = { ...input, id: store.createId("use"), createdAt: now() };
+        (db as any).usageEvents = [...((db as any).usageEvents ?? []), row];
+        store.writeDb(db);
+      },
+      async getUsageTotal(input) {
+        const db = store.readDb();
+        const rows = ((db as any).usageEvents ?? []).filter(
+          (r: any) =>
+            r.workspaceId === input.workspaceId &&
+            r.meter === input.meter &&
+            (!input.sinceIso || r.createdAt >= input.sinceIso),
+        );
+        return { units: rows.reduce((sum: number, r: any) => sum + (r.units ?? 0), 0) };
+      },
+    },
     agentMemory: {
       async addMemoryEntry(input) {
         const db = store.readDb();
+        const existingIdx = db.memoryEntries.findIndex((e) => e.workspaceId === input.workspaceId && e.title === input.title);
+        if (existingIdx >= 0) {
+          const updated = { ...db.memoryEntries[existingIdx], ...input };
+          db.memoryEntries[existingIdx] = updated;
+          store.writeDb(db);
+          return updated;
+        }
         const row = { ...input, id: store.createId("memr") };
         db.memoryEntries.push(row);
         store.writeDb(db);

@@ -17,7 +17,7 @@ describe("trust settings route integration", () => {
           updateRetentionPolicy: vi.fn().mockResolvedValue(trust),
           deactivateWorkspace: vi.fn().mockResolvedValue(trust),
           reactivateWorkspace: vi.fn().mockResolvedValue(trust),
-          workspaceExportManifest: vi.fn().mockResolvedValue({ exportVersion: "workspace_manifest_v1", schemaVersion: "pipes_schema_v1", systems: [] })
+          workspaceExportManifest: vi.fn().mockResolvedValue({ exportVersion: "workspace_manifest_v1", schemaVersion: "looper_schema_v1", systems: [] })
         }
       }
     });

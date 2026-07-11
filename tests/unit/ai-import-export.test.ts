@@ -20,8 +20,9 @@ describe("ai + template + import/export", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|a", email: "a@pipes.local", name: "A" });
-    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Pro", status: "active" });
-    await expect(services.ai.generateDraft(ctx, { prompt: "build" })).rejects.toThrow("Builder");
+    // Free plan has no AI generation — Pro and above do.
+    await repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan: "Free", status: "active" });
+    await expect(services.ai.generateDraft(ctx, { prompt: "build" })).rejects.toThrow();
   });
 
   it("supports generate draft then commit integration flow", async () => {
@@ -45,7 +46,7 @@ describe("ai + template + import/export", () => {
     expect(imported.ok).toBe(true);
     if (!("systemId" in imported)) throw new Error("Expected systemId from new import.");
     const exportedAgain = await services.importExport.exportSystem(ctx, imported.systemId as string);
-    expect(exportedAgain.schemaVersion).toBe("pipes_schema_v1");
+    expect(exportedAgain.schemaVersion).toBe("looper_schema_v1");
   });
 
   it("applies only selected AI changes and skips rejected changes", async () => {

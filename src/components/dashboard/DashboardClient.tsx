@@ -1,154 +1,1459 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Card, EmptyState, Input, PageHeader } from "@/components/ui";
+import { toast } from "sonner";
+import { ConversationInput, type ConversationInputHandle } from "@/components/editor/ConversationInput";
+import { STARTER_CHIPS } from "@/components/editor/ConversationDrawer";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
+import {
+  Plus,
+  MoreHorizontal,
+  Star,
+  Archive,
+  Download,
+  Edit,
+  RotateCcw,
+  Upload,
+  Trash2,
+  Copy,
+  Tag,
+  X,
+  Bot,
+  ArrowRight,
+  Clock,
+} from "lucide-react";
+import {
+  Button,
+  Input,
+  Textarea,
+  MetricCard,
+  Toolbar,
+  SegmentedControl,
+  SearchInput,
+  EmptyState,
+  StatusBadge,
+  DataTable,
+  Dialog,
+  Spinner,
+  SkeletonCard,
+  Badge,
+} from "@/components/ui";
+import type { DataTableColumn } from "@/components/ui";
+import { EmptyCanvas } from "@/components/illustrations";
+import { MobileGate } from "@/components/mobile/MobileGate";
+import { MobileDashboard } from "@/components/mobile/MobileDashboard";
 
-type LibraryRow = { id: string; name: string; description: string; createdAt: string; updatedAt: string; archivedAt?: string; createdBy: string; favorite: boolean; tags: string[]; lastOpenedAt?: string };
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
-type LibraryPayload = { rows: LibraryRow[]; recent: LibraryRow[]; favorites: LibraryRow[]; availableTags: string[] };
+type LibraryRow = {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+  createdBy: string;
+  favorite: boolean;
+  tags: string[];
+  lastOpenedAt?: string;
+};
 
-function TemplatePanel({ onLaunch }: { onLaunch: (templateId: string) => Promise<void> }) {
-  const [templates, setTemplates] = useState<Array<{ id: string; title: string; category: string; useCase: string; complexity: string }>>([]);
-  useEffect(() => { fetch("/api/templates").then((r) => r.json()).then((d) => setTemplates(d.data ?? [])); }, []);
+type LibraryPayload = {
+  rows: LibraryRow[];
+  recent: LibraryRow[];
+  favorites: LibraryRow[];
+  availableTags: string[];
+};
+
+type FilterId = "all" | "active" | "favorites" | "archived";
+type ViewMode = "grid" | "list";
+type SortMode = "recent" | "name" | "created";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatRelativeDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
+function initials(name: string): string {
+  const seed = name.trim() || "U";
+  const parts = seed.split(/\s+/);
+  if (parts.length === 1) return seed.slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+const PAGE_SIZE = 12;
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Six starters for the dashboard hero. Three come from the drawer (the same
+// three a brand-new editor sees) plus three more pulled from the existing
+// 14-template catalog and rewritten as natural sentences.
+const DASHBOARD_STARTERS: Array<{ id: string; label: string; prompt: string }> = [
+  ...STARTER_CHIPS,
+  {
+    id: "multi-agent-handoff",
+    label: "Planner to coder",
+    prompt:
+      "A planner agent reads inbound tickets and writes a plan. A guard reviews the plan against policy. A coder agent runs the approved plan and opens a PR.",
+  },
+  {
+    id: "document-qa-system",
+    label: "Document QA",
+    prompt:
+      "A user asks a question. A retriever pulls matching chunks from the docs index. An answering agent writes a grounded answer. A citation formatter attaches inline citations and the response goes back to the user.",
+  },
+  {
+    id: "data-extraction-pipeline",
+    label: "Data extraction",
+    prompt:
+      "A user uploads a document. OCR runs on it. A field extractor pulls structured fields. A schema validator checks the record. Valid records land in storage; failures land in a dead-letter queue.",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// System Card (grid)
+// ---------------------------------------------------------------------------
+
+type SystemCardProps = {
+  row: LibraryRow;
+  onOpen: () => void;
+  onToggleFavorite: () => void;
+  onArchive: () => void;
+  onRestore: () => void;
+  onDelete: () => void;
+  onExport: () => void;
+  onEdit: () => void;
+  onRename: () => void;
+  onDuplicate: () => void;
+  onManageTags: () => void;
+};
+
+function ownerColor(name: string): string {
+  const colors = [
+    "#4F46E5", "#7C3AED", "#0891B2", "#059669", "#D97706", "#DC2626",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function recencyDot(updatedAt: string): string | null {
+  const diff = Date.now() - new Date(updatedAt).getTime();
+  const hours = diff / 3_600_000;
+  if (hours < 1) return "#059669";
+  if (hours < 24) return "#4F46E5";
+  return null;
+}
+
+function SystemCard({
+  row,
+  onOpen,
+  onToggleFavorite,
+  onArchive,
+  onRestore,
+  onDelete,
+  onExport,
+  onEdit,
+  onRename,
+  onDuplicate,
+  onManageTags,
+}: SystemCardProps) {
+  const dot = recencyDot(row.updatedAt);
+  const avatarColor = ownerColor(row.createdBy);
   return (
-    <Card>
-      <h3>Recommended templates</h3>
-      <div style={{ display: "grid", gap: 8 }}>
-        {templates.slice(0, 4).map((t) => <div key={t.id} className="nav-inline" style={{ justifyContent: "space-between" }}><span>{t.title} · {t.category} · {t.complexity}</span><Button onClick={() => onLaunch(t.id)}>Use</Button></div>)}
+    <div
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}
+      className="system-card group border border-line rounded-[12px] p-4 cursor-pointer hover-lift transition-all duration-200 flex flex-col gap-3 min-h-[156px] hover:shadow-md-token"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            {dot && (
+              <span
+                className="shrink-0 w-1.5 h-1.5 rounded-full"
+                style={{ background: dot }}
+                aria-hidden
+              />
+            )}
+            <h3 className="t-label font-semibold text-ink-1 truncate group-hover:text-indigo-700 transition-colors">
+              {row.name}
+            </h3>
+            {row.favorite && (
+              <Star size={12} className="text-amber-400 fill-amber-400 shrink-0" aria-hidden="true" />
+            )}
+          </div>
+          <p className="t-label text-ink-3 line-clamp-2 leading-snug">
+            {row.description || <span className="italic opacity-50">No description</span>}
+          </p>
+        </div>
+        <div className="flex items-start gap-1.5 shrink-0">
+          {row.archivedAt && <StatusBadge tone="warning">Archived</StatusBadge>}
+          <Dropdown>
+            <DropdownTrigger>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Loop options"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <MoreHorizontal size={14} />
+              </div>
+            </DropdownTrigger>
+            <Dropdown.Popover>
+              <DropdownMenu aria-label="Loop actions">
+                <DropdownItem id="fav" onAction={onToggleFavorite}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Star size={14} />
+                    {row.favorite ? "Unfavorite" : "Favorite"}
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="rename" onAction={onRename}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Edit size={14} />
+                    Rename
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="duplicate" onAction={onDuplicate}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Copy size={14} />
+                    Duplicate
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="tags" onAction={onManageTags}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Tag size={14} />
+                    Manage tags
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="edit" onAction={onEdit}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Edit size={14} />
+                    Open in editor
+                  </span>
+                </DropdownItem>
+                <DropdownItem id="export" onAction={onExport}>
+                  <span className="flex items-center gap-2 t-label">
+                    <Download size={14} />
+                    Export
+                  </span>
+                </DropdownItem>
+                {row.archivedAt ? (
+                  <>
+                    <DropdownItem id="restore" onAction={onRestore}>
+                      <span className="flex items-center gap-2 t-label">
+                        <RotateCcw size={14} />
+                        Restore
+                      </span>
+                    </DropdownItem>
+                    <DropdownItem id="delete" onAction={onDelete}>
+                      <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                        <Trash2 size={14} />
+                        Delete permanently
+                      </span>
+                    </DropdownItem>
+                  </>
+                ) : (
+                  <DropdownItem id="archive" onAction={onArchive}>
+                    <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                      <Archive size={14} />
+                      Archive
+                    </span>
+                  </DropdownItem>
+                )}
+              </DropdownMenu>
+            </Dropdown.Popover>
+          </Dropdown>
+        </div>
       </div>
-    </Card>
+
+      {row.tags.length > 0 && (
+        <div className="flex gap-1 flex-wrap">
+          {row.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} tone="neutral">{tag}</Badge>
+          ))}
+          {row.tags.length > 3 && <Badge tone="neutral">+{row.tags.length - 3}</Badge>}
+        </div>
+      )}
+
+      <div className="mt-auto flex items-center justify-between pt-1">
+        <span className="inline-flex items-center gap-1 t-caption text-ink-3">
+          <Clock size={10} aria-hidden />
+          {formatRelativeDate(row.updatedAt)}
+        </span>
+        <span
+          className="inline-flex items-center justify-center w-6 h-6 rounded-full t-caption font-semibold text-white"
+          style={{ background: avatarColor }}
+          title={row.createdBy}
+          aria-label={`Owner ${row.createdBy}`}
+        >
+          {initials(row.createdBy)}
+        </span>
+      </div>
+    </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Main Dashboard
+// ---------------------------------------------------------------------------
+
 export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPayload }) {
+  return (
+    <MobileGate mobile={<MobileDashboard initialLibrary={initialLibrary} />}>
+      <DesktopDashboardClient initialLibrary={initialLibrary} />
+    </MobileGate>
+  );
+}
+
+function DesktopDashboardClient({ initialLibrary }: { initialLibrary: LibraryPayload }) {
   const router = useRouter();
   const [library, setLibrary] = useState<LibraryPayload>(initialLibrary);
-  const [name, setName] = useState("New System");
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"active" | "archived" | "favorites" | "mine" | "shared">("active");
-  const [sort, setSort] = useState<"recent_activity" | "name" | "created" | "updated">("recent_activity");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("Build a support triage system with guardrails.");
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [view, setView] = useState<ViewMode>("grid");
+  const [sort, setSort] = useState<SortMode>("recent");
+  const [loading, setLoading] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
-  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [myListings, setMyListings] = useState<Array<{ id: string; title: string; price: number; systemId: string; createdAt: string }>>([]);
+  const [deleteTarget, setDeleteTarget] = useState<LibraryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [renameTarget, setRenameTarget] = useState<LibraryRow | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [tagTarget, setTagTarget] = useState<LibraryRow | null>(null);
+  const [tagDraft, setTagDraft] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [savingTags, setSavingTags] = useState(false);
 
-  const refreshLibrary = useCallback(async (input?: { q?: string; tag?: string }) => {
-    setLoadingLibrary(true);
-    const params = new URLSearchParams({ status, sort });
-    if (input?.q ?? query) params.set("q", input?.q ?? query);
-    if (input?.tag ?? selectedTag) params.set("tag", input?.tag ?? selectedTag);
-    const res = await fetch(`/api/library?${params.toString()}`);
-    const data = await res.json();
-    if (data.ok) setLibrary(data.data);
-    setLoadingLibrary(false);
-  }, [query, selectedTag, sort, status]);
+  const refreshListings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/marketplace/listings");
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.data)) setMyListings(data.data);
+    } catch {
+      // non-critical; silently skip
+    }
+  }, []);
 
-  useEffect(() => { void refreshLibrary({ q: "", tag: "" }); }, [status, sort, refreshLibrary]);
+  const refreshLibrary = useCallback(
+    async (q?: string) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ status: "all", sort: "recent_activity" });
+        if (q ?? query) params.set("q", q ?? query);
+        const res = await fetch(`/api/library?${params}`);
+        const data = await res.json();
+        if (data.ok) setLibrary(data.data);
+        else toast.error(data.error ?? "Could not load your loops.");
+      } catch {
+        toast.error("Could not load your systems. Check your connection.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [query],
+  );
+
+  const [buildUsage, setBuildUsage] = useState<{ used: number; limit: number; plan: string } | null>(null);
+
   useEffect(() => {
-    const timer = setTimeout(() => { void refreshLibrary(); }, 220);
-    return () => clearTimeout(timer);
-  }, [query, selectedTag, refreshLibrary]);
+    void refreshLibrary("");
+    void refreshListings();
+    setPage(1);
+    fetch("/api/billing/usage")
+      .then((r) => r.json())
+      .then((body) => { if (body.ok) setBuildUsage(body.data as { used: number; limit: number; plan: string }); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void refreshLibrary();
+      setPage(1);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [query, refreshLibrary]);
 
   const createSystem = async () => {
-    const res = await fetch("/api/systems", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
-    const data = await res.json();
-    if (data.ok) router.push(`/systems/${data.data.systemId}`);
+    const id = toast.loading("Creating system...");
+    try {
+      const res = await fetch("/api/systems", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Untitled loop" }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success("Loop created", { id });
+        router.push(`/systems/${data.data.systemId}?rename=1`);
+      } else {
+        toast.error(data.error ?? "Failed to create loop", { id });
+      }
+    } catch {
+      toast.error("Failed to create loop", { id });
+    }
   };
 
-  const visibleRows = useMemo(() => library.rows.filter((row) => status === "archived" ? !!row.archivedAt : !row.archivedAt), [library.rows, status]);
+  // Hero prompt state. The dashboard hero is the first half of beat 1 of the
+  // magic moment: a prompt input, no canvas, the agent has not been mentioned.
+  const [heroPrompt, setHeroPrompt] = useState("");
+  const [heroSubmitting, setHeroSubmitting] = useState(false);
+  const heroInputRef = useRef<ConversationInputHandle>(null);
+
+  const startSystemFromPrompt = useCallback(
+    async (prompt: string) => {
+      const text = prompt.trim();
+      if (!text) return;
+      if (heroSubmitting) return;
+      setHeroSubmitting(true);
+      const id = toast.loading("Creating system...");
+      try {
+        const words = text.split(/\s+/).filter(Boolean);
+        const systemName = words.slice(0, 6).join(" ").slice(0, 48) || "New Loop";
+        const res = await fetch("/api/systems", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: systemName }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          toast.success("Building...", { id });
+          router.push(`/systems/${data.data.systemId}?prompt=${encodeURIComponent(text)}`);
+        } else {
+          toast.error(data.error ?? "Failed to create loop", { id });
+        }
+      } catch {
+        toast.error("Failed to create loop", { id });
+      } finally {
+        setHeroSubmitting(false);
+      }
+    },
+    [heroSubmitting, router],
+  );
+
+  const handleImport = async () => {
+    if (!importText.trim()) return;
+    setImporting(true);
+    const id = toast.loading("Importing...");
+    try {
+      const res = await fetch("/api/import/system", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ schema: importText, mode: "new" }),
+      });
+      const data = await res.json();
+      if (data.ok && data.data.ok) {
+        toast.success("Loop imported", { id });
+        setShowImport(false);
+        setImportText("");
+        router.push(`/systems/${data.data.systemId}`);
+      } else {
+        toast.error(data.error ?? "Import failed", { id });
+      }
+    } catch {
+      toast.error("Import failed", { id });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleToggleFavorite = async (row: LibraryRow) => {
+    const next = !row.favorite;
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: next }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(next ? "Added to favorites" : "Removed from favorites");
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to update favorites");
+    }
+  };
+
+  const handleArchive = async (row: LibraryRow) => {
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "archive" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${row.name} archived`);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to archive ${row.name}`);
+    }
+  };
+
+  const handleRestore = async (row: LibraryRow) => {
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "restore" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${row.name} restored`);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to restore ${row.name}`);
+    }
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/systems/${deleteTarget.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "delete" }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`${deleteTarget.name} deleted permanently`);
+      setDeleteTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to delete ${deleteTarget.name}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDuplicate = async (row: LibraryRow) => {
+    const id = toast.loading(`Duplicating ${row.name}...`);
+    try {
+      const res = await fetch(`/api/systems/${row.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "duplicate" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error ?? "Failed");
+      toast.success(`${row.name} duplicated`, { id });
+      void refreshLibrary();
+    } catch {
+      toast.error(`Failed to duplicate ${row.name}`, { id });
+    }
+  };
+
+  const handleRenameConfirmed = async () => {
+    if (!renameTarget || !renameDraft.trim()) return;
+    setRenaming(true);
+    try {
+      const res = await fetch(`/api/systems/${renameTarget.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: renameDraft.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Renamed");
+      setRenameTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to rename");
+    } finally {
+      setRenaming(false);
+    }
+  };
+
+  const openManageTags = (row: LibraryRow) => {
+    setTagTarget(row);
+    setTagDraft([...row.tags]);
+    setTagInput("");
+  };
+
+  const handleTagsConfirmed = async () => {
+    if (!tagTarget) return;
+    setSavingTags(true);
+    try {
+      const res = await fetch("/api/library", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "tags", systemId: tagTarget.id, tags: tagDraft }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Tags updated");
+      setTagTarget(null);
+      void refreshLibrary();
+    } catch {
+      toast.error("Failed to update tags");
+    } finally {
+      setSavingTags(false);
+    }
+  };
+
+  const addTag = (tag: string) => {
+    const t = tag.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 32);
+    if (t && !tagDraft.includes(t)) setTagDraft((prev) => [...prev, t]);
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => setTagDraft((prev) => prev.filter((t) => t !== tag));
+
+  const handleExport = async (row: LibraryRow) => {
+    const res = await fetch(`/api/systems/${row.id}/export`);
+    if (!res.ok) {
+      toast.error("Export failed");
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${row.name.toLowerCase().replace(/\s+/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${row.name} exported`);
+  };
+
+  // Stats — compute against a stable "now" that ticks once a minute so memo stays pure
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(i);
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = library.rows.length;
+    const archived = library.rows.filter((r) => r.archivedAt).length;
+    const active = total - archived;
+    const favorites = library.rows.filter((r) => r.favorite && !r.archivedAt).length;
+    const activeThisWeek = library.rows.filter((r) => {
+      if (r.archivedAt) return false;
+      const ts = new Date(r.updatedAt).getTime();
+      return now - ts < ONE_WEEK_MS;
+    }).length;
+    return { total, active, archived, favorites, activeThisWeek };
+  }, [library.rows, now]);
+
+  // Visible rows by filter + sort
+  const visibleRows = useMemo(() => {
+    let rows = library.rows.slice();
+    if (filter === "active") rows = rows.filter((r) => !r.archivedAt);
+    else if (filter === "favorites") rows = rows.filter((r) => r.favorite && !r.archivedAt);
+    else if (filter === "archived") rows = rows.filter((r) => !!r.archivedAt);
+    // "all" passes through
+
+    rows.sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "created")
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // recent
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+    return rows;
+  }, [library.rows, filter, sort]);
+
+  const pagedRows = visibleRows.slice(0, page * PAGE_SIZE);
+  const hasMore = page * PAGE_SIZE < visibleRows.length;
+
+  // List view columns
+  const listColumns: DataTableColumn<LibraryRow>[] = [
+    {
+      key: "name",
+      header: "Name",
+      render: (row) => (
+        <div className="flex items-center gap-2 min-w-0">
+          {row.favorite && (
+            <Star size={12} className="text-ink-2 fill-[#3C3C43] shrink-0" />
+          )}
+          <span className="t-label font-medium text-ink-1 truncate">{row.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      width: "120px",
+      render: (row) =>
+        row.archivedAt ? (
+          <StatusBadge tone="warning">Archived</StatusBadge>
+        ) : (
+          <span className="t-caption text-ink-3">--</span>
+        ),
+    },
+    {
+      key: "tags",
+      header: "Tags",
+      render: (row) =>
+        row.tags.length === 0 ? (
+          <span className="t-caption text-ink-4">--</span>
+        ) : (
+          <div className="flex gap-1 flex-wrap">
+            {row.tags.slice(0, 3).map((tag) => (
+              <Badge key={tag} tone="neutral">
+                {tag}
+              </Badge>
+            ))}
+            {row.tags.length > 3 && <Badge tone="neutral">+{row.tags.length - 3}</Badge>}
+          </div>
+        ),
+    },
+    {
+      key: "updatedAt",
+      header: "Updated",
+      width: "140px",
+      render: (row) => (
+        <span className="t-label text-ink-2">{formatRelativeDate(row.updatedAt)}</span>
+      ),
+    },
+    {
+      key: "owner",
+      header: "Owner",
+      width: "140px",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--surface-subtle)] text-ink-2 t-caption font-semibold">
+            {initials(row.createdBy)}
+          </span>
+          <span className="t-label text-ink-2 truncate">{row.createdBy}</span>
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      width: "48px",
+      align: "right",
+      render: (row) => (
+        <Dropdown>
+          <DropdownTrigger>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Loop options"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); }}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-ink-3 hover:text-ink-1 hover:bg-[var(--color-hover)] transition-colors cursor-pointer"
+            >
+              <MoreHorizontal size={14} />
+            </div>
+          </DropdownTrigger>
+          <Dropdown.Popover>
+            <DropdownMenu aria-label="Loop actions">
+              <DropdownItem id="fav" onAction={() => handleToggleFavorite(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Star size={14} />
+                  {row.favorite ? "Unfavorite" : "Favorite"}
+                </span>
+              </DropdownItem>
+              <DropdownItem
+                id="rename"
+                onAction={() => { setRenameTarget(row); setRenameDraft(row.name); }}
+              >
+                <span className="flex items-center gap-2 t-label">
+                  <Edit size={14} />
+                  Rename
+                </span>
+              </DropdownItem>
+              <DropdownItem id="duplicate" onAction={() => handleDuplicate(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Copy size={14} />
+                  Duplicate
+                </span>
+              </DropdownItem>
+              <DropdownItem id="tags" onAction={() => openManageTags(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Tag size={14} />
+                  Manage tags
+                </span>
+              </DropdownItem>
+              <DropdownItem
+                id="edit"
+                onAction={() => router.push(`/systems/${row.id}`)}
+              >
+                <span className="flex items-center gap-2 t-label">
+                  <Edit size={14} />
+                  Open in editor
+                </span>
+              </DropdownItem>
+              <DropdownItem id="export" onAction={() => handleExport(row)}>
+                <span className="flex items-center gap-2 t-label">
+                  <Download size={14} />
+                  Export
+                </span>
+              </DropdownItem>
+              {row.archivedAt ? (
+                <>
+                  <DropdownItem id="restore" onAction={() => handleRestore(row)}>
+                    <span className="flex items-center gap-2 t-label">
+                      <RotateCcw size={14} />
+                      Restore
+                    </span>
+                  </DropdownItem>
+                  <DropdownItem id="delete" onAction={() => setDeleteTarget(row)}>
+                    <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                      <Trash2 size={14} />
+                      Delete permanently
+                    </span>
+                  </DropdownItem>
+                </>
+              ) : (
+                <DropdownItem id="archive" onAction={() => handleArchive(row)}>
+                  <span className="flex items-center gap-2 t-label text-[#991B1B]">
+                    <Archive size={14} />
+                    Archive
+                  </span>
+                </DropdownItem>
+              )}
+            </DropdownMenu>
+          </Dropdown.Popover>
+        </Dropdown>
+      ),
+    },
+  ];
+
+  // -------------------------------------------------------------------------
+  // Render
+  // -------------------------------------------------------------------------
+
+  const isEmptyWorkspace = library.rows.length === 0 && !query && filter === "all" && !loading;
+
+  if (isEmptyWorkspace) {
+    return (
+      <>
+        <div className="grid-bg min-h-[75vh] flex items-center justify-center rounded-[16px] border border-line">
+          <div className="flex flex-col items-center text-center gap-6 w-full max-w-[660px] px-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="t-h2 text-ink-1">Your workspace is empty.</h2>
+              <p className="t-body text-ink-2">Describe your first loop and watch it appear on the canvas.</p>
+            </div>
+            <div className="w-full">
+              <ConversationInput
+                ref={heroInputRef}
+                value={heroPrompt}
+                onChange={setHeroPrompt}
+                onSend={() => void startSystemFromPrompt(heroPrompt)}
+                onStop={() => {}}
+                isRunning={heroSubmitting}
+                hasError={false}
+                placeholderHint={heroSubmitting ? "building" : "idle"}
+                size="hero"
+                placeholder="Describe your first loop."
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {DASHBOARD_STARTERS.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => {
+                    setHeroPrompt(chip.prompt);
+                    heroInputRef.current?.focus();
+                  }}
+                  className="t-label text-ink-2 hover:text-ink-1 surface-canvas border border-line hover:border-line-strong rounded-full px-3 h-8 transition-colors"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 t-caption text-ink-3">
+              <button
+                type="button"
+                onClick={() => router.push("/templates")}
+                className="hover:text-indigo-700 transition-colors"
+              >
+                or start from a template
+              </button>
+              <span aria-hidden>·</span>
+              <button
+                type="button"
+                onClick={createSystem}
+                className="hover:text-indigo-700 transition-colors"
+              >
+                Start blank
+              </button>
+            </div>
+            <Link
+              href="/settings/tokens"
+              className="inline-flex items-center gap-1.5 t-caption text-ink-3 hover:text-indigo-600 transition-colors border border-line hover:border-indigo-200 rounded-full px-3 py-1.5 surface-canvas"
+            >
+              <Bot size={11} className="shrink-0" aria-hidden />
+              Connect to any AI agent via MCP
+              <ArrowRight size={11} className="shrink-0" aria-hidden />
+            </Link>
+          </div>
+        </div>
+
+        {/* Import dialog (accessible even from zero state) */}
+        <Dialog
+          open={showImport}
+          onOpenChange={(o) => {
+            setShowImport(o);
+            if (!o) setImportText("");
+          }}
+          title="Import loop"
+          description="Paste a looper_schema_v1 JSON document. A new loop will be created with its contents."
+          size="md"
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onPress={() => setShowImport(false)} isDisabled={importing}>
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm" onPress={handleImport} isDisabled={importing || !importText.trim()}>
+                {importing ? <Spinner size="xs" /> : <Upload size={14} />}
+                {importing ? "Importing..." : "Import"}
+              </Button>
+            </>
+          }
+        >
+          <Textarea
+            aria-label="Schema JSON"
+            rows={10}
+            placeholder='{ "looper_schema_v1": { ... } }'
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            className="font-mono"
+          />
+          <p className="t-caption text-ink-3 mt-2">
+            Validation runs after import. Errors will be shown in the editor.
+          </p>
+        </Dialog>
+      </>
+    );
+  }
 
   return (
-    <div>
-      <PageHeader title="System Library" subtitle="Search, organize, and return to critical systems quickly." />
-      <div className="nav-inline" style={{ marginBottom: 8 }} role="navigation" aria-label="Workspace navigation">
-        <Link href="/settings/billing"><Button>Billing</Button></Link>
-        <Link href="/settings/collaboration"><Button>Collaboration</Button></Link>
-        <Link href="/onboarding"><Button>Onboarding</Button></Link>
+    <div className="flex flex-col gap-6">
+      {/* Front door — the describe prompt is the primary way to make a loop,
+          always present, not just on the empty state. One door to the magic. */}
+      <div className="surface-canvas border border-line rounded-[16px] p-5 shadow-sm-token">
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <p className="t-overline text-violet-700">Describe a loop</p>
+          <span className="t-caption text-ink-3 hidden sm:block">One sentence. Pipes draws every step.</span>
+        </div>
+        <ConversationInput
+          ref={heroInputRef}
+          value={heroPrompt}
+          onChange={setHeroPrompt}
+          onSend={() => void startSystemFromPrompt(heroPrompt)}
+          onStop={() => {}}
+          isRunning={heroSubmitting}
+          hasError={false}
+          placeholderHint={heroSubmitting ? "building" : "idle"}
+          size="hero"
+          placeholder="Describe the loop you want to build…"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {DASHBOARD_STARTERS.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => {
+                setHeroPrompt(chip.prompt);
+                heroInputRef.current?.focus();
+              }}
+              className="t-label text-ink-2 hover:text-ink-1 surface-muted hover:surface-canvas border border-line hover:border-line-strong rounded-full px-3 h-8 transition-colors"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Card>
-        <h3>Quick create</h3>
-        <div className="nav-inline"><Input aria-label="New system name" value={name} onChange={(e) => setName(e.target.value)} placeholder="System name" /><Button onClick={createSystem}>Create blank</Button><Button onClick={() => router.push("/onboarding")}>Guided start</Button></div>
-        <div className="nav-inline" style={{ marginTop: 8 }}>
-          <Input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="AI prompt" />
-          <Button onClick={async () => {
-            const draftRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: aiPrompt }) });
-            const draftData = await draftRes.json();
-            if (!draftData.ok) return;
-            const commitRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ commit: true, draft: draftData.data }) });
-            const commitData = await commitRes.json();
-            if (commitData.ok) router.push(`/systems/${commitData.data.systemId}`);
-          }}>Generate + commit</Button>
-        </div>
-        <div className="nav-inline" style={{ marginTop: 8 }}>
-          <Input value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste pipes_schema_v1 JSON" />
-          <Button onClick={async () => {
-            const res = await fetch("/api/import/system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ schema: importText, mode: "new" }) });
-            const data = await res.json();
-            if (data.ok && data.data.ok) router.push(`/systems/${data.data.systemId}`);
-          }}>Import</Button>
-        </div>
-      </Card>
-
-      <Card>
-        <h3>Library controls</h3>
-        <div className="nav-inline">
-          <Input aria-label="Search systems" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search title, description, tags" />
-          <Input aria-label="Filter by status" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} placeholder="active | archived | favorites | mine | shared" />
-          <Input aria-label="Sort systems" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} placeholder="recent_activity | name | created | updated" />
-          <Input aria-label="Filter by tag" value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)} placeholder="Filter by tag" />
-        </div>
-        {library.availableTags.length ? <p>Known tags: {library.availableTags.join(" · ")}</p> : null}
-      </Card>
-
-      <div className="grid-2">
-        <Card>
-          <h3>Recent systems</h3>
-          {library.recent.length === 0 ? <p>No recent activity yet.</p> : library.recent.map((row) => <div key={row.id} className="nav-inline"><Button onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
-        </Card>
-        <Card>
-          <h3>Favorite systems</h3>
-          {library.favorites.length === 0 ? <p>No favorites yet.</p> : library.favorites.map((row) => <div key={row.id} className="nav-inline"><Button onClick={() => router.push(`/systems/${row.id}`)}>{row.name}</Button></div>)}
-        </Card>
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <MetricCard
+          label="Total loops"
+          value={stats.total}
+          footer={`${stats.active} active`}
+        />
+        <MetricCard
+          label="Active this week"
+          value={stats.activeThisWeek}
+          footer="Updated in last 7 days"
+        />
+        <MetricCard
+          label="Favorites"
+          value={stats.favorites}
+          footer="Pinned for quick access"
+        />
+        <MetricCard
+          label="Archived"
+          value={stats.archived}
+          footer="Hidden from default view"
+        />
+        {buildUsage && (
+          <Link href="/settings/billing" className="block group">
+            <MetricCard
+              label="Builds this month"
+              value={buildUsage.limit === Number.POSITIVE_INFINITY || buildUsage.plan !== "Free" ? buildUsage.used : `${buildUsage.used} / ${buildUsage.limit}`}
+              footer={
+                buildUsage.plan === "Free" ? (
+                  <span
+                    className={
+                      buildUsage.used >= buildUsage.limit
+                        ? "text-red-600 font-medium"
+                        : buildUsage.used >= buildUsage.limit * 0.8
+                        ? "text-amber-600 font-medium"
+                        : undefined
+                    }
+                  >
+                    {buildUsage.used >= buildUsage.limit
+                      ? "Limit reached — upgrade"
+                      : `${buildUsage.limit - buildUsage.used} remaining`}
+                  </span>
+                ) : (
+                  "Unlimited on " + buildUsage.plan
+                )
+              }
+              className="group-hover:border-indigo-200 transition-colors h-full"
+            />
+          </Link>
+        )}
       </div>
 
-      <TemplatePanel onLaunch={async (templateId) => {
-        const res = await fetch(`/api/templates/${templateId}/instantiate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
-        const data = await res.json();
-        if (data.ok) router.push(`/systems/${data.data.systemId}`);
-      }} />
+      {/* Toolbar */}
+      <div className="surface-canvas border border-line rounded-[12px] overflow-hidden">
+        <Toolbar
+          left={
+            <div className="flex items-center gap-3 min-w-0">
+              <SegmentedControl
+                size="sm"
+                value={filter}
+                onChange={(id) => {
+                  setFilter(id as FilterId);
+                  setPage(1);
+                }}
+                items={[
+                  { id: "all", label: "All" },
+                  { id: "active", label: "Active" },
+                  { id: "favorites", label: "Favorites" },
+                  { id: "archived", label: "Archived" },
+                ]}
+              />
+              <div className="w-56 hidden md:block">
+                <SearchInput
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Search loops"
+                />
+              </div>
+            </div>
+          }
+          right={
+            <div className="flex items-center gap-2">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortMode)}
+                aria-label="Sort"
+                className="h-9 rounded-lg border border-line surface-canvas px-2.5 t-label text-ink-1 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+              >
+                <option value="recent">Recent</option>
+                <option value="name">Name</option>
+                <option value="created">Created</option>
+              </select>
+              <SegmentedControl
+                size="sm"
+                value={view}
+                onChange={(id) => setView(id as ViewMode)}
+                items={[
+                  { id: "grid", label: "Grid" },
+                  { id: "list", label: "List" },
+                ]}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={() => setShowImport(true)}
+              >
+                <Upload size={14} />
+                Import
+              </Button>
+              <Button variant="primary" size="sm" onPress={createSystem}>
+                <Plus size={14} />
+                New Loop
+              </Button>
+            </div>
+          }
+        />
 
-      {loadingLibrary ? <EmptyState title="Loading system library" description="Retrieving systems, favorites, and tags." /> : visibleRows.length === 0 ? <EmptyState title="No systems found" description="Adjust search or filters to recover results." /> : (
-        <Card>
-          <h3>{status === "archived" ? "Archived systems" : "Active systems"}</h3>
-          <div style={{ display: "grid", gap: 8 }}>
-            {visibleRows.map((row) => (
-              <Card key={row.id}>
-                <div className="nav-inline" style={{ justifyContent: "space-between" }}>
-                  <div>
-                    <strong>{row.name}</strong>
-                    <p>{row.description || "No description"}</p>
-                    <p>Tags: {row.tags.join(", ") || "none"}</p>
+        {/* Mobile-only search row */}
+        <div className="md:hidden p-3 border-b border-line">
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Search loops"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {loading && library.rows.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-12">
+              <Spinner size="md" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            </div>
+          ) : loading && library.rows.length > 0 ? (
+            <div className="relative">
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-indigo-100 overflow-hidden rounded-full">
+                <span className="absolute inset-y-0 left-0 w-1/3 bg-indigo-500/80 rounded-full pipes-progress-bar" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 opacity-60">
+                {library.rows.slice(0, 6).map((row) => (
+                  <SkeletonCard key={row.id} />
+                ))}
+              </div>
+            </div>
+          ) : visibleRows.length === 0 ? (
+            <EmptyState
+              illustration={<EmptyCanvas size={96} />}
+              title={
+                query
+                  ? `No loops match "${query}"`
+                  : filter === "archived"
+                    ? "Nothing archived"
+                    : filter === "favorites"
+                      ? "No favorites yet"
+                      : "No loops yet"
+              }
+              description={
+                query
+                  ? "Try a different search or clear the filter."
+                  : filter === "archived"
+                    ? "Archived loops live here. They are hidden from the default view."
+                    : filter === "favorites"
+                      ? "Favorite loops for quick access from the toolbar."
+                      : "Describe your loop. Watch it appear on the canvas."
+              }
+              action={
+                query ? (
+                  <Button variant="ghost" size="sm" onPress={() => setQuery("")}>
+                    Clear search
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onPress={() => setShowImport(true)}>
+                      <Upload size={14} />
+                      Import schema
+                    </Button>
+                    <Button variant="primary" size="sm" onPress={createSystem}>
+                      <Plus size={14} />
+                      New Loop
+                    </Button>
                   </div>
-                  <div className="nav-inline">
-                    <Button onClick={() => router.push(`/systems/${row.id}`)}>Open</Button>
-                    <Button onClick={async () => { await fetch("/api/library", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "favorite", systemId: row.id, favorite: !row.favorite }) }); refreshLibrary(); }}>{row.favorite ? "★" : "☆"}</Button>
-                    <Button onClick={async () => {
-                      const raw = prompt("Comma-separated tags", row.tags.join(","));
-                      if (raw == null) return;
-                      await fetch("/api/library", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "tags", systemId: row.id, tags: raw.split(",") }) });
-                      refreshLibrary();
-                    }}>Tags</Button>
-                    {!row.archivedAt ? <Button onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "archive" }) }); refreshLibrary(); }}>Archive</Button> : <Button onClick={async () => { await fetch(`/api/systems/${row.id}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "restore" }) }); refreshLibrary(); }}>Restore</Button>}
-                  </div>
+                )
+              }
+            />
+          ) : view === "grid" ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {pagedRows.map((row) => (
+                  <SystemCard
+                    key={row.id}
+                    row={row}
+                    onOpen={() => router.push(`/systems/${row.id}`)}
+                    onToggleFavorite={() => handleToggleFavorite(row)}
+                    onArchive={() => handleArchive(row)}
+                    onRestore={() => handleRestore(row)}
+                    onDelete={() => setDeleteTarget(row)}
+                    onExport={() => handleExport(row)}
+                    onEdit={() => router.push(`/systems/${row.id}`)}
+                    onRename={() => { setRenameTarget(row); setRenameDraft(row.name); }}
+                    onDuplicate={() => handleDuplicate(row)}
+                    onManageTags={() => openManageTags(row)}
+                  />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="flex justify-center mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onPress={() => setPage((p) => p + 1)}
+                  >
+                    Load more
+                  </Button>
                 </div>
-              </Card>
+              )}
+            </>
+          ) : (
+            <>
+              <DataTable
+                columns={listColumns}
+                rows={pagedRows}
+                onRowClick={(row) => router.push(`/systems/${row.id}`)}
+                dense
+              />
+              {hasMore && (
+                <div className="flex justify-center mt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onPress={() => setPage((p) => p + 1)}
+                  >
+                    Load more
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Published to marketplace */}
+      {myListings.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-indigo-100 bg-indigo-50/40 px-6 py-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="t-label font-semibold text-indigo-900">Published to marketplace</h2>
+            <a href="/marketplace" className="t-caption text-indigo-600 hover:text-indigo-700 hover:underline">
+              Browse marketplace →
+            </a>
+          </div>
+          <div className="flex flex-col gap-2">
+            {myListings.map((listing) => (
+              <div key={listing.id} className="flex items-center justify-between gap-3 surface-canvas rounded-xl border border-indigo-100 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="t-label font-medium text-ink-1 truncate">{listing.title}</p>
+                  <p className="t-caption text-ink-3">
+                    {listing.price === 0 ? "Free" : `$${listing.price}/mo`} · Under review
+                  </p>
+                </div>
+                <a
+                  href={`/systems/${listing.systemId}`}
+                  className="t-caption text-indigo-600 hover:text-indigo-700 shrink-0"
+                >
+                  Edit loop →
+                </a>
+              </div>
             ))}
           </div>
-        </Card>
+        </div>
       )}
+
+      {/* Rename dialog */}
+      <Dialog
+        open={!!renameTarget}
+        onOpenChange={(o) => { if (!o) setRenameTarget(null); }}
+        title="Rename loop"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setRenameTarget(null)} isDisabled={renaming}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleRenameConfirmed}
+              isDisabled={renaming || !renameDraft.trim() || renameDraft.trim() === renameTarget?.name}
+            >
+              {renaming ? <Spinner size="xs" /> : null}
+              {renaming ? "Saving..." : "Save"}
+            </Button>
+          </>
+        }
+      >
+        <Input
+          aria-label="New name"
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") void handleRenameConfirmed(); }}
+          autoFocus
+        />
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        title="Delete permanently?"
+        description={`This will permanently delete "${deleteTarget?.name ?? ""}" and all its nodes, pipes, and version history. This cannot be undone.`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setDeleteTarget(null)} isDisabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleDeleteConfirmed}
+              isDisabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-500"
+            >
+              {deleting ? <Spinner size="xs" /> : <Trash2 size={14} />}
+              {deleting ? "Deleting..." : "Delete permanently"}
+            </Button>
+          </>
+        }
+      >
+        <p className="t-caption text-ink-3">
+          To recover the system later, restore it first before deleting.
+        </p>
+      </Dialog>
+
+      {/* Manage tags dialog */}
+      <Dialog
+        open={!!tagTarget}
+        onOpenChange={(o) => { if (!o) setTagTarget(null); }}
+        title="Manage tags"
+        description={`Add or remove tags for "${tagTarget?.name ?? ""}".`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onPress={() => setTagTarget(null)} isDisabled={savingTags}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onPress={handleTagsConfirmed} isDisabled={savingTags}>
+              {savingTags ? <Spinner size="sm" /> : null}
+              {savingTags ? "Saving..." : "Save tags"}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          {/* Current tags */}
+          <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+            {tagDraft.length === 0 ? (
+              <p className="t-caption text-ink-4 italic">No tags yet — add one below.</p>
+            ) : (
+              tagDraft.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 t-caption text-indigo-700"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="hover:text-red-600 transition-colors"
+                    aria-label={`Remove tag ${tag}`}
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+          {/* Available tags from workspace */}
+          {library.availableTags.filter((t) => !tagDraft.includes(t)).length > 0 && (
+            <div className="flex flex-col gap-1">
+              <p className="t-caption text-ink-3">Existing tags in your workspace:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {library.availableTags
+                  .filter((t) => !tagDraft.includes(t))
+                  .map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addTag(tag)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--surface-subtle)] border border-line t-caption text-ink-2 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
+                    >
+                      <Plus size={10} />
+                      {tag}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+          {/* New tag input */}
+          <div className="flex gap-2">
+            <Input
+              aria-label="New tag"
+              placeholder="Type a new tag..."
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  addTag(tagInput);
+                }
+              }}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => addTag(tagInput)}
+              isDisabled={!tagInput.trim()}
+            >
+              Add
+            </Button>
+          </div>
+          <p className="t-caption text-ink-4">Press Enter or comma to add. Tags are lowercase.</p>
+        </div>
+      </Dialog>
+
+      {/* Import dialog */}
+      <Dialog
+        open={showImport}
+        onOpenChange={(o) => {
+          setShowImport(o);
+          if (!o) setImportText("");
+        }}
+        title="Import loop"
+        description="Paste a looper_schema_v1 JSON document. A new loop will be created with its contents."
+        size="md"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={() => setShowImport(false)}
+              isDisabled={importing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleImport}
+              isDisabled={importing || !importText.trim()}
+            >
+              {importing ? <Spinner size="xs" /> : <Upload size={14} />}
+              {importing ? "Importing..." : "Import"}
+            </Button>
+          </>
+        }
+      >
+        <Textarea
+          aria-label="Schema JSON"
+          rows={10}
+          placeholder='{ "looper_schema_v1": { ... } }'
+          value={importText}
+          onChange={(e) => setImportText(e.target.value)}
+          className="font-mono"
+        />
+        <p className="t-caption text-ink-3 mt-2">
+          Validation runs after import. Errors will be shown in the editor.
+        </p>
+      </Dialog>
     </div>
   );
 }

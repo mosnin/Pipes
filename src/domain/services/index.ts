@@ -4,7 +4,7 @@ import { createMockRepositories } from "@/lib/repositories/mock";
 const repos = createMockRepositories();
 const services = createBoundedServices(repos);
 
-export const pipesService = {
+export const looperService = {
   ensureProvisioned: repos.users.provision,
   listSystems: services.systems.list.bind(services.systems),
   createSystem: services.systems.create.bind(services.systems),

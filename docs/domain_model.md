@@ -1,6 +1,6 @@
 # Domain Model
 
-Canonical schema remains `pipes_schema_v1`.
+Canonical schema remains `looper_schema_v1`.
 
 ## AI model layer (ephemeral)
 - AI draft structures are typed and validated in `src/lib/ai`.

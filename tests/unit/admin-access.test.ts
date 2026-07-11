@@ -8,9 +8,9 @@ describe("admin access allowlist", () => {
     process.env = { ...ORIGINAL_ENV };
   });
 
-  it("uses explicit PIPES_ADMIN_ALLOWLIST values", async () => {
-    process.env.PIPES_ADMIN_ALLOWLIST = "ADMIN@pipes.local, support@pipes.local ";
-    process.env.PIPES_USE_MOCKS = "false";
+  it("uses explicit LOOPER_ADMIN_ALLOWLIST values", async () => {
+    process.env.LOOPER_ADMIN_ALLOWLIST = "ADMIN@pipes.local, support@pipes.local ";
+    process.env.LOOPER_USE_MOCKS = "false";
 
     const { canAccessAdmin, getAdminAllowlist } = await import("@/lib/admin/access");
 
@@ -20,8 +20,8 @@ describe("admin access allowlist", () => {
   });
 
   it("falls back to mock owner when running in mock mode", async () => {
-    delete process.env.PIPES_ADMIN_ALLOWLIST;
-    process.env.PIPES_USE_MOCKS = "true";
+    delete process.env.LOOPER_ADMIN_ALLOWLIST;
+    process.env.LOOPER_USE_MOCKS = "true";
 
     const { canAccessAdmin, getAdminAllowlist } = await import("@/lib/admin/access");
 

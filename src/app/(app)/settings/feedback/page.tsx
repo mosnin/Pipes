@@ -1,40 +1,154 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, EmptyState, Input, PageHeader, Select } from "@/components/ui";
-import { SettingsShell } from "@/components/settings/SettingsShell";
+import { toast } from "sonner";
+import {
+  Button,
+  CardShell,
+  CardHeader,
+  CardBody,
+  PageHeader,
+  Textarea,
+} from "@/components/ui";
 
-export default function FeedbackSettingsPage() {
-  const [category, setCategory] = useState("bug");
-  const [severity, setSeverity] = useState("medium");
-  const [summary, setSummary] = useState("");
-  const [details, setDetails] = useState("");
-  const [systemId, setSystemId] = useState("");
-  const [status, setStatus] = useState("");
+type FeedbackType = "bug" | "feature" | "other";
+
+export default function FeedbackPage() {
+  const [type, setType] = useState<FeedbackType>("feature");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "free_text", surface: type, text: message }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        throw new Error(body.error ?? "Request failed");
+      }
+      toast.success("Feedback sent. Thank you!");
+      setMessage("");
+      setSubmitted(true);
+    } catch {
+      toast.error("Could not send feedback. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <SettingsShell title="Feedback" subtitle="Send structured beta feedback directly to operator triage.">
-      <PageHeader title="Beta feedback intake" subtitle="Lightweight feedback loop: category, severity, context, and summary." />
-      <Card>
-        <div style={{ display: "grid", gap: 8 }}>
-          <Select value={category} onChange={(e) => setCategory(e.target.value)}><option value="bug">Bug</option><option value="ux">UX</option><option value="feature_request">Feature request</option><option value="reliability">Reliability</option><option value="billing">Billing</option><option value="other">Other</option></Select>
-          <Select value={severity} onChange={(e) => setSeverity(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></Select>
-          <Input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Summary (minimum 8 chars)" />
-          <Input value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Details" />
-          <Input value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="Optional system id" />
-          <Button onClick={async () => {
-            const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ category, severity, summary, details, systemId: systemId || undefined, page: window.location.pathname }) });
-            const body = await res.json();
-            if (body.ok) {
-              setSummary("");
-              setDetails("");
-              setSystemId("");
-              setStatus("Feedback submitted.");
-            } else setStatus(body.error ?? "Failed to submit feedback.");
-          }}>Submit feedback</Button>
-        </div>
-      </Card>
-      {status ? <EmptyState title="Feedback status" description={status} /> : null}
-    </SettingsShell>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Feedback"
+        subtitle="Tell us what is working, what is broken, or what you wish Pipes could do."
+      />
+
+      {submitted ? (
+        <CardShell>
+          <CardBody>
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+                <span className="text-xl text-green-600">&#10003;</span>
+              </div>
+              <p className="t-label font-medium text-ink-1">Feedback received</p>
+              <p className="t-caption text-ink-3">
+                We read every submission. If you reported a bug or asked for a feature, we may
+                follow up by email.
+              </p>
+              <Button variant="outline" size="sm" onPress={() => setSubmitted(false)}>
+                Send more feedback
+              </Button>
+            </div>
+          </CardBody>
+        </CardShell>
+      ) : (
+        <CardShell>
+          <CardHeader>Send feedback</CardHeader>
+          <CardBody>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-2">
+                {(["bug", "feature", "other"] as FeedbackType[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={[
+                      "px-3 py-1.5 rounded-lg t-label capitalize transition-colors",
+                      type === t
+                        ? "bg-indigo-600 text-white"
+                        : "bg-[var(--surface-subtle)] text-ink-2 hover:bg-indigo-50 hover:text-indigo-700",
+                    ].join(" ")}
+                  >
+                    {t === "bug" ? "Bug report" : t === "feature" ? "Feature request" : "Other"}
+                  </button>
+                ))}
+              </div>
+              <Textarea
+                aria-label="Feedback message"
+                placeholder={
+                  type === "bug"
+                    ? "Describe what happened and what you expected..."
+                    : type === "feature"
+                      ? "Describe the feature and the problem it solves..."
+                      : "What is on your mind?"
+                }
+                rows={6}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <Button
+                variant="primary"
+                size="sm"
+                onPress={() => void handleSubmit()}
+                isDisabled={submitting || !message.trim()}
+              >
+                {submitting ? "Sending..." : "Send feedback"}
+              </Button>
+            </div>
+          </CardBody>
+        </CardShell>
+      )}
+
+      <CardShell>
+        <CardHeader>Other ways to reach us</CardHeader>
+        <CardBody>
+          <div className="flex flex-col divide-y divide-black/[0.06]">
+            {[
+              {
+                label: "GitHub issues",
+                description: "Bug reports and feature requests with full context",
+                href: "https://github.com/mosnin/Pipes/issues",
+              },
+              {
+                label: "Email support",
+                description: "Billing, data, and enterprise inquiries",
+                href: "mailto:support@pipes.dev",
+              },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center justify-between gap-4 py-3">
+                <div>
+                  <p className="t-label font-medium text-ink-1">{item.label}</p>
+                  <p className="t-caption text-ink-3">{item.description}</p>
+                </div>
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="t-caption text-indigo-600 hover:text-indigo-700 shrink-0"
+                >
+                  Open
+                </a>
+              </div>
+            ))}
+          </div>
+        </CardBody>
+      </CardShell>
+    </div>
   );
 }

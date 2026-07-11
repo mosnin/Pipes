@@ -1,6 +1,6 @@
 # Design System
 
-Pipes uses a dark-first industrial UI language:
+Looper uses a dark-first industrial UI language:
 - Boxy surfaces with disciplined spacing and selective small radius.
 - Restrained accent color for interactive or semantic status.
 - CSS token foundation in `src/styles/globals.css`.

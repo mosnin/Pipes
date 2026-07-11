@@ -1,7 +1,7 @@
-# Pipes Protocol (Hardened)
+# Looper Protocol (Hardened)
 
 ## Overview
-Pipes protocol exposes token-authenticated REST and MCP transports over the same bounded services.
+Looper protocol exposes token-authenticated REST and MCP transports over the same bounded services.
 Business rules (permissions, validation, entitlements, version safety) remain in `src/domain/services/bounded.ts`.
 
 ## Auth and token guide
@@ -83,7 +83,7 @@ curl -X POST http://localhost:3000/api/protocol/import/system \
   -H 'authorization: Bearer ptk_...' \
   -H 'Idempotency-Key: import-001' \
   -H 'content-type: application/json' \
-  -d '{"canonical":"{...pipes_schema_v1...}"}'
+  -d '{"canonical":"{...looper_schema_v1...}"}'
 ```
 
 Export a system:
@@ -94,7 +94,7 @@ curl http://localhost:3000/api/protocol/systems/sys_123/schema \
 
 Instantiate a template:
 ```bash
-curl -X POST http://localhost:3000/api/protocol/templates/single-agent-loop/instantiate \
+curl -X POST http://localhost:3000/api/protocol/templates/multi-agent-handoff/instantiate \
   -H 'authorization: Bearer ptk_...' \
   -H 'Idempotency-Key: tpl-001' \
   -H 'content-type: application/json' \

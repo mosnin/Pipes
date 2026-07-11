@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { canComment, canEditSystem, canManageMembers, canViewSystem } from "@/domain/permissions";
-import { PipesSchemaV1, type Role } from "@/domain/pipes_schema_v1/schema";
-import { serializePipesSchema } from "@/domain/pipes_schema_v1/serde";
+import { LooperSchemaV1, type Role } from "@/domain/looper_schema_v1/schema";
+import { serializeLooperSchema } from "@/domain/looper_schema_v1/serde";
 import { getEntitlements } from "@/domain/templates/plans";
 import type { AppContext, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
 import { getBillingService } from "@/lib/billing";
@@ -14,9 +14,60 @@ import { hashAgentToken, issueAgentTokenSecret, parseCapabilityList, type AgentC
 import { ProtocolError } from "@/lib/protocol/errors";
 import { canAccessAdmin } from "@/lib/admin/access";
 import { isProductSignalEvent, type ProductSignalEvent } from "@/domain/services/product_signals";
+import { migrateDocument, needsMigration } from "@/domain/looper_schema_v1/migration";
 
 function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
+
+/**
+ * Resource-ownership guard (IDOR protection).
+ *
+ * A role check (`ensureCanView`/`ensureCanEdit`) only proves the caller has a
+ * role in THEIR OWN workspace — it says nothing about whether the `systemId`
+ * they passed belongs to that workspace. Without this guard any authenticated
+ * user could read or mutate any other workspace's system by guessing its id.
+ *
+ * Loads the system and confirms it belongs to `ctx.workspaceId`. Throws the
+ * non-revealing "System not found" for both a missing system and one owned by
+ * another workspace, so a caller can never even probe for the existence of
+ * data outside their workspace. Returns the bundle so callers that already
+ * need it don't fetch twice.
+ */
+async function assertSystemOwned(
+  repos: RepositorySet,
+  ctx: AppContext,
+  systemId: string
+): Promise<void> {
+  // `getWorkspaceId` resolves the owning workspace directly (and includes
+  // archived systems), so this correctly authorizes operations on archived
+  // loops (restore/delete) that `getBundle` would hide.
+  const owner = await repos.systems.getWorkspaceId(systemId);
+  if (owner === null || owner !== ctx.workspaceId) throw new Error("System not found");
+}
+
+/**
+ * Ownership guard for callers that also need the system's contents. Confirms
+ * ownership (archived-safe) then returns the bundle. Throws the non-revealing
+ * "System not found" for a system that is missing or owned by another
+ * workspace.
+ */
+async function requireOwnedSystem(
+  repos: RepositorySet,
+  ctx: AppContext,
+  systemId: string
+): Promise<SystemBundle> {
+  await assertSystemOwned(repos, ctx, systemId);
+  let bundle: SystemBundle | null = null;
+  try {
+    bundle = await repos.systems.getBundle(systemId);
+  } catch {
+    bundle = null;
+  }
+  if (!bundle?.system || bundle.system.workspaceId !== ctx.workspaceId) {
+    throw new Error("System not found");
+  }
+  return bundle;
+}
 
 export class AccessService {
   ensureCanView = assertCanView;
@@ -39,36 +90,119 @@ export class SystemService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
   async list(ctx: AppContext) { this.access.ensureCanView(ctx); return (await this.repos.systems.list(ctx.workspaceId)).filter((s) => !s.archivedAt); }
   async listAll(ctx: AppContext) { this.access.ensureCanView(ctx); return this.repos.systems.list(ctx.workspaceId); }
-  async create(ctx: AppContext, input: { name: string; description?: string }) {
+  async create(ctx: AppContext, input: { name: string; description?: string; visibility?: "public" | "private" }) {
     this.access.ensureCanEdit(ctx);
     const existing = await this.repos.systems.list(ctx.workspaceId);
     const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
-    if (existing.length >= limits.maxSystems) throw new Error(`Plan limit reached (${limits.maxSystems} systems). Upgrade required.`);
+    if (limits.maxSystems >= 0 && existing.length >= limits.maxSystems) throw new Error(`Plan limit reached (${limits.maxSystems} loops). Upgrade to create more.`);
+    const visibility = input.visibility ?? "public";
+    if (visibility === "private" && !limits.privateLoops) throw new Error("Private loops require Pro. Upgrade to keep loops private.");
+    const publicCount = existing.filter((s) => !s.archivedAt).length;
+    if (visibility === "public" && limits.maxPublicLoops >= 0 && publicCount >= limits.maxPublicLoops) throw new Error(`Free plan includes ${limits.maxPublicLoops} public loops. Upgrade to Pro for unlimited loops.`);
     const created = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: input.name, description: input.description ?? "" });
     if (existing.length === 0) {
       await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "signal.first_system_created", targetType: "system", targetId: created, outcome: "success", systemId: created });
     }
     return created;
   }
-  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
-  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
-  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
+  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return requireOwnedSystem(this.repos, ctx, systemId); }
+  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.archive(systemId); }
+  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.restore(systemId); }
+  async delete(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.systems.delete(systemId); }
+  async duplicate(ctx: AppContext, systemId: string): Promise<string> {
+    this.access.ensureCanEdit(ctx);
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
+    const newId = await this.repos.systems.create({ workspaceId: ctx.workspaceId, userId: ctx.userId, name: `${bundle.system.name} Copy`, description: bundle.system.description });
+    const nodeIdMap = new Map<string, string>();
+    for (const node of bundle.nodes) {
+      const newNodeId = await this.repos.graph.addNode({ systemId: newId, type: node.type, title: node.title, description: node.description, x: node.position.x, y: node.position.y });
+      nodeIdMap.set(node.id, newNodeId);
+    }
+    for (const pipe of bundle.pipes) {
+      const fromNodeId = pipe.fromNodeId ? nodeIdMap.get(pipe.fromNodeId) : undefined;
+      const toNodeId = pipe.toNodeId ? nodeIdMap.get(pipe.toNodeId) : undefined;
+      if (fromNodeId && toNodeId) {
+        await this.repos.graph.addPipe({ systemId: newId, fromNodeId, toNodeId });
+      }
+    }
+    return newId;
+  }
+  async rename(ctx: AppContext, systemId: string, name: string) {
+    this.access.ensureCanEdit(ctx);
+    await assertSystemOwned(this.repos, ctx, systemId);
+    const trimmed = name.trim().slice(0, 120);
+    if (!trimmed) throw new Error("Name cannot be empty.");
+    await this.repos.systems.rename(systemId, trimmed);
+  }
+  async updateDescription(ctx: AppContext, systemId: string, description: string) {
+    this.access.ensureCanEdit(ctx);
+    await assertSystemOwned(this.repos, ctx, systemId);
+    await this.repos.systems.updateDescription(systemId, description.trim().slice(0, 500));
+  }
+  async setVisibility(ctx: AppContext, systemId: string, visibility: "public" | "private") {
+    this.access.ensureCanEdit(ctx);
+    await assertSystemOwned(this.repos, ctx, systemId);
+    const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (visibility === "private" && !limits.privateLoops) {
+      throw new Error("Private loops require Pro. Upgrade to keep this loop private.");
+    }
+    await this.repos.systems.setVisibility(systemId, visibility);
+  }
+
+  async publishListing(ctx: AppContext, systemId: string, input: { description: string; price: number }) {
+    this.access.ensureCanEdit(ctx);
+    const limits = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!limits.marketplaceSelling) throw new Error("Marketplace selling requires Pro. Upgrade to publish your loop.");
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
+    return this.repos.marketplaceListings.create({
+      systemId,
+      workspaceId: ctx.workspaceId,
+      title: bundle.system.name,
+      description: input.description,
+      price: input.price,
+    });
+  }
+
+  async getListings(ctx: AppContext) {
+    return this.repos.marketplaceListings.listByWorkspace(ctx.workspaceId);
+  }
 }
 
 export class GraphService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
+    // Every graph action must name the system it targets, and that system must
+    // belong to the caller's workspace. For node/pipe-scoped actions we also
+    // confirm the referenced node/pipe actually lives in that system — a
+    // caller can only touch nodes/pipes inside a system they own.
+    if (!payload.systemId || typeof payload.systemId !== "string") throw new Error("Invalid graph action");
+    const bundle = await requireOwnedSystem(this.repos, ctx, payload.systemId);
+    const nodeInSystem = (nodeId: string) => bundle.nodes.some((n) => n.id === nodeId);
+    const pipeInSystem = (pipeId: string) => bundle.pipes.some((p) => p.id === pipeId);
+
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
-    if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position });
-    if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);
-    if (payload.action === "addPipe") return this.repos.graph.addPipe({ systemId: payload.systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
-    if (payload.action === "deletePipe") return this.repos.graph.deletePipe(payload.pipeId);
+    if (payload.action === "updateNode") {
+      if (!nodeInSystem(payload.nodeId)) throw new Error("Not found");
+      return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position, config: payload.config });
+    }
+    if (payload.action === "deleteNode") {
+      if (!nodeInSystem(payload.nodeId)) throw new Error("Not found");
+      return this.repos.graph.deleteNode(payload.nodeId);
+    }
+    if (payload.action === "addPipe") {
+      if (!nodeInSystem(payload.fromNodeId) || !nodeInSystem(payload.toNodeId)) throw new Error("Not found");
+      return this.repos.graph.addPipe({ systemId: payload.systemId, fromNodeId: payload.fromNodeId, toNodeId: payload.toNodeId });
+    }
+    if (payload.action === "deletePipe") {
+      if (!pipeInSystem(payload.pipeId)) throw new Error("Not found");
+      return this.repos.graph.deletePipe(payload.pipeId);
+    }
   }
 }
 
-export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
-export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
+export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await assertSystemOwned(this.repos, ctx, input.systemId); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
+export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await assertSystemOwned(this.repos, ctx, body.systemId); await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
 
 export class ProductSignalService {
   constructor(private readonly repos: RepositorySet) {}
@@ -93,11 +227,11 @@ export class SchemaExportService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async export(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
-    const bundle = await this.repos.systems.getBundle(systemId);
+    const bundle = await requireOwnedSystem(this.repos, ctx, systemId);
     const systems = await this.repos.systems.list(ctx.workspaceId);
     const members = await this.repos.memberships.list(ctx.workspaceId);
-    return serializePipesSchema({
-      version: "pipes_schema_v1",
+    return serializeLooperSchema({
+      version: "looper_schema_v1",
       users: [{ id: ctx.userId, email: "unknown@pipes.local", name: "User", createdAt: new Date().toISOString() }],
       workspaces: [{ id: ctx.workspaceId, ownerId: ctx.userId, name: "Workspace", slug: "workspace", plan: ctx.plan, createdAt: new Date().toISOString() }],
       systems: systems.filter((s) => s.id === systemId).map((s) => ({ ...s, nodeIds: bundle.nodes.map((n) => n.id), portIds: bundle.nodes.flatMap((n) => n.portIds), pipeIds: bundle.pipes.map((p) => p.id), groupIds: [], annotationIds: [], commentIds: bundle.comments.map((c) => c.id), assetIds: [], snippetIds: [], subsystemNodeIds: [] })),
@@ -112,9 +246,9 @@ export class SchemaExportService {
 
 export class VersionService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly exportService: SchemaExportService, private readonly entitlementService: EntitlementService) {}
-  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.versions.list(systemId); }
-  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
-  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
+  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await assertSystemOwned(this.repos, ctx, systemId); return this.repos.versions.list(systemId); }
+  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
+  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); await assertSystemOwned(this.repos, ctx, systemId); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); LooperSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
 }
 
 export class CollaborationService {
@@ -143,23 +277,52 @@ export class CollaborationService {
       metadata: JSON.stringify({ fromRole: target.role, toRole: role })
     });
   }
+  async removeMember(ctx: AppContext, userId: string) {
+    this.access.ensureCanManageMembers(ctx);
+    const members = await this.repos.memberships.list(ctx.workspaceId);
+    const target = members.find((m) => m.userId === userId);
+    if (!target) throw new Error("Member not found.");
+    if (target.role === "Owner") throw new Error("Cannot remove the workspace owner.");
+    if (ctx.userId === userId) throw new Error("Cannot remove yourself from the workspace.");
+    await this.repos.memberships.remove(ctx.workspaceId, userId);
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "governance.member_removed", targetType: "membership", targetId: userId, outcome: "success" });
+  }
 }
 
-export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing` }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
+export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing`, customerId: state.externalCustomerId }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
 
-export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
+export class WorkspaceService {
+  constructor(private readonly repos: RepositorySet) {}
+  async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); }
+  async get(workspaceId: string) { return this.repos.workspaces.get(workspaceId); }
+  async update(workspaceId: string, patch: { name?: string; description?: string }) {
+    const name = patch.name?.trim();
+    if (name !== undefined && name.length === 0) throw new Error("Workspace name cannot be empty");
+    if (name !== undefined && name.length > 80) throw new Error("Workspace name must be 80 characters or fewer");
+    return this.repos.workspaces.update(workspaceId, { ...patch, name });
+  }
+}
 
 export class ProtocolService {
-  constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
-  private ensureCanManageTokens(ctx: AppContext) {
+  constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
+  private async ensureCanManageTokens(ctx: AppContext) {
     if (ctx.actorType === "agent") throw new Error("Agent tokens cannot manage tokens.");
     this.access.ensureCanManageMembers(ctx);
+    const ent = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!ent.apiMcpAccess) throw new Error("MCP token management requires Pro or higher.");
   }
-  async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string }) {
-    this.ensureCanManageTokens(ctx);
+  async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string; expiresInDays?: number | null }) {
+    await this.ensureCanManageTokens(ctx);
+    // A token scoped to a system must only ever be scoped to one this
+    // workspace owns — otherwise it would mint a credential for someone
+    // else's system.
+    if (input.systemId) await assertSystemOwned(this.repos, ctx, input.systemId);
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
+    const expiresAt = input.expiresInDays != null
+      ? new Date(Date.now() + input.expiresInDays * 86_400_000).toISOString()
+      : undefined;
     const created = await this.repos.agentTokens.create({
       workspaceId: ctx.workspaceId,
       name: input.name,
@@ -167,7 +330,8 @@ export class ProtocolService {
       systemId: input.systemId,
       tokenHash,
       tokenPreview,
-      createdByUserId: ctx.userId
+      createdByUserId: ctx.userId,
+      expiresAt
     });
     await this.repos.audits.add({
       actorType: ctx.actorType,
@@ -192,7 +356,7 @@ export class ProtocolService {
     return { id: created.id, secret };
   }
   async listTokens(ctx: AppContext) {
-    this.ensureCanManageTokens(ctx);
+    await this.ensureCanManageTokens(ctx);
     const [tokens, audits] = await Promise.all([
       this.repos.agentTokens.list(ctx.workspaceId),
       this.repos.audits.list(ctx.workspaceId, { actionPrefix: "protocol." })
@@ -203,7 +367,7 @@ export class ProtocolService {
     }));
   }
   async revokeToken(ctx: AppContext, tokenId: string) {
-    this.ensureCanManageTokens(ctx);
+    await this.ensureCanManageTokens(ctx);
     await this.repos.agentTokens.revoke(tokenId);
     await this.repos.audits.add({
       actorType: ctx.actorType,
@@ -217,6 +381,8 @@ export class ProtocolService {
   }
   async listAudits(ctx: AppContext, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }) {
     this.access.ensureCanManageMembers(ctx);
+    const ent = await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId);
+    if (!ent.auditLog) throw new Error("Audit log requires Team or Enterprise plan.");
     return this.repos.audits.list(ctx.workspaceId, filter);
   }
   async writeAudit(ctx: AppContext, input: { action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; systemId?: string; metadata?: string }) {
@@ -280,12 +446,19 @@ export class ProtocolGuardService {
 export class TemplateService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly repos: RepositorySet, private readonly signals: ProductSignalService) {}
   list() { return starterTemplates; }
-  async instantiate(ctx: AppContext, templateId: string, name?: string) {
+  async instantiate(ctx: AppContext, templateId: string, name?: string, params?: Record<string, string>) {
     const template = starterTemplates.find((t) => t.id === templateId);
     if (!template) throw new Error("Template not found.");
     const systemId = await this.systems.create(ctx, { name: name ?? template.title, description: template.description });
     const map = new Map<string, string>();
-    for (const node of template.nodes) map.set(node.id, await this.graph.mutate(ctx, { action: "addNode", systemId, type: node.type, title: node.title, x: node.x, y: node.y }) as string);
+    function applyParams(str: string, parameters: Record<string, string>): string {
+      return str.replace(/\{\{(\w+)\}\}/g, (_, key) => parameters[key] ?? _);
+    }
+    for (const node of template.nodes) {
+      const appliedTitle = params ? applyParams(node.title, params) : node.title;
+      const appliedDescription = node.description && params ? applyParams(node.description, params) : node.description;
+      map.set(node.id, await this.graph.mutate(ctx, { action: "addNode", systemId, type: node.type, title: appliedTitle, description: appliedDescription, x: node.x, y: node.y }) as string);
+    }
     for (const pipe of template.pipes) await this.graph.mutate(ctx, { action: "addPipe", systemId, fromNodeId: map.get(pipe.fromNodeId), toNodeId: map.get(pipe.toNodeId) });
     const prior = await this.repos.audits.list(ctx.workspaceId, { actionPrefix: "signal.first_template_instantiated", actorId: ctx.actorId, limit: 1 });
     if (prior.length === 0) await this.signals.track(ctx, "first_template_instantiated", { templateId, systemId });
@@ -295,7 +468,7 @@ export class TemplateService {
 
 export class AiGenerationService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly versions: VersionService, private readonly entitlements: EntitlementService, private readonly signals: ProductSignalService, private readonly repos: RepositorySet) {}
-  private async assertAiAllowed(workspaceId: string) { if (!(await this.entitlements.getWorkspaceEntitlements(workspaceId)).aiGeneration) throw new Error("AI generation requires Builder plan."); }
+  private async assertAiAllowed(workspaceId: string) { if (!(await this.entitlements.getWorkspaceEntitlements(workspaceId)).aiGeneration) throw new Error("AI generation requires Pro or higher."); }
   async generateDraft(ctx: AppContext, input: any) { await this.assertAiAllowed(ctx.workspaceId); const draft = await getAiService().generateSystemFromPrompt(input); return draft; }
   async commitDraft(ctx: AppContext, draft: any) { await this.assertAiAllowed(ctx.workspaceId); const systemId = await this.systems.create(ctx, { name: draft.systemName, description: draft.description }); const map = new Map<string, string>(); for (const n of draft.nodes) map.set(n.id, await this.graph.mutate(ctx, { action: "addNode", systemId, type: n.type, title: n.title, description: n.description, x: n.x, y: n.y }) as string); for (const p of draft.pipes) await this.graph.mutate(ctx, { action: "addPipe", systemId, fromNodeId: map.get(p.fromNodeId), toNodeId: map.get(p.toNodeId) }); const prior = await this.repos.audits.list(ctx.workspaceId, { actionPrefix: "signal.first_ai_generated_system_committed", actorId: ctx.actorId, limit: 1 }); if (prior.length === 0) await this.signals.track(ctx, "first_ai_generated_system_committed", { systemId }); return { systemId }; }
   private normalizeSuggestion(suggestion: any) {
@@ -353,7 +526,8 @@ export class AiGenerationService {
 export class ImportExportService {
   constructor(private readonly systems: SystemService, private readonly graph: GraphService, private readonly versions: VersionService, private readonly schema: SchemaExportService, private readonly signals: ProductSignalService) {}
   async planMerge(ctx: AppContext, raw: string, targetSystemId: string) {
-    const parsed = PipesSchemaV1.safeParse(JSON.parse(raw));
+    const rawDoc = JSON.parse(raw);
+    const parsed = LooperSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data;
     const src = doc.systems[0];
@@ -373,20 +547,21 @@ export class ImportExportService {
   }
   async applyMerge(ctx: AppContext, plan: any, strategy: "safe_upsert" | "replace_conflicts" = "safe_upsert") {
     await this.versions.create(ctx, plan.targetSystemId, "Pre-merge snapshot");
-    for (const update of plan.updates ?? []) await this.graph.mutate(ctx, update);
+    for (const update of plan.updates ?? []) await this.graph.mutate(ctx, { ...update, systemId: plan.targetSystemId });
     for (const add of plan.additions ?? []) await this.graph.mutate(ctx, { ...add, systemId: plan.targetSystemId });
     if (strategy === "replace_conflicts") {
       for (const conflict of plan.conflicts ?? []) {
         const bundle = await this.systems.getBundle(ctx, plan.targetSystemId);
         const match = bundle.nodes.find((n) => n.title.toLowerCase() === String(conflict.title).toLowerCase());
-        if (match) await this.graph.mutate(ctx, { action: "updateNode", nodeId: match.id, title: conflict.title, description: `Replaced during merge as ${conflict.importType}` });
+        if (match) await this.graph.mutate(ctx, { action: "updateNode", systemId: plan.targetSystemId, nodeId: match.id, title: conflict.title, description: `Replaced during merge as ${conflict.importType}` });
       }
     }
     await this.signals.track(ctx, "import_merged", { targetSystemId: plan.targetSystemId, additions: plan.summary?.additions ?? 0, updates: plan.summary?.updates ?? 0, conflicts: plan.summary?.conflicts ?? 0, strategy });
     return { ok: true, applied: { additions: plan.summary?.additions ?? 0, updates: plan.summary?.updates ?? 0, conflicts: strategy === "replace_conflicts" ? plan.summary?.conflicts ?? 0 : 0 } };
   }
   async importSchema(ctx: AppContext, raw: string, mode: "new" | "existing", targetSystemId?: string) {
-    const parsed = PipesSchemaV1.safeParse(JSON.parse(raw));
+    const rawDoc = JSON.parse(raw);
+    const parsed = LooperSchemaV1.safeParse(needsMigration(rawDoc) ? migrateDocument(rawDoc) : rawDoc);
     if (!parsed.success) return { ok: false, diagnostics: parsed.error.issues.map((i) => i.message) };
     const doc = parsed.data; const src = doc.systems[0]; if (!src) return { ok: false, diagnostics: ["No system in schema"] };
     await this.signals.track(ctx, "import_merge_attempted", { mode, targetSystemId: targetSystemId ?? null });
@@ -404,7 +579,7 @@ export class ImportExportService {
     await this.signals.track(ctx, "import_merged", { mode: "new", systemId });
     return { ok: true, systemId, diagnostics: [] };
   }
-  async exportSystem(ctx: AppContext, systemId: string) { const canonical = await this.schema.export(ctx, systemId); const b = await this.systems.getBundle(ctx, systemId); return { schemaVersion: "pipes_schema_v1", canonical, markdown: `# ${b.system.name}\n\n${b.system.description}\n\n## Nodes\n${b.nodes.map((n) => `- ${n.title} (${n.type})`).join("\n")}\n` }; }
+  async exportSystem(ctx: AppContext, systemId: string) { const canonical = await this.schema.export(ctx, systemId); const b = await this.systems.getBundle(ctx, systemId); return { schemaVersion: "looper_schema_v1", canonical, markdown: `# ${b.system.name}\n\n${b.system.description}\n\n## Nodes\n${b.nodes.map((n) => `- ${n.title} (${n.type})`).join("\n")}\n` }; }
 }
 
 export class SystemLibraryService {
@@ -682,7 +857,7 @@ export class ReleaseReviewService {
     const signal = (event: string) => audits.filter((row) => row.action === `signal.${event}`).length;
     const runtime = resolveRuntimeMode();
     return {
-      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.AUTH0_DOMAIN, billingConfigured: !!env.CREEM_API_KEY, aiConfigured: !!env.OPENAI_API_KEY } },
+      environment: { workspaceId: ctx.workspaceId, plan: plan.plan, billingStatus: plan.status, runtimeMode: runtime.mode, configurationWarning: runtime.warning ?? null, providerReadiness: { convexConfigured: !!env.CONVEX_URL, authConfigured: !!env.CLERK_SECRET_KEY, billingConfigured: !!env.PADDLE_API_KEY, aiConfigured: !!(env.OPENAI_API_KEY || env.OPENROUTER_API_KEY) } },
       checklist: {
         criticalFlows: [
           { key: "signup_onboarding", route: "/signup -> /onboarding", status: "review" },
@@ -710,8 +885,8 @@ export class ReleaseReviewService {
         { label: "Admin support", href: "/admin" },
         { label: "Admin insights", href: "/admin/insights" },
         { label: "Admin issues", href: "/admin/issues" },
-        { label: "Settings audit", href: "/settings/audit" },
-        { label: "Settings trust", href: "/settings/trust" },
+        { label: "Settings billing", href: "/settings/billing" },
+        { label: "Settings tokens", href: "/settings/tokens" },
         { label: "QA checklist", href: "/docs" }
       ]
     };
@@ -721,7 +896,7 @@ export class ReleaseReviewService {
 type EnterpriseAuthSettings = {
   mode: "shared" | "sso_ready";
   allowedDomains: string[];
-  auth0Connection?: string;
+  ssoConnection?: string;
   enforceDomainMatch: boolean;
 };
 
@@ -773,7 +948,7 @@ export class WorkspaceGovernanceService {
   async updateEnterpriseAuth(ctx: AppContext, input: EnterpriseAuthSettings) {
     this.access.ensureCanManageMembers(ctx);
     this.validateDomains(input.allowedDomains ?? []);
-    if (input.mode === "sso_ready" && !input.auth0Connection) throw new Error("Auth0 connection is required for sso_ready mode.");
+    if (input.mode === "sso_ready" && !input.ssoConnection) throw new Error("An SSO connection is required for sso_ready mode.");
     await this.repos.audits.add({
       actorType: ctx.actorType,
       actorId: ctx.actorId,
@@ -807,7 +982,7 @@ export class WorkspaceGovernanceService {
     const systems = await this.systems.listAll(ctx);
     const manifest = {
       exportVersion: "workspace_manifest_v1",
-      schemaVersion: "pipes_schema_v1",
+      schemaVersion: "looper_schema_v1",
       exportedAt: new Date().toISOString(),
       workspace: { id: ctx.workspaceId, plan: ctx.plan },
       systems: systems.map((system) => ({ id: system.id, name: system.name, updatedAt: system.updatedAt, archivedAt: system.archivedAt ?? null, schemaExportPath: `/api/systems/${system.id}/export?format=json` }))
@@ -884,7 +1059,7 @@ export function createBoundedServices(repos: RepositorySet) {
     signals,
     ai: new AiGenerationService(systems, graph, versions, entitlements, signals, repos),
     importExport: new ImportExportService(systems, graph, versions, schema, signals),
-    protocol: new ProtocolService(repos, access)
+    protocol: new ProtocolService(repos, access, entitlements)
     ,guards: new ProtocolGuardService(repos)
   };
 }

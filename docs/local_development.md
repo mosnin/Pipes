@@ -9,9 +9,9 @@
 
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=true
-# NEXT_PUBLIC_PIPES_USE_MOCKS=true
-# PIPES_ADMIN_ALLOWLIST=owner@pipes.local
+# LOOPER_USE_MOCKS=true
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=true
+# LOOPER_ADMIN_ALLOWLIST=owner@pipes.local
 npm install
 npm run dev
 ```
@@ -19,13 +19,13 @@ npm run dev
 ## Real provider mode
 ```bash
 cp .env.example .env.local
-# PIPES_USE_MOCKS=false
-# NEXT_PUBLIC_PIPES_USE_MOCKS=false
+# LOOPER_USE_MOCKS=false
+# NEXT_PUBLIC_LOOPER_USE_MOCKS=false
 # CONVEX_URL=...
 # NEXT_PUBLIC_CONVEX_URL=...
 # OPENAI_API_KEY=...
 # OPENAI_MODEL=gpt-4.1-mini
-# PIPES_ADMIN_ALLOWLIST=ops@example.com,admin@example.com
+# LOOPER_ADMIN_ALLOWLIST=ops@example.com,admin@example.com
 npm install
 npm run dev
 ```
@@ -120,7 +120,7 @@ These tests cover staged progression, specialist activity persistence, plan revi
 
 ### Real sub-agent execution checks
 
-Provider mode (with `PIPES_USE_MOCKS=false` and `OPENAI_API_KEY` set) uses model-backed sub-agent execution through the AI boundary while preserving typed proposal/apply safety.
+Provider mode (with `LOOPER_USE_MOCKS=false` and `OPENAI_API_KEY` set) uses model-backed sub-agent execution through the AI boundary while preserving typed proposal/apply safety.
 
 Mock mode keeps deterministic sub-agent execution with the same persisted contracts.
 
@@ -165,7 +165,7 @@ Mock mode and provider mode share this policy contract surface.
 ## Running agent operations locally
 
 - Mock mode: `npm run dev` with default runtime mode, then call `/api/agent/runs/:runId/pause`, `/cancel`, `/retry`, `/fork`, and `/replay`.
-- Provider mode: set provider env vars and Convex deployment values, then run `npm run dev` and use the same operator APIs; behavior remains Pipes-native (no raw provider event contracts).
+- Provider mode: set provider env vars and Convex deployment values, then run `npm run dev` and use the same operator APIs; behavior remains Looper-native (no raw provider event contracts).
 
 
 ## Handoff generation and export
@@ -178,8 +178,8 @@ Mock mode and provider mode share this policy contract surface.
 
 ## Runtime stack local usage
 
-- Mock runtime: set `PIPES_USE_MOCKS=true`, run `npm run dev`, and inspect `GET /api/agent/runs/{runId}/runtime` for routing/lifecycle records.
-- Provider runtime with OpenAI harness: set `PIPES_USE_MOCKS=false`, `OPENAI_API_KEY`, optional `OPENAI_MODEL`; run `npm run dev`.
+- Mock runtime: set `LOOPER_USE_MOCKS=true`, run `npm run dev`, and inspect `GET /api/agent/runs/{runId}/runtime` for routing/lifecycle records.
+- Provider runtime with OpenAI harness: set `LOOPER_USE_MOCKS=false`, `OPENAI_API_KEY`, optional `OPENAI_MODEL`; run `npm run dev`.
 - Modal-backed execution: additionally set `MODAL_EXECUTOR_URL` and optional `MODAL_EXECUTOR_TOKEN`; eligible tasks route to `modal_worker`/`modal_sandbox` based on policy and routing rules.
 
 

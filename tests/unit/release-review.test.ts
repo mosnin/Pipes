@@ -33,41 +33,39 @@ describe("release review service", () => {
     const repos = createMockRepositories();
     const services = createBoundedServices(repos);
     const ctx = await repos.users.provision({ externalId: "mock|release-mode", email: "ops@pipes.local", name: "Ops" });
-    const prevMocks = env.PIPES_USE_MOCKS;
+    const prevMocks = env.LOOPER_USE_MOCKS;
     const prevConvex = env.CONVEX_URL;
-    const prevAuthDomain = env.AUTH0_DOMAIN;
-    const prevAuthClientId = env.AUTH0_CLIENT_ID;
-    const prevAuthClientSecret = env.AUTH0_CLIENT_SECRET;
+    const prevClerkSecret = env.CLERK_SECRET_KEY;
+    const prevClerkPub = env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
     try {
-      (env as any).PIPES_USE_MOCKS = true;
+      (env as any).LOOPER_USE_MOCKS = true;
       (env as any).CONVEX_URL = "https://convex.example";
       const forcedMockSummary = await services.release.summary(ctx);
       expect(forcedMockSummary.environment.runtimeMode).toBe("mock");
       expect(forcedMockSummary.environment.configurationWarning).toBeNull();
 
-      (env as any).PIPES_USE_MOCKS = false;
+      (env as any).LOOPER_USE_MOCKS = false;
       (env as any).CONVEX_URL = undefined;
       const fallbackSummary = await services.release.summary(ctx);
       expect(fallbackSummary.environment.runtimeMode).toBe("fallback_mock");
       expect(String(fallbackSummary.environment.configurationWarning ?? "")).toContain("CONVEX_URL");
 
-      (env as any).AUTH0_DOMAIN = undefined;
+      (env as any).CLERK_SECRET_KEY = undefined;
+      (env as any).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = undefined;
       (env as any).CONVEX_URL = "https://convex.example";
       const providerSummary = await services.release.summary(ctx);
       expect(providerSummary.environment.runtimeMode).toBe("fallback_mock");
       expect(providerSummary.environment.providerReadiness.authConfigured).toBe(false);
 
-      (env as any).AUTH0_DOMAIN = "auth.example.com";
-      (env as any).AUTH0_CLIENT_ID = "client";
-      (env as any).AUTH0_CLIENT_SECRET = "secret";
+      (env as any).CLERK_SECRET_KEY = "sk_test_abc";
+      (env as any).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_abc";
       const fullProviderSummary = await services.release.summary(ctx);
       expect(fullProviderSummary.environment.runtimeMode).toBe("provider");
     } finally {
-      (env as any).PIPES_USE_MOCKS = prevMocks;
+      (env as any).LOOPER_USE_MOCKS = prevMocks;
       (env as any).CONVEX_URL = prevConvex;
-      (env as any).AUTH0_DOMAIN = prevAuthDomain;
-      (env as any).AUTH0_CLIENT_ID = prevAuthClientId;
-      (env as any).AUTH0_CLIENT_SECRET = prevAuthClientSecret;
+      (env as any).CLERK_SECRET_KEY = prevClerkSecret;
+      (env as any).NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = prevClerkPub;
     }
   });
 });

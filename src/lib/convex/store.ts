@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { sampleData } from "@/lib/convex/mockData";
-import type { Node, Pipe, Plan, Role } from "@/domain/pipes_schema_v1/schema";
+import type { Node, Pipe, Plan, Role } from "@/domain/looper_schema_v1/schema";
 import type { FeedbackCategory, FeedbackSeverity, FeedbackStatus } from "@/lib/repositories/contracts";
 import type { AgentRun, AgentSession, ApprovalRequest, RunEvent, RunMessage, RunPlan, ToolCallRecord } from "@/domain/agent_builder/model";
 import type { AppliedGraphActionRecord, GraphActionProposal } from "@/domain/agent_builder/actions";
@@ -11,8 +11,13 @@ import type { BuilderStrategy, DecisionRecord, MemoryEntry, PatternArtifact, Reu
 import type { EvaluationRecord, LearningArtifact, PatternDemotionRecord, PatternPromotionRecord, SkillPerformanceRecord, StrategyPerformanceRecord } from "@/domain/agent_builder/evaluation";
 import type { ApprovalParticipantRecord, HandoffRecord, ReviewComment, ReviewDecisionRecord, ReviewThread, RevisionRequest, RunReviewer, SharedRunVisibilityState } from "@/domain/agent_builder/collaboration";
 import type { AgentPolicy, EscalationRecord, PolicyDecisionRecord, RunPolicySnapshot, RuntimeUsageRecord } from "@/domain/agent_builder/policy";
+import type { AgentConversationRecord, AgentRunnerMetricRecord, AgentTurnRecord, FeedbackEntryRecord, MetricsSampleRecord } from "@/lib/repositories/contracts";
 
 const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
+
+// In test environments, use an isolated in-memory store so test runs don't
+// accumulate state in the on-disk DB file and pollute subsequent test runs.
+const IS_TEST = process.env.NODE_ENV === "test";
 
 type Membership = {
   id: string;
@@ -32,6 +37,7 @@ type PersistedSystem = {
   updatedAt: string;
   archivedAt?: string;
   isFavorite?: boolean;
+  visibility?: "public" | "private";
 };
 
 type CommentRecord = {
@@ -63,7 +69,7 @@ type PresenceRecord = {
 
 type DbShape = {
   users: Array<{ id: string; externalId: string; email: string; name: string; createdAt: string }>;
-  workspaces: Array<{ id: string; ownerId: string; name: string; slug: string; plan: Plan; createdAt: string }>;
+  workspaces: Array<{ id: string; ownerId: string; name: string; slug: string; plan: Plan; createdAt: string; description?: string }>;
   memberships: Membership[];
   systems: PersistedSystem[];
   nodes: Node[];
@@ -73,7 +79,7 @@ type DbShape = {
   invites: Array<{ id: string; workspaceId: string; email: string; role: Role; token: string; status: "pending" | "accepted" | "canceled" | "expired"; createdAt: string; expiresAt: string; invitedBy?: string; acceptedBy?: string; acceptedAt?: string; canceledAt?: string }>;
   presence: PresenceRecord[];
   planState: Array<{ workspaceId: string; plan: Plan; status: "active" | "canceled" | "past_due" | "trialing"; updatedAt: string; externalCustomerId?: string; externalSubscriptionId?: string }>;
-  agentTokens: Array<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string }>;
+  agentTokens: Array<{ id: string; workspaceId: string; name: string; capabilities: string[]; systemId?: string; tokenHash: string; tokenPreview: string; createdByUserId: string; createdAt: string; lastUsedAt?: string; revokedAt?: string; expiresAt?: string }>;
   audits: Array<{ id: string; actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string; createdAt: string }>;
   idempotency: Array<{ id: string; workspaceId: string; actorId: string; route: string; key: string; requestHash: string; responseJson: string; statusCode: number; createdAt: string }>;
   rateLimits: Array<{ id: string; bucket: string; windowStart: string; count: number; updatedAt: string }>;
@@ -121,15 +127,22 @@ type DbShape = {
   policyDecisionRecords: PolicyDecisionRecord[];
   runtimeUsageRecords: RuntimeUsageRecord[];
   escalationRecords: EscalationRecord[];
+  agentConversations: AgentConversationRecord[];
+  agentTurns: AgentTurnRecord[];
+  agentRunnerMetrics: AgentRunnerMetricRecord[];
+  feedbackEntries: FeedbackEntryRecord[];
+  metricsSamples: MetricsSampleRecord[];
 };
 
 const createId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+
+let _testDb: DbShape | null = null;
 
 function seed(): DbShape {
   const system = sampleData.systems[0];
   return {
     users: [{ id: "usr_1", externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera", createdAt: new Date().toISOString() }],
-    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Pipes Lab", slug: "pipes-lab", plan: "Pro", createdAt: new Date().toISOString() }],
+    workspaces: [{ id: "wks_1", ownerId: "usr_1", name: "Pipes Lab", slug: "looper-lab", plan: "Pro", createdAt: new Date().toISOString() }],
     memberships: [{ id: "mem_1", workspaceId: "wks_1", userId: "usr_1", role: "Owner", createdAt: new Date().toISOString() }],
     systems: [{
       id: system.id,
@@ -194,11 +207,20 @@ function seed(): DbShape {
     runPolicySnapshots: [],
     policyDecisionRecords: [],
     runtimeUsageRecords: [],
-    escalationRecords: []
+    escalationRecords: [],
+    agentConversations: [],
+    agentTurns: [],
+    agentRunnerMetrics: [],
+    feedbackEntries: [],
+    metricsSamples: []
   };
 }
 
 function readDb(): DbShape {
+  if (IS_TEST) {
+    if (!_testDb) _testDb = seed();
+    return JSON.parse(JSON.stringify(_testDb)) as DbShape;
+  }
   if (!fs.existsSync(DB_FILE)) {
     const initial = seed();
     fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
@@ -250,11 +272,20 @@ function readDb(): DbShape {
     runPolicySnapshots: parsed.runPolicySnapshots ?? [],
     policyDecisionRecords: parsed.policyDecisionRecords ?? [],
     runtimeUsageRecords: parsed.runtimeUsageRecords ?? [],
-    escalationRecords: parsed.escalationRecords ?? []
+    escalationRecords: parsed.escalationRecords ?? [],
+    agentConversations: parsed.agentConversations ?? [],
+    agentTurns: parsed.agentTurns ?? [],
+    agentRunnerMetrics: parsed.agentRunnerMetrics ?? [],
+    feedbackEntries: parsed.feedbackEntries ?? [],
+    metricsSamples: parsed.metricsSamples ?? []
   };
 }
 
 function writeDb(data: DbShape) {
+  if (IS_TEST) {
+    _testDb = JSON.parse(JSON.stringify(data)) as DbShape;
+    return;
+  }
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 

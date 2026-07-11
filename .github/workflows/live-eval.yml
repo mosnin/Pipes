@@ -1,0 +1,70 @@
+name: Live agent eval
+
+# Runs the live builder eval (agents/eval/run_live_eval.py) against the
+# production Modal endpoint after every push to main. Skips cleanly
+# when the required secrets are not configured, so a fresh fork or a
+# pre-deploy branch never sees a red check.
+#
+# Required repo secrets to actually run the eval:
+#   PIPES_AGENT_ENDPOINT_URL  - the HTTPS URL printed by `modal deploy`
+#   OPENAI_API_KEY            - any key that can hit api.openai.com
+#
+# When either secret is absent, the gate step records ready=false and
+# every later step short-circuits. The job still finishes green.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  live-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets
+        id: gate
+        env:
+          PIPES_AGENT_ENDPOINT_URL: ${{ secrets.PIPES_AGENT_ENDPOINT_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "${PIPES_AGENT_ENDPOINT_URL:-}" ] && [ -n "${OPENAI_API_KEY:-}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip notice
+        if: steps.gate.outputs.ready == 'false'
+        run: |
+          echo "Live eval skipped - PIPES_AGENT_ENDPOINT_URL and/or OPENAI_API_KEY"
+          echo "are not configured as repo secrets. Configure them in"
+          echo "Settings -> Secrets and variables -> Actions to enable this job."
+
+      - name: Checkout
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install agent runtime deps
+        if: steps.gate.outputs.ready == 'true'
+        run: pip install -r agents/requirements.txt
+
+      - name: Run live eval
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          PIPES_AGENT_ENDPOINT_URL: ${{ secrets.PIPES_AGENT_ENDPOINT_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python agents/eval/run_live_eval.py
+
+      - name: Upload report
+        if: ${{ always() && steps.gate.outputs.ready == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: builder-live-eval
+          path: docs/builder-live-eval.md
+          if-no-files-found: warn
