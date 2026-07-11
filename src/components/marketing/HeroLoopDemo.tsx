@@ -61,8 +61,10 @@ export function HeroLoopDemo() {
       const afterTyping = 380 + PROMPT.length * 38 + 500;
       // Assemble the loop.
       for (let s = 1; s <= TOTAL_STEPS; s++) schedule(() => setStep(s), afterTyping + s * 560);
-      // Hold, then loop.
-      schedule(run, afterTyping + TOTAL_STEPS * 560 + 3600);
+      // Hold on the finished loop — it's the hero's actual selling image and the
+      // payoff of "it builds itself", so let it dominate the cycle (the violet
+      // pulse keeps it alive) before the reveal replays.
+      schedule(run, afterTyping + TOTAL_STEPS * 560 + 8000);
     };
     run();
 

@@ -632,7 +632,7 @@ export function CompilerClient() {
             handleCompile();
           }
         }}
-        placeholder={`Paste a SOP, API spec, README, book excerpt, or any structured process.\n\nLooper auto-detects the document type and compiles it into an executable agent loop.`}
+        placeholder={`Paste a SOP, API spec, README, book excerpt, or any structured process.\n\nPipes auto-detects the document type and compiles it into an executable agent loop.`}
         maxLength={20000}
         className="w-full h-72 resize-none rounded-xl border border-black/[0.1] surface-canvas px-4 py-3.5 t-body text-ink-1 text-[13px] leading-relaxed placeholder:text-ink-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-colors font-mono"
         spellCheck={false}
