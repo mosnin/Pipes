@@ -1,5 +1,14 @@
 # Pipes
 
+> **Pipes is now Systems by Company OS.** The product continues at
+> [systems.companyos.sh](https://systems.companyos.sh), built in
+> [`mosnin/company-os-web`](https://github.com/mosnin/company-os-web) under
+> `systems/`. It runs on the Company OS Convex deployment and signs in with a
+> Company OS account, and each system and workflow belongs to a Company OS
+> company. The graph vocabulary (`pipes_schema_v1` node types) and the starter
+> templates were carried over. This repository is kept for reference, and for
+> the agent-run features that have not moved yet.
+
 Pipes is a visual and machine-readable system design platform for agentic systems.
 
 ## Structured creation milestone
