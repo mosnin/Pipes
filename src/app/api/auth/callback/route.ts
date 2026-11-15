@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { setSessionCookie } from "@/lib/auth";
+import { consumeOAuthState, resolveAuthMode, setSessionCookie } from "@/lib/auth";
+import { safeReturnTo } from "@/lib/auth/session";
+
+function loginError(request: Request, error: string) {
+  return NextResponse.redirect(new URL(`/login?error=${error}`, request.url));
+}
 
 export async function GET(request: Request) {
+  if (resolveAuthMode() !== "auth0") return loginError(request, "auth_not_configured");
+
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  if (!code) return NextResponse.redirect(new URL("/login", request.url));
+  const verified = await consumeOAuthState(requestUrl.searchParams.get("state"));
+  if (!code || !verified) return loginError(request, "invalid_login_state");
 
   const tokenRes = await fetch(`https://${env.AUTH0_DOMAIN}/oauth/token`, {
     method: "POST",
@@ -18,18 +26,22 @@ export async function GET(request: Request) {
       redirect_uri: `${env.NEXT_PUBLIC_APP_URL}/api/auth/callback`
     })
   });
+  if (!tokenRes.ok) return loginError(request, "token_exchange_failed");
+  const token = (await tokenRes.json()) as { access_token?: string };
+  if (!token.access_token) return loginError(request, "token_exchange_failed");
 
-  const token = await tokenRes.json();
   const profileRes = await fetch(`https://${env.AUTH0_DOMAIN}/userinfo`, {
     headers: { Authorization: `Bearer ${token.access_token}` }
   });
+  if (!profileRes.ok) return loginError(request, "profile_fetch_failed");
+  const profile = (await profileRes.json()) as { sub?: string; email?: string; name?: string; nickname?: string };
+  if (!profile.sub || !profile.email) return loginError(request, "profile_incomplete");
 
-  const profile = await profileRes.json();
   await setSessionCookie({
     externalId: profile.sub,
     email: profile.email,
-    name: profile.name ?? profile.nickname ?? "Pipes User"
+    name: profile.name ?? profile.nickname ?? profile.email
   });
 
-  return NextResponse.redirect(new URL("/dashboard", request.url));
+  return NextResponse.redirect(new URL(safeReturnTo(verified.returnTo), request.url));
 }

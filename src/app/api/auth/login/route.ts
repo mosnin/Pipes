@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import { getAuthService, setSessionCookie } from "@/lib/auth";
-import { runtimeFlags } from "@/lib/env";
+import { beginOAuthLogin, resolveAuthMode } from "@/lib/auth";
+import { safeReturnTo } from "@/lib/auth/session";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get("returnTo") ?? "/dashboard";
+  const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
+  const mode = resolveAuthMode();
 
-  if (runtimeFlags.useMocks || !runtimeFlags.hasAuth0) {
-    await setSessionCookie({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
-    return NextResponse.redirect(new URL(returnTo, request.url));
+  // Demo mode has no real sessions: every request is the demo owner.
+  if (mode === "mock") return NextResponse.redirect(new URL(returnTo, request.url));
+
+  if (mode === "unconfigured") {
+    return NextResponse.json({ error: "auth_not_configured", message: "Sign-in is not configured on this deployment." }, { status: 503 });
   }
 
-  const auth = getAuthService();
-  return NextResponse.redirect(auth.getLoginUrl(returnTo));
+  return NextResponse.redirect(await beginOAuthLogin(returnTo));
 }

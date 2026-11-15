@@ -26,7 +26,8 @@ const envSchema = z.object({
   OPENAI_MODEL: optionalString,
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
-  PIPES_ADMIN_ALLOWLIST: optionalString
+  PIPES_ADMIN_ALLOWLIST: optionalString,
+  PIPES_SESSION_SECRET: optionalString
 });
 
 export function buildEnv(source: NodeJS.ProcessEnv) {
