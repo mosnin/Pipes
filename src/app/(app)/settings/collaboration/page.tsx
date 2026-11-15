@@ -1,12 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Select, Table, EmptyState } from "@/components/ui";
-import { SettingsShell } from "@/components/settings/SettingsShell";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
+import { Field, Input, SearchInput } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Toolbar } from "@/components/ui/page-header";
+import { GroupedList, GroupedRow } from "@/components/ui/grouped-list";
+import { Avatar } from "@/components/ledger/author-stamp";
+import { StatusPill, type SignalRole } from "@/components/ledger/status";
+import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
+import { sentenceCase } from "@/components/settings/fact-list";
+import { formatDate } from "@/lib/utils";
 
 const roles = ["Viewer", "Commenter", "Editor", "Admin"];
+const roleOptions = roles.map((r) => ({ value: r, label: r }));
+
+const INVITE_ROLE: Record<string, SignalRole> = {
+  pending: "caution",
+  accepted: "positive",
+  cancelled: "neutral",
+  canceled: "neutral",
+  expired: "neutral"
+};
 
 export default function CollaborationSettingsPage() {
+  const fieldId = useId();
   const [rows, setRows] = useState<any>({ members: [], invites: [] });
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("Viewer");
@@ -28,55 +47,138 @@ export default function CollaborationSettingsPage() {
     return () => clearTimeout(timer);
   }, [query, roleFilter, load]);
 
-  const pendingInvites = useMemo(() => (rows.invites ?? []).filter((i: any) => i.status === "pending"), [rows.invites]);
+  const pendingInvites = useMemo(() => new Set((rows.invites ?? []).filter((i: any) => i.status === "pending").map((i: any) => i.token)), [rows.invites]);
+
+  const sendInvite = async () => {
+    await fetch("/api/workspace/collaborators", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, role }) });
+    setEmail("");
+    load();
+  };
+
+  const changeRole = async (userId: string, next: string) => {
+    const confirmText = prompt(`Type CHANGE ROLE to set ${userId} to ${next}`);
+    if (confirmText !== "CHANGE ROLE") return;
+    await fetch("/api/workspace/collaborators", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId, role: next }) });
+    load();
+  };
+
+  const members: any[] = rows.members ?? [];
+  const invites: any[] = rows.invites ?? [];
 
   return (
-    <SettingsShell title="Collaboration" subtitle="Manage members, roles, and invites with explicit safety boundaries.">
-      <Card>
-        <div className="nav-inline">
-          <Input aria-label="Invite collaborator email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" />
-          <Select aria-label="Invite role" value={role} onChange={(e) => setRole(e.target.value)}>{roles.map((r) => <option key={r}>{r}</option>)}</Select>
-          <Button onClick={async () => { await fetch("/api/workspace/collaborators", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, role }) }); setEmail(""); load(); }}>Send invite</Button>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="nav-inline">
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search members or invites" />
-          <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option value="all">All roles</option>
-            <option>Owner</option>
-            {roles.map((r) => <option key={r}>{r}</option>)}
-          </Select>
-          <Button onClick={load}>Refresh</Button>
-        </div>
-      </Card>
-
-      <Card>
-        <h4>Members</h4>
-        {rows.members.length === 0 ? <EmptyState title="No members yet" description="Invite teammates to collaborate on systems." /> : <Table headers={["User", "Role", "Action"]} rows={rows.members.map((m: any) => [m.userId, m.role, m.role === "Owner" ? "Owner is fixed" : "Update role"])} />}
-        <div style={{ display: "grid", gap: 8 }}>
-          {(rows.members ?? []).filter((m: any) => m.role !== "Owner").map((m: any) => (
-            <div className="nav-inline" key={m.userId}>
-              <span>{m.userId}</span>
-              <Select defaultValue={m.role} onChange={async (e) => {
-                const confirmText = prompt(`Type CHANGE ROLE to set ${m.userId} to ${e.target.value}`);
-                if (confirmText !== "CHANGE ROLE") return;
-                await fetch("/api/workspace/collaborators", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: m.userId, role: e.target.value }) });
-                load();
-              }}>
-                {roles.map((r) => <option key={r}>{r}</option>)}
-              </Select>
+    <SettingsShell
+      title="Members"
+      measure="prose"
+      description="Everyone who can open this workspace's systems, and the role each one holds. Role changes ask for confirmation."
+      meta={<span className="t-caption tabular text-ink-3">{members.length} {members.length === 1 ? "person" : "people"}</span>}
+    >
+      <SettingsSection title="Invite someone">
+        <Card>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void sendInvite();
+            }}
+          >
+            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-[minmax(0,1fr)_180px]">
+              <Field label="Email" htmlFor={`${fieldId}-email`}>
+                <Input id={`${fieldId}-email`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" />
+              </Field>
+              <Field label="Role" htmlFor={`${fieldId}-role`}>
+                <Select id={`${fieldId}-role`} size="sm" value={role} onValueChange={setRole} options={roleOptions} />
+              </Field>
             </div>
-          ))}
-        </div>
-      </Card>
+            <CardFooter inset>
+              <span className="t-caption text-ink-3">They join with the role you pick. You can change it later.</span>
+              <Button type="submit" variant="primary" size="sm">
+                Send invite
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </SettingsSection>
 
-      <Card>
-        <h4>Invites</h4>
-        {rows.invites.length === 0 ? <EmptyState title="No invites" description="New invites will appear here." /> : <Table headers={["Email", "Role", "Status", "Expires"]} rows={rows.invites.map((i: any) => [i.email, i.role, i.status, i.expiresAt])} />}
-        <div style={{ display: "grid", gap: 8 }}>{pendingInvites.map((i: any) => <Button key={i.token} onClick={async () => { await fetch(`/api/invites/${i.token}/cancel`, { method: "POST" }); load(); }}>Cancel {i.email}</Button>)}</div>
-      </Card>
+      <div className="flex flex-col gap-8">
+        <Toolbar>
+          <SearchInput
+            aria-label="Search members or invites"
+            placeholder="Search members or invites"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClear={() => setQuery("")}
+            className="min-w-[200px] flex-1"
+          />
+          <div className="w-[160px]">
+            <Select
+              aria-label="Filter by role"
+              size="sm"
+              value={roleFilter}
+              onValueChange={setRoleFilter}
+              options={[{ value: "all", label: "All roles" }, { value: "Owner", label: "Owner" }, ...roleOptions]}
+            />
+          </div>
+          <Button variant="secondary" size="sm" onClick={load}>
+            Refresh
+          </Button>
+        </Toolbar>
+
+        <SettingsSection title="People">
+          <GroupedList empty="No members match. Invite teammates to work on systems together.">
+            {members.map((m) => (
+              <GroupedRow
+                key={m.userId}
+                leading={<Avatar label={m.userId} kind="human" size={28} />}
+                title={<span className="t-mono-hash">{m.userId}</span>}
+                subtitle={m.role === "Owner" ? "Owner. This role is fixed." : undefined}
+                trailing={
+                  m.role === "Owner" ? (
+                    <StatusPill role="neutral">Owner</StatusPill>
+                  ) : (
+                    <div className="w-[132px]">
+                      <Select
+                        aria-label={`Role for ${m.userId}`}
+                        size="sm"
+                        variant="quiet"
+                        align="end"
+                        value={m.role}
+                        onValueChange={(next) => void changeRole(m.userId, next)}
+                        options={roleOptions}
+                      />
+                    </div>
+                  )
+                }
+              />
+            ))}
+          </GroupedList>
+        </SettingsSection>
+
+        <SettingsSection title="Invites">
+          <GroupedList empty="No invites. New invites appear here until they are accepted or cancelled.">
+            {invites.map((i) => (
+              <GroupedRow
+                key={i.token}
+                title={i.email}
+                subtitle={`${i.role} · expires ${i.expiresAt ? formatDate(i.expiresAt) : "never"}`}
+                trailing={
+                  <>
+                    <StatusPill role={INVITE_ROLE[i.status] ?? "neutral"}>{sentenceCase(i.status)}</StatusPill>
+                    {pendingInvites.has(i.token) ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        aria-label={`Cancel invite for ${i.email}`}
+                        onClick={async () => { await fetch(`/api/invites/${i.token}/cancel`, { method: "POST" }); load(); }}
+                      >
+                        Cancel
+                      </Button>
+                    ) : null}
+                  </>
+                }
+              />
+            ))}
+          </GroupedList>
+        </SettingsSection>
+      </div>
     </SettingsShell>
   );
 }
