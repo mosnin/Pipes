@@ -1,7 +1,36 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, EmptyState, Input, PageHeader, Select, Table, Button } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
+import { Toolbar } from "@/components/ui/page-header";
+import { CellStack } from "@/components/data/table";
+import { RelativeTime } from "@/components/ledger/relative-time";
+import { StatusPill, type SignalRole } from "@/components/ledger/status";
+import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
+import { RecordTable } from "@/components/settings/record-table";
+import { sentenceCase } from "@/components/settings/fact-list";
+import { OperatorGate } from "@/components/admin/operator-gate";
+
+const CATEGORY_OPTIONS = [
+  { value: "bug", label: "Bug" },
+  { value: "ux", label: "UX" },
+  { value: "feature_request", label: "Feature request" },
+  { value: "reliability", label: "Reliability" },
+  { value: "billing", label: "Billing" },
+  { value: "other", label: "Other" }
+];
+
+const STATUS_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "reviewing", label: "Reviewing" },
+  { value: "closed", label: "Closed" }
+];
+
+const SEVERITY_ROLE: Record<string, SignalRole> = { high: "critical", medium: "caution", low: "neutral" };
+
+const categoryLabel = (value: string) => CATEGORY_OPTIONS.find((c) => c.value === value)?.label ?? value;
 
 export default function AdminIssuesPage() {
   const [status, setStatus] = useState("all");
@@ -25,45 +54,82 @@ export default function AdminIssuesPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  const filtered = status !== "all" || category !== "all";
+
   return (
-    <div>
-      <PageHeader title="Admin Issue Triage" subtitle="Early beta feedback queue with lightweight issue triage statuses." />
-      <Card>
-        <div className="nav-inline">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="all">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="closed">Closed</option>
-          </Select>
-          <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="all">All categories</option><option value="bug">Bug</option><option value="ux">UX</option><option value="feature_request">Feature request</option><option value="reliability">Reliability</option><option value="billing">Billing</option><option value="other">Other</option>
-          </Select>
-          <Button onClick={() => void load()}>Refresh</Button>
+    <SettingsShell
+      title="Issue triage"
+      description="Feedback from the beta, newest first. Move each item from new to reviewing to closed."
+      meta={data ? <span className="t-caption tabular text-ink-3">{data.items.length} {data.items.length === 1 ? "item" : "items"} · {data.openCount} open</span> : null}
+    >
+      <Toolbar>
+        <div className="w-[160px]">
+          <Select aria-label="Filter by status" size="sm" value={status} onValueChange={setStatus} options={[{ value: "all", label: "All statuses" }, ...STATUS_OPTIONS]} />
         </div>
-      </Card>
-      {error ? <EmptyState title="Operator access required" description={error} /> : null}
+        <div className="w-[180px]">
+          <Select aria-label="Filter by category" size="sm" value={category} onValueChange={setCategory} options={[{ value: "all", label: "All categories" }, ...CATEGORY_OPTIONS]} />
+        </div>
+        <Button variant="secondary" size="sm" onClick={() => void load()}>
+          Refresh
+        </Button>
+      </Toolbar>
+
+      {error ? <OperatorGate error={error} /> : null}
+
       {!data ? null : (
         <>
-          <div className="grid-2">
-            <Card><h3>Queue summary</h3><p>Total: {data.items.length}</p><p>Open: {data.openCount}</p></Card>
-            <Card><h3>Failure rollup</h3>{data.failureGroups.map((group: any) => <p key={group.key}>{group.label}: {group.count}</p>)}</Card>
-          </div>
-          <Card>
-            <h3>Feedback items</h3>
-            {data.items.length === 0 ? <EmptyState title="No feedback items" description="Feedback submitted by users appears here for triage." /> : <Table headers={["Time", "Category", "Severity", "Summary", "Page", "Status", "Action"]} rows={data.items.map((item: any) => [item.createdAt, item.category, item.severity, item.summary, item.page, item.status, "Update below"])} />}
-            <div style={{ display: "grid", gap: 8 }}>
-              {data.items.map((item: any) => (
-                <div key={item.id} className="nav-inline" style={{ justifyContent: "space-between" }}>
-                  <span>{item.id} · {item.summary}</span>
-                  <div className="nav-inline">
-                    <Select defaultValue={item.status} onChange={async (e) => { await fetch("/api/admin/issues", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, status: e.target.value }) }); void load(); }}>
-                      <option value="new">new</option><option value="reviewing">reviewing</option><option value="closed">closed</option>
-                    </Select>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <SettingsSection title="Feedback">
+            <RecordTable
+              noun="item"
+              columns={[
+                { label: "Time", className: "w-[120px]" },
+                { label: "Summary" },
+                { label: "Category", className: "w-[140px]" },
+                { label: "Severity", className: "w-[104px]" },
+                { label: "Page" },
+                { label: "Status", className: "w-[144px]" }
+              ]}
+              rows={data.items.map((item: any) => ({
+                key: item.id,
+                cells: [
+                  <RelativeTime key="t" at={Date.parse(item.createdAt)} />,
+                  <CellStack key="s" title={item.summary} meta={item.id} />,
+                  <span key="c" className="text-ink-2">{categoryLabel(item.category)}</span>,
+                  <StatusPill key="v" role={SEVERITY_ROLE[item.severity] ?? "neutral"}>{sentenceCase(item.severity)}</StatusPill>,
+                  item.page ? <span key="p" className="t-mono-hash text-ink-2">{item.page}</span> : null,
+                  <Select
+                    key="st"
+                    aria-label={`Status for ${item.summary}`}
+                    size="sm"
+                    variant="quiet"
+                    value={item.status}
+                    onValueChange={async (next) => { await fetch("/api/admin/issues", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: item.id, status: next }) }); void load(); }}
+                    options={STATUS_OPTIONS}
+                  />
+                ]
+              }))}
+              empty={
+                <EmptyState
+                  variant={filtered ? "filtered" : "never"}
+                  title={filtered ? "No feedback matches these filters" : "No feedback yet"}
+                  body={filtered ? "Widen the status or category filter." : "Feedback people send from Settings lands here for triage."}
+                  className="py-9"
+                />
+              }
+            />
+          </SettingsSection>
+
+          <SettingsSection title="Failure rollup">
+            <RecordTable
+              noun="group"
+              footer={false}
+              columns={[{ label: "Group" }, { label: "Count", numeric: true, className: "w-[120px]" }]}
+              rows={data.failureGroups.map((group: any) => ({ key: group.key, cells: [group.label, String(group.count)] }))}
+              empty={<EmptyState title="No failure groups" className="py-9" />}
+            />
+          </SettingsSection>
         </>
       )}
-    </div>
+    </SettingsShell>
   );
 }
