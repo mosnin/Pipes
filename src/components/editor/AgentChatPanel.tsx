@@ -1,7 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Panel } from "@/components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Kbd } from "@/components/ui/kbd";
+import { ChevronDown, Send } from "@/components/ui/icon";
+import { CheckRow, ObjectRow, Quiet, SectionLabel, StatusPill, statusTone } from "@/components/editor/editor-ui";
 
 type Session = { id: string; title: string };
 type Run = { id: string; status: string };
@@ -276,123 +281,110 @@ export function AgentChatPanel({
     await refreshRunArtifacts(activeRunId);
   };
 
-  return (
-    <Panel title="Builder Agent">
-      <p className="badge">System attached: {systemName}</p>
-      <p className="badge">Run status: {runStatus}</p>
-      <p className="badge">Current stage: {stages.at(-1)?.stage ?? "n/a"}</p>
-      <div className="nav-inline" style={{ flexWrap: "wrap" }}>{sessions.map((s) => <Button key={s.id} onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
-      <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the builder agent" />
-      <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
+  const busy = runStatus === "tooling" || runStatus === "planning" || runStatus === "applying";
+  const pendingApprovals = approvals.filter((a) => a.status === "pending");
 
-      <Card><h4>Current plan</h4>{plan ? <><p>{plan.summary} ({Math.round(plan.confidence * 100)}% confidence)</p><ul>{plan.steps.map((step) => <li key={step.id}>{step.title} · tools: {step.toolNames.join(", ")}</li>)}</ul></> : <p>No plan yet.</p>}</Card>
-      <Card><h4>Plan revisions</h4>{revisions.length ? revisions.map((rev) => <p key={rev.id}>v{rev.version}: {rev.summary}{rev.critique ? ` · critique: ${rev.critique}` : ""}</p>) : <p>No revisions yet.</p>}</Card>
-      <Card><h4>Specialist roles</h4>{roles.length ? roles.map((role) => <p key={role.id}>{role.role} @ {role.stage} · {role.summary}</p>) : <p>No role activity yet.</p>}</Card>
-      <Card><h4>Subsystem sub-tasks</h4>{subTasks.length ? subTasks.map((task) => <p key={task.id}>{task.contextPack.subsystemId} · {task.title} · {task.role} · {task.status}</p>) : <p>No delegated sub-tasks yet.</p>}</Card>
-      <Card><h4>Active skills</h4>{skillInvocations.length ? skillInvocations.map((skill) => <p key={skill.id}>{skill.skillId} · {skill.status} · {skill.inputSummary}</p>) : <p>No skill invocations yet.</p>}</Card>
-      <Card><h4>Orchestration</h4>{orchestrationSteps.length ? orchestrationSteps.map((step) => <p key={step.id}>{step.stage} · {step.decision} · {step.summary}</p>) : <p>No orchestration steps yet.</p>}</Card>
-      <Card><h4>Reconciliation</h4>{reconciliations.length ? reconciliations.map((r) => <p key={r.id}>{r.decision} · {r.summary} ({r.inputTaskIds.length} tasks)</p>) : <p>No reconciliation records yet.</p>}</Card>
-      <Card>
-        <h4>Memory continuity</h4>
-        <p>Loaded memories: {memoryEntries.length}</p>
-        {memoryEntries.slice(0, 6).map((entry) => <p key={entry.id}>{entry.type} · {entry.title} · {entry.confidence}</p>)}
-        <div className="nav-inline">
-          <Input value={strategyChoice} onChange={(e) => setStrategyChoice(e.target.value)} placeholder="strategy" />
-          <Button onClick={async () => {
-            await fetch("/api/agent/strategies", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, name: strategyChoice }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Save strategy</Button>
+  return (
+    <div className="flex flex-col gap-6 px-5 py-5">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <StatusPill tone={runStatus === "idle" ? "neutral" : statusTone(runStatus)} className="capitalize">{runStatus}</StatusPill>
+          <span className="t-micro text-ink-3">Stage <span className="t-mono-micro text-ink-2">{stages.at(-1)?.stage ?? "none yet"}</span></span>
+          <span className="ml-auto truncate t-micro text-ink-3">Working on {systemName}</span>
         </div>
-        {strategies.slice(0, 4).map((strategy) => <p key={strategy.id}>{strategy.name} · {strategy.status}</p>)}
-      </Card>
-      <Card><h4>Pattern reuse</h4>{patterns.length ? patterns.slice(0, 5).map((pattern) => <p key={pattern.id}>{pattern.title} · {pattern.intendedUse}</p>) : <p>No saved patterns.</p>}</Card>
-      <Card><h4>Decision memory</h4>{decisions.length ? decisions.slice(0, 5).map((decision) => <p key={decision.id}>{decision.state} · {decision.title}</p>) : <p>No decisions recorded.</p>}</Card>
-      <Card><h4>Run evaluation</h4>{evaluations.length ? evaluations.slice(0, 6).map((row) => <p key={row.id}>{row.scope}:{row.type} · {Math.round(row.score.value * 100)}% · {row.outcome}</p>) : <p>No evaluation artifacts yet.</p>}</Card>
-      <Card><h4>Strategy effectiveness</h4>{strategyPerformance.length ? strategyPerformance.map((row) => <p key={row.id}>{row.strategyName} · score {Math.round(row.overallScore * 100)} · accept {Math.round(row.acceptanceRate * 100)}% · friction {Math.round(row.reviewFriction * 100)}%</p>) : <p>No strategy performance yet.</p>}</Card>
-      <Card><h4>Skill effectiveness</h4>{skillPerformance.length ? skillPerformance.map((row) => <p key={row.id}>{row.skillId} ({row.role}) · score {Math.round(row.overallScore * 100)} · success {Math.round(row.successRate * 100)}%</p>) : <p>No skill performance yet.</p>}</Card>
-      <Card><h4>Pattern lifecycle</h4><p>Promoted: {patternLifecycle.promoted.length} · Demoted: {patternLifecycle.demoted.length}</p>{patternLifecycle.promoted.slice(0, 4).map((row) => <p key={row.id}>↑ {row.patternArtifactId} · {row.reason}</p>)}{patternLifecycle.demoted.slice(0, 4).map((row) => <p key={row.id}>↓ {row.patternArtifactId} · {row.reason}</p>)}</Card>
-      <Card><h4>Learning artifacts</h4>{learningArtifacts.length ? learningArtifacts.slice(0, 6).map((row) => <p key={row.id}>{row.type} · {row.title} · {row.confidence}</p>) : <p>No learning artifacts yet.</p>}</Card>
-      <Card><h4>Run policy</h4>{policySnapshot ? <><p>Risk: {policySnapshot.risk.posture} · auto-apply: {String(policySnapshot.risk.safeAutoApplyEnabled)}</p><p>Approval: {policySnapshot.approval.strictness} · max duration: {Math.round(policySnapshot.runtime.maxRunDurationMs / 1000)}s</p><p>Escalations: {policyEvents.escalations.length} · provider calls: {policyEvents.usage?.providerCalls ?? 0}</p></> : <p>No policy snapshot yet.</p>}</Card>
-      <Card>
-        <h4>Collaborative run context</h4>
-        <p>Active reviewers: {collaboration.reviewers.length}</p>
-        {collaboration.reviewers.map((row) => <p key={row.id}>{row.userId} · {row.role} · {row.status}</p>)}
-        <p>Shared viewers: {collaboration.visibility.length}</p>
-      </Card>
-      <Card>
-        <h4>Batch/diff review comments</h4>
-        <div className="nav-inline">
-          <Input value={commentBody} onChange={(e) => setCommentBody(e.target.value)} />
-          <Button onClick={async () => {
-            if (!activeRunId) return;
-            const firstBatch = batches[0];
-            if (!firstBatch) return;
-            await fetch("/api/agent/review-comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: firstBatch.id, body: commentBody }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Comment on batch</Button>
+        {sessions.length > 0 ? (
+          <Select
+            aria-label="Builder session"
+            size="sm"
+            value={sessionId ?? ""}
+            onValueChange={(value) => setSessionId(value)}
+            options={sessions.map((s) => ({ value: s.id, label: s.title }))}
+            placeholder="Choose a session"
+          />
+        ) : null}
+        <form
+          className="flex flex-col gap-3 rounded-12 border border-border bg-object p-3"
+          onSubmit={(event) => { event.preventDefault(); if (!busy) void runPrompt(); }}
+        >
+          <Textarea
+            aria-label="Ask the builder agent"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !busy) { event.preventDefault(); void runPrompt(); }
+            }}
+            placeholder="Ask the builder agent to change this system"
+            className="min-h-[72px] border-transparent bg-transparent px-2 py-1 hover:border-transparent"
+          />
+          <div className="flex items-center justify-between gap-3">
+            <span className="hidden items-center gap-2 t-micro text-ink-3 sm:inline-flex"><Kbd>⌘</Kbd><Kbd>↵</Kbd>to run</span>
+            <Button type="submit" size="sm" variant="primary" disabled={busy} loading={busy} className="ml-auto">
+              <Send aria-hidden="true" />
+              Run
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {pendingApprovals.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{pendingApprovals.length}</span>}>Waiting for your approval</SectionLabel>
+          {pendingApprovals.map((approval) => (
+            <ObjectRow key={approval.id} className="gap-3">
+              <p className="t-caption text-ink">{approval.reason}</p>
+              <div className="flex gap-2">
+                <Button size="xs" variant="primary" onClick={() => decideApproval(approval.id, "approved")}>Approve</Button>
+                <Button size="xs" variant="ghost" onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button>
+              </div>
+            </ObjectRow>
+          ))}
         </div>
-        {collaboration.comments.slice(0, 8).map((c) => <p key={c.id}>{c.targetType}:{c.targetId} · {c.authorId} · {c.body}</p>)}
-      </Card>
-      <Card>
-        <h4>Approval collaboration</h4>
-        {collaboration.approvalParticipants.slice(0, 8).map((row) => <p key={row.id}>{row.approvalRequestId} · {row.actorId} · {row.recommendation}</p>)}
-        {approvals[0] ? <Button onClick={async () => {
-          if (!activeRunId || !approvals[0]) return;
-          await fetch("/api/agent/approval-feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, approvalRequestId: approvals[0].id, recommendation: "needs_revision", note: "Please split risky batch.", decision: "object" }) });
-          await refreshRunArtifacts(activeRunId);
-        }}>Add objection</Button> : null}
-      </Card>
-      <Card>
-        <h4>Revision requests</h4>
-        {collaboration.revisions.slice(0, 6).map((row) => <p key={row.id}>{row.targetType}:{row.targetId} · {row.status} · {row.rationale}</p>)}
-        {batches[0] ? <Button onClick={async () => {
-          if (!activeRunId || !batches[0]) return;
-          await fetch("/api/agent/revision-requests", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: batches[0].id, rationale: "Split batch for clearer approval scope.", requestedOutcome: "safe subset first" }) });
-          await refreshRunArtifacts(activeRunId);
-        }}>Request revision</Button> : null}
-      </Card>
-      <Card>
-        <h4>Run handoff</h4>
-        <div className="nav-inline">
-          <Input value={handoffTo} onChange={(e) => setHandoffTo(e.target.value)} placeholder="to user id" />
-          <Button onClick={async () => {
-            if (!activeRunId) return;
-            await fetch("/api/agent/handoffs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, toUserId: handoffTo, note: "Please finish approval and review open threads." }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Create handoff</Button>
-        </div>
-        {collaboration.handoffs.slice(0, 6).map((row) => <p key={row.id}>{row.fromUserId} → {row.toUserId} · {row.status} · {row.stage}</p>)}
-      </Card>
-      <Card><h4>Tool activity</h4>{tools.length ? tools.map((tool) => <p key={tool.id}>{tool.toolName} · {tool.status}</p>) : <p>No tool calls yet.</p>}</Card>
-      <Card>
-        <h4>Proposal batches</h4>
+      ) : null}
+
+      <div className="flex flex-col gap-3">
+        <SectionLabel>Assistant</SectionLabel>
+        {assistantText ? <p className="whitespace-pre-wrap t-body-read text-ink">{assistantText}</p> : <Quiet>Nothing yet. Describe a change above and run it.</Quiet>}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <SectionLabel>Plan</SectionLabel>
+        {plan ? (
+          <div className="flex flex-col gap-3">
+            <p className="t-caption text-ink-2">{plan.summary} <span className="tabular-nums text-ink-3">{Math.round(plan.confidence * 100)}% confidence</span></p>
+            <ol className="flex flex-col gap-2">
+              {plan.steps.map((step, index) => (
+                <li key={step.id} className="flex gap-3 t-caption">
+                  <span className="w-[16px] shrink-0 text-right tabular-nums text-ink-4">{index + 1}</span>
+                  <span className="min-w-0 flex-1 text-ink">{step.title} <span className="t-mono-micro text-ink-3">{step.toolNames.join(", ")}</span></span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : <Quiet>No plan yet.</Quiet>}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{batches.length}</span>}>Proposed changes</SectionLabel>
         {batches.length ? batches.map((batch) => {
           const diffs = batchDiffs[batch.id] ?? [];
           const selected = selectedDiffByBatch[batch.id] ?? [];
           const validation = selectionValidation[batch.id];
           const previewEnabled = previewEnabledByBatch[batch.id] ?? true;
           return (
-            <div key={batch.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
-              <p>{batch.stage} · {batch.summary} · {batch.status} ({batch.proposalIds.length} proposals)</p>
-              <div className="nav-inline">
-                <Button onClick={() => activeRunId && loadBatchDiffs(activeRunId, batch.id)}>Load diff</Button>
-                <Button onClick={async () => {
-                  const next = !previewEnabled;
-                  setPreviewEnabledByBatch((prev) => ({ ...prev, [batch.id]: next }));
-                  if (activeRunId) await refreshPreview(activeRunId, batch.id, selected, next);
-                }}>{previewEnabled ? "Hide preview" : "Show preview"}</Button>
-                <Button onClick={() => activeRunId && refreshRegion(activeRunId, batch.id, diffs.filter((d) => selected.includes(d.id)).map((d) => d.proposalId))}>Highlight region</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "approve_all")}>Approve all</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "approve_selected")}>Approve selected</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "reject_all")}>Reject all</Button>
+            <ObjectRow key={batch.id} className="gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="t-body-medium text-ink">{batch.summary}</span>
+                  <span className="t-micro text-ink-3"><span className="t-mono-micro">{batch.stage}</span> · {batch.proposalIds.length} proposals</span>
+                </div>
+                <StatusPill tone={statusTone(batch.status)} className="capitalize">{batch.status}</StatusPill>
               </div>
-              {validation && !validation.valid ? <p style={{ color: "#b64848" }}>{validation.blockedReason}</p> : null}
+              {validation && !validation.valid ? <p className="t-caption text-critical-text">{validation.blockedReason}</p> : null}
               {diffs.length > 0 ? (
-                <div className="validation-list">
+                <ul className="flex flex-col gap-3">
                   {diffs.map((diff) => (
-                    <label key={diff.id} style={{ display: "block", marginBottom: 6, opacity: diff.canSelectIndividually ? 1 : 0.78 }}>
-                      <input
-                        type="checkbox"
+                    <li key={diff.id}>
+                      <CheckRow
                         checked={selected.includes(diff.id)}
                         onChange={async (event) => {
                           const next = event.target.checked ? [...selected, diff.id] : selected.filter((id) => id !== diff.id);
@@ -404,30 +396,175 @@ export function AgentChatPanel({
                           }
                         }}
                         disabled={!diff.canSelectIndividually && diff.dependencies.length > 0 && !selected.includes(diff.id)}
-                      />{" "}
-                      {diff.summary} · {diff.changeType} · risk {diff.riskLevel} · region {diff.affectedSubsystem}
-                      {diff.dependencies.length ? ` · depends on ${diff.dependencies.join(", ")}` : ""}
-                    </label>
+                      >
+                        <span className="block text-ink">{diff.summary}</span>
+                        <span className="block text-ink-3">
+                          <span className="t-mono-micro">{diff.changeType}</span> · risk {diff.riskLevel} · {diff.affectedSubsystem}
+                          {diff.dependencies.length ? <> · needs <span className="t-mono-micro">{diff.dependencies.join(", ")}</span></> : null}
+                        </span>
+                      </CheckRow>
+                    </li>
                   ))}
-                </div>
-              ) : <p>No diff items loaded.</p>}
-            </div>
+                </ul>
+              ) : <Quiet>Diff not loaded.</Quiet>}
+              <div className="flex flex-wrap gap-2">
+                <Button size="xs" variant="primary" onClick={() => applySelectionDecision(batch.id, "approve_selected")}>Approve selected</Button>
+                <Button size="xs" variant="secondary" onClick={() => applySelectionDecision(batch.id, "approve_all")}>Approve all</Button>
+                <Button size="xs" variant="destructive" onClick={() => applySelectionDecision(batch.id, "reject_all")}>Reject all</Button>
+              </div>
+              <div className="flex flex-wrap gap-2 border-t border-hairline pt-3">
+                <Button size="xs" variant="ghost" onClick={() => activeRunId && loadBatchDiffs(activeRunId, batch.id)}>Load diff</Button>
+                <Button size="xs" variant="ghost" aria-pressed={previewEnabled} onClick={async () => {
+                  const next = !previewEnabled;
+                  setPreviewEnabledByBatch((prev) => ({ ...prev, [batch.id]: next }));
+                  if (activeRunId) await refreshPreview(activeRunId, batch.id, selected, next);
+                }}>{previewEnabled ? "Hide preview" : "Show preview"}</Button>
+                <Button size="xs" variant="ghost" onClick={() => activeRunId && refreshRegion(activeRunId, batch.id, diffs.filter((d) => selected.includes(d.id)).map((d) => d.proposalId))}>Highlight on canvas</Button>
+              </div>
+            </ObjectRow>
           );
-        }) : <p>No batches yet.</p>}
-      </Card>
-      <Card>
-        <h4>Pending approvals</h4>
-        {approvals.filter((a) => a.status === "pending").map((approval) => (
-          <div key={approval.id} style={{ marginBottom: 8 }}>
-            <p>{approval.reason}</p>
-            <div className="nav-inline"><Button onClick={() => decideApproval(approval.id, "approved")}>Approve</Button><Button onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button></div>
+        }) : <Quiet>No proposals yet.</Quiet>}
+      </div>
+
+      <div className="flex flex-col">
+        <Disclosure title="Run activity" count={tools.length + proposals.length + events.length}>
+          <Lines title="Tools" empty="No tool calls yet." rows={tools.map((tool) => ({ id: tool.id, text: <><span className="t-mono-micro text-ink">{tool.toolName}</span> · {tool.status}</> }))} />
+          <Lines title="Actions" empty="No actions yet." rows={proposals.map((p) => ({ id: p.id, text: <><span className="t-mono-micro text-ink">{p.actionType}</span> · {p.status} · {p.riskClass}</> }))} />
+          <Lines title="Plan revisions" empty="No revisions yet." rows={revisions.map((rev) => ({ id: rev.id, text: <><span className="tabular-nums text-ink">v{rev.version}</span> {rev.summary}{rev.critique ? `. Critique: ${rev.critique}` : ""}</> }))} />
+          <Lines title="Specialist roles" empty="No role activity yet." rows={roles.map((role) => ({ id: role.id, text: <><span className="text-ink">{role.role}</span> at <span className="t-mono-micro">{role.stage}</span> · {role.summary}</> }))} />
+          <Lines title="Sub-tasks" empty="No delegated sub-tasks yet." rows={subTasks.map((task) => ({ id: task.id, text: <><span className="t-mono-micro">{task.contextPack.subsystemId}</span> · <span className="text-ink">{task.title}</span> · {task.role} · {task.status}</> }))} />
+          <Lines title="Skills" empty="No skill invocations yet." rows={skillInvocations.map((skill) => ({ id: skill.id, text: <><span className="t-mono-micro text-ink">{skill.skillId}</span> · {skill.status} · {skill.inputSummary}</> }))} />
+          <Lines title="Orchestration" empty="No orchestration steps yet." rows={orchestrationSteps.map((step) => ({ id: step.id, text: <><span className="t-mono-micro">{step.stage}</span> · {step.decision} · {step.summary}</> }))} />
+          <Lines title="Reconciliation" empty="No reconciliation records yet." rows={reconciliations.map((r) => ({ id: r.id, text: <>{r.decision} · {r.summary} <span className="tabular-nums">({r.inputTaskIds.length} tasks)</span></> }))} />
+          <Lines title="Events" empty="No events yet." rows={events.slice(-16).map((e) => ({ id: e.id, text: <><span className="tabular-nums text-ink-4">{e.sequence}</span> <span className="t-mono-micro text-ink">{e.type}</span>{e.text ? ` · ${e.text.slice(0, 96)}` : ""}</> }))} />
+        </Disclosure>
+
+        <Disclosure title="Memory and learning" count={memoryEntries.length}>
+          <div className="flex flex-col gap-3">
+            <span className="t-caption-medium text-ink">Memory <span className="tabular-nums text-ink-3">{memoryEntries.length} loaded</span></span>
+            {memoryEntries.slice(0, 6).map((entry) => <p key={entry.id} className="t-caption text-ink-3"><span className="t-mono-micro">{entry.type}</span> · <span className="text-ink">{entry.title}</span> · {entry.confidence}</p>)}
+            <form
+              className="flex items-center gap-2"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                await fetch("/api/agent/strategies", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, name: strategyChoice }) });
+                await refreshRunArtifacts(activeRunId);
+              }}
+            >
+              <Input aria-label="Strategy" className="font-mono" value={strategyChoice} onChange={(e) => setStrategyChoice(e.target.value)} placeholder="strategy" />
+              <Button size="md" variant="secondary" type="submit">Save strategy</Button>
+            </form>
+            {strategies.slice(0, 4).map((strategy) => <p key={strategy.id} className="t-caption text-ink-3"><span className="text-ink">{strategy.name}</span> · {strategy.status}</p>)}
           </div>
-        ))}
-        {approvals.filter((a) => a.status === "pending").length === 0 && <p>No pending approvals.</p>}
-      </Card>
-      <Card><h4>Action timeline</h4>{proposals.length ? proposals.map((p) => <p key={p.id}>{p.actionType} · {p.status} · {p.riskClass}</p>) : <p>No actions yet.</p>}</Card>
-      <Card><h4>Assistant stream</h4><p>{assistantText || "No output yet."}</p></Card>
-      <Card><h4>Run events</h4><div className="validation-list">{events.slice(-16).map((e) => <p key={e.id}>{e.sequence}. {e.type}{e.text ? ` · ${e.text.slice(0, 96)}` : ""}</p>)}</div></Card>
-    </Panel>
+          <Lines title="Patterns" empty="No saved patterns." rows={patterns.slice(0, 5).map((pattern) => ({ id: pattern.id, text: <><span className="text-ink">{pattern.title}</span> · {pattern.intendedUse}</> }))} />
+          <Lines title="Decisions" empty="No decisions recorded." rows={decisions.slice(0, 5).map((decision) => ({ id: decision.id, text: <>{decision.state} · <span className="text-ink">{decision.title}</span></> }))} />
+          <Lines title="Evaluation" empty="No evaluations yet." rows={evaluations.slice(0, 6).map((row) => ({ id: row.id, text: <><span className="t-mono-micro">{row.scope}:{row.type}</span> · <span className="tabular-nums text-ink">{Math.round(row.score.value * 100)}%</span> · {row.outcome}</> }))} />
+          <Lines title="Strategy results" empty="No strategy results yet." rows={strategyPerformance.map((row) => ({ id: row.id, text: <><span className="text-ink">{row.strategyName}</span> · <span className="tabular-nums">score {Math.round(row.overallScore * 100)} · accepted {Math.round(row.acceptanceRate * 100)}% · friction {Math.round(row.reviewFriction * 100)}%</span></> }))} />
+          <Lines title="Skill results" empty="No skill results yet." rows={skillPerformance.map((row) => ({ id: row.id, text: <><span className="t-mono-micro text-ink">{row.skillId}</span> ({row.role}) · <span className="tabular-nums">score {Math.round(row.overallScore * 100)} · success {Math.round(row.successRate * 100)}%</span></> }))} />
+          <Lines
+            title={`Pattern lifecycle · ${patternLifecycle.promoted.length} promoted, ${patternLifecycle.demoted.length} demoted`}
+            empty="No promotions or demotions."
+            rows={[
+              ...patternLifecycle.promoted.slice(0, 4).map((row) => ({ id: row.id, text: <><span className="text-positive-text">Promoted</span> <span className="t-mono-micro">{row.patternArtifactId}</span> · {row.reason}</> })),
+              ...patternLifecycle.demoted.slice(0, 4).map((row) => ({ id: row.id, text: <><span className="text-critical-text">Demoted</span> <span className="t-mono-micro">{row.patternArtifactId}</span> · {row.reason}</> }))
+            ]}
+          />
+          <Lines title="Learning" empty="No learning artifacts yet." rows={learningArtifacts.slice(0, 6).map((row) => ({ id: row.id, text: <><span className="t-mono-micro">{row.type}</span> · <span className="text-ink">{row.title}</span> · {row.confidence}</> }))} />
+        </Disclosure>
+
+        <Disclosure title="Review and handoff" count={collaboration.reviewers.length + collaboration.comments.length}>
+          <div className="flex flex-col gap-2">
+            <span className="t-caption-medium text-ink">Run policy</span>
+            {policySnapshot ? (
+              <div className="flex flex-col gap-1 t-caption text-ink-3">
+                <p>Risk <span className="text-ink">{policySnapshot.risk.posture}</span> · auto-apply <span className="text-ink">{policySnapshot.risk.safeAutoApplyEnabled ? "on" : "off"}</span></p>
+                <p>Approval <span className="text-ink">{policySnapshot.approval.strictness}</span> · max duration <span className="tabular-nums text-ink">{Math.round(policySnapshot.runtime.maxRunDurationMs / 1000)}s</span></p>
+                <p>Escalations <span className="tabular-nums text-ink">{policyEvents.escalations.length}</span> · provider calls <span className="tabular-nums text-ink">{policyEvents.usage?.providerCalls ?? 0}</span></p>
+              </div>
+            ) : <Quiet>No policy snapshot yet.</Quiet>}
+          </div>
+          <Lines
+            title={`Reviewers · ${collaboration.reviewers.length} active, ${collaboration.visibility.length} watching`}
+            empty="Nobody else is reviewing."
+            rows={collaboration.reviewers.map((row) => ({ id: row.id, text: <><span className="t-mono-micro text-ink">{row.userId}</span> · {row.role} · {row.status}</> }))}
+          />
+          <div className="flex flex-col gap-3">
+            <span className="t-caption-medium text-ink">Comment on the first batch</span>
+            <form
+              className="flex items-center gap-2"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!activeRunId) return;
+                const firstBatch = batches[0];
+                if (!firstBatch) return;
+                await fetch("/api/agent/review-comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: firstBatch.id, body: commentBody }) });
+                await refreshRunArtifacts(activeRunId);
+              }}
+            >
+              <Input aria-label="Batch comment" value={commentBody} onChange={(e) => setCommentBody(e.target.value)} />
+              <Button size="md" variant="secondary" type="submit" disabled={!activeRunId || !batches[0]}>Comment</Button>
+            </form>
+            {collaboration.comments.slice(0, 8).map((c) => <p key={c.id} className="t-caption text-ink-3"><span className="t-mono-micro">{c.authorId}</span> on <span className="t-mono-micro">{c.targetType}:{c.targetId}</span> · <span className="text-ink">{c.body}</span></p>)}
+          </div>
+          <div className="flex flex-col gap-3">
+            <span className="t-caption-medium text-ink">Approval feedback</span>
+            {collaboration.approvalParticipants.slice(0, 8).map((row) => <p key={row.id} className="t-caption text-ink-3"><span className="t-mono-micro">{row.approvalRequestId}</span> · {row.actorId} · {row.recommendation}</p>)}
+            {approvals[0] ? <div><Button size="xs" variant="secondary" onClick={async () => {
+              if (!activeRunId || !approvals[0]) return;
+              await fetch("/api/agent/approval-feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, approvalRequestId: approvals[0].id, recommendation: "needs_revision", note: "Please split risky batch.", decision: "object" }) });
+              await refreshRunArtifacts(activeRunId);
+            }}>Object to the first approval</Button></div> : <Quiet>No approvals to weigh in on.</Quiet>}
+          </div>
+          <div className="flex flex-col gap-3">
+            <span className="t-caption-medium text-ink">Revision requests</span>
+            {collaboration.revisions.slice(0, 6).map((row) => <p key={row.id} className="t-caption text-ink-3"><span className="t-mono-micro">{row.targetType}:{row.targetId}</span> · {row.status} · <span className="text-ink">{row.rationale}</span></p>)}
+            {batches[0] ? <div><Button size="xs" variant="secondary" onClick={async () => {
+              if (!activeRunId || !batches[0]) return;
+              await fetch("/api/agent/revision-requests", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: batches[0].id, rationale: "Split batch for clearer approval scope.", requestedOutcome: "safe subset first" }) });
+              await refreshRunArtifacts(activeRunId);
+            }}>Ask for a revision</Button></div> : <Quiet>No batch to revise yet.</Quiet>}
+          </div>
+          <div className="flex flex-col gap-3">
+            <span className="t-caption-medium text-ink">Hand off this run</span>
+            <form
+              className="flex items-center gap-2"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!activeRunId) return;
+                await fetch("/api/agent/handoffs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, toUserId: handoffTo, note: "Please finish approval and review open threads." }) });
+                await refreshRunArtifacts(activeRunId);
+              }}
+            >
+              <Input aria-label="Hand off to user id" className="font-mono" value={handoffTo} onChange={(e) => setHandoffTo(e.target.value)} placeholder="User id" />
+              <Button size="md" variant="secondary" type="submit" disabled={!activeRunId}>Hand off</Button>
+            </form>
+            {collaboration.handoffs.slice(0, 6).map((row) => <p key={row.id} className="t-caption text-ink-3"><span className="t-mono-micro">{row.fromUserId}</span> → <span className="t-mono-micro">{row.toUserId}</span> · {row.status} · {row.stage}</p>)}
+          </div>
+        </Disclosure>
+      </div>
+    </div>
+  );
+}
+
+/** A disclosure group: secondary run detail stays one click away, in place. */
+function Disclosure({ title, count, children }: { title: string; count?: number; children: ReactNode }): ReactNode {
+  return (
+    <details className="group border-t border-hairline">
+      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-6 py-4 outline-none focus-ring [&::-webkit-details-marker]:hidden">
+        <span className="t-label-caps text-ink">{title}</span>
+        {count !== undefined ? <span className="t-micro tabular-nums text-ink-3">{count}</span> : null}
+        <ChevronDown aria-hidden="true" size={14} className="ml-auto text-ink-3 transition-transform duration-[var(--dur-2)] group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-6 pb-6">{children}</div>
+    </details>
+  );
+}
+
+function Lines({ title, empty, rows }: { title: string; empty: string; rows: Array<{ id: string; text: ReactNode }> }): ReactNode {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="t-caption-medium text-ink">{title}</span>
+      {rows.length === 0 ? <Quiet>{empty}</Quiet> : rows.map((row) => <p key={row.id} className="t-caption text-ink-3">{row.text}</p>)}
+    </div>
   );
 }
