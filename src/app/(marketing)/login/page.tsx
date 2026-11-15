@@ -1,5 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Button, Card, PageHeader } from "@/components/ui";
+import { AuthFrame } from "@/components/marketing/auth-frame";
+import { Banner } from "@/components/ui/banner";
+import { Button } from "@/components/ui/button";
+
+/* ==========================================================================
+   GATE, /login. Shell suppressed, as Company OS's /signin is.
+
+   Pipes signs in through its identity provider, so this page holds one
+   action and nothing else. When a sign-in attempt comes back with
+   `?error=`, the reason is printed above it.
+   ========================================================================== */
+
+export const metadata: Metadata = {
+  title: "Log in",
+  description: "Log in to your Pipes workspace.",
+};
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_not_configured: "Sign-in isn't configured on this deployment yet.",
@@ -13,15 +29,30 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   const message = error ? ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again." : undefined;
   return (
-    <div>
-      <PageHeader title="Log in" subtitle="Sign in to your Pipes workspace." />
-      <Card>
-        {message ? <p role="alert">{message}</p> : null}
-        <Link href="/api/auth/login?returnTo=/dashboard">
-          <Button>Continue</Button>
-        </Link>
-        <p>Need an account? <Link href="/signup">Create one</Link>.</p>
-      </Card>
-    </div>
+    <AuthFrame
+      title="Log in"
+      subtitle="Continue to your Pipes workspace."
+      footer={
+        <>
+          No account?{" "}
+          <Link href="/signup?source=login" className="t-link focus-ring-canvas rounded-2 focus-visible:outline-none">
+            Create one
+          </Link>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-6">
+        {message ? (
+          <div role="alert">
+            <Banner role="critical" title="Sign-in didn't finish">
+              {message}
+            </Banner>
+          </div>
+        ) : null}
+        <Button asChild variant="primary" size="lg" className="w-full">
+          <Link href="/api/auth/login?returnTo=/dashboard">Continue</Link>
+        </Button>
+      </div>
+    </AuthFrame>
   );
 }
