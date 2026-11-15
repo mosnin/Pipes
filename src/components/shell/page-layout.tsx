@@ -23,7 +23,7 @@ export function PageColumn({
     <div
       data-slot="page-column"
       className={cn(
-        "mx-auto w-full max-w-[640px] max-[1100px]:me-auto me-[7px]",
+        "mx-auto w-full max-w-[640px]",
         className,
       )}
       {...props}
@@ -45,7 +45,6 @@ export function PageSplit({
         // One column until the aside would be narrower than it was measured;
         // 962 + the rail + the pane's own gutters is where the split fits.
         "grid-cols-1 min-[1100px]:grid-cols-[minmax(0,1fr)_292px]",
-        "min-[1100px]:me-[7px]",
         className,
       )}
       {...props}
