@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   addEdge,
   Background,
@@ -25,6 +25,11 @@ import { NodeTypeBadge } from "@/components/ui";
 type EditorNodeData = { title: string; type: string; subtitle?: string; compact?: boolean };
 
 const ALIGN_THRESHOLD = 8;
+const EMPTY_IDS: string[] = [];
+
+function sameIds(a: string[], b: string[]) {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
 
 const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
   return (
@@ -114,8 +119,16 @@ export function EditorCanvas({
   const [guide, setGuide] = useState<{ x?: number; y?: number }>({});
   const [connectingValid, setConnectingValid] = useState<boolean | null>(null);
 
-  useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
-  useEffect(() => setEdges(initialEdges), [initialEdges, setEdges]);
+  // Incoming graph data replaces React Flow's local state; carry the current selection
+  // across so a background refresh doesn't silently deselect what the user clicked.
+  useEffect(() => setNodes((prev) => {
+    const selectedIds = new Set(prev.filter((n) => n.selected).map((n) => n.id));
+    return selectedIds.size === 0 ? initialNodes : initialNodes.map((n) => (selectedIds.has(n.id) ? { ...n, selected: true } : n));
+  }), [initialNodes, setNodes]);
+  useEffect(() => setEdges((prev) => {
+    const selectedIds = new Set(prev.filter((e) => e.selected).map((e) => e.id));
+    return selectedIds.size === 0 ? initialEdges : initialEdges.map((e) => (selectedIds.has(e.id) ? { ...e, selected: true } : e));
+  }), [initialEdges, setEdges]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
     onNodesChangeBase(changes);
@@ -135,17 +148,54 @@ export function EditorCanvas({
     return valid;
   };
 
+  // React Flow re-emits onSelectionChange whenever nodes/edges are replaced. Forwarding
+  // identical selections up to the workspace re-derives the edges we receive, which
+  // re-emits again: an infinite update loop. Only propagate real changes.
+  const lastSelection = useRef<{ nodeIds: string[]; edgeIds: string[] }>({ nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS });
   const handleSelection = (params: OnSelectionChangeParams) => {
     const nodeIds = (params.nodes ?? []).map((n) => n.id);
     const edgeIds = (params.edges ?? []).map((e) => e.id);
+    if (sameIds(nodeIds, lastSelection.current.nodeIds) && sameIds(edgeIds, lastSelection.current.edgeIds)) return;
+    lastSelection.current = { nodeIds, edgeIds };
     setSelection({ nodeIds, edgeIds });
     onSelectionChange(nodeIds, edgeIds);
     onSelectNode(nodeIds[0]);
   };
 
   const previewLookup = useMemo(() => new Map((previewItems ?? []).map((item) => [item.entityId, item])), [previewItems]);
-  const highlightedNodeSet = useMemo(() => new Set(highlightedNodeIds ?? []), [highlightedNodeIds]);
-  const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeIds ?? []), [highlightedEdgeIds]);
+  const highlightedNodeKey = (highlightedNodeIds ?? EMPTY_IDS).join("|");
+  const highlightedNodeSet = useMemo(() => new Set(highlightedNodeKey ? highlightedNodeKey.split("|") : []), [highlightedNodeKey]);
+  const highlightedEdgeKey = (highlightedEdgeIds ?? EMPTY_IDS).join("|");
+  const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeKey ? highlightedEdgeKey.split("|") : []), [highlightedEdgeKey]);
+
+  const presentedNodes = useMemo(() => nodes.map((node) => {
+    const preview = previewLookup.get(node.id);
+    const highlighted = highlightedNodeSet.has(node.id);
+    const previewBorder = preview?.previewKind === "deletion" ? "2px dashed #d84e4e" : preview?.previewKind === "movement" ? "2px dashed #e8a83c" : preview?.previewKind === "connection" ? "2px solid #4a85ff" : undefined;
+    return {
+      ...node,
+      style: {
+        ...(node.style ?? {}),
+        border: previewBorder ?? (highlighted ? `2px solid ${regionStatus === "applied" ? "#3c9f54" : "#2f67f5"}` : undefined),
+        boxShadow: highlighted ? "0 0 0 4px rgba(74,133,255,0.15)" : undefined,
+        opacity: preview?.previewKind === "deletion" ? 0.68 : 1
+      }
+    };
+  }), [nodes, previewLookup, highlightedNodeSet, regionStatus]);
+
+  const presentedEdges = useMemo(() => edges.map((edge) => {
+    const highlighted = highlightedEdgeSet.has(edge.id);
+    const selected = selection.edgeIds.includes(edge.id);
+    return {
+      ...edge,
+      style: {
+        stroke: highlighted ? (regionStatus === "applied" ? "#3c9f54" : "#2f67f5") : selected ? "#2f67f5" : "#4a85ff",
+        strokeWidth: highlighted ? 4 : selected ? 3 : 2,
+        strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : undefined
+      },
+      animated: selected || edge.animated || highlighted
+    };
+  }), [edges, highlightedEdgeSet, selection.edgeIds, regionStatus]);
 
   return (
     <div className="editor-canvas" style={{ position: "relative" }}>
@@ -171,32 +221,8 @@ export function EditorCanvas({
       {guide.x !== undefined ? <div style={{ position: "absolute", top: 0, bottom: 0, left: guide.x, width: 1, background: "rgba(74,133,255,0.45)", pointerEvents: "none", zIndex: 4 }} /> : null}
       {guide.y !== undefined ? <div style={{ position: "absolute", left: 0, right: 0, top: guide.y, height: 1, background: "rgba(74,133,255,0.45)", pointerEvents: "none", zIndex: 4 }} /> : null}
       <ReactFlow
-        nodes={nodes.map((node) => {
-          const preview = previewLookup.get(node.id);
-          const highlighted = highlightedNodeSet.has(node.id);
-          const previewBorder = preview?.previewKind === "deletion" ? "2px dashed #d84e4e" : preview?.previewKind === "movement" ? "2px dashed #e8a83c" : preview?.previewKind === "connection" ? "2px solid #4a85ff" : undefined;
-          return {
-            ...node,
-            style: {
-              ...(node.style ?? {}),
-              border: previewBorder ?? (highlighted ? `2px solid ${regionStatus === "applied" ? "#3c9f54" : "#2f67f5"}` : undefined),
-              boxShadow: highlighted ? "0 0 0 4px rgba(74,133,255,0.15)" : undefined,
-              opacity: preview?.previewKind === "deletion" ? 0.68 : 1
-            }
-          };
-        })}
-        edges={edges.map((edge) => {
-          const highlighted = highlightedEdgeSet.has(edge.id);
-          return {
-            ...edge,
-            style: {
-              stroke: highlighted ? (regionStatus === "applied" ? "#3c9f54" : "#2f67f5") : selection.edgeIds.includes(edge.id) ? "#2f67f5" : "#4a85ff",
-              strokeWidth: highlighted ? 4 : selection.edgeIds.includes(edge.id) ? 3 : 2,
-              strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : undefined
-            },
-            animated: selection.edgeIds.includes(edge.id) || edge.animated || highlighted
-          };
-        })}
+        nodes={presentedNodes}
+        edges={presentedEdges}
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2, duration: 300 }}
@@ -224,6 +250,7 @@ export function EditorCanvas({
           }
           onSelectNode(undefined);
           onSelectionChange([], []);
+          lastSelection.current = { nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS };
           setSelection({ nodeIds: [], edgeIds: [] });
         }}
         onSelectionChange={handleSelection}
@@ -249,7 +276,7 @@ export function EditorCanvas({
         onEdgesChange={onEdgesChange}
         onMove={(_, viewport) => onZoomChange?.(viewport.zoom)}
       >
-        <CanvasCommands fitRequest={fitRequest} frameRequest={frameRequest} selectedNodeIds={selection.nodeIds} onEscapeClear={() => { setSelection({ nodeIds: [], edgeIds: [] }); onSelectionChange([], []); onSelectNode(undefined); }} />
+        <CanvasCommands fitRequest={fitRequest} frameRequest={frameRequest} selectedNodeIds={selection.nodeIds} onEscapeClear={() => { lastSelection.current = { nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS }; setSelection({ nodeIds: [], edgeIds: [] }); onSelectionChange([], []); onSelectNode(undefined); }} />
         <Background gap={16} size={1} color="rgba(143, 160, 192, 0.28)" />
         <MiniMap pannable zoomable nodeColor={(node) => node.data?.type === "Subsystem" ? "#2f67f5" : "#8aa8ff"} />
         <Controls showInteractive={false} />
