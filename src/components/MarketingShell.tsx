@@ -1,33 +1,27 @@
-import Link from "next/link";
-import { Button } from "@/components/ui";
+import type { ReactNode } from "react";
+import { MarketingFooter } from "@/components/marketing/footer";
+import { MarketingHeader } from "@/components/marketing/header";
 
-const links = [
-  ["/pricing", "Pricing"],
-  ["/templates", "Templates"],
-  ["/use-cases", "Use cases"],
-  ["/compare", "Compare"],
-  ["/protocol", "Protocol"],
-  ["/docs", "Docs"]
-] as const;
-
-export function MarketingShell({ children }: { children: React.ReactNode }) {
+/**
+ * The logged-out chassis, as Company OS ships it. `company-marketing` scopes
+ * the marketing tokens and type roles (src/app/marketing.css); the header is
+ * fixed, so the main column starts below it. Auth routes do not use it: like
+ * Company OS, sign-in and sign-up suppress the shell (see AuthFrame).
+ */
+export function MarketingShell({ children }: { children: ReactNode }): ReactNode {
   return (
-    <div>
-      <header className="marketing-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Link href="/"><strong>Pipes</strong></Link>
-        <nav className="nav-inline">
-          {links.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
-          <Link href="/login">Login</Link>
-          <Link href="/signup"><Button>Start Building</Button></Link>
-        </nav>
-      </header>
-      <div className="marketing-wrap">{children}</div>
-      <footer className="marketing-wrap" style={{ marginTop: 32, paddingBottom: 24 }}>
-        <div className="nav-inline">
-          {links.map(([href, label]) => <Link key={`footer-${href}`} href={href}>{label}</Link>)}
-          <Link href="/signup">Create workspace</Link>
-        </div>
-      </footer>
+    <div className="company-marketing">
+      <a
+        href="#main-content"
+        className="t-caption-medium focus-ring-canvas sr-only rounded-8 border border-strong bg-raised px-4 text-ink outline-none focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:inline-flex focus:h-9 focus:items-center"
+      >
+        Skip to content
+      </a>
+      <MarketingHeader />
+      <main id="main-content" tabIndex={-1} className="pt-[88px] outline-none">
+        {children}
+      </main>
+      <MarketingFooter />
     </div>
   );
 }
