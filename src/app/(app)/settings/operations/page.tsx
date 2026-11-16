@@ -32,7 +32,7 @@ export default function OperationsSettingsPage() {
   const status = (value: string) => <StatusPill role={STATUS_ROLE[value] ?? "neutral"}>{sentenceCase(value)}</StatusPill>;
 
   return (
-    <SettingsShell title="Agent tuning" description="The builder presets, prompt and strategy versions, and skill bindings agents use in this workspace.">
+    <SettingsShell title="Assistant settings" description="How the editor's AI assistant plans and proposes edits: its presets, prompt and strategy versions, and skill bindings. Agents that run workflows over MCP are not affected.">
       <SettingsSection title="Builder presets">
         <RecordTable
           loading={!loaded.presets}

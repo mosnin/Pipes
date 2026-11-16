@@ -60,7 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/settings/agents", label: "Connect an agent", icon: Bot },
       { href: "/settings/audit", label: "Audit log", icon: History },
       { href: "/settings/trust", label: "Trust", icon: ShieldCheck },
-      { href: "/settings/operations", label: "Agent tuning", icon: SlidersHorizontal },
+      { href: "/settings/operations", label: "Assistant settings", icon: SlidersHorizontal },
       { href: "/settings/billing", label: "Billing", icon: CreditCard },
       { href: "/settings/usage", label: "Usage", icon: BarChart3 },
       { href: "/settings/feedback", label: "Feedback", icon: MessageSquarePlus }
