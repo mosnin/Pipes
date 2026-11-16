@@ -104,7 +104,8 @@ export function StatusPill({
         // Measured on the reference's "Active": 52 x 20 with an 8px radius.
         // 0 8px 0 6px — the leading mark is optically tighter than the
         // trailing edge of a label.
-        "inline-flex h-[20px] max-w-[160px] shrink-0 items-center gap-1 rounded-8 pl-1.5 pr-2",
+        // Podium's Badge: a 20px pill with a 10 to 12% tint.
+        "inline-flex h-5 max-w-[160px] shrink-0 items-center gap-1 rounded-full pl-1.5 pr-2",
         WASH[role],
         className,
       )}
@@ -122,7 +123,7 @@ export function StatusPill({
       {/* Sentence case, not caps. The reference labels a state the way it
           would be spoken — "Active", "Fulfilled" — and an all-caps chip in a
           13px table reads as a second heading level competing with the row. */}
-      <span className={cn("t-caption-medium truncate", INK[role])}>
+      <span className={cn("truncate text-[11px] font-medium", INK[role])}>
         {children}
       </span>
     </span>

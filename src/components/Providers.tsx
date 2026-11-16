@@ -21,10 +21,11 @@ export function Providers({ children }: { children: ReactNode }): ReactNode {
         position="bottom-right"
         toastOptions={{
           classNames: {
-            toast: "!bg-overlay !border-border !text-ink !rounded-12 !shadow-elev-2 !font-sans",
-            title: "!t-body-strong",
-            description: "!t-caption !text-ink-2",
-            actionButton: "!h-6 !rounded-8 !bg-control !px-2 !t-caption-medium !text-ink hover:!bg-selected focus-ring-canvas !outline-none"
+            // Podium's toast: a card pill with the float shadow, the action a black pill.
+            toast: "!bg-card !border-border !text-foreground !rounded-[22px] !shadow-float !font-sans",
+            title: "!text-[14px] !font-medium",
+            description: "!text-[13px] !text-muted-foreground",
+            actionButton: "!h-7 !rounded-full !bg-primary !px-3 !text-[12px] !font-medium !text-primary-foreground hover:!opacity-90"
           }
         }}
       />

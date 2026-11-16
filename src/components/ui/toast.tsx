@@ -65,10 +65,8 @@ export function ToastProvider({
     <ToastContext.Provider value={value}>
       {children}
       <div
-        // The pane, not the viewport: the rail is 240 wide, so the pane's
-        // centre is 120px right of the window's. `--nav-w` is the rail,
-        // and `--rail-w` is a different thing entirely.
-        className="pointer-events-none fixed inset-x-0 bottom-6 z-[300] flex justify-center max-[900px]:ps-0 ps-[var(--nav-w)]"
+        // Podium: toasts are pills in the bottom right, centred on phones.
+        className="pointer-events-none fixed inset-x-4 bottom-4 z-[300] flex justify-center sm:inset-x-auto sm:right-5 sm:bottom-5 sm:justify-end"
         aria-live="polite"
       >
         {toast ? (
@@ -78,14 +76,14 @@ export function ToastProvider({
             // Rises and fades; it does not scale, because it is not an object
             // the pointer opened.
           >
-            <span className="t-body text-inverse">{toast.message}</span>
+            <span className="text-[14px] font-medium tracking-[-0.005em] text-foreground">{toast.message}</span>
             <button
               type="button"
               onClick={dismiss}
               aria-label="Dismiss"
-              className="focus-ring -me-0.5 grid size-4 place-items-center rounded-6 text-inverse/70 transition-colors hover:text-inverse"
+              className="focus-ring -me-1 grid size-6 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <X aria-hidden="true" className="size-2" />
+              <X aria-hidden="true" className="size-3.5" />
             </button>
           </div>
         ) : null}
@@ -96,9 +94,7 @@ export function ToastProvider({
 
 function cnToast(): string {
   return [
-    "pointer-events-auto flex h-[44px] items-center gap-1.5 rounded-8 bg-ink px-2",
-    "shadow-elev-3",
-    "animate-in fade-in-0 slide-in-from-bottom-2",
-    "duration-[var(--dur-3)] ease-[var(--ease-emphasis)]",
+    "t-toast pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-card pl-4 pr-2.5",
+    "shadow-float dark:shadow-[0_0_0_1px_var(--line-border),0_12px_32px_-8px_rgb(0_0_0/0.5)]",
   ].join(" ");
 }

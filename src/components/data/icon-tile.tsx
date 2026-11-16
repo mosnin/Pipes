@@ -47,7 +47,7 @@ export function IconTile({
         BOX[size],
         role === "default"
           ? cn(
-              "bg-inset text-ink-3",
+              "bg-muted text-muted-foreground",
               // §9.5: the ground steps one level toward the ink ONLY when the
               // tile sits inside an interactive row — `group-hover` simply never
               // matches when there is no interactive ancestor to mark itself
@@ -55,7 +55,7 @@ export function IconTile({
               // The step lands on `--line-hairline`, which is the token that
               // sits exactly one rung darker than `--surface-inset` in both
               // modes; a raw hex would say the same thing untokenised.
-              "transition-colors duration-[var(--dur-1)] ease-linear group-hover:bg-hairline",
+              "transition-colors duration-150 ease-linear",
             )
           : ROLE[role],
         className,
@@ -71,10 +71,11 @@ export function IconTile({
 /* Static maps — Tailwind only ships the classes it can literally see. */
 
 const BOX: Record<28 | 32 | 40 | 48, string> = {
-  28: "size-[28px] rounded-8",
-  32: "size-[32px] rounded-10",
-  40: "size-[40px] rounded-12",
-  48: "size-[48px] rounded-14",
+  // Podium's IconTile: 8px corners at every size.
+  28: "size-[28px] rounded-lg",
+  32: "size-[32px] rounded-lg",
+  40: "size-[40px] rounded-lg",
+  48: "size-[48px] rounded-lg",
 };
 
 /** §8.1: 14px → 1.25 stroke · 16–20px → 1.5 · ≥24px → 2. */

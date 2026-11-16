@@ -97,33 +97,27 @@ export function Banner({
   // a real action (§11.5), never an empty tinted box.
   if (!title && !children) return null;
 
-  const { icon: Glyph, ground, bar, glyph } = ROLE[role];
+  const { icon: Glyph, ground, glyph } = ROLE[role];
 
   return (
     <div
       className={cn(
-        // `overflow-hidden` clips the left rule into the 12px corner radius, so
-        // the bar follows the card edge instead of poking out past it. The
-        // action slot sits 16px clear of the edge, so its focus ring survives.
-        "relative flex w-full items-start gap-3 overflow-hidden rounded-12 border px-4 py-3",
-        // The 3px left rule, r-2, inset 1px so it sits inside the border rather
-        // than on top of it.
-        "before:absolute before:inset-y-px before:left-px before:w-[3px] before:rounded-2 before:content-['']",
-        ground,
-        bar,
+        // Podium's notice: a 10 to 12% tint on a 14px inset. No border, no side bar.
+        "relative flex w-full items-start gap-2.5 rounded-[14px] px-3.5 py-3",
+        ground.split(" ")[0],
         className,
       )}
     >
       <Glyph
-        size={20}
-        strokeWidth={1.5}
+        size={16}
+        strokeWidth={1.75}
         aria-hidden="true"
-        className={cn("shrink-0", glyph)}
+        className={cn("mt-px shrink-0", glyph)}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {title ? <p className="t-body-strong text-ink">{title}</p> : null}
+        {title ? <p className="text-[13px] font-medium text-foreground">{title}</p> : null}
         {children ? (
-          <div className="t-caption text-ink-2">{children}</div>
+          <div className="text-[13px] text-muted-foreground">{children}</div>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
