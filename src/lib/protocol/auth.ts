@@ -1,17 +1,11 @@
 import { createBoundedServices } from "@/domain/services/bounded";
 import type { AppContext } from "@/lib/repositories/contracts";
-import { runtimeFlags } from "@/lib/env";
-import { createConvexRepositories } from "@/lib/repositories/convex";
-import { createMockRepositories } from "@/lib/repositories/mock";
+import type { RepositorySet } from "@/lib/repositories/contracts";
 import { hashAgentToken, hasCapability, type AgentCapability } from "@/lib/protocol/tokens";
-import { getServerApp } from "@/lib/composition/server";
+import { getRepositories, getServerApp } from "@/lib/composition/server";
 import { ProtocolError } from "@/lib/protocol/errors";
 
-function createRepositories() {
-  return !runtimeFlags.useMocks && runtimeFlags.hasConvex
-    ? createConvexRepositories()
-    : createMockRepositories();
-}
+const createRepositories = getRepositories;
 
 function readBearer(request: Request) {
   const header = request.headers.get("authorization") ?? "";
@@ -19,7 +13,7 @@ function readBearer(request: Request) {
   return header.slice(7).trim();
 }
 
-export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices> }> {
+export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices>; repositories: RepositorySet }> {
   const bearer = readBearer(request);
   if (!bearer) {
     return getServerApp();
@@ -39,7 +33,7 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
     capabilities: token.capabilities,
     systemScope: token.systemId
   };
-  return { ctx, services: createBoundedServices(repositories) };
+  return { ctx, services: createBoundedServices(repositories), repositories };
 }
 
 export function requireCapability(ctx: AppContext, capability: AgentCapability, systemId?: string) {

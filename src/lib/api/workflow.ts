@@ -1,0 +1,47 @@
+import { NextResponse } from "next/server";
+import { RunError } from "@/domain/runs/engine";
+import { createWorkflowServices } from "@/domain/workflow";
+import { getServerApp } from "@/lib/composition/server";
+import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
+
+const STATUS_BY_CODE: Record<string, number> = {
+  run_not_found: 404,
+  system_not_found: 404,
+  not_allowed: 403,
+  quota_exceeded: 429,
+  run_finished: 409,
+  awaiting_approval: 409,
+  stale_step: 409,
+  not_awaiting_approval: 409
+};
+
+export function workflowError(error: unknown) {
+  if (error instanceof RunError) {
+    return NextResponse.json({ ok: false, error: error.code, message: error.message }, { status: STATUS_BY_CODE[error.code] ?? 400 });
+  }
+  const message = error instanceof Error ? error.message : "Something went wrong.";
+  return NextResponse.json({ ok: false, error: "bad_request", message }, { status: 400 });
+}
+
+/** Throws unless the system exists and belongs to the caller's workspace. */
+export async function ensureSystemInWorkspace(repositories: RepositorySet, ctx: Pick<AppContext, "workspaceId">, systemId: string) {
+  let workspaceId: string | undefined;
+  try {
+    workspaceId = (await repositories.systems.getBundle(systemId)).system.workspaceId;
+  } catch {
+    workspaceId = undefined;
+  }
+  if (workspaceId !== ctx.workspaceId) throw new RunError("system_not_found", "System not found.");
+}
+
+export async function getWorkflowApp() {
+  const app = await getServerApp();
+  return { ...app, workflow: createWorkflowServices(app.repositories) };
+}
+
+const EDITOR_ROLES = new Set(["Owner", "Admin", "Editor"]);
+export function ensureCanEdit(ctx: AppContext) {
+  if (ctx.actorType === "user" && !EDITOR_ROLES.has(ctx.role)) throw new RunError("not_allowed", "You need the Editor role or higher to change this.");
+}
+
+export const ok = (data: unknown, status = 200) => NextResponse.json({ ok: true, data }, { status });

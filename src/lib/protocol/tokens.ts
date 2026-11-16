@@ -11,8 +11,14 @@ export const AGENT_CAPABILITIES = [
   "graph:write",
   "comments:write",
   "import:write",
-  "validation:read"
+  "validation:read",
+  "runs:read",
+  "runs:write",
+  "connections:secrets"
 ] as const;
+
+/** Capabilities that `systems:write` does not imply: reading stored secrets must be granted explicitly. */
+const EXPLICIT_ONLY = new Set<string>(["connections:secrets"]);
 
 export type AgentCapability = (typeof AGENT_CAPABILITIES)[number];
 
@@ -30,5 +36,6 @@ export function parseCapabilityList(input: string[]) {
 }
 
 export function hasCapability(capabilities: string[] | undefined, required: AgentCapability) {
-  return Boolean(capabilities?.includes(required) || capabilities?.includes("systems:write"));
+  if (capabilities?.includes(required)) return true;
+  return !EXPLICIT_ONLY.has(required) && Boolean(capabilities?.includes("systems:write"));
 }
