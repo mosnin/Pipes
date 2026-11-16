@@ -9,6 +9,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusPill } from "@/components/ledger/status";
 import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
 import { FactList, sentenceCase } from "@/components/settings/fact-list";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { useToast } from "@/components/ui/toast";
+
+/** Send a change and report the server's own sentence when it says no. */
+async function mutate(url: string, method: "POST" | "PUT", body: unknown, fallback: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const json = await res.json().catch(() => null);
+    return json?.ok ? null : apiErrorMessage(json, fallback);
+  } catch {
+    return "Pipes could not be reached. Check your connection and try again.";
+  }
+}
 
 function Loading() {
   return <Skeleton className="ml-auto h-[12px] w-[80px]" />;
@@ -22,6 +35,7 @@ export default function TrustSettingsPage() {
   const [mode, setMode] = useState("shared");
   const [deactivateReason, setDeactivateReason] = useState("Security review pending");
   const [policy, setPolicy] = useState<any | null>(null);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     const res = await fetch("/api/settings/trust");
@@ -43,7 +57,8 @@ export default function TrustSettingsPage() {
   }, []);
 
   const saveAuth = async () => {
-    await fetch("/api/settings/trust", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ section: "auth", payload: { mode, allowedDomains: allowedDomains.split(",").map((d) => d.trim()).filter(Boolean), auth0Connection: auth0Connection || undefined, enforceDomainMatch: mode === "sso_ready" } }) });
+    const failed = await mutate("/api/settings/trust", "PUT", { section: "auth", payload: { mode, allowedDomains: allowedDomains.split(",").map((d) => d.trim()).filter(Boolean), auth0Connection: auth0Connection || undefined, enforceDomainMatch: mode === "sso_ready" } }, "Sign-in settings did not save.");
+    toast(failed ?? "Sign-in settings saved");
     load();
   };
 
@@ -55,7 +70,8 @@ export default function TrustSettingsPage() {
       risk: { ...policy.risk, posture: next, safeAutoApplyEnabled: next !== "conservative", maxProposalBatchSize: next === "conservative" ? 2 : next === "aggressive" ? 8 : 5 },
       approval: { ...policy.approval, strictness: next === "conservative" ? "strict" : next === "aggressive" ? "relaxed" : "standard" }
     };
-    await fetch("/api/agent/policy", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    const failed = await mutate("/api/agent/policy", "POST", payload, "The risk posture did not change.");
+    if (failed) toast(failed);
     const refreshed = await fetch("/api/agent/policy").then((r) => r.json());
     if (refreshed.ok) setPolicy(refreshed.data);
   };
@@ -111,7 +127,7 @@ export default function TrustSettingsPage() {
         <Card>
           <FactList
             facts={[
-              { label: "Archived systems", value: retention ? <span className="tabular">{retention.archivedSystemRetentionDays} days</span> : <Loading /> },
+              { label: "Archived workflows", value: retention ? <span className="tabular">{retention.archivedSystemRetentionDays} days</span> : <Loading /> },
               { label: "Invites", value: retention ? <span className="tabular">{retention.inviteExpiryDays} days</span> : <Loading /> },
               { label: "Stale tokens", value: retention ? <span className="tabular">{retention.staleTokenDays} days</span> : <Loading /> }
             ]}
@@ -144,7 +160,7 @@ export default function TrustSettingsPage() {
       <SettingsSection title="Export">
         <Card>
           <CardContent className="sm:flex-row sm:items-center sm:justify-between">
-            <p className="t-body text-ink-2">The manifest lists the workspace, its schema version, the export time and every system reference.</p>
+            <p className="t-body text-ink-2">The manifest lists the workspace, its schema version, the export time and every workflow reference.</p>
             <Button
               variant="secondary"
               size="sm"
@@ -163,7 +179,7 @@ export default function TrustSettingsPage() {
 
       <SettingsSection
         title="Workspace lifecycle"
-        description="Systems can be archived and restored. Hard deletes are not supported, for systems or for the workspace. Deactivating shuts the workspace down in a controlled way and can be reversed."
+        description="Workflows can be archived and restored. Hard deletes are not supported, for workflows or for the workspace. Deactivating shuts the workspace down in a controlled way and can be reversed."
       >
         <Card>
           <div className="p-6">
@@ -177,7 +193,11 @@ export default function TrustSettingsPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={async () => { await fetch("/api/settings/trust", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "reactivate" }) }); load(); }}
+                onClick={async () => {
+                  const failed = await mutate("/api/settings/trust", "POST", { action: "reactivate" }, "The workspace could not be reactivated.");
+                  if (failed) toast(failed);
+                  load();
+                }}
               >
                 Reactivate workspace
               </Button>
@@ -186,7 +206,9 @@ export default function TrustSettingsPage() {
                 size="sm"
                 onClick={async () => {
                   const confirmation = prompt("Type DEACTIVATE to confirm workspace deactivation");
-                  await fetch("/api/settings/trust", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "deactivate", reason: deactivateReason, confirmation }) });
+                  if (confirmation === null) return;
+                  const failed = await mutate("/api/settings/trust", "POST", { action: "deactivate", reason: deactivateReason, confirmation }, "The workspace could not be deactivated.");
+                  if (failed) toast(failed);
                   load();
                 }}
               >

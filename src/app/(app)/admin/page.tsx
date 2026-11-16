@@ -14,6 +14,7 @@ import { SettingsSection, SettingsShell } from "@/components/settings/SettingsSh
 import { FactList, sentenceCase } from "@/components/settings/fact-list";
 import { RecordTable } from "@/components/settings/record-table";
 import { OperatorGate } from "@/components/admin/operator-gate";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 export default function AdminPage() {
   const [data, setData] = useState<any | null>(null);
@@ -28,7 +29,7 @@ export default function AdminPage() {
     const res = await fetch(`/api/admin/support?${q.toString()}`);
     const body = await res.json();
     if (!body.ok) {
-      setError(body.error ?? "Failed to load admin data");
+      setError(apiErrorMessage(body, "Support data could not be loaded."));
       return;
     }
     setError("");
@@ -44,7 +45,7 @@ export default function AdminPage() {
   return (
     <SettingsShell
       title="Support"
-      description="Look up a user or a system and read the workspace's recent audit and signal activity."
+      description="Look up a user or a workflow and read the workspace's recent audit and signal activity."
       meta={
         ws ? (
           <>
@@ -65,7 +66,7 @@ export default function AdminPage() {
             <Input aria-label="User email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="Find a user by email" />
           </div>
           <div className="min-w-[200px] flex-1 sm:max-w-[280px]">
-            <Input aria-label="System id" value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="Inspect a system id" />
+            <Input aria-label="Workflow id" value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="Inspect a workflow id" />
           </div>
           <Button type="submit" variant="secondary" size="sm">
             Look up
@@ -79,8 +80,8 @@ export default function AdminPage() {
         <>
           <SettingsSection title="Workspace">
             <StatStrip>
-              <StatCell label="Systems" value={ws.systems.length} />
-              <StatCell label="Active systems" value={ws.health.activeSystems} />
+              <StatCell label="Workflows" value={ws.systems.length} />
+              <StatCell label="Active workflows" value={ws.health.activeSystems} />
               <StatCell label="Invites" value={ws.invites.length} />
               <StatCell label="Tokens" value={ws.tokens.length} />
             </StatStrip>
@@ -104,7 +105,7 @@ export default function AdminPage() {
           ) : null}
 
           {data.system ? (
-            <SettingsSection title="System">
+            <SettingsSection title="Workflow">
               <Card>
                 <FactList
                   facts={[
@@ -122,7 +123,7 @@ export default function AdminPage() {
           <SettingsSection title="Recent audits">
             <RecordTable
               noun="event"
-              columns={[{ label: "Time", className: "w-[120px]" }, { label: "Actor" }, { label: "Action" }, { label: "Outcome", className: "w-[112px]" }, { label: "System" }]}
+              columns={[{ label: "Time", className: "w-[120px]" }, { label: "Actor" }, { label: "Action" }, { label: "Outcome", className: "w-[112px]" }, { label: "Workflow" }]}
               rows={data.audits.slice(0, 20).map((a: any, index: number) => ({
                 key: a.id ?? `${a.createdAt}-${index}`,
                 cells: [

@@ -1,9 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { PageShell } from "@/components/layouts/archetypes";
+import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { useBillingStatus } from "@/components/shell/use-billing-status";
 import { Card } from "@/components/ui/card";
 import { GroupedList, GroupedRow } from "@/components/ui/grouped-list";
 import { Field } from "@/components/ui/input";
@@ -32,8 +36,12 @@ const USE_CASES = [
 ];
 
 async function postJson(url: string, body: unknown) {
-  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  return res.json();
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    return await res.json().catch(() => ({ ok: false }));
+  } catch {
+    return { ok: false, message: "Pipes could not be reached. Check your connection and try again." };
+  }
 }
 
 export function OnboardingClient(): ReactNode {
@@ -43,6 +51,13 @@ export function OnboardingClient(): ReactNode {
   const [recommended, setRecommended] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const [busy, setBusy] = useState<Path | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const billing = useBillingStatus();
+  const aiAllowed = billing ? billing.entitlements.aiGeneration : true;
+  const fail = (data: unknown, fallback: string) => {
+    setError(apiErrorMessage(data, fallback));
+    setBusy(null);
+  };
 
   useEffect(() => {
     void postJson("/api/onboarding", { action: "start" });
@@ -58,21 +73,23 @@ export function OnboardingClient(): ReactNode {
 
   const startBlank = async () => {
     setBusy("blank");
+    setError(null);
     await complete("blank");
-    const data = await postJson("/api/systems", { name: "Untitled system" });
+    const data = await postJson("/api/systems", { name: "Untitled workflow" });
     if (data.ok) router.push(`/systems/${data.data.systemId}`);
-    else setBusy(null);
+    else fail(data, "The workflow could not be created.");
   };
   const startAi = async () => {
     setBusy("ai");
+    setError(null);
     await complete("ai");
     const roleLabel = ROLES.find((r) => r.value === role)?.label ?? role;
     const caseLabel = USE_CASES.find((c) => c.value === useCase)?.label ?? useCase;
     const draft = await postJson("/api/ai/generate-system", { prompt: `Build a ${caseLabel.toLowerCase()} workflow for a team focused on ${roleLabel.toLowerCase()}` });
-    if (!draft.ok) return setBusy(null);
+    if (!draft.ok) return fail(draft, "The draft could not be generated.");
     const commit = await postJson("/api/ai/generate-system", { commit: true, draft: draft.data });
     if (commit.ok) router.push(`/systems/${commit.data.systemId}`);
-    else setBusy(null);
+    else fail(commit, "The draft could not be saved.");
   };
   const startImport = async () => {
     setBusy("import");
@@ -81,10 +98,11 @@ export function OnboardingClient(): ReactNode {
   };
   const startTemplate = async (templateId: string) => {
     setBusy("template");
+    setError(null);
     await complete("template");
     const data = await postJson(`/api/templates/${templateId}/instantiate`, {});
     if (data.ok) router.push(`/systems/${data.data.systemId}`);
-    else setBusy(null);
+    else fail(data, "That template could not be opened.");
   };
 
   return (
@@ -110,9 +128,28 @@ export function OnboardingClient(): ReactNode {
           <SectionHeading>
             <span id="start-heading">Choose how to start</span>
           </SectionHeading>
+          {error ? (
+            <div role="alert">
+              <Banner role="critical" title="That didn't start">
+                {error}
+              </Banner>
+            </div>
+          ) : null}
           <GroupedList>
             <GroupedRow title="Start blank" subtitle="An empty canvas. Add steps, tools and approvals yourself." trailing={busy === "blank" ? <span className="t-caption text-ink-3">Opening</span> : undefined} onClick={busy ? undefined : startBlank} />
-            <GroupedRow title="Draft with AI" subtitle="Pipes drafts a first version from your answers above for you to edit." trailing={busy === "ai" ? <span className="t-caption text-ink-3">Drafting</span> : undefined} onClick={busy ? undefined : startAi} />
+            {aiAllowed ? (
+              <GroupedRow title="Draft with AI" subtitle="Pipes drafts a first version from your answers above for you to edit." trailing={busy === "ai" ? <span className="t-caption text-ink-3">Drafting</span> : undefined} onClick={busy ? undefined : startAi} />
+            ) : (
+              <GroupedRow
+                title="Draft with AI"
+                subtitle="On the Builder plan. Pipes drafts a first version from your answers above for you to edit."
+                trailing={
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/settings/billing">Upgrade</Link>
+                  </Button>
+                }
+              />
+            )}
             <GroupedRow title="Import a schema" subtitle="Bring a pipes_schema_v1 document from another workspace or an agent." onClick={busy ? undefined : startImport} />
           </GroupedList>
         </section>

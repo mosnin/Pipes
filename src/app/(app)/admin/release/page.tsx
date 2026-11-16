@@ -14,6 +14,7 @@ import { SettingsSection, SettingsShell } from "@/components/settings/SettingsSh
 import { FactList, sentenceCase } from "@/components/settings/fact-list";
 import { RecordTable } from "@/components/settings/record-table";
 import { OperatorGate } from "@/components/admin/operator-gate";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 const FLOW_ROLE: Record<string, SignalRole> = { pass: "positive", passed: "positive", ready: "positive", review: "caution", fail: "critical", failed: "critical", blocked: "critical" };
 
@@ -32,7 +33,7 @@ export default function AdminReleasePage() {
     const res = await fetch(`/api/admin/release?${q.toString()}`);
     const body = await res.json();
     if (!body.ok) {
-      setError(body.error ?? "Failed to load release review");
+      setError(apiErrorMessage(body, "The release review could not be loaded."));
       return;
     }
     setError("");

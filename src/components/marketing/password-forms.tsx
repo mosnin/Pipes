@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Banner } from "@/components/ui/banner";
@@ -51,6 +52,9 @@ export function PasswordLoginForm({ returnTo, initialError }: { returnTo: string
       <Field label="Password" htmlFor="login-password">
         <Input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
+      <Link href="/forgot-password" className="t-link t-caption focus-ring-canvas -mt-2 self-start rounded-2 focus-visible:outline-none">
+        Forgot password?
+      </Link>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
         {busy ? "Logging in" : "Log in"}
       </Button>
@@ -89,6 +93,66 @@ export function PasswordSignupForm({ source }: { source: string }): ReactNode {
       </Field>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
         {busy ? "Creating your workspace" : "Create workspace"}
+      </Button>
+    </form>
+  );
+}
+
+export function ForgotPasswordForm(): ReactNode {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  if (sentTo) {
+    return (
+      <div className="flex flex-col gap-6" aria-live="polite">
+        <Banner role="positive" title="Check your email">
+          If {sentTo} has a Pipes account, a link to set a new password is on its way. It works once and expires after an hour.
+        </Banner>
+        <Button type="button" variant="secondary" size="lg" className="w-full" onClick={() => setSentTo(null)}>
+          Use a different email
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setBusy(true);
+        // The answer is the same whatever happens, so a failed request reads the same too.
+        await submit("/api/auth/forgot", { email }).catch(() => undefined);
+        setBusy(false);
+        setSentTo(email.trim());
+      }}
+    >
+      <Field label="Email" htmlFor="forgot-email">
+        <Input id="forgot-email" type="email" autoComplete="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
+      </Field>
+      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
+        {busy ? "Sending" : "Send reset link"}
+      </Button>
+    </form>
+  );
+}
+
+export function ResetPasswordForm({ token }: { token: string }): ReactNode {
+  const [password, setPassword] = useState("");
+  const { busy, error, onSubmit } = useForm("/api/auth/reset", "/dashboard");
+  return (
+    <form className="flex flex-col gap-5" onSubmit={(e) => onSubmit(e, { token, password })}>
+      {error ? (
+        <div role="alert">
+          <Banner role="critical" title="Your password wasn't changed">
+            {error}
+          </Banner>
+        </div>
+      ) : null}
+      <Field label="New password" htmlFor="reset-password" hint="At least 10 characters.">
+        <Input id="reset-password" type="password" autoComplete="new-password" required minLength={10} autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
+      </Field>
+      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
+        {busy ? "Saving" : "Set password and log in"}
       </Button>
     </form>
   );

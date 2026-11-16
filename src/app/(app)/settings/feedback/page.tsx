@@ -8,6 +8,7 @@ import { Field, Input, Textarea } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { SettingsShell } from "@/components/settings/SettingsShell";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 const CATEGORIES = [
   { value: "bug", label: "Bug" },
@@ -39,7 +40,7 @@ export default function FeedbackSettingsPage() {
       setStatus("Your feedback is in the triage queue.");
     } else {
       setFailed(true);
-      setStatus(body.error ?? "Failed to submit feedback.");
+      setStatus(apiErrorMessage(body, "Your feedback did not send. Try again."));
     }
   };
 
@@ -85,7 +86,7 @@ export default function FeedbackSettingsPage() {
             <Field label="Details" htmlFor={`${fieldId}-details`} className="sm:col-span-2">
               <Textarea id={`${fieldId}-details`} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Steps, what you expected, what you saw" />
             </Field>
-            <Field label="System id" htmlFor={`${fieldId}-system`} hint="Optional. The system this is about." className="sm:col-span-2">
+            <Field label="Workflow id" htmlFor={`${fieldId}-system`} hint="Optional. The workflow this is about." className="sm:col-span-2">
               <Input id={`${fieldId}-system`} value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="sys_..." />
             </Field>
           </div>
