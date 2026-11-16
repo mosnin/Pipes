@@ -12,6 +12,7 @@ import { SettingsSection, SettingsShell } from "@/components/settings/SettingsSh
 import { RecordTable } from "@/components/settings/record-table";
 import { sentenceCase } from "@/components/settings/fact-list";
 import { OperatorGate } from "@/components/admin/operator-gate";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 const CATEGORY_OPTIONS = [
   { value: "bug", label: "Bug" },
@@ -45,7 +46,7 @@ export default function AdminIssuesPage() {
     const res = await fetch(`/api/admin/issues?${q.toString()}`);
     const body = await res.json();
     if (!body.ok) {
-      setError(body.error ?? "Failed to load issue triage");
+      setError(apiErrorMessage(body, "Issue triage could not be loaded."));
       return;
     }
     setError("");

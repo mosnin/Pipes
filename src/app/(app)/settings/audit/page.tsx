@@ -72,7 +72,7 @@ export default function AuditSettingsPage() {
             <Field label="Action starts with" htmlFor={`${fieldId}-action`}>
               <Input id={`${fieldId}-action`} value={actionPrefix} onChange={(e) => setActionPrefix(e.target.value)} placeholder="protocol." />
             </Field>
-            <Field label="System id" htmlFor={`${fieldId}-system`}>
+            <Field label="Workflow id" htmlFor={`${fieldId}-system`}>
               <Input id={`${fieldId}-system`} value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="sys_..." />
             </Field>
             <Field label="Transport" htmlFor={`${fieldId}-transport`}>
@@ -118,7 +118,7 @@ export default function AuditSettingsPage() {
             <EmptyState
               variant={filtered ? "filtered" : "never"}
               title={filtered ? "No events match these filters" : "No audit events yet"}
-              body={filtered ? "Clear a filter to widen the search." : "Events appear here once an agent calls the protocol or someone works on a system."}
+              body={filtered ? "Clear a filter to widen the search." : "Events appear here once an agent calls the protocol or someone works on a workflow."}
               className="py-9"
             />
           }

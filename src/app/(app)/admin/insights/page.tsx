@@ -11,6 +11,7 @@ import { SettingsSection, SettingsShell } from "@/components/settings/SettingsSh
 import { FactList } from "@/components/settings/fact-list";
 import { RecordTable } from "@/components/settings/record-table";
 import { OperatorGate } from "@/components/admin/operator-gate";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 export default function AdminInsightsPage() {
   const [since, setSince] = useState("");
@@ -23,7 +24,7 @@ export default function AdminInsightsPage() {
     const res = await fetch(`/api/admin/insights?${q.toString()}`);
     const body = await res.json();
     if (!body.ok) {
-      setError(body.error ?? "Failed to load insights");
+      setError(apiErrorMessage(body, "Insights could not be loaded."));
       return;
     }
     setError("");
@@ -51,7 +52,7 @@ export default function AdminInsightsPage() {
             <StatStrip>
               <StatCell label="Onboarding started" value={data.activation.onboardingStarted} />
               <StatCell label="Onboarding completed" value={data.activation.onboardingCompleted} />
-              <StatCell label="First system created" value={data.activation.firstSystemCreated} />
+              <StatCell label="First workflow created" value={data.activation.firstSystemCreated} />
               <StatCell label="Activated" value={data.activation.activationAchieved} />
             </StatStrip>
           </SettingsSection>

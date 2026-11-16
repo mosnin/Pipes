@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut, Search, UserRound } from "@/components/ui/icon";
+import { CreditCard, LogOut, Search, UserRound, Users } from "@/components/ui/icon";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export interface ShellUser {
@@ -112,8 +112,14 @@ function AccountMenu({ user }: { user: ShellUser }): ReactNode {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings/collaboration">
+          <Link href="/settings/account">
             <UserRound />
+            Account
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings/collaboration">
+            <Users />
             Workspace members
           </Link>
         </DropdownMenuItem>

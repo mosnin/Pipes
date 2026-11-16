@@ -10,6 +10,8 @@ import { StatusPill, type SignalRole } from "@/components/ledger/status";
 import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
 import { RecordTable } from "@/components/settings/record-table";
 import { sentenceCase } from "@/components/settings/fact-list";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { useToast } from "@/components/ui/toast";
 
 const TARGETS = [
   { value: "human_engineer", label: "Human engineer" },
@@ -40,6 +42,7 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
   const [sandboxArtifacts, setSandboxArtifacts] = useState<any[]>([]);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/handoff/systems/${systemId}/packages`);
@@ -51,7 +54,9 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
   useEffect(() => { load(); }, [load]);
 
   const generate = async () => {
-    await fetch(`/api/handoff/systems/${systemId}/packages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ target }) });
+    const res = await fetch(`/api/handoff/systems/${systemId}/packages`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ target }) }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!data?.ok) toast(apiErrorMessage(data, "The package could not be generated."));
     await load();
   };
 
@@ -66,7 +71,9 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
   };
 
   const review = async (body: Record<string, string>) => {
-    await fetch(`/api/handoff/packages/${selected.package.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const res = await fetch(`/api/handoff/packages/${selected.package.id}/review`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const result = await res?.json().catch(() => null);
+    if (!result?.ok) toast(apiErrorMessage(result, "The review did not save."));
     const updated = await fetch(`/api/handoff/packages/${selected.package.id}`).then((r) => r.json());
     setSelected(updated.data);
     await load();
@@ -75,7 +82,7 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
   return (
     <SettingsShell
       title="Handoff"
-      description="Build-ready packages generated from the accepted design of this system, for whoever implements it."
+      description="Build-ready packages generated from the accepted design of this workflow, for whoever implements it."
       actions={
         <>
           <div className="w-[200px]">
@@ -110,7 +117,7 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
               </Button>
             ]
           }))}
-          empty={<EmptyState title="No handoff packages" body="Generate a package once the system design is accepted." className="py-9" />}
+          empty={<EmptyState title="No handoff packages" body="Generate a package once the workflow design is accepted." className="py-9" />}
         />
       </SettingsSection>
 
@@ -151,7 +158,7 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={async () => { const exported = await fetch(`/api/handoff/packages/${selected.package.id}/export`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ format: "markdown_bundle" }) }).then((r) => r.json()); alert(`Export digest: ${exported.data.record.digest}`); }}
+                    onClick={async () => { const exported = await fetch(`/api/handoff/packages/${selected.package.id}/export`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ format: "markdown_bundle" }) }).then((r) => r.json()).catch(() => null); if (exported?.ok) alert(`Export digest: ${exported.data.record.digest}`); else toast(apiErrorMessage(exported, "The export did not finish.")); }}
                   >
                     Export Markdown
                   </Button>

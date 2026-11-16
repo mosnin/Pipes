@@ -17,6 +17,7 @@ import {
   FileInput,
   Hash,
   MoreHorizontal,
+  PencilLine,
   Plus,
   RotateCcw,
   Sparkles,
@@ -29,6 +30,10 @@ import { PageHeader, SectionHeading, Toolbar } from "@/components/ui/page-header
 import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { PlanNote } from "@/components/shell/plan-note";
+import { useBillingStatus } from "@/components/shell/use-billing-status";
 import { cn } from "@/lib/utils";
 
 type LibraryRow = { id: string; name: string; description: string; createdAt: string; updatedAt: string; archivedAt?: string; createdBy: string; favorite: boolean; tags: string[]; lastOpenedAt?: string };
@@ -64,6 +69,11 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [createMode, setCreateMode] = useState<CreateMode>(null);
   const [tagTarget, setTagTarget] = useState<LibraryRow | null>(null);
   const [templates, setTemplates] = useState<Template[] | null>(null);
+  const [renameTarget, setRenameTarget] = useState<LibraryRow | null>(null);
+  const billing = useBillingStatus();
+  const toast = useToast();
+  // Unknown until the plan loads: leave AI drafting open and let the server answer.
+  const aiAllowed = billing ? billing.entitlements.aiGeneration : true;
 
   const refreshLibrary = useCallback(async (input?: { q?: string; tag?: string }) => {
     setLoading(true);
@@ -92,16 +102,19 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const emptyVariant = loading || rows.length > 0 ? null : filtering || status !== "active" ? "filtered" : "never";
 
   const toggleFavorite = async (row: LibraryRow) => {
-    await postJson("/api/library", { action: "favorite", systemId: row.id, favorite: !row.favorite });
+    const data = await postJson("/api/library", { action: "favorite", systemId: row.id, favorite: !row.favorite }).catch(() => null);
+    if (!data?.ok) toast(apiErrorMessage(data, "That favorite did not save. Try again."));
     void refreshLibrary();
   };
   const setArchived = async (row: LibraryRow, archived: boolean) => {
-    await postJson(`/api/systems/${row.id}`, { action: archived ? "archive" : "restore" });
+    const data = await postJson(`/api/systems/${row.id}`, { action: archived ? "archive" : "restore" }).catch(() => null);
+    if (!data?.ok) toast(apiErrorMessage(data, archived ? "The workflow could not be archived." : "The workflow could not be restored."));
     void refreshLibrary();
   };
   const launchTemplate = async (templateId: string) => {
-    const data = await postJson(`/api/templates/${templateId}/instantiate`, {});
-    if (data.ok) router.push(`/systems/${data.data.systemId}`);
+    const data = await postJson(`/api/templates/${templateId}/instantiate`, {}).catch(() => null);
+    if (data?.ok) router.push(`/systems/${data.data.systemId}`);
+    else toast(apiErrorMessage(data, "That template could not be opened."));
   };
   const clearFilters = () => {
     setQuery("");
@@ -112,7 +125,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   return (
     <PageShell measure="page">
       <PageHeader
-        title="Systems"
+        title="Workflows"
         description="Every workflow your team and agents follow, versioned and ready to open."
         actions={
           <>
@@ -126,7 +139,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             </Button>
             <Button variant="primary" size="sm" onClick={() => setCreateMode("blank")}>
               <Plus />
-              New system
+              New workflow
             </Button>
           </>
         }
@@ -134,7 +147,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
       <Toolbar className="mb-6 flex-wrap">
         <SearchInput
-          aria-label="Filter systems"
+          aria-label="Filter workflows"
           placeholder="Filter by name, description or tag"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -142,7 +155,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
           className="max-w-[320px]"
         />
         <Segmented<Status>
-          label="Which systems"
+          label="Which workflows"
           size="sm"
           value={status}
           onValueChange={setStatus}
@@ -180,7 +193,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
       <div className="hidden lg:block">
         <DataTable density={density}>
-          <Table aria-label="Systems" className="min-w-[880px] table-fixed">
+          <Table aria-label="Workflows" className="min-w-[880px] table-fixed">
             <colgroup>
               <col className="w-[56px]" />
               <col />
@@ -193,7 +206,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                 <TH>
                   <span className="sr-only">Favorite</span>
                 </TH>
-                <TH icon={Workflow}>System</TH>
+                <TH icon={Workflow}>Workflow</TH>
                 <TH icon={Tag}>Tags</TH>
                 <TH icon={Clock}>Updated</TH>
                 <TH>
@@ -240,14 +253,14 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                       <RelativeTime at={ts(row.updatedAt)} />
                     </TD>
                     <TD className="text-right">
-                      <RowActions row={row} onTags={() => setTagTarget(row)} onArchive={(archived) => setArchived(row, archived)} />
+                      <RowActions row={row} onRename={() => setRenameTarget(row)} onTags={() => setTagTarget(row)} onArchive={(archived) => setArchived(row, archived)} />
                     </TD>
                   </TR>
                 ))
               )}
             </TBody>
           </Table>
-          {!emptyVariant && rows.length > 0 ? <TableFooter count={rows.length} noun="system" /> : null}
+          {!emptyVariant && rows.length > 0 ? <TableFooter count={rows.length} noun="workflow" /> : null}
         </DataTable>
       </div>
 
@@ -281,7 +294,22 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         )}
       </section>
 
-      <CreateSystemDialog mode={createMode} onClose={() => setCreateMode(null)} onCreated={(systemId) => router.push(`/systems/${systemId}`)} />
+      <CreateSystemDialog
+        mode={createMode}
+        aiAllowed={aiAllowed}
+        plan={billing?.plan}
+        onClose={() => setCreateMode(null)}
+        onCreated={(systemId) => router.push(`/systems/${systemId}`)}
+      />
+      <RenameDialog
+        row={renameTarget}
+        onClose={() => setRenameTarget(null)}
+        onSaved={(name) => {
+          setRenameTarget(null);
+          toast(`Renamed to ${name}`);
+          void refreshLibrary();
+        }}
+      />
       <TagsDialog row={tagTarget} onClose={() => setTagTarget(null)} onSaved={() => { setTagTarget(null); void refreshLibrary(); }} />
     </PageShell>
   );
@@ -301,7 +329,7 @@ function TagList({ tags }: { tags: string[] }): ReactNode {
   );
 }
 
-function RowActions({ row, onTags, onArchive }: { row: LibraryRow; onTags: () => void; onArchive: (archived: boolean) => void }): ReactNode {
+function RowActions({ row, onRename, onTags, onArchive }: { row: LibraryRow; onRename: () => void; onTags: () => void; onArchive: (archived: boolean) => void }): ReactNode {
   return (
     <span className="inline-flex items-center gap-2">
       <Button asChild variant="secondary" size="xs">
@@ -314,6 +342,10 @@ function RowActions({ row, onTags, onArchive }: { row: LibraryRow; onTags: () =>
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
+          <DropdownMenuItem onSelect={onRename}>
+            <PencilLine />
+            Rename
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={onTags}>
             <Hash />
             Edit tags
@@ -343,12 +375,12 @@ function SystemsEmpty({ variant, onClear, onNew }: { variant: "never" | "filtere
         className="py-9"
         icon={Workflow}
         variant="never"
-        title="No systems yet"
-        body="A system is a workflow your agents can follow: steps, tools, approvals and loops, saved with every version."
+        title="No workflows yet"
+        body="A workflow is what your agents follow: steps, tools, approvals and loops, saved with every version."
         action={
           <Button variant="primary" size="md" onClick={onNew}>
             <Plus />
-            Create your first system
+            Create your first workflow
           </Button>
         }
       />
@@ -358,7 +390,7 @@ function SystemsEmpty({ variant, onClear, onNew }: { variant: "never" | "filtere
     <EmptyState
       className="py-9"
       variant="filtered"
-      title="No systems match these filters"
+      title="No workflows match these filters"
       body="Try a different search, tag or view."
       action={
         <Button variant="secondary" size="md" onClick={onClear}>
@@ -383,7 +415,7 @@ function SystemsMobileList({
   onNew: () => void;
 }): ReactNode {
   return (
-    <section aria-label="Systems" className="overflow-hidden rounded-10 border border-border bg-raised lg:hidden">
+    <section aria-label="Workflows" className="overflow-hidden rounded-10 border border-border bg-raised lg:hidden">
       {loading && rows.length === 0 ? (
         <ul className="divide-y divide-border">
           {Array.from({ length: 3 }, (_, index) => (
@@ -419,12 +451,24 @@ function SystemsMobileList({
 }
 
 const CREATE_COPY: Record<Exclude<CreateMode, null>, { title: string; description: string; action: string }> = {
-  blank: { title: "New system", description: "Start from an empty canvas. You can add steps, tools and approvals next.", action: "Create system" },
-  ai: { title: "Draft a system with AI", description: "Describe the workflow. Pipes drafts the steps and opens it for you to review and edit.", action: "Draft and open" },
-  import: { title: "Import a system", description: "Paste a pipes_schema_v1 document exported from Pipes or written by an agent.", action: "Import system" }
+  blank: { title: "New workflow", description: "Start from an empty canvas. You can add steps, tools and approvals next.", action: "Create workflow" },
+  ai: { title: "Draft a workflow with AI", description: "Describe the workflow. Pipes drafts the steps and opens it for you to review and edit.", action: "Draft and open" },
+  import: { title: "Import a workflow", description: "Paste a pipes_schema_v1 document exported from Pipes or written by an agent.", action: "Import workflow" }
 };
 
-function CreateSystemDialog({ mode, onClose, onCreated }: { mode: CreateMode; onClose: () => void; onCreated: (systemId: string) => void }): ReactNode {
+function CreateSystemDialog({
+  mode,
+  aiAllowed,
+  plan,
+  onClose,
+  onCreated
+}: {
+  mode: CreateMode;
+  aiAllowed: boolean;
+  plan?: string;
+  onClose: () => void;
+  onCreated: (systemId: string) => void;
+}): ReactNode {
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
   const [schema, setSchema] = useState("");
@@ -442,22 +486,22 @@ function CreateSystemDialog({ mode, onClose, onCreated }: { mode: CreateMode; on
     setError(null);
     try {
       if (mode === "blank") {
-        const data = await postJson("/api/systems", { name: name.trim() || "Untitled system" });
+        const data = await postJson("/api/systems", { name: name.trim() || "Untitled workflow" });
         if (data.ok) return onCreated(data.data.systemId);
-        setError(data.error?.message ?? "The system could not be created.");
+        setError(apiErrorMessage(data, "The workflow could not be created."));
       } else if (mode === "ai") {
         const draft = await postJson("/api/ai/generate-system", { prompt });
         if (!draft.ok) {
-          setError(draft.error?.message ?? "The draft could not be generated.");
+          setError(apiErrorMessage(draft, "The draft could not be generated."));
           return;
         }
         const committed = await postJson("/api/ai/generate-system", { commit: true, draft: draft.data });
         if (committed.ok) return onCreated(committed.data.systemId);
-        setError(committed.error?.message ?? "The draft could not be saved.");
+        setError(apiErrorMessage(committed, "The draft could not be saved."));
       } else if (mode === "import") {
         const data = await postJson("/api/import/system", { schema, mode: "new" });
         if (data.ok && data.data.ok) return onCreated(data.data.systemId);
-        setError(data.data?.diagnostics?.[0]?.message ?? data.error?.message ?? "That document is not a valid pipes_schema_v1 system.");
+        setError(data.data?.diagnostics?.[0]?.message ?? apiErrorMessage(data, "That document is not a valid pipes_schema_v1 workflow."));
       }
     } finally {
       setBusy(false);
@@ -465,7 +509,8 @@ function CreateSystemDialog({ mode, onClose, onCreated }: { mode: CreateMode; on
   };
 
   const copy = mode ? CREATE_COPY[mode] : null;
-  const canSubmit = mode === "blank" || (mode === "ai" && prompt.trim().length > 0) || (mode === "import" && schema.trim().length > 0);
+  const aiBlocked = mode === "ai" && !aiAllowed;
+  const canSubmit = mode === "blank" || (mode === "ai" && aiAllowed && prompt.trim().length > 0) || (mode === "import" && schema.trim().length > 0);
 
   return (
     <Dialog open={mode !== null} onOpenChange={(open) => !open && onClose()}>
@@ -487,9 +532,14 @@ function CreateSystemDialog({ mode, onClose, onCreated }: { mode: CreateMode; on
                   <Input id="new-system-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Customer refund review" />
                 </Field>
               ) : null}
+              {aiBlocked ? (
+                <PlanNote title="Drafting with AI is on the Builder plan">
+                  {plan ? `This workspace is on the ${plan} plan. ` : null}You can still start blank, import a schema or use a template.
+                </PlanNote>
+              ) : null}
               {mode === "ai" ? (
                 <Field label="What should this workflow do?" htmlFor="ai-prompt" hint="Mention the steps, tools, approvals and when it should loop or stop.">
-                  <Textarea id="ai-prompt" autoFocus rows={5} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Triage incoming support tickets, draft a reply, and ask a person to approve refunds over $100." />
+                  <Textarea id="ai-prompt" autoFocus={!aiBlocked} disabled={aiBlocked} rows={5} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Triage incoming support tickets, draft a reply, and ask a person to approve refunds over $100." />
                 </Field>
               ) : null}
               {mode === "import" ? (
@@ -520,7 +570,11 @@ function CreateSystemDialog({ mode, onClose, onCreated }: { mode: CreateMode; on
 
 function TagsDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClose: () => void; onSaved: () => void }): ReactNode {
   const [value, setValue] = useState("");
-  useEffect(() => setValue(row?.tags.join(", ") ?? ""), [row]);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setValue(row?.tags.join(", ") ?? "");
+    setError(null);
+  }, [row]);
   return (
     <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="form">
@@ -528,18 +582,24 @@ function TagsDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClose
           onSubmit={async (event) => {
             event.preventDefault();
             if (!row) return;
-            await postJson("/api/library", { action: "tags", systemId: row.id, tags: value.split(",").map((t) => t.trim()).filter(Boolean) });
-            onSaved();
+            const data = await postJson("/api/library", { action: "tags", systemId: row.id, tags: value.split(",").map((t) => t.trim()).filter(Boolean) }).catch(() => null);
+            if (data?.ok) return onSaved();
+            setError(apiErrorMessage(data, "The tags did not save. Try again."));
           }}
         >
           <DialogHeader>
             <DialogTitle>Edit tags</DialogTitle>
             <DialogDescription>{row ? `Tags help you find ${row.name} later. Separate them with commas.` : null}</DialogDescription>
           </DialogHeader>
-          <DialogBody>
-            <Field label="Tags" htmlFor="system-tags">
-              <Input id="system-tags" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="support, refunds" />
+          <DialogBody className="flex flex-col gap-5">
+            <Field label="Tags" htmlFor="workflow-tags">
+              <Input id="workflow-tags" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="support, refunds" />
             </Field>
+            {error ? (
+              <p role="alert" className="t-caption text-critical-text">
+                {error}
+              </p>
+            ) : null}
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="secondary" size="sm" onClick={onClose}>
@@ -547,6 +607,67 @@ function TagsDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClose
             </Button>
             <Button type="submit" variant="primary" size="sm">
               Save tags
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RenameDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClose: () => void; onSaved: (name: string) => void }): ReactNode {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName(row?.name ?? "");
+    setDescription(row?.description ?? "");
+    setError(null);
+    setBusy(false);
+  }, [row]);
+
+  const trimmed = name.trim();
+
+  return (
+    <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="form">
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!row || !trimmed || busy) return;
+            setBusy(true);
+            setError(null);
+            const data = await postJson(`/api/systems/${row.id}`, { action: "rename", name: trimmed, description: description.trim() }).catch(() => null);
+            if (data?.ok) return onSaved(trimmed);
+            setError(apiErrorMessage(data, "The workflow could not be renamed."));
+            setBusy(false);
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Rename workflow</DialogTitle>
+            <DialogDescription>The name and description show on the dashboard, in runs and to agents reading it.</DialogDescription>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-5">
+            <Field label="Name" htmlFor="rename-workflow-name">
+              <Input id="rename-workflow-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
+            </Field>
+            <Field label="Description" htmlFor="rename-workflow-description" hint="Optional. One line on what it does.">
+              <Textarea id="rename-workflow-description" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </Field>
+            {error ? (
+              <p role="alert" className="t-caption text-critical-text">
+                {error}
+              </p>
+            ) : null}
+          </DialogBody>
+          <DialogFooter>
+            <Button type="button" variant="secondary" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" disabled={!trimmed || busy}>
+              {busy ? "Saving" : "Save"}
             </Button>
           </DialogFooter>
         </form>

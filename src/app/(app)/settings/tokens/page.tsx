@@ -13,6 +13,10 @@ import { StatusPill } from "@/components/ledger/status";
 import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
 import { CheckRow } from "@/components/settings/check-row";
 import { RecordTable } from "@/components/settings/record-table";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { PlanNote } from "@/components/shell/plan-note";
+import { useBillingStatus } from "@/components/shell/use-billing-status";
+import { useToast } from "@/components/ui/toast";
 
 export default function TokensSettingsPage() {
   const fieldId = useId();
@@ -22,16 +26,26 @@ export default function TokensSettingsPage() {
   const [capabilities, setCapabilities] = useState<string[]>(["systems:read", "schema:read"]);
   const [secret, setSecret] = useState<string | null>(null);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+  const billing = useBillingStatus();
+  const canCreate = billing ? billing.entitlements.apiMcpAccess : true;
 
   const load = () => fetch("/api/settings/tokens").then((r) => r.json()).then((d) => { setTokens(d.data ?? []); setLoaded(true); });
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    const res = await fetch("/api/settings/tokens", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, capabilities }) });
-    const data = await res.json();
-    if (data.ok) {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/settings/tokens", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, capabilities }) }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    setBusy(false);
+    if (data?.ok) {
       setSecret(data.data.secret);
       setAuthHeader(data.data.authHeaderExample);
+    } else {
+      setError(apiErrorMessage(data, "The token could not be created."));
     }
     await load();
   };
@@ -55,6 +69,11 @@ export default function TokensSettingsPage() {
       ) : null}
 
       <SettingsSection title="New token">
+        {!canCreate ? (
+          <PlanNote title="API tokens are on the Pro plan" className="mb-5">
+            {billing ? `This workspace is on the ${billing.plan} plan. REST and MCP access start on Pro.` : null}
+          </PlanNote>
+        ) : null}
         <Card>
           <form
             onSubmit={(event) => {
@@ -81,11 +100,18 @@ export default function TokensSettingsPage() {
                 </div>
               </fieldset>
             </div>
+            {error ? (
+              <div role="alert" className="px-6 pb-6">
+                <Banner role="critical" title="The token wasn't created">
+                  {error}
+                </Banner>
+              </div>
+            ) : null}
             <CardFooter inset>
               <span className="t-caption tabular text-ink-3">
                 {capabilities.length} of {AGENT_CAPABILITIES.length} capabilities
               </span>
-              <Button type="submit" variant="primary" size="sm">
+              <Button type="submit" variant="primary" size="sm" disabled={!canCreate} loading={busy}>
                 Create token
               </Button>
             </CardFooter>
@@ -119,7 +145,12 @@ export default function TokensSettingsPage() {
                   variant="destructive"
                   size="sm"
                   aria-label={`Revoke ${t.name}`}
-                  onClick={async () => { await fetch(`/api/settings/tokens/${t.id}/revoke`, { method: "POST" }); await load(); }}
+                  onClick={async () => {
+                    const res = await fetch(`/api/settings/tokens/${t.id}/revoke`, { method: "POST" }).catch(() => null);
+                    const data = await res?.json().catch(() => null);
+                    if (!data?.ok) toast(apiErrorMessage(data, "The token could not be revoked."));
+                    await load();
+                  }}
                 >
                   Revoke
                 </Button>

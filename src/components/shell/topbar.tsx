@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, LayoutDashboard } from "@/components/ui/icon";
 import { findNavItem } from "@/components/shell/nav-config";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ interface Crumb {
   mono?: boolean;
 }
 
-/** Sub-pages of a system that get a named crumb rather than a deslugified segment. */
+/** Sub-pages of a workflow that get a named crumb rather than a deslugified segment. */
 const SYSTEM_SECTIONS: Record<string, string> = { runs: "Runs", triggers: "Triggers", handoff: "Handoff" };
 
 function deslugify(slug: string): string {
@@ -22,17 +22,48 @@ function deslugify(slug: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** Workflow names already read this session, shown at once while the current name is read again. */
+const workflowNames = new Map<string, string>();
+
+/** The workflow's name for the crumb; `null` until it loads (or if it cannot), when the id stands in. */
+function useWorkflowName(systemId: string | undefined): string | null {
+  const [name, setName] = useState<{ id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (!systemId) return;
+    let live = true;
+    fetch(`/api/search/workflows/${encodeURIComponent(systemId)}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!live || !json?.ok || typeof json.data?.name !== "string") return;
+        workflowNames.set(systemId, json.data.name);
+        setName({ id: systemId, name: json.data.name });
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [systemId]);
+  if (!systemId) return null;
+  return (name?.id === systemId ? name.name : null) ?? workflowNames.get(systemId) ?? null;
+}
+
 /** The context line at the top of the pane: a breadcrumb, no fill, no border. */
 export function Topbar(): ReactNode {
   const pathname = usePathname();
   const match = findNavItem(pathname);
+  const systemId = pathname.startsWith("/systems/") ? pathname.split("/").filter(Boolean)[1] : undefined;
+  const workflowName = useWorkflowName(systemId);
   const crumbs: Crumb[] = [];
   let Icon = LayoutDashboard;
 
   if (pathname.startsWith("/systems/")) {
     const segments = pathname.split("/").filter(Boolean);
-    crumbs.push({ label: "Systems", href: "/dashboard" });
-    crumbs.push({ label: segments[1] ?? "System", href: `/systems/${segments[1]}`, mono: true });
+    crumbs.push({ label: "Workflows", href: "/dashboard" });
+    crumbs.push(
+      workflowName
+        ? { label: workflowName, href: `/systems/${segments[1]}` }
+        : { label: segments[1] ?? "Workflow", href: `/systems/${segments[1]}`, mono: true }
+    );
     if (segments[2]) crumbs.push({ label: SYSTEM_SECTIONS[segments[2]] ?? deslugify(segments[2]) });
     Icon = findNavItem("/dashboard")?.item.icon ?? Icon;
   } else if (pathname.startsWith("/runs/") && match) {

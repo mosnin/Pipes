@@ -90,7 +90,7 @@ export function RunsIndexClient(): ReactNode {
               body="A run starts when an agent picks up a workflow over MCP or the API, or when someone starts one from a workflow's run history."
               action={
                 <Button asChild variant="secondary" size="md">
-                  <Link href="/dashboard">Open systems</Link>
+                  <Link href="/dashboard">Open workflows</Link>
                 </Button>
               }
             />

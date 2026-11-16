@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Stamp,
+  UserRound,
   Users,
   Workflow,
   type LucideIcon
@@ -42,7 +43,7 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
-      { href: "/dashboard", label: "Systems", icon: Workflow },
+      { href: "/dashboard", label: "Workflows", icon: Workflow },
       { href: "/runs", label: "Runs", icon: CirclePlay },
       { href: "/approvals", label: "Approvals", icon: Stamp, count: "approvals" },
       { href: "/templates", label: "Templates", icon: LayoutGrid },
@@ -52,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Workspace",
     items: [
+      { href: "/settings/account", label: "Account", icon: UserRound },
       { href: "/settings/collaboration", label: "Members", icon: Users },
       { href: "/settings/tokens", label: "API tokens", icon: KeyRound },
       { href: "/settings/connections", label: "Connections", icon: Plug },
