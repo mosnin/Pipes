@@ -6,6 +6,9 @@ import { Card } from "@/components/ui/card";
 import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
 import { FactList } from "@/components/settings/fact-list";
 import { CodeSnippet, useOrigin } from "@/components/connections/code-snippet";
+import { useIntro } from "@/lib/onboarding";
+import { BandHeader } from "@/components/ui/greeting-band";
+import { Bot, Plug, Workflow } from "@/components/ui/icon";
 
 const LOOP: { title: string; mono: boolean; body: string }[] = [
   { title: "list_workflows", mono: true, body: "Find the workflow to run. get_workflow shows its steps before you commit to it." },
@@ -16,6 +19,7 @@ const LOOP: { title: string; mono: boolean; body: string }[] = [
 ];
 
 export function ConnectAgentView(): ReactNode {
+  useIntro("agents");
   const origin = useOrigin();
   const mcpUrl = `${origin || "https://your-pipes-host"}/api/mcp`;
 
@@ -23,6 +27,11 @@ export function ConnectAgentView(): ReactNode {
     <SettingsShell
       title="Connect an agent"
       description="Pipes is an MCP server. Connect an agent once and it can list your workflows, start runs and work through them step by step."
+      banner={
+        <BandHeader palette="bloom" title="Connect an agent" icons={[Bot, Plug, Workflow]}>
+          Pipes is an MCP server. Connect an agent once and it can list your workflows, start runs and work through them step by step.
+        </BandHeader>
+      }
     >
       <SettingsSection title="Server address">
         <CodeSnippet label="MCP server URL (Streamable HTTP)" code={mcpUrl} />

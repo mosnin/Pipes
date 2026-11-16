@@ -202,10 +202,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }): React
     setQueue((q) => (q.includes(key) ? q : [...q, key]));
   }, []);
   useEffect(() => {
-    if (!intro && queue.length) {
-      setIntro(queue[0]);
+    if (intro || !queue.length) return;
+    // Never interrupt: if the person already opened a dialog, this intro waits for their next visit.
+    if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) {
       setQueue((q) => q.slice(1));
+      return;
     }
+    setIntro(queue[0]);
+    setQueue((q) => q.slice(1));
   }, [intro, queue]);
   const dismiss = useCallback(() => {
     setIntro((k) => {

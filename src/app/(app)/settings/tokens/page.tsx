@@ -17,6 +17,7 @@ import { apiErrorMessage } from "@/components/shell/api-error";
 import { PlanNote } from "@/components/shell/plan-note";
 import { useBillingStatus } from "@/components/shell/use-billing-status";
 import { useToast } from "@/components/ui/toast";
+import { HoldConfirm } from "@/components/micro/hold-confirm";
 
 export default function TokensSettingsPage() {
   const fieldId = useId();
@@ -140,25 +141,23 @@ export default function TokensSettingsPage() {
               <StatusPill key="s" role={t.revokedAt ? "critical" : "positive"}>{t.revokedAt ? "Revoked" : "Active"}</StatusPill>,
               String(t.usageCount ?? 0),
               t.revokedAt ? null : (
-                <Button
+                <HoldConfirm
                   key="r"
-                  variant="destructive"
-                  size="sm"
-                  aria-label={`Revoke ${t.name}`}
-                  onClick={async () => {
+                  label="Revoke"
+                  confirmedLabel="Revoked"
+                  question={`Revoke ${t.name}? Clients using it stop working at once, and it cannot be turned back on.`}
+                  onConfirm={async () => {
                     const res = await fetch(`/api/settings/tokens/${t.id}/revoke`, { method: "POST" }).catch(() => null);
                     const data = await res?.json().catch(() => null);
-                    if (!data?.ok) toast(apiErrorMessage(data, "The token could not be revoked."));
+                    if (!data?.ok) toast(apiErrorMessage(data, "The token could not be revoked."), { tone: "error" });
                     await load();
                   }}
-                >
-                  Revoke
-                </Button>
+                />
               )
             ]
           }))}
           empty={
-            <EmptyState
+            <EmptyState art="pins"
               title="No tokens yet"
               body="Create a token when you are ready to connect a REST or MCP client."
               className="py-8"

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Mark } from "@/components/brand/logo";
+import { AuthArt } from "@/components/marketing/auth-art";
 
 /* ==========================================================================
-   The auth chassis, as Company OS ships it: a centred column, a raised tile
-   holding the mark, a solid headline, a one-line subtitle, the form, and one
-   line of footer. The marketing shell is suppressed on these routes.
+   The auth chassis, as Podium ships it: two panels on the canvas. The form
+   on a card on the left; shader light and a glimpse of a workflow on the
+   right (hidden below lg). The marketing shell is suppressed on these routes.
    ========================================================================== */
 
 export function AuthFrame({
@@ -22,27 +23,22 @@ export function AuthFrame({
   width?: number;
 }): ReactNode {
   return (
-    <main
-      id="main"
-      className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-16"
-    >
-      <div className="w-full" style={{ maxWidth: width }}>
-        <div className="flex flex-col items-center text-center">
-          <Link
-            href="/"
-            aria-label="Pipes home"
-            className="focus-ring-canvas flex size-[64px] items-center justify-center rounded-16 border border-border bg-raised text-ink shadow-elev-2 focus-visible:outline-none"
-          >
-            <Mark size={30} />
-          </Link>
-          <h1 className="t-title-1 mt-6 text-ink">{title}</h1>
-          {subtitle ? <p className="t-body mt-1.5 text-ink-2">{subtitle}</p> : null}
+    <main id="main" className="grid min-h-dvh gap-2 bg-canvas p-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="flex flex-col rounded-[20px] border border-border bg-card px-6 py-8 sm:px-10">
+        <Link href="/" aria-label="Pipes home" className="focus-ring flex w-fit items-center gap-2 rounded-lg text-foreground">
+          <Mark size={26} />
+          <span className="text-[17px] font-semibold tracking-tight">Pipes</span>
+        </Link>
+        <div className="mx-auto flex w-full flex-1 flex-col justify-center py-10" style={{ maxWidth: width }}>
+          <div className="t-stagger">
+            <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.025em] text-foreground">{title}</h1>
+            {subtitle ? <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p> : null}
+          </div>
+          <div className="mt-8">{children}</div>
+          {footer ? <p className="mt-8 text-[14px] text-muted-foreground">{footer}</p> : null}
         </div>
-        <div className="mt-10">{children}</div>
-        {footer ? (
-          <p className="t-body mt-8 text-center text-ink-2">{footer}</p>
-        ) : null}
       </div>
+      <AuthArt />
     </main>
   );
 }

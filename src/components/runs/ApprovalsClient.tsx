@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WorkflowRun } from "@/domain/runs/types";
 import { actorName, callApi, ts, type RunSummary } from "@/components/runs/run-format";
+import { useIntro } from "@/lib/onboarding";
 
 type Waiting = RunSummary & { waitingSince?: string; approverRole?: string };
 
@@ -23,6 +24,7 @@ const POLL_MS = 10000;
  * approval: that, not the run's start, is how long someone has been waiting.
  */
 export function ApprovalsClient(): ReactNode {
+  useIntro("approvals");
   const [rows, setRows] = useState<Waiting[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,7 +69,7 @@ export function ApprovalsClient(): ReactNode {
         <Skeleton className="h-[168px] w-full rounded-12" />
       ) : rows.length === 0 ? (
         <Card className="flex min-h-[280px] items-center justify-center">
-          <EmptyState
+          <EmptyState art="notes"
             className="py-8"
             icon={Stamp}
             title="Nothing is waiting for you"

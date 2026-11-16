@@ -16,6 +16,7 @@ export function SettingsShell({
   actions,
   meta,
   measure = "page",
+  banner,
   children
 }: {
   title: string;
@@ -24,11 +25,20 @@ export function SettingsShell({
   meta?: ReactNode;
   /** `prose` for a form, `page` (default) for tables. */
   measure?: PageMeasure;
+  /** A shader band that carries the page's h1 in place of the plain header; actions sit under it. */
+  banner?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <PageShell measure={measure}>
-      <PageHeader title={title} description={description} actions={actions} meta={meta} />
+      {banner ? (
+        <div className="mb-8">
+          {banner}
+          {actions ? <div className="mt-4 flex flex-wrap items-center justify-end gap-2">{actions}</div> : null}
+        </div>
+      ) : (
+        <PageHeader title={title} description={description} actions={actions} meta={meta} />
+      )}
       <div className="flex flex-col gap-8">{children}</div>
     </PageShell>
   );

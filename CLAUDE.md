@@ -16,11 +16,10 @@ any UI, page, component or piece of user-facing copy:
    roles (`t-body`, `t-mono-hash`...), never a hard-coded hex. Corners are 8px,
    14px, 20px or full. Spacing is Tailwind's default scale.
 2. Read [anti-slop.md](anti-slop.md). Its rules are blocking: no italics, no em
-   dashes in copy, no decorative icons, no border-accent bars, no gradient or
-   glass chrome, sentence case, human copy. Two places where Podium's system
-   is the decision: lucide is the chosen icon set (rule 9), and on phones the
-   sidebar is a navigation drawer (rule 21 still forbids slide-over panels for
-   content).
+   dashes in copy, no decorative icons, no border-accent bars, sentence case,
+   human copy. Its "Argued exceptions" section lists where Podium's shader
+   light, glass icons and grain are allowed (named art surfaces only), lucide
+   as the icon set, and the phone navigation drawer.
 3. Reuse the primitive, don't restyle by hand. Build from
    `src/components/ui/*`, `src/components/data/*`,
    `src/components/layouts/archetypes.tsx` and `src/components/shell/*`, each

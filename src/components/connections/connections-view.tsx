@@ -5,7 +5,6 @@ import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  ConfirmDialog,
   Dialog,
   DialogBody,
   DialogContent,
@@ -22,6 +21,9 @@ import { CellStack } from "@/components/data/table";
 import { SettingsShell } from "@/components/settings/SettingsShell";
 import { RecordTable } from "@/components/settings/record-table";
 import { request } from "@/components/connections/request";
+import { useIntro } from "@/lib/onboarding";
+import { HoldConfirm } from "@/components/micro/hold-confirm";
+import { GlyphBanner } from "@/components/ui/glyph-card";
 
 type ConnectionType = "mcp" | "http" | "skill";
 
@@ -61,7 +63,7 @@ export function ConnectionsView(): ReactNode {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [removing, setRemoving] = useState<Connection | null>(null);
+  useIntro("connections", () => setCreating(true));
 
   const load = useCallback(async () => {
     const res = await request<Connection[]>("/api/connections");
@@ -80,6 +82,11 @@ export function ConnectionsView(): ReactNode {
     <SettingsShell
       title="Connections"
       description="The MCP servers, APIs and skills your workflow steps call. A step names the connections it needs, and the agent running it receives them with the step."
+      banner={
+        <GlyphBanner palette="lagoon" title="Connections">
+          The MCP servers, APIs and skills your workflow steps call. A step names the connections it needs, and the agent running it receives them with the step.
+        </GlyphBanner>
+      }
       actions={
         <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
           New connection
@@ -95,7 +102,7 @@ export function ConnectionsView(): ReactNode {
       <div className="flex flex-col gap-3">
         {loaded && connections.length === 0 && !loadError ? (
           <Card>
-            <EmptyState
+            <EmptyState art="apps"
               title="No connections yet"
               body="Add the MCP servers and APIs your steps use, so every agent that runs them gets the same address and credentials."
               className="py-8"
@@ -146,15 +153,21 @@ export function ConnectionsView(): ReactNode {
                     None
                   </span>
                 ),
-                <Button
+                <HoldConfirm
                   key="x"
-                  variant="destructive"
-                  size="sm"
-                  aria-label={`Delete ${c.name}`}
-                  onClick={() => setRemoving(c)}
-                >
-                  Delete
-                </Button>,
+                  label="Delete"
+                  confirmedLabel="Deleted"
+                  question={`Delete ${c.name}? Steps that name it stop receiving it, and its stored secret is destroyed. Runs already in progress keep what they were given.`}
+                  onConfirm={async () => {
+                    const res = await request(`/api/connections?id=${encodeURIComponent(c.id)}`, { method: "DELETE" });
+                    if (!res.ok) {
+                      toast(res.message, { tone: "error" });
+                      return;
+                    }
+                    toast(`${c.name} deleted`);
+                    await load();
+                  }}
+                />,
               ],
             }))}
             empty={null}
@@ -181,27 +194,6 @@ export function ConnectionsView(): ReactNode {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={removing !== null}
-        onOpenChange={(open) => !open && setRemoving(null)}
-        title={removing ? `Delete ${removing.name}?` : "Delete connection?"}
-        description="Steps that name this connection stop receiving it, and its stored secret is destroyed. Runs already in progress keep what they were given."
-        confirmLabel="Delete connection"
-        destructive
-        onConfirm={async () => {
-          if (!removing) return;
-          const res = await request(
-            `/api/connections?id=${encodeURIComponent(removing.id)}`,
-            { method: "DELETE" },
-          );
-          if (!res.ok) {
-            toast(res.message);
-            throw new Error(res.message);
-          }
-          toast(`${removing.name} deleted`);
-          await load();
-        }}
-      />
     </SettingsShell>
   );
 }

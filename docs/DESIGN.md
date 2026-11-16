@@ -20,9 +20,14 @@ where something is alive or needs you:
 - something failed or is destructive (red, `destructive`)
 - agent origin (violet, `agent`), sparingly
 - links, focus and selection (the one blue, `accent`)
-- empty states (sky blue isometric figures, `sky`), and nothing else
+- empty states (sky blue isometric figures, `sky`)
+- a first visit or a finished milestone (shader light)
+- finishing Get started, or opening a workflow you just made (a glimm sweep)
+- an agent is present: every agent owns a colour field
+- the day itself: Workflows greets you on light that follows the time of day
 
-Chrome, text, controls and people stay neutral.
+Chrome, text, controls and people stay neutral. Colour belongs to agents, live
+moments and places where work begins; that restraint is what makes them land.
 
 ## Chassis
 
@@ -137,11 +142,101 @@ Use `tabular` for anything that counts or updates.
   isometric figures drawn only in sky blue, centred, a medium title, one muted
   sentence and the action that fills the list. `art=` picks the figure;
   `compact` for cards and side panels. Errors get the destructive icon tile.
-- **Toasts** (`ui/toast.tsx`, sonner in `Providers.tsx`): card pills with the
-  float shadow in the bottom right, the action a black pill.
+- **Toasts**: Ding (`src/lib/toast.tsx`), and only Ding, as in Podium. Spring
+  pills that morph in place, bottom right, card surface with the float shadow;
+  glyphs in `floor`, `destructive`, `queued` and `accent`; the action a black
+  pill. Show one with `useToast()` from `ui/toast.tsx`. Silent.
+  `tests/unit/toast-guard.test.ts` enforces it.
+- **Avatar** (`ui/avatar.tsx`, on Arc's Avatar in `components/arc`): always a
+  circle. People get a soft pastel from their name; agents get their colour
+  field with dark initials and the asterisk badge (`AgentMark`), so agents are
+  never told apart by colour alone. A photo replaces both and fades in from a
+  soft blur. The ledger `Avatar` and `AuthorStamp` render it.
+- **CheckCircle, Dot, Panel, SectionTitle, EmptyNote** (`ui/check-circle.tsx`,
+  `ui/dot.tsx`, `ui/panel.tsx`): Podium's filled blue check that pops and
+  draws, its 7px dots (blue new, orange needs-you, pulsing green live), its
+  nested card, its quiet 13px section label and its inline empty row on a
+  faint sky gradient.
+- **Microinteractions** (`components/micro/`, from microinteractions.dev, MIT):
+  - `HoldConfirm` for rare destructive actions: revoking a token, deleting a
+    connection, cancelling a run. A red fill sweeps across while held (1.1s,
+    linear) and snaps back in 180ms if released; a click without a hold asks
+    in a dialog instead.
+  - `MorphArrow` on links that take you somewhere (Open, All templates, View
+    usage, Run history): the chevron grows a shaft on hover or focus.
+  - `TextSwapButton` where the next step is worth saying.
+- **Gooey nav** (`rare/gooey-nav.tsx`, Rare UI): tabs on a `muted` track whose
+  active item splits off as a `primary` pill. The runs status filter.
 - **Hook rail** (`rare/hook-sidebar.tsx`, from Rare UI, see `NOTICE`): sidebar
   sections draw a hairline accent rail that hooks into the current row and a
   faint dashed rail that follows hover and focus.
+
+## Shaders
+
+`ui/shader.tsx` renders the banners: plain WebGL1, a domain-warped field of
+three drifting lights over a base wash, plus a fine woven texture and film
+grain, so it reads as printed light rather than a CSS gradient. Palettes:
+`sky`, `sunrise`, `bloom`, `lagoon`, `dusk`, `ember`, `mono`. Device pixel
+ratio is capped at 1.5, rendering pauses offscreen and in hidden tabs, reduced
+motion draws one still frame, and without WebGL a CSS gradient in the same
+palette takes its place. Dark mode drops banners to about 90% brightness
+rather than tinting them. Keep it to a handful per screen.
+
+Where shaders go, and nowhere else:
+
+- **Greeting band** on Workflows (`GreetingBand`): palette by the viewer's
+  time of day (`sunrise` before noon, `sky` afternoon, `dusk` evening, `ember`
+  after midnight), black text on a white scrim, and the mascot sticker for the
+  hour.
+- **Start cards** on Workflows (`StartCard`): New workflow (`sky`), Draft with
+  AI (`bloom`), Import a schema (`lagoon`), white icon tiles on the light.
+- **Intro cards** (`shell/intro.tsx`): the first time someone opens a section.
+- **The Get started popover**: the next step on its own shader.
+- **The celebration card** when Get started is done.
+- **Sign-in and sign-up art** (`marketing/auth-art.tsx`): `dusk`, a glimpse of
+  a workflow an agent is walking with one step waiting on a person.
+- **Connect an agent** (`BandHeader`, `bloom`, glass icons): the agent page.
+- **Connections** (`GlyphBanner`, `lagoon`): the vendored glyph field drifting
+  in the band, as on Podium's Integrations header. Loads lazily.
+
+Agent colour fields: `paletteFor(name)` gives every agent one of six palettes
+(sky, bloom, lagoon, sunrise, dusk, ember), picked from its name so it's the
+same everywhere it appears. Never use an agent's field for state.
+
+## Stickers
+
+`ui/stickers.tsx` (stick-it-up, MIT): hand-made vinyl decals that peel on
+hover, tilted a few degrees, hidden from screen readers. Three places only:
+the greeting band, the sign-in art and the celebration card. Never on working
+surfaces (lists, tables, the editor).
+
+## Glimm
+
+[glimm](https://glimm.dev) sweeps a band of colour across the screen. A product
+you navigate dozens of times an hour should not sweep on every link, so Pipes
+sweeps only when the scene changes: opening a workflow you just created (from
+Workflows or Get started) and finishing Get started (behind the celebration
+card). `src/lib/sweep.tsx` wraps the app in `SweepProvider` with
+Podium's chain, `accentChain(["#3d8bff", "#8f7cff", "#ffb8a1"])`, at 0.85
+brightness in dark mode, and offers `useSweepTo(path)` for a scene-changing
+navigation. glimm handles reduced motion and missing WebGL itself.
+
+## Onboarding
+
+`src/lib/onboarding.tsx` and `components/shell/intro.tsx`.
+
+- **Intro cards**: the first time someone opens Workflows, the editor, Runs,
+  Approvals, Connect an agent, Connections or Triggers, a card explains it:
+  shader banner with three glass icons, title, one sentence, three checked
+  points, a primary action and Close. The primary action does what it says
+  (Connections opens the new connection form). Cards queue, so two never
+  stack. Seen state is per viewer in localStorage. Tests set `pipes.intros`
+  to `off`.
+- **Get started**: a sidebar row with a progress ring, opening a "Getting
+  started 2 of 4" popover. Steps come from real data (`GET /api/onboarding`):
+  a workflow exists, an agent holds a token, a run has started, a teammate is
+  in or invited. When all four are done, "You're all set" appears once with
+  the glimm sweep, and the row goes away.
 
 ## Motion
 

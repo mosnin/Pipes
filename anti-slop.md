@@ -7,8 +7,27 @@ of them makes the whole product read as careless.
 
 A violation is a blocker. Fix it in the change that introduced it. Where a
 rule genuinely must be broken, write the argument down at the point of use
-and record it in `DESIGN.md` under `## Argued exceptions`. An exception that
+and record it below under `## Argued exceptions`. An exception that
 is not written down is a violation.
+
+## Argued exceptions: the Podium design system
+
+Pipes uses Podium's design system (`docs/DESIGN.md`), and Podium spends colour
+on purpose in a few named places. These exceptions are the whole list; each is
+confined to the surfaces named, never chrome, text, controls or data.
+
+- **Rules 1, 4 and 5 on shader art.** `Shader`, `ShaderBanner`, `GlassIcons`,
+  `GreetingBand`, `BandHeader`, `GlyphBanner`, the intro and celebration cards
+  and the sign-in art draw domain-warped gradient light with film grain, and
+  frosted glass icons sit on it. Some palettes (sky, dusk) hold blue next to
+  violet. The gradient is not the identity: the interface around it is
+  near-monochrome, and the light marks the few moments that change the scene
+  (a first visit, the greeting, an agent's page, finishing setup). No
+  gradient, glass or grain on cards, panels, buttons or text.
+- **Rule 9.** lucide is the chosen icon set, as in Podium, used at Podium's
+  sizes and strokes.
+- **Rule 21.** On phones the sidebar is a navigation drawer. Records still
+  get their own pages.
 
 Rules marked **(render)** cannot be judged from source. Render the surface
 at 375px and 1440px wide, in every theme shipped, and look at it.

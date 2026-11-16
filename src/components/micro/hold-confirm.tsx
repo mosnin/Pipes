@@ -42,7 +42,10 @@ export function HoldConfirm({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const held = useRef(false);
   const done = useRef(onConfirm);
-  done.current = onConfirm;
+  // Keep the latest handler without reading or writing the ref during render.
+  useEffect(() => {
+    done.current = onConfirm;
+  }, [onConfirm]);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
   // If the action leaves this button on screen (it failed, or kept the page), settle back after a beat.
   useEffect(() => {

@@ -6,7 +6,7 @@
  * 1. A neutral surface is painted hard white, black or a hex colour, which
  *    breaks dark mode. Raw colours belong only on the art files listed below.
  * 2. A corner radius outside the system: 8px, 14px, 20px or full (plus 6px for
- *    the segmented pill and 4px for tiny inline marks). The older token names
+ *    the segmented pill, 4px for tiny inline marks and 26px for the intro card). The older token names
  *    resolve onto the same four sizes in globals.css.
  *
  * If a rule must change, change it in docs/DESIGN.md and here in the same commit.
@@ -25,12 +25,13 @@ function files(dir: string): string[] {
   });
 }
 
-/** Decorative art, where literal colours are the point. */
-const ART = new Set(["components/ui/empty-art.tsx"]);
+/** Decorative art drawn on shaders or as illustrations, where literal colours are the point. */
+const ART = new Set(["components/ui/empty-art.tsx", "components/ui/shader.tsx", "components/ui/shader-banner.tsx", "components/ui/glyph-card.tsx", "components/ui/stickers.tsx", "components/marketing/auth-art.tsx", "components/shell/intro.tsx"]);
 const RADII = new Set([
   "rounded-lg", "rounded-8", "rounded-6", "rounded-[6px]", "rounded-4", "rounded-[4px]", "rounded-2", "rounded-sm",
   "rounded-[14px]", "rounded-10", "rounded-12", "rounded-14", "rounded-xl",
   "rounded-[20px]", "rounded-16", "rounded-20", "rounded-[22px]",
+  "rounded-[26px]", // the intro card, as in Podium
   "rounded-full", "rounded-[inherit]", "rounded-none", "rounded-0",
 ]);
 

@@ -115,7 +115,7 @@ export default function AuditSettingsPage() {
             };
           })}
           empty={
-            <EmptyState
+            <EmptyState art="activity"
               variant={filtered ? "filtered" : "never"}
               title={filtered ? "No events match these filters" : "No audit events yet"}
               body={filtered ? "Clear a filter to widen the search." : "Events appear here once an agent calls the protocol or someone works on a workflow."}

@@ -8,7 +8,6 @@ import { StatusPill } from "@/components/ledger/status";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardSection } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Textarea } from "@/components/ui/input";
 import { PageHeader, SectionHeading } from "@/components/ui/page-header";
@@ -37,6 +36,9 @@ import {
   TRIGGER_LABEL,
   ts
 } from "@/components/runs/run-format";
+import { HoldConfirm } from "@/components/micro/hold-confirm";
+import { MorphArrow } from "@/components/micro/morph-arrow";
+import { Avatar } from "@/components/ledger/author-stamp";
 
 type Current = CurrentStep & { connections: ConnectionView[] };
 type Detail = { run: WorkflowRun; current: Current };
@@ -49,7 +51,6 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
   const [loadError, setLoadError] = useState<{ code?: string; message: string } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const load = useCallback(async () => {
     const result = await callApi<Detail>(`/api/runs/${runId}`);
@@ -120,7 +121,7 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
 
   return (
     <PageShell measure="page">
-      <RunHeader run={run} busy={busy} onCancel={() => setConfirmCancel(true)} />
+      <RunHeader run={run} busy={busy} onCancel={async () => { await act("cancel", { reason: "Canceled from the run page." }); }} />
 
       <div className="flex flex-col gap-3">
         {actionError ? (
@@ -153,24 +154,11 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
         rail={<RunFacts run={run} />}
       />
 
-      <ConfirmDialog
-        open={confirmCancel}
-        onOpenChange={setConfirmCancel}
-        destructive
-        title="Cancel this run?"
-        description={`The run stops at ${record?.nodeTitle ?? "its current step"}. Steps already done stay on the record, and nobody can complete the rest.`}
-        confirmLabel="Cancel run"
-        cancelLabel="Keep it running"
-        onConfirm={async () => {
-          const done = await act("cancel", { reason: "Canceled from the run page." });
-          if (done) setConfirmCancel(false);
-        }}
-      />
     </PageShell>
   );
 }
 
-function RunHeader({ run, busy, onCancel }: { run: WorkflowRun; busy: boolean; onCancel: () => void }): ReactNode {
+function RunHeader({ run, busy, onCancel }: { run: WorkflowRun; busy: boolean; onCancel: () => Promise<void> }): ReactNode {
   const now = useNow();
   const duration = formatDuration(runDuration(run, now));
   const live = isActive(run.status);
@@ -186,12 +174,19 @@ function RunHeader({ run, busy, onCancel }: { run: WorkflowRun; busy: boolean; o
       actions={
         <>
           <Button asChild variant="secondary" size="sm">
-            <Link href={`/systems/${run.systemId}/runs`}>Run history</Link>
+            <Link href={`/systems/${run.systemId}/runs`} className="group/arrow">
+              Run history
+              <MorphArrow />
+            </Link>
           </Button>
           {live ? (
-            <Button variant="destructive" size="sm" onClick={onCancel} disabled={busy}>
-              Cancel run
-            </Button>
+            <HoldConfirm
+              label="Cancel run"
+              confirmedLabel="Canceled"
+              question="The run stops at its current step. Steps already done stay on the record, and nobody can complete the rest."
+              onConfirm={onCancel}
+              className={busy ? "pointer-events-none opacity-45" : undefined}
+            />
           ) : null}
         </>
       }
@@ -596,6 +591,9 @@ function TimelineStep({ step, run, titleOf, nameOf }: { step: StepRecord; run: W
         <p className="t-caption text-ink-3">
           {step.performedBy ? (
             <>
+              {step.performedBy.type === "trigger" ? null : (
+                <Avatar label={nameOf(step.performedBy)} kind={step.performedBy.type === "agent" ? "agent" : "human"} size={16} className="mr-1.5 inline-flex align-[-3px]" />
+              )}
               <span className="text-ink-2">{nameOf(step.performedBy)}</span>
               {step.performedBy.type !== "user" ? ` (${actorKind(step.performedBy).toLowerCase()})` : ""}
               {" · "}

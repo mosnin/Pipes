@@ -14,6 +14,7 @@ import { apiErrorMessage } from "@/components/shell/api-error";
 import type { BillingStatus } from "@/components/shell/use-billing-status";
 import { getEntitlements, type Entitlements } from "@/domain/templates/plans";
 import { cn } from "@/lib/utils";
+import { MorphArrow } from "@/components/micro/morph-arrow";
 
 const PLANS = ["Free", "Pro", "Builder"] as const;
 
@@ -116,7 +117,10 @@ function BillingSettings() {
       actions={
         <>
           <Button asChild variant="ghost" size="sm">
-            <Link href="/settings/usage">View usage</Link>
+            <Link href="/settings/usage" className="group/arrow">
+              View usage
+              <MorphArrow />
+            </Link>
           </Button>
           <Button variant="secondary" size="sm" onClick={() => go("portal")} disabled={!summary || unconfigured} loading={busy === "portal"}>
             Manage billing

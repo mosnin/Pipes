@@ -14,6 +14,7 @@ import { Field } from "@/components/ui/input";
 import { PageHeader, SectionHeading } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSweepTo } from "@/lib/sweep";
 
 type Recommendation = { id: string; title: string; description: string; category: string; useCase: string; complexity: string };
 type Path = "blank" | "template" | "ai" | "import";
@@ -46,6 +47,7 @@ async function postJson(url: string, body: unknown) {
 
 export function OnboardingClient(): ReactNode {
   const router = useRouter();
+  const sweepTo = useSweepTo();
   const [role, setRole] = useState("builder");
   const [useCase, setUseCase] = useState("support");
   const [recommended, setRecommended] = useState<Recommendation[]>([]);
@@ -76,7 +78,7 @@ export function OnboardingClient(): ReactNode {
     setError(null);
     await complete("blank");
     const data = await postJson("/api/systems", { name: "Untitled workflow" });
-    if (data.ok) router.push(`/systems/${data.data.systemId}`);
+    if (data.ok) sweepTo(`/systems/${data.data.systemId}`);
     else fail(data, "The workflow could not be created.");
   };
   const startAi = async () => {
@@ -88,7 +90,7 @@ export function OnboardingClient(): ReactNode {
     const draft = await postJson("/api/ai/generate-system", { prompt: `Build a ${caseLabel.toLowerCase()} workflow for a team focused on ${roleLabel.toLowerCase()}` });
     if (!draft.ok) return fail(draft, "The draft could not be generated.");
     const commit = await postJson("/api/ai/generate-system", { commit: true, draft: draft.data });
-    if (commit.ok) router.push(`/systems/${commit.data.systemId}`);
+    if (commit.ok) sweepTo(`/systems/${commit.data.systemId}`);
     else fail(commit, "The draft could not be saved.");
   };
   const startImport = async () => {
@@ -101,7 +103,7 @@ export function OnboardingClient(): ReactNode {
     setError(null);
     await complete("template");
     const data = await postJson(`/api/templates/${templateId}/instantiate`, {});
-    if (data.ok) router.push(`/systems/${data.data.systemId}`);
+    if (data.ok) sweepTo(`/systems/${data.data.systemId}`);
     else fail(data, "That template could not be opened.");
   };
 

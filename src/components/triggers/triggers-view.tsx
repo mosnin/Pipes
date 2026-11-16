@@ -27,6 +27,7 @@ import {
 import { request } from "@/components/connections/request";
 import { readCron } from "@/components/triggers/cron-reading";
 import { Toggle } from "@/components/triggers/toggle";
+import { useIntro } from "@/lib/onboarding";
 
 type Schedule = {
   id: string;
@@ -59,6 +60,7 @@ const EVENTS: { value: string; description: string }[] = [
 ];
 
 export function TriggersView({ systemId }: { systemId: string }): ReactNode {
+  useIntro("triggers");
   const origin = useOrigin();
   const toast = useToast();
   const [name, setName] = useState<string | null>(null);
@@ -427,7 +429,7 @@ function SchedulesSection({
 
         {triggers && schedules.length === 0 ? (
           <Card>
-            <EmptyState
+            <EmptyState art="calls"
               title="No schedules yet"
               body="Add one above to start runs on a timetable."
               className="py-8"

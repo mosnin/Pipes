@@ -13,6 +13,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { GroupedList, GroupedRow } from "@/components/ui/grouped-list";
 import {
   Archive,
+  Bot,
+  Check,
   Clock,
   FileInput,
   Hash,
@@ -31,10 +33,15 @@ import { Segmented } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { GreetingBand, StartCard } from "@/components/ui/greeting-band";
+import { SectionTitle } from "@/components/ui/panel";
+import { useIntro } from "@/lib/onboarding";
 import { apiErrorMessage } from "@/components/shell/api-error";
 import { PlanNote } from "@/components/shell/plan-note";
 import { useBillingStatus } from "@/components/shell/use-billing-status";
 import { cn } from "@/lib/utils";
+import { MorphArrow } from "@/components/micro/morph-arrow";
+import { useSweepTo } from "@/lib/sweep";
 
 type LibraryRow = { id: string; name: string; description: string; createdAt: string; updatedAt: string; archivedAt?: string; createdBy: string; favorite: boolean; tags: string[]; lastOpenedAt?: string };
 type LibraryPayload = { rows: LibraryRow[]; recent: LibraryRow[]; favorites: LibraryRow[]; availableTags: string[] };
@@ -57,8 +64,10 @@ async function postJson<T = any>(url: string, body: unknown): Promise<T> {
 
 const ts = (value?: string) => (value ? new Date(value).getTime() : undefined);
 
-export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPayload }): ReactNode {
+export function DashboardClient({ initialLibrary, firstName }: { initialLibrary: LibraryPayload; firstName?: string }): ReactNode {
   const router = useRouter();
+  // Opening a workflow you just made is a scene change, so it gets the sweep.
+  const sweepTo = useSweepTo();
   const [library, setLibrary] = useState<LibraryPayload>(initialLibrary);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status>("active");
@@ -72,6 +81,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   const [renameTarget, setRenameTarget] = useState<LibraryRow | null>(null);
   const billing = useBillingStatus();
   const toast = useToast();
+  useIntro("workflows");
   // Unknown until the plan loads: leave AI drafting open and let the server answer.
   const aiAllowed = billing ? billing.entitlements.aiGeneration : true;
 
@@ -113,7 +123,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
   };
   const launchTemplate = async (templateId: string) => {
     const data = await postJson(`/api/templates/${templateId}/instantiate`, {}).catch(() => null);
-    if (data?.ok) router.push(`/systems/${data.data.systemId}`);
+    if (data?.ok) sweepTo(`/systems/${data.data.systemId}`);
     else toast(apiErrorMessage(data, "That template could not be opened."));
   };
   const clearFilters = () => {
@@ -124,27 +134,22 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 
   return (
     <PageShell measure="page">
-      <PageHeader
-        title="Workflows"
-        description="Every workflow your team and agents follow, versioned and ready to open."
-        actions={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => setCreateMode("import")}>
-              <FileInput />
-              Import
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setCreateMode("ai")}>
-              <Sparkles />
-              Draft with AI
-            </Button>
-            <Button variant="primary" size="sm" onClick={() => setCreateMode("blank")}>
-              <Plus />
-              New workflow
-            </Button>
-          </>
-        }
-      />
+      <GreetingBand name={firstName}>Every workflow your team and agents follow, versioned and ready to open.</GreetingBand>
 
+      <section aria-labelledby="start-heading" className="mb-10">
+        <SectionTitle>
+          <span id="start-heading">Start something</span>
+        </SectionTitle>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StartCard palette="sky" icons={[Workflow, Plus, Bot]} title="New workflow" body="An empty canvas. Add steps, tools and approvals." onClick={() => setCreateMode("blank")} />
+          <StartCard palette="bloom" icons={[Sparkles, Workflow, Bot]} title="Draft with AI" body="Describe the work and Pipes drafts the steps." hint={aiAllowed ? undefined : "Builder"} onClick={() => setCreateMode("ai")} />
+          <StartCard palette="lagoon" icons={[FileInput, Workflow, Check]} title="Import a schema" body="Bring a pipes_schema_v1 document from anywhere." onClick={() => setCreateMode("import")} />
+        </div>
+      </section>
+
+      <SectionTitle>
+        <span>Workflows</span>
+      </SectionTitle>
       <Toolbar className="mb-4 flex-wrap">
         <SearchInput
           aria-label="Filter workflows"
@@ -268,7 +273,10 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         <SectionHeading
           action={
             <Button asChild variant="ghost" size="sm">
-              <Link href="/templates">All templates</Link>
+              <Link href="/templates" className="group/arrow">
+                All templates
+                <MorphArrow />
+              </Link>
             </Button>
           }
         >
@@ -299,7 +307,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         aiAllowed={aiAllowed}
         plan={billing?.plan}
         onClose={() => setCreateMode(null)}
-        onCreated={(systemId) => router.push(`/systems/${systemId}`)}
+        onCreated={(systemId) => sweepTo(`/systems/${systemId}`)}
       />
       <RenameDialog
         row={renameTarget}
@@ -333,7 +341,10 @@ function RowActions({ row, onRename, onTags, onArchive }: { row: LibraryRow; onR
   return (
     <span className="inline-flex items-center gap-1">
       <Button asChild variant="secondary" size="xs">
-        <Link href={`/systems/${row.id}`}>Open</Link>
+        <Link href={`/systems/${row.id}`} className="group/arrow">
+          Open
+          <MorphArrow className="-mr-0.5" />
+        </Link>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

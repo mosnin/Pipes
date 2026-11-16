@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Activity } from "@/components/ui/icon";
 import { PageHeader, Toolbar } from "@/components/ui/page-header";
-import { Segmented } from "@/components/ui/segmented";
+import { GooeyNav } from "@/components/rare/gooey-nav";
 import { RunsTable } from "@/components/runs/runs-table";
 import { callApi, isActive, type RunSummary } from "@/components/runs/run-format";
+import { useIntro } from "@/lib/onboarding";
 
 type Filter = "all" | "running" | "waiting_approval" | "completed" | "failed";
 
@@ -32,6 +33,7 @@ const FILTERED_TITLE: Record<Exclude<Filter, "all">, string> = {
 const POLL_MS = 5000;
 
 export function RunsIndexClient(): ReactNode {
+  useIntro("runs");
   const [filter, setFilter] = useState<Filter>("all");
   const [rows, setRows] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,13 @@ export function RunsIndexClient(): ReactNode {
       <PageHeader title="Runs" description="Every time an agent or a person walks a workflow, newest first." />
 
       <Toolbar className="mb-4">
-        <Segmented<Filter> label="Filter runs by status" size="sm" value={filter} onValueChange={setFilter} options={FILTERS} />
+        <GooeyNav
+          size="sm"
+          aria-label="Filter runs by status"
+          value={FILTERS.findIndex((f) => f.value === filter)}
+          onChange={(i) => setFilter(FILTERS[i].value)}
+          items={FILTERS.map((f) => ({ label: f.label }))}
+        />
       </Toolbar>
 
       {error ? (
@@ -83,7 +91,7 @@ export function RunsIndexClient(): ReactNode {
         showWorkflow
         empty={
           filter === "all" ? (
-            <EmptyState
+            <EmptyState art="activity"
               className="py-8"
               icon={Activity}
               title="No runs yet"
@@ -95,7 +103,7 @@ export function RunsIndexClient(): ReactNode {
               }
             />
           ) : (
-            <EmptyState
+            <EmptyState art="activity"
               className="py-8"
               variant="filtered"
               title={FILTERED_TITLE[filter]}

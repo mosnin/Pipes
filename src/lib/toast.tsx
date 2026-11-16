@@ -34,8 +34,10 @@ function configure() {
 /** Follow the app's own theme (the `.dark` class), not just the system. */
 function useAppTheme(): "light" | "dark" {
   const read = () => (document.documentElement.classList.contains("dark") ? "dark" : "light");
-  const [theme, setTheme] = useState<"light" | "dark">(read);
+  // The server has no document: start light and settle on mount.
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => {
+    setTheme(read());
     const mo = new MutationObserver(() => setTheme(read()));
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => mo.disconnect();

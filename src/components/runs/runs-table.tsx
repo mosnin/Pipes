@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNow } from "@/lib/now";
 import { RunStatusPill } from "@/components/runs/run-status-pill";
 import { actorName, formatDuration, runDuration, TRIGGER_LABEL, ts, type RunSummary } from "@/components/runs/run-format";
+import { Avatar } from "@/components/ledger/author-stamp";
 
 export interface RunsTableProps {
   label: string;
@@ -152,7 +153,12 @@ export function RunsTable({ label, rows, loading, showWorkflow = false, empty }:
                       </TD>
                       <TD className="text-ink-2">{TRIGGER_LABEL[row.trigger] ?? row.trigger}</TD>
                       <TD>
-                        <span className="block truncate">{actorName(row.startedBy)}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          {row.startedBy?.type === "trigger" ? null : (
+                            <Avatar label={actorName(row.startedBy)} kind={row.startedBy?.type === "agent" ? "agent" : "human"} size={20} />
+                          )}
+                          <span className="truncate">{actorName(row.startedBy)}</span>
+                        </span>
                       </TD>
                       <TD numeric>{row.stepCount}</TD>
                       <TD numeric className={live ? "text-ink-3" : undefined}>

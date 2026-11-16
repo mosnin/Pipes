@@ -8,6 +8,24 @@ copied from the Podium app by the same owner.
   (https://rareui.com), Copyright (c) 2026 Swami Malode, used under the
   MIT + Commons Clause + Attribution license. The copyright notice stays in
   the file. The component may not be sold or redistributed on its own.
+- src/components/rare/gooey-nav.tsx is adapted from Rare UI under the same
+  license and terms as the hook sidebar.
+- src/components/arc/ is the Arc Avatar (https://uiarc.dev), Copyright (c)
+  2026 Elia Kuratli, MIT, vendored through Podium with its CSS variables mapped
+  onto the tokens.
+- src/components/micro/ adapts microinteractions from microinteractions.dev
+  (https://github.com/juandinella/microinteractions.dev), Copyright (c) 2026
+  Juan Di Nella, MIT: hold to confirm, text swap and the chevron morph.
+- src/components/ui/empty-art.tsx, shader.tsx and the onboarding cards are
+  copied from Podium.
+- src/vendor/glyph-card/glyph-card-black.js is the glyph card shader element
+  supplied by the owner. It embeds Geist and Geist Mono (Copyright 2024 The
+  Geist Project Authors) under the SIL Open Font License 1.1; the license text
+  is in src/vendor/glyph-card/THIRD-PARTY-NOTICES.txt.
+- Stickers come from stick-it-up (https://stickitupx.com), Copyright (c) 2026
+  Samiran De, MIT, used as an npm dependency.
+- Ding (https://ding.yusufcengiz.dev), MIT, is used as an npm dependency for
+  toasts. glimm (https://glimm.dev) is used as an npm dependency for sweeps.
 - Inter (https://rsms.me/inter), SIL Open Font License 1.1, via
   @fontsource-variable/inter. Geist Mono, SIL Open Font License 1.1, via the
   geist package.

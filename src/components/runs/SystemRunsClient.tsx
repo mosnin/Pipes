@@ -192,7 +192,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
           rows={rows}
           loading={loading}
           empty={
-            <EmptyState
+            <EmptyState art="activity"
               className="py-8"
               icon={Activity}
               title="This workflow has not run yet"

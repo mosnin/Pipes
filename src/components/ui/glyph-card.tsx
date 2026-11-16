@@ -12,13 +12,15 @@
  * Podium sets the heading itself, at the page's sizes.
  *
  * The element is ~110 KB with its fonts, so it loads only where a banner is
- * shown. Rare moments only (DESIGN.md): today, the Integrations header.
+ * shown. Rare moments only (docs/DESIGN.md): in Pipes, the Connections header. It renders the page's h1.
  */
 import { type ReactNode, useEffect, useState } from "react";
 import { type Palette, Shader } from "@/components/ui/shader";
 import { cn as cx } from "@/lib/utils";
 
 declare module "react" {
+  // JSX intrinsic elements can only be extended through this namespace.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       "glyph-card-black": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & { [attr: string]: unknown };
@@ -31,7 +33,7 @@ const TINT: Partial<Record<Palette, string>> = { sky: "#24308f", sunrise: "#7a3d
 let loading: Promise<unknown> | null = null;
 const load = () => (loading ??= import("@/vendor/glyph-card/glyph-card-black.js"));
 
-export function GlyphBanner({ palette = "sky", title, children, word = "PODIUM", seed = 7, className }: { palette?: Palette; title: ReactNode; children?: ReactNode; word?: string; seed?: number; className?: string }) {
+export function GlyphBanner({ palette = "sky", title, children, word = "PIPES", seed = 7, className }: { palette?: Palette; title: ReactNode; children?: ReactNode; word?: string; seed?: number; className?: string }) {
   const [ready, setReady] = useState(false);
   // The glyphs take a deep shade of the band's own colour, so the field reads as texture in the gradient, not as a second colour.
   const tint = TINT[palette] ?? "#1c2f57";
@@ -74,7 +76,7 @@ export function GlyphBanner({ palette = "sky", title, children, word = "PODIUM",
       {/* Same soft scrim as the Home greeting, so the heading reads on every palette in both themes. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/70 via-white/35 to-transparent dark:from-white/45 dark:via-white/15" />
       <div className="pointer-events-none relative px-6 pb-6 pt-14 sm:px-7 sm:pt-20">
-        <h2 className="text-[26px] font-medium leading-[1.15] tracking-[-0.022em] text-black/90">{title}</h2>
+        <h1 className="text-[26px] font-medium leading-[1.15] tracking-[-0.022em] text-black/90">{title}</h1>
         {children && <p className="mt-1.5 max-w-[56ch] text-[15px] leading-relaxed text-black/70">{children}</p>}
       </div>
     </div>

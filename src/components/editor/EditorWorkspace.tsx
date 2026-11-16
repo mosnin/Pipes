@@ -31,6 +31,7 @@ import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, 
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
 import { AgentStepPanel, type ConnectionsState } from "@/components/editor/AgentStepPanel";
 import { useSystemDesign } from "@/components/editor/design_sync";
+import { useIntro } from "@/lib/onboarding";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -1290,5 +1291,6 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
  * talks to Convex directly: Convex functions are locked to the Pipes server.
  */
 export function EditorWorkspace({ systemId }: { systemId: string }) {
+  useIntro("editor");
   return <MockEditorWorkspace systemId={systemId} />;
 }
