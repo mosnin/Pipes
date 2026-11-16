@@ -77,6 +77,7 @@ type DbShape = {
   audits: Array<{ id: string; actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string; createdAt: string }>;
   idempotency: Array<{ id: string; workspaceId: string; actorId: string; route: string; key: string; requestHash: string; responseJson: string; statusCode: number; createdAt: string }>;
   rateLimits: Array<{ id: string; bucket: string; windowStart: string; count: number; updatedAt: string }>;
+  documents: Array<{ kind: string; id: string; workspaceId: string; refId?: string; data: unknown; createdAt: string; updatedAt: string }>;
   feedback: Array<{ id: string; workspaceId: string; createdBy: string; actorType: "user" | "agent"; actorId: string; category: FeedbackCategory; severity: FeedbackSeverity; summary: string; details: string; page: string; systemId?: string; userEmail?: string; status: FeedbackStatus; createdAt: string; updatedAt: string }>;
   agentSessions: AgentSession[];
   agentRuns: AgentRun[];
@@ -151,6 +152,7 @@ function seed(): DbShape {
     audits: [],
     idempotency: [],
     rateLimits: [],
+    documents: [],
     feedback: [],
     agentSessions: [],
     agentRuns: [],

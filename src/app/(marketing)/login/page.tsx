@@ -3,6 +3,9 @@ import Link from "next/link";
 import { AuthFrame } from "@/components/marketing/auth-frame";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
+import { PasswordLoginForm } from "@/components/marketing/password-forms";
+import { resolveAuthMode } from "@/lib/auth";
+import { safeReturnTo } from "@/lib/auth/session";
 
 /* ==========================================================================
    GATE, /login. Shell suppressed, as Company OS's /signin is.
@@ -25,8 +28,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   profile_incomplete: "Your identity provider didn't share an email address, which Pipes needs to sign you in."
 };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
+export const dynamic = "force-dynamic";
+
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; returnTo?: string }> }) {
+  const { error, returnTo } = await searchParams;
+  const passwordMode = resolveAuthMode() === "password";
   const message = error ? ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again." : undefined;
   return (
     <AuthFrame
@@ -41,18 +47,22 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </>
       }
     >
-      <div className="flex flex-col gap-6">
-        {message ? (
-          <div role="alert">
-            <Banner role="critical" title="Sign-in didn't finish">
-              {message}
-            </Banner>
-          </div>
-        ) : null}
-        <Button asChild variant="primary" size="lg" className="w-full">
-          <Link href="/api/auth/login?returnTo=/dashboard">Continue</Link>
-        </Button>
-      </div>
+      {passwordMode ? (
+        <PasswordLoginForm returnTo={safeReturnTo(returnTo)} initialError={message} />
+      ) : (
+        <div className="flex flex-col gap-6">
+          {message ? (
+            <div role="alert">
+              <Banner role="critical" title="Sign-in didn't finish">
+                {message}
+              </Banner>
+            </div>
+          ) : null}
+          <Button asChild variant="primary" size="lg" className="w-full">
+            <Link href="/api/auth/login?returnTo=/dashboard">Continue</Link>
+          </Button>
+        </div>
+      )}
     </AuthFrame>
   );
 }

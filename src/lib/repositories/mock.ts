@@ -42,6 +42,36 @@ function getBundle(systemId: string): SystemBundle {
 
 export function createMockRepositories(): RepositorySet {
   return {
+    documents: {
+      async get(kind, id) {
+        const doc = store.readDb().documents.find((d) => d.kind === kind && d.id === id);
+        return (doc as any) ?? null;
+      },
+      async put(input) {
+        const db = store.readDb();
+        const existing = db.documents.find((d) => d.kind === input.kind && d.id === input.id);
+        const ts = now();
+        if (existing) {
+          Object.assign(existing, { workspaceId: input.workspaceId, refId: input.refId, data: input.data, updatedAt: ts });
+          store.writeDb(db);
+          return existing as any;
+        }
+        const doc = { ...input, createdAt: ts, updatedAt: ts };
+        db.documents.push(doc);
+        store.writeDb(db);
+        return doc as any;
+      },
+      async list(kind, filter) {
+        return store
+          .readDb()
+          .documents.filter((d) => d.kind === kind && (!filter.workspaceId || d.workspaceId === filter.workspaceId) && (!filter.refId || d.refId === filter.refId)) as any;
+      },
+      async remove(kind, id) {
+        const db = store.readDb();
+        db.documents = db.documents.filter((d) => !(d.kind === kind && d.id === id));
+        store.writeDb(db);
+      }
+    },
     users: {
       provision,
       async findByEmail(email) {

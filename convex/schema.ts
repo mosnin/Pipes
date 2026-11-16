@@ -113,6 +113,18 @@ export default defineSchema({
     statusCode: v.number(),
     createdAt: v.string()
   }).index("by_lookup", ["workspaceId", "actorId", "route", "key"]),
+  documents: defineTable({
+    kind: v.string(),
+    docId: v.string(),
+    workspaceId: v.string(),
+    refId: v.optional(v.string()),
+    data: v.any(),
+    createdAt: v.string(),
+    updatedAt: v.string()
+  })
+    .index("by_kind_doc", ["kind", "docId"])
+    .index("by_kind_workspace", ["kind", "workspaceId"])
+    .index("by_kind_ref", ["kind", "refId"]),
   rate_limits: defineTable({
     bucket: v.string(),
     windowStart: v.string(),

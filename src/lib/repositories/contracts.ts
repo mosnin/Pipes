@@ -147,7 +147,22 @@ export interface FeedbackRepository {
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
 }
 
+export type StoredDocument<T = unknown> = { kind: string; id: string; workspaceId: string; refId?: string; data: T; createdAt: string; updatedAt: string };
+
+/**
+ * A small typed document store shared by newer features (credentials, runs,
+ * connections, triggers, usage). One contract, two backends, so a feature is
+ * written once instead of once per backend.
+ */
+export interface DocumentsRepository {
+  get<T>(kind: string, id: string): Promise<StoredDocument<T> | null>;
+  put<T>(input: { kind: string; id: string; workspaceId: string; refId?: string; data: T }): Promise<StoredDocument<T>>;
+  list<T>(kind: string, filter: { workspaceId?: string; refId?: string }): Promise<StoredDocument<T>[]>;
+  remove(kind: string, id: string): Promise<void>;
+}
+
 export type RepositorySet = {
+  documents: DocumentsRepository;
   users: UsersRepository;
   workspaces: WorkspacesRepository;
   memberships: MembershipsRepository;

@@ -16,7 +16,10 @@ export const provisionUser = mutation({
       user = await ctx.db.get(userId);
     }
 
-    const membership = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("userId", user!._id).eq("workspaceId", (await ctx.db.query("workspaces").withIndex("by_owner", (qq) => qq.eq("ownerId", user!._id)).first())!._id)).first();
+    const ownedWorkspace = await ctx.db.query("workspaces").withIndex("by_owner", (qq) => qq.eq("ownerId", user!._id)).first();
+    const membership = ownedWorkspace
+      ? await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", ownedWorkspace._id).eq("userId", user!._id)).first()
+      : await ctx.db.query("workspace_members").filter((q) => q.eq(q.field("userId"), user!._id)).first();
     return { user, membership };
   }
 });
@@ -30,7 +33,10 @@ export const listSystems = query({
 
 export const createSystem = mutation({
   args: { workspaceId: v.id("workspaces"), userId: v.id("users"), name: v.string(), description: v.string() },
-  handler: async (ctx, args) => ctx.db.insert("systems", { ...args, createdBy: args.userId, createdAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    const { userId, ...rest } = args;
+    return ctx.db.insert("systems", { ...rest, createdBy: userId, createdAt: now(), updatedAt: now() });
+  }
 });
 
 export const archiveSystem = mutation({

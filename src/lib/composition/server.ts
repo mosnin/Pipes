@@ -4,10 +4,15 @@ import { createConvexRepositories } from "@/lib/repositories/convex";
 import { createMockRepositories } from "@/lib/repositories/mock";
 import { createBoundedServices } from "@/domain/services/bounded";
 
+/** The repositories for this runtime, without requiring a signed-in user (auth routes, webhooks, cron). */
+export function getRepositories() {
+  return resolveRuntimeMode().mode === "provider" ? createConvexRepositories() : createMockRepositories();
+}
+
 export async function getServerApp() {
   const runtime = resolveRuntimeMode();
   const identity = await getAuthService().requireUser();
-  const repositories = runtime.mode === "provider" ? createConvexRepositories() : createMockRepositories();
+  const repositories = getRepositories();
 
   const ctx = await repositories.users.provision(identity);
   const plan = await repositories.entitlements.getPlan(ctx.workspaceId);

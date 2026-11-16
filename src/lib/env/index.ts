@@ -50,11 +50,8 @@ export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 
 export function resolveRuntimeMode(): { mode: EffectiveRuntimeMode; warning?: string } {
   if (env.PIPES_USE_MOCKS) return { mode: "mock" };
-  const missing: string[] = [];
-  if (!env.CONVEX_URL) missing.push("CONVEX_URL");
-  if (!(env.AUTH0_DOMAIN && env.AUTH0_CLIENT_ID && env.AUTH0_CLIENT_SECRET)) missing.push("AUTH0_DOMAIN/AUTH0_CLIENT_ID/AUTH0_CLIENT_SECRET");
-  if (missing.length > 0) {
-    return { mode: "fallback_mock", warning: `Provider mode requested but incomplete configuration detected: ${missing.join(", ")}. Using mock runtime path.` };
+  if (!env.CONVEX_URL) {
+    return { mode: "fallback_mock", warning: "Provider mode requested but CONVEX_URL is not set. Using the local file-backed store." };
   }
   return { mode: "provider" };
 }

@@ -16,9 +16,24 @@ import {
   convexUpsertPresence
 } from "@/lib/convex/modeApi";
 import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
+import type { Role } from "@/domain/pipes_schema_v1/schema";
 
 export function createConvexRepositories(): RepositorySet {
   return {
+    documents: {
+      async get(kind, id) {
+        return (await getConvexHttpClient().query(api.documents.get, { kind, id })) as any;
+      },
+      async put(input) {
+        return (await getConvexHttpClient().mutation(api.documents.put, input as never)) as any;
+      },
+      async list(kind, filter) {
+        return (await getConvexHttpClient().query(api.documents.list, { kind, ...filter })) as any;
+      },
+      async remove(kind, id) {
+        await getConvexHttpClient().mutation(api.documents.remove, { kind, id });
+      }
+    },
     users: {
       async provision(identity): Promise<AppContext> {
         const convex = getConvexHttpClient();
@@ -68,6 +83,7 @@ export function createConvexRepositories(): RepositorySet {
       },
       async getBundle(systemId) {
         const data = await convexSystemBundle(systemId);
+        if (!data.system) throw new Error(`System not found: ${systemId}`);
         return {
           system: { id: String(data.system._id), workspaceId: String(data.system.workspaceId), name: data.system.name, description: data.system.description, createdBy: String(data.system.createdBy), createdAt: data.system.createdAt, updatedAt: data.system.updatedAt, archivedAt: data.system.archivedAt },
           nodes: data.nodes.map((n: any) => ({ id: String(n._id), systemId: String(n.systemId), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [] })),
@@ -142,7 +158,7 @@ export function createConvexRepositories(): RepositorySet {
         const client = getConvexHttpClient();
         const row = await client.query(api.app.getInviteByToken, { token });
         if (!row) return null;
-        return { workspaceId: String(row.workspaceId), token: row.token, email: row.email, role: row.role, status: row.status, expiresAt: row.expiresAt };
+        return { workspaceId: String(row.workspaceId), token: row.token, email: row.email, role: row.role as Role, status: row.status, expiresAt: row.expiresAt };
       },
       async accept(token, userId) {
         const client = getConvexHttpClient();

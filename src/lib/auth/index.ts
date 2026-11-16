@@ -27,11 +27,13 @@ export const MOCK_USER: AppUser = {
  * How requests are authenticated.
  * - mock: everyone is the demo owner. Allowed in development, or in production only when
  *   PIPES_USE_MOCKS=true is set explicitly (a deliberate demo deployment, never a default).
- * - auth0: real sign-in with signed session cookies.
+ * - password: first-party email + password accounts with signed session cookies (the default
+ *   real mode; needs only PIPES_SESSION_SECRET in production).
+ * - auth0: sign-in through Auth0, also with signed session cookies.
  * - unconfigured: real mode was requested but sign-in isn't fully configured. Fail closed:
  *   nobody is signed in, instead of silently treating every visitor as the owner.
  */
-export type AuthMode = "mock" | "auth0" | "unconfigured";
+export type AuthMode = "mock" | "password" | "auth0" | "unconfigured";
 
 function sessionSecret(): string | undefined {
   if (env.PIPES_SESSION_SECRET && env.PIPES_SESSION_SECRET.length >= 32) return env.PIPES_SESSION_SECRET;
@@ -43,8 +45,8 @@ export function resolveAuthMode(): AuthMode {
     const explicitlyEnabled = process.env.PIPES_USE_MOCKS === "true";
     return !isProduction || explicitlyEnabled ? "mock" : "unconfigured";
   }
-  if (runtimeFlags.hasAuth0 && sessionSecret()) return "auth0";
-  return "unconfigured";
+  if (!sessionSecret()) return "unconfigured";
+  return runtimeFlags.hasAuth0 ? "auth0" : "password";
 }
 
 const cookieOptions = { httpOnly: true, secure: isProduction, sameSite: "lax" as const, path: "/" };
@@ -110,7 +112,9 @@ class MockAuthService implements AuthService {
   }
 }
 
-class Auth0Service implements AuthService {
+class SessionAuthService implements AuthService {
+  constructor(private readonly provider: "password" | "auth0") {}
+
   async getCurrentUser() {
     const secret = sessionSecret();
     if (!secret) return null;
@@ -125,6 +129,7 @@ class Auth0Service implements AuthService {
   }
 
   getLogoutUrl() {
+    if (this.provider === "password") return "/";
     const params = new URLSearchParams({
       client_id: env.AUTH0_CLIENT_ID ?? "",
       returnTo: `${env.NEXT_PUBLIC_APP_URL}/`
@@ -150,6 +155,6 @@ class UnconfiguredAuthService implements AuthService {
 export function getAuthService(): AuthService {
   const mode = resolveAuthMode();
   if (mode === "mock") return new MockAuthService();
-  if (mode === "auth0") return new Auth0Service();
+  if (mode === "auth0" || mode === "password") return new SessionAuthService(mode);
   return new UnconfiguredAuthService();
 }

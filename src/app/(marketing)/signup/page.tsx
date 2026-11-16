@@ -5,6 +5,8 @@ import { CutButton } from "@/components/marketing/cut-button";
 import { SignupSourceTracker } from "@/components/marketing/SignupSourceTracker";
 import { Card } from "@/components/ui/card";
 import { getEntitlements } from "@/domain/templates/plans";
+import { PasswordSignupForm } from "@/components/marketing/password-forms";
+import { resolveAuthMode } from "@/lib/auth";
 
 /* ==========================================================================
    ENROLMENT, /signup. Shell suppressed, as Company OS's /signup is.
@@ -23,10 +25,13 @@ export const metadata: Metadata = {
 
 const STEPS = ["Account", "Workspace", "First workflow"] as const;
 
+export const dynamic = "force-dynamic";
+
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ source?: string }> }) {
   const params = await searchParams;
   const source = params.source ?? "direct";
   const free = getEntitlements("Free");
+  const passwordMode = resolveAuthMode() === "password";
 
   return (
     <AuthFrame
@@ -69,14 +74,18 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
               </dd>
             </div>
           </dl>
-          <CutButton
-            href="/api/auth/login?returnTo=/onboarding"
-            size="lg"
-            className="w-full"
-            track={{ event: "signup_started", metadata: { source } }}
-          >
-            Start free workspace
-          </CutButton>
+          {passwordMode ? (
+            <PasswordSignupForm source={source} />
+          ) : (
+            <CutButton
+              href="/api/auth/login?returnTo=/onboarding"
+              size="lg"
+              className="w-full"
+              track={{ event: "signup_started", metadata: { source } }}
+            >
+              Start free workspace
+            </CutButton>
+          )}
         </Card>
       </div>
     </AuthFrame>

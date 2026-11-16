@@ -44,19 +44,32 @@ npm run dev
 ```
 
 ## Run in real provider mode
+Real mode stores everything in Convex and uses first-party email and password
+accounts. Auth0 is optional.
+
 ```bash
 cp .env.example .env.local
 # PIPES_USE_MOCKS=false
 # NEXT_PUBLIC_PIPES_USE_MOCKS=false
-# CONVEX_URL=...
-# NEXT_PUBLIC_CONVEX_URL=...
-# OPENAI_API_KEY=...
-# OPENAI_MODEL=gpt-4.1-mini
-# CREEM_API_KEY=...
-# CREEM_WEBHOOK_SECRET=...
-# RESEND_API_KEY=...
+# PIPES_SESSION_SECRET=<32+ random characters>   # required in production
 npm install
+npx convex dev            # first run creates a deployment and writes CONVEX_URL; keep it running
 npm run dev
+```
+
+No Convex account? `CONVEX_AGENT_MODE=anonymous npx convex dev` runs a local
+backend on http://127.0.0.1:3210. Set `CONVEX_URL` to the deployment URL.
+
+Optional providers: `AUTH0_*` (sign in with Auth0 instead of passwords),
+`OPENAI_API_KEY`, `CREEM_*` (billing), `RESEND_API_KEY` (email).
+
+### Provider smoke test
+With the app running in real mode:
+
+```bash
+BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
+# against a local anonymous Convex deployment, also exercise paid-plan paths:
+SMOKE_UPGRADE_WITH_CONVEX=1 BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
 ```
 
 ## Testing
