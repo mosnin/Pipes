@@ -19,7 +19,7 @@ export function MarketingFooter(): ReactNode {
             </Link>
             <p className="t-body max-w-[40ch] text-ink-2">
               Design, store and version the workflows your agents follow, and
-              serve them to any agent over MCP or a REST API.
+              let any agent run them step by step over MCP.
             </p>
             <div className="w-fit">
               <ThemeChoice />
@@ -48,7 +48,7 @@ export function MarketingFooter(): ReactNode {
         <div className="flex flex-col gap-3 border-t border-hairline pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="t-caption text-ink-3">{new Date().getFullYear()} Pipes.</p>
           <p className="t-caption text-ink-3">
-            Procedures for people and the agents that work beside them.
+            Workflows for people and the agents that work beside them.
           </p>
         </div>
       </div>

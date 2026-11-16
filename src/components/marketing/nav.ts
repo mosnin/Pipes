@@ -38,14 +38,16 @@ export const FOOTER_COLUMNS: {
       { href: "/use-cases", label: "Use cases" },
       { href: "/pricing", label: "Pricing" },
       { href: "/compare", label: "Compare" },
+      { href: "/about", label: "About" },
     ],
   },
   {
     title: "Developers",
     links: [
       { href: "/protocol", label: "Protocol" },
-      { href: "/protocol#rest", label: "REST routes" },
+      { href: "/protocol#connect", label: "Connect an agent" },
       { href: "/protocol#mcp", label: "MCP tools" },
+      { href: "/protocol#rest", label: "REST API" },
       { href: "/docs", label: "Docs" },
     ],
   },

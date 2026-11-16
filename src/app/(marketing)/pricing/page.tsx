@@ -6,39 +6,48 @@ import { PageIntro } from "@/components/marketing/page-intro";
 import { Container, Section, SectionHeading, SpecList } from "@/components/marketing/section";
 import { planValues, type Plan } from "@/domain/pipes_schema_v1/schema";
 import { getEntitlements, type Entitlements } from "@/domain/templates/plans";
+import { MONTHLY_INCLUDED, OVERAGE_CENTS } from "@/domain/usage/service";
 import { cn } from "@/lib/utils";
 
 /* ==========================================================================
    PRICING, /pricing. Public.
 
-   Three plans, read off domain/templates/plans.ts so the page and the gates
-   cannot disagree. Plans are set per workspace. No price is typed here:
-   checkout belongs to the billing provider, not to a marketing string.
+   Three plans, read off domain/templates/plans.ts and the allowances in
+   domain/usage/service.ts, so the page and the gates cannot disagree. Plans
+   are set per workspace. No plan price is typed here: checkout belongs to
+   the billing provider, not to a marketing string.
    ========================================================================== */
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Start free with three workflows and simulation. Pro adds shared editing, version history and API and MCP access. Builder adds AI drafting.",
+    "Every plan includes monthly runs, steps and calls. Free stops when its runs are used; Pro and Builder keep running and bill usage past the allowance. API and MCP access start on Pro, AI drafting on Builder.",
 };
+
+type Allowance = keyof typeof OVERAGE_CENTS;
 
 const PLAN_COPY: Record<Plan, { summary: string; audience: string }> = {
   Free: {
-    summary: "Design and simulate your first procedures on your own.",
+    summary: "Design a few workflows and run them yourself from the app.",
     audience: "For one person trying Pipes out.",
   },
   Pro: {
-    summary: "Work on procedures together and serve them to your agents.",
-    audience: "For teams whose agents read procedures from Pipes.",
+    summary: "Work on workflows together and let your agents run them over MCP.",
+    audience: "For teams whose agents run workflows from Pipes.",
   },
   Builder: {
-    summary: "More room, and AI that drafts and refactors procedures for review.",
-    audience: "For teams running many procedures.",
+    summary: "More room, more runs, and AI that drafts and edits workflows for review.",
+    audience: "For teams running many workflows.",
   },
 };
 
-const ROWS: { label: string; key: keyof Entitlements }[] = [
-  { label: "Workflows", key: "maxSystems" },
+const ALLOWANCES: { key: Allowance; plural: string; row: string; unit: string }[] = [
+  { key: "runs", plural: "runs", row: "Runs each month", unit: "runs" },
+  { key: "steps", plural: "steps", row: "Steps each month", unit: "steps" },
+  { key: "calls", plural: "API, MCP and webhook calls", row: "Calls each month", unit: "calls" },
+];
+
+const FEATURE_ROWS: { label: string; key: Exclude<keyof Entitlements, "maxSystems"> }[] = [
   { label: "Simulation", key: "simulation" },
   { label: "Shared editing and comments", key: "collaboration" },
   { label: "Version history", key: "versionHistory" },
@@ -46,46 +55,85 @@ const ROWS: { label: string; key: keyof Entitlements }[] = [
   { label: "AI drafting and edit suggestions", key: "aiGeneration" },
 ];
 
+const number = new Intl.NumberFormat("en-US");
+
+/** OVERAGE_CENTS is per unit in US cents; people read it per thousand. */
+function perThousand(key: Allowance): string {
+  return `$${((OVERAGE_CENTS[key] * 1000) / 100).toFixed(2)}`;
+}
+
 function features(plan: Plan): string[] {
   const e = getEntitlements(plan);
+  const included = MONTHLY_INCLUDED[plan];
   return [
     `Up to ${e.maxSystems} workflows`,
-    ...ROWS.filter((row) => row.key !== "maxSystems" && e[row.key] === true).map(
-      (row) => row.label,
+    // Runs are the card's headline, so the list starts at steps.
+    ...ALLOWANCES.filter((a) => a.key !== "runs").map(
+      (a) => `${number.format(included[a.key])} ${a.plural} a month`,
     ),
+    ...FEATURE_ROWS.filter((row) => e[row.key]).map((row) => row.label),
   ];
 }
 
-function cell(value: Entitlements[keyof Entitlements]): string {
-  if (typeof value === "number") return String(value);
-  return value ? "Included" : "Not included";
+function beyond(plan: Plan): string {
+  return plan === "Free" ? "New runs stop until next month" : "Keeps running, billed per use";
 }
+
+type Row = { label: string; value: (plan: Plan) => string; muted?: (plan: Plan) => boolean };
+
+const TABLE: Row[] = [
+  { label: "Workflows", value: (plan) => number.format(getEntitlements(plan).maxSystems) },
+  ...ALLOWANCES.map((a) => ({
+    label: a.row,
+    value: (plan: Plan) => number.format(MONTHLY_INCLUDED[plan][a.key]),
+  })),
+  { label: "Past the allowance", value: beyond },
+  ...FEATURE_ROWS.map((row) => ({
+    label: row.label,
+    value: (plan: Plan) => (getEntitlements(plan)[row.key] ? "Included" : "Not included"),
+    muted: (plan: Plan) => !getEntitlements(plan)[row.key],
+  })),
+];
 
 const QUESTIONS = [
   {
-    term: "What counts as a workflow?",
+    term: "What counts as a run, a step and a call?",
     detail:
-      "One procedure in your workspace: its graph, its comments and its versions. Archived workflows still count toward the limit.",
+      "A run is one pass through a workflow, however it started: from the app, by an agent, from a webhook or on a schedule. A step is one step completed in a run. A call is one API request made with a token, one MCP request or one inbound webhook.",
   },
   {
-    term: "What happens at the limit?",
+    term: "What happens when Free runs out?",
+    detail:
+      "New runs stop until the next calendar month, and Pipes says why when you try to start one. Your workflows, run history and settings stay as they are.",
+  },
+  {
+    term: "And past the allowance on Pro or Builder?",
+    detail:
+      "Runs keep going. Usage past the monthly allowance is billed at the rates above, and Settings, Usage shows where the month stands.",
+  },
+  {
+    term: "What counts as a workflow?",
+    detail:
+      "One workflow in your workspace: its steps, its comments and its versions. Archived workflows still count toward the limit.",
+  },
+  {
+    term: "What happens at the workflow limit?",
     detail:
       "Creating a workflow past your plan's limit stops and asks you to upgrade. Everything you already have stays editable.",
   },
   {
     term: "Is a plan per person?",
+    detail: "No. A plan belongs to a workspace, and everyone in that workspace works under it.",
+  },
+  {
+    term: "Do agents need their own plan?",
     detail:
-      "No. A plan belongs to a workspace, and everyone in that workspace works under it.",
+      "No. Agents connect with tokens from your workspace, which needs API and MCP access on Pro or Builder.",
   },
   {
     term: "How do I upgrade?",
     detail:
       "From Billing in your workspace settings, once you are signed in. You can start on Free and move up when you need to.",
-  },
-  {
-    term: "Do agents need their own plan?",
-    detail:
-      "No. Agents call the protocol with tokens issued from your workspace, which needs API and MCP access on Pro or Builder.",
   },
 ] as const;
 
@@ -95,7 +143,7 @@ export default function PricingPage() {
       <PageIntro
         kicker="Pricing"
         title="Start free. Move up when your agents need it."
-        lead="Each workspace has its own plan. Free covers designing and simulating a few procedures. Pro adds shared editing, version history and API and MCP access. Builder adds room and AI drafting."
+        lead="Each workspace has its own plan, with a monthly allowance of runs, steps and calls. Free stops when its runs are used. Pro adds shared editing, version history and API and MCP access, and keeps running past the allowance. Builder adds room and AI drafting."
       >
         <div className="flex flex-wrap gap-4">
           <CutButton
@@ -127,7 +175,7 @@ export default function PricingPage() {
                   <div className="flex flex-col gap-3">
                     <p className="t-label-caps text-ink-3">{plan}</p>
                     <p className="t-mk-h3 text-ink">
-                      {getEntitlements(plan).maxSystems} workflows
+                      {number.format(MONTHLY_INCLUDED[plan].runs)} runs a month
                     </p>
                     <p className="t-mk-body text-ink-2">{PLAN_COPY[plan].summary}</p>
                   </div>
@@ -143,7 +191,12 @@ export default function PricingPage() {
                     ))}
                   </ul>
                   <div className="mt-auto flex flex-col gap-4">
-                    <p className="t-caption text-ink-3">{PLAN_COPY[plan].audience}</p>
+                    <p className="t-caption text-ink-3">
+                      {plan === "Free"
+                        ? "When the month's runs are used, new runs stop until next month."
+                        : "Past the allowance, runs keep going and usage is billed."}{" "}
+                      {PLAN_COPY[plan].audience}
+                    </p>
                     <CutButton
                       href={plan === "Free" ? "/signup?source=pricing" : "/signup?source=pricing_upgrade"}
                       variant={featured ? "solid" : "outline"}
@@ -179,30 +232,45 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {ROWS.map((row) => (
-                  <tr key={row.key}>
+                {TABLE.map((row) => (
+                  <tr key={row.label}>
                     <th scope="row" className="t-body px-7 py-5 text-left font-normal text-ink">
                       {row.label}
                     </th>
-                    {planValues.map((plan) => {
-                      const value = getEntitlements(plan)[row.key];
-                      return (
-                        <td
-                          key={plan}
-                          className={cn(
-                            "t-body tabular px-7 py-5",
-                            value === false ? "text-ink-4" : "text-ink-2",
-                          )}
-                        >
-                          {cell(value)}
-                        </td>
-                      );
-                    })}
+                    {planValues.map((plan) => (
+                      <td
+                        key={plan}
+                        className={cn(
+                          "t-body tabular px-7 py-5",
+                          row.muted?.(plan) ? "text-ink-4" : "text-ink-2",
+                        )}
+                      >
+                        {row.value(plan)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </Container>
+      </Section>
+
+      <Section id="usage" className="border-t border-hairline" labelledBy="usage-heading">
+        <Container className="flex flex-col gap-10">
+          <SectionHeading
+            id="usage-heading"
+            kicker="Past the allowance"
+            title="Pro and Builder pay for what they use beyond it."
+            lead="The same rates apply on both paid plans. Free does not bill usage: once its runs are used, new runs wait for the next month."
+          />
+          <SpecList
+            className="max-w-[860px]"
+            rows={ALLOWANCES.map((a) => ({
+              term: a.row.replace(" each month", ""),
+              detail: `${perThousand(a.key)} per 1,000 ${a.unit} past the allowance.`,
+            }))}
+          />
         </Container>
       </Section>
 

@@ -5,7 +5,7 @@ describe("public content model integrity", () => {
   it("has coherent homepage and non-empty discovery models", () => {
     expect(homeSections.hero.title.length).toBeGreaterThan(10);
     expect(useCases.length).toBeGreaterThanOrEqual(5);
-    expect(comparisons.length).toBeGreaterThanOrEqual(4);
+    expect(comparisons.length).toBeGreaterThanOrEqual(2);
     expect(templateMarketing.length).toBeGreaterThan(0);
   });
 

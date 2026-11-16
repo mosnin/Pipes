@@ -66,7 +66,7 @@ export default async function UseCaseDetailPage({ params }: { params: Promise<{ 
             </h2>
           </div>
           <div className="flex flex-col gap-6">
-            <h2 className="t-label-caps text-ink-3">Typical workflow</h2>
+            <h2 className="t-label-caps text-ink-3">How to set it up</h2>
             <ol className="divide-y divide-hairline border-y border-hairline">
               {entry.workflow.map((step, index) => (
                 <li key={step} className="flex items-baseline gap-5 py-5">

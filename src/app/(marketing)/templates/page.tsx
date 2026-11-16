@@ -11,7 +11,7 @@ import { publicContentService } from "@/domain/services/public";
 export const metadata: Metadata = {
   title: "Templates",
   description:
-    "Starter procedures for agent loops, multi-agent research, automation and support triage. Each opens as an editable workflow in your workspace.",
+    "Starter workflows for agent loops, multi-agent research, automation and support triage. Each opens as an editable workflow in your workspace.",
 };
 
 export default function TemplatesPage() {
@@ -21,7 +21,7 @@ export default function TemplatesPage() {
     <MarketingShell>
       <PageIntro
         kicker="Templates"
-        title="Start from a procedure that already works."
+        title="Start from a workflow that already works."
         lead={`${templates.length} starter templates, from a single agent loop to a support flow with a policy check and a human review. Pick one and it opens as an editable workflow in your workspace.`}
       />
 

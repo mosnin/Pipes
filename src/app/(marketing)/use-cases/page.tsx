@@ -9,7 +9,7 @@ import { publicContentService } from "@/domain/services/public";
 export const metadata: Metadata = {
   title: "Use cases",
   description:
-    "How teams use Pipes for multi-agent systems, automation, support operations, technical system design and client handoff.",
+    "Workflows teams hand to their agents in Pipes: support triage with a refund approval, code changes with a review loop, research with a human check, scheduled jobs and handoffs between agents.",
 };
 
 export default function UseCasesPage() {
@@ -18,8 +18,8 @@ export default function UseCasesPage() {
     <MarketingShell>
       <PageIntro
         kicker="Use cases"
-        title="The procedures teams keep in Pipes."
-        lead="Each of these starts as a problem that shows up once agents do real work: steps that drift, approvals nobody wrote down, a handoff that loses the reasoning. Here is how a procedure in Pipes answers it."
+        title="The workflows teams hand to their agents."
+        lead="Each of these starts as a problem that shows up once agents do real work: steps that drift, approvals nobody wrote down, jobs nobody can account for. Here is how a workflow in Pipes answers it."
       />
       <Section className="pt-0" labelledBy="page-title">
         <Container>

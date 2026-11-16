@@ -68,9 +68,15 @@ export default async function CompareDetailPage({ params }: { params: Promise<{ 
               ))}
             </ul>
           </div>
-          <div className="flex flex-col gap-6">
-            <h2 className="t-label-caps text-ink-3">Best fit</h2>
-            <p className="t-mk-h4 max-w-[36ch] text-pretty text-ink">{entry.bestFor}</p>
+          <div className="flex flex-col gap-12">
+            <div className="flex flex-col gap-6">
+              <h2 className="t-label-caps text-ink-3">When the other choice is better</h2>
+              <p className="t-mk-body max-w-[52ch] text-pretty text-ink-2">{entry.otherFit}</p>
+            </div>
+            <div className="flex flex-col gap-6">
+              <h2 className="t-label-caps text-ink-3">Where Pipes fits</h2>
+              <p className="t-mk-h4 max-w-[36ch] text-pretty text-ink">{entry.bestFor}</p>
+            </div>
           </div>
         </Container>
       </Section>
