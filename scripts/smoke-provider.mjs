@@ -139,6 +139,18 @@ await check("audit log has entries", async () => {
   return `${rows.length} events`;
 });
 await check("feedback", async () => expectOk(await owner("/api/feedback", { method: "POST", body: { category: "bug", severity: "low", summary: "Smoke test feedback", details: "From smoke test", page: "/dashboard" } }), "feedback") && "");
+await check("another account cannot read or edit this workspace's system", async () => {
+  const outsider = jar();
+  expectOk(await outsider("/api/auth/signup", { method: "POST", body: { name: "Outsider", email: `outsider-${stamp}@example.com`, password: "a different passphrase" } }), "outsider signup");
+  const read = await outsider(`/api/systems/${systemId}`);
+  if (read.status < 400) throw new Error(`read allowed: ${read.status}`);
+  const edit = await outsider("/api/graph", { method: "POST", body: { action: "updateNode", nodeId: nodeA, title: "hijacked" } });
+  if (edit.status < 400) throw new Error(`edit allowed: ${edit.status}`);
+  const exported = await outsider(`/api/systems/${systemId}/export?format=json`);
+  if (exported.status < 400) throw new Error(`export allowed: ${exported.status}`);
+  const runs = await outsider(`/api/systems/${systemId}/runs`);
+  if (runs.status < 400) throw new Error(`runs allowed: ${runs.status}`);
+});
 const inviteToken = await check("invite teammate", async () => {
   expectOk(await owner("/api/invites", { method: "POST", body: { email: mateEmail, role: "Editor" } }), "invite");
   const data = expectOk(await owner("/api/invites"), "list invites");

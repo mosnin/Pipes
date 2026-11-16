@@ -67,6 +67,8 @@ export interface SystemsRepository {
   list(workspaceId: string): Promise<SystemRecord[]>;
   create(input: { workspaceId: string; userId: string; name: string; description: string }): Promise<string>;
   getBundle(systemId: string): Promise<SystemBundle>;
+  /** Which system and workspace a system, node or pipe belongs to; null when it does not exist. */
+  ownerOf(ref: { systemId?: string; nodeId?: string; pipeId?: string }): Promise<{ systemId: string; workspaceId: string } | null>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
 }

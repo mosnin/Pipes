@@ -49,6 +49,23 @@ export const restoreSystem = mutation({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => ctx.db.patch(args.systemId, { archivedAt: undefined, updatedAt: now() })
 });
+export const ownerOf = query({
+  args: { systemId: v.optional(v.string()), nodeId: v.optional(v.string()), pipeId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let systemId = args.systemId ? ctx.db.normalizeId("systems", args.systemId) : null;
+    if (!systemId && args.nodeId) {
+      const nodeId = ctx.db.normalizeId("system_nodes", args.nodeId);
+      systemId = nodeId ? ((await ctx.db.get(nodeId))?.systemId ?? null) : null;
+    }
+    if (!systemId && args.pipeId) {
+      const pipeId = ctx.db.normalizeId("system_pipes", args.pipeId);
+      systemId = pipeId ? ((await ctx.db.get(pipeId))?.systemId ?? null) : null;
+    }
+    const system = systemId ? await ctx.db.get(systemId) : null;
+    return system ? { systemId: String(system._id), workspaceId: String(system.workspaceId) } : null;
+  }
+});
+
 export const getSystemBundle = query({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => {

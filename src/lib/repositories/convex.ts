@@ -81,6 +81,9 @@ export function createConvexRepositories(): RepositorySet {
         const id = await convexCreateSystem(input.workspaceId, input.userId, input.name, input.description);
         return String(id);
       },
+      async ownerOf(ref) {
+        return (await getConvexHttpClient().query(api.app.ownerOf, ref)) as { systemId: string; workspaceId: string } | null;
+      },
       async getBundle(systemId) {
         const data = await convexSystemBundle(systemId);
         if (!data.system) throw new Error(`System not found: ${systemId}`);

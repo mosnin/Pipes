@@ -19,6 +19,18 @@ function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw ne
 function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
 
 export class AccessService {
+  constructor(private readonly repos?: RepositorySet) {}
+  /**
+   * The system, node or pipe must belong to the caller's workspace (and to the
+   * token's system scope). Not-found and not-yours look the same on purpose.
+   */
+  async ensureOwns(ctx: AppContext, ref: { systemId?: string; nodeId?: string; pipeId?: string }) {
+    if (!this.repos) return;
+    const owner = await this.repos.systems.ownerOf(ref).catch(() => null);
+    if (!owner || owner.workspaceId !== ctx.workspaceId) throw new Error("System not found.");
+    if (ctx.systemScope && owner.systemId !== ctx.systemScope) throw new Error("This token is scoped to another system.");
+    return owner;
+  }
   ensureCanView = assertCanView;
   ensureCanEdit = assertCanEdit;
   ensureCanComment(ctx: AppContext) { if (!canComment(ctx.role)) throw new Error("Insufficient permissions."); }
@@ -50,15 +62,25 @@ export class SystemService {
     }
     return created;
   }
-  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
-  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
-  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
+  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.getBundle(systemId); }
+  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.archive(systemId); }
+  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.restore(systemId); }
 }
 
 export class GraphService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
+    if (payload.action === "addNode") await this.access.ensureOwns(ctx, { systemId: payload.systemId });
+    if (payload.action === "updateNode" || payload.action === "deleteNode") await this.access.ensureOwns(ctx, { nodeId: payload.nodeId });
+    if (payload.action === "deletePipe") await this.access.ensureOwns(ctx, { pipeId: payload.pipeId });
+    if (payload.action === "addPipe") {
+      const owner = await this.access.ensureOwns(ctx, { systemId: payload.systemId });
+      for (const nodeId of [payload.fromNodeId, payload.toNodeId]) {
+        const nodeOwner = await this.access.ensureOwns(ctx, { nodeId });
+        if (owner && nodeOwner && nodeOwner.systemId !== owner.systemId) throw new Error("Both steps must be in the same system.");
+      }
+    }
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
     if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position });
     if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);
@@ -67,8 +89,8 @@ export class GraphService {
   }
 }
 
-export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
-export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
+export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.access.ensureOwns(ctx, { systemId: input.systemId }); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
+export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.access.ensureOwns(ctx, { systemId: body.systemId }); await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
 
 export class ProductSignalService {
   constructor(private readonly repos: RepositorySet) {}
@@ -93,6 +115,7 @@ export class SchemaExportService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async export(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     const bundle = await this.repos.systems.getBundle(systemId);
     const systems = await this.repos.systems.list(ctx.workspaceId);
     const members = await this.repos.memberships.list(ctx.workspaceId);
@@ -112,9 +135,9 @@ export class SchemaExportService {
 
 export class VersionService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly exportService: SchemaExportService, private readonly entitlementService: EntitlementService) {}
-  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.versions.list(systemId); }
-  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
-  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
+  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.versions.list(systemId); }
+  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
+  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
 }
 
 export class CollaborationService {
@@ -457,18 +480,21 @@ export class SystemLibraryService {
   }
   async setFavorite(ctx: AppContext, systemId: string, favorite: boolean) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.favorite_set", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId, favorite }) });
     await this.signals.track(ctx, "favorite_added", { systemId, favorite });
     return { ok: true };
   }
   async setTags(ctx: AppContext, systemId: string, tags: string[]) {
     this.access.ensureCanEdit(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     const normalized = [...new Set(tags.map((t) => t.trim()).filter(Boolean))].slice(0, 8);
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.tags_set", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId, tags: normalized }) });
     return { ok: true, tags: normalized };
   }
   async markOpened(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.system_opened", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId }) });
     await this.signals.track(ctx, "system_reopened_from_recents", { systemId });
   }
@@ -844,7 +870,7 @@ export class WorkspaceGovernanceService {
 }
 
 export function createBoundedServices(repos: RepositorySet) {
-  const access = new AccessService();
+  const access = new AccessService(repos);
   const entitlements = new EntitlementService(repos);
   const systems = new SystemService(repos, access, entitlements);
   const graph = new GraphService(repos, access);

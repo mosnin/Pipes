@@ -118,6 +118,12 @@ export function createMockRepositories(): RepositorySet {
       async getBundle(systemId) {
         return getBundle(systemId);
       },
+      async ownerOf(ref) {
+        const db = store.readDb();
+        const systemId = ref.systemId ?? (ref.nodeId ? db.nodes.find((n) => n.id === ref.nodeId)?.systemId : undefined) ?? (ref.pipeId ? db.pipes.find((p) => p.id === ref.pipeId)?.systemId : undefined);
+        const system = systemId ? db.systems.find((s) => s.id === systemId) : undefined;
+        return system ? { systemId: system.id, workspaceId: system.workspaceId } : null;
+      },
       async archive(systemId) {
         const db = store.readDb();
         const system = db.systems.find((s) => s.id === systemId);

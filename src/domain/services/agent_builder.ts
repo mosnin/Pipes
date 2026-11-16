@@ -64,7 +64,7 @@ export class AgentRunService {
     private readonly runtime: AgentRuntime = new ModalReadyAgentRuntime(),
     private readonly subAgentExecutor: SubAgentExecutor = new ModalReadySubAgentExecutor()
   ) {
-    this.access = new AccessService();
+    this.access = new AccessService(this.repos);
     this.graph = new GraphService(this.repos, this.access);
     this.schemaExport = new SchemaExportService(this.repos, this.access);
     this.versions = new VersionService(this.repos, this.access, this.schemaExport, new EntitlementService(this.repos));
