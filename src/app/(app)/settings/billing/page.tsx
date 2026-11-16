@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,9 +63,14 @@ export default function BillingSettingsPage() {
         )
       }
       actions={
-        <Button variant="secondary" size="sm" onClick={openPortal}>
-          Manage billing
-        </Button>
+        <>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/settings/usage">View usage</Link>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={openPortal}>
+            Manage billing
+          </Button>
+        </>
       }
     >
       <SettingsSection title="Plan limits">
