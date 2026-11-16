@@ -12,7 +12,8 @@ import { Tabs } from "@/components/ui/tabs";
 import { Kbd } from "@/components/ui/kbd";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Banner } from "@/components/ui/banner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Boxes, ChevronDown, Copy, Download, LayoutGrid, Plus, ScanSearch, Target, Trash2, Undo2, Waypoints } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,7 @@ type SystemPayload = {
   pipes: GraphPipe[];
   comments: Array<{ id: string; body: string; nodeId?: string; authorId: string; createdAt: string }>;
   versions: Array<{ id: string; name: string; authorId: string; createdAt: string }>;
-  presence: Array<{ id: string; name: string; selectedNodeId?: string }>;
+  presence: Array<{ id: string; userId?: string; name: string; selectedNodeId?: string }>;
 };
 
 type QueuedAction = { action: EditorGraphAction; id: string; retries: number };
@@ -51,7 +52,7 @@ function normalizeBundle(bundle: any): SystemPayload {
     pipes: bundle.pipes.map((p: any) => ({ id: String(p._id ?? p.id), systemId: String(p.systemId), fromPortId: p.fromPortId, toPortId: p.toPortId, fromNodeId: p.fromNodeId ? String(p.fromNodeId) : undefined, toNodeId: p.toNodeId ? String(p.toNodeId) : undefined })),
     comments: bundle.comments.map((c: any) => ({ id: String(c._id ?? c.id), systemId: String(c.systemId), body: c.body, nodeId: c.nodeId ? String(c.nodeId) : undefined, authorId: String(c.authorId), createdAt: c.createdAt })),
     versions: bundle.versions.map((v: any) => ({ id: String(v._id ?? v.id), name: v.name, authorId: String(v.authorId), createdAt: v.createdAt })),
-    presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined }))
+    presence: (bundle.presence ?? []).map((p: any) => ({ id: String(p._id ?? p.id), userId: p.userId ? String(p.userId) : undefined, name: p.name ?? String(p.userId), selectedNodeId: p.selectedNodeId ? String(p.selectedNodeId) : undefined }))
   };
 }
 
@@ -110,9 +111,12 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [versionName, setVersionName] = useState("checkpoint");
-  const [aiEditPrompt, setAiEditPrompt] = useState("Improve reliability and add guardrails.");
-  const [pendingSuggestion, setPendingSuggestion] = useState<any | null>(null);
-  const [acceptedChangeIds, setAcceptedChangeIds] = useState<string[]>([]);
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameName, setRenameName] = useState("");
+  const [renameDescription, setRenameDescription] = useState("");
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const [importPayload, setImportPayload] = useState("");
   const [mergePlan, setMergePlan] = useState<any | null>(null);
   const [mergeStrategy, setMergeStrategy] = useState<"safe_upsert" | "replace_conflicts">("safe_upsert");
@@ -159,6 +163,14 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
       hydratedRef.current = true;
     }
   }, [data, inFlight, queue.length]);
+
+  // Your own name, so your comments and presence read "You" rather than an id.
+  useEffect(() => {
+    fetch("/api/account", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body) => { if (body?.ok && body.data?.name) setAccountName(String(body.data.name)); })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     trackSignal("editor_opened", { systemId, nodeCount: nodes.length, pipeCount: pipes.length });
@@ -312,7 +324,13 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   const rankedLibrary = useMemo(() => rankLibraryEntries({ query: libraryQuery, favorites, recents, context: insertContext }), [favorites, insertContext, libraryQuery, recents]);
   const groupedLibrary = useMemo(() => groupByCategory(rankedLibrary), [rankedLibrary]);
-  const paletteResults = useMemo(() => rankLibraryEntries({ query: paletteQuery, favorites, recents, context: insertContext }).slice(0, 12), [favorites, insertContext, paletteQuery, recents]);
+  // With nothing typed on the bare canvas, the palette lists every step grouped
+  // by category. A search or a connection context ranks the best fits first.
+  const paletteGrouped = !paletteQuery.trim() && (!insertContext || insertContext.mode === "canvas");
+  const paletteResults = useMemo(() => {
+    const ranked = rankLibraryEntries({ query: paletteQuery, favorites, recents, context: insertContext });
+    return paletteGrouped ? groupByCategory(ranked).flatMap((group) => group.entries) : ranked;
+  }, [favorites, insertContext, paletteGrouped, paletteQuery, recents]);
 
   const validationReport = useMemo(() => validateSystem({ id: systemId, workspaceId: "wks", name: data?.system.name ?? "", description: data?.system.description ?? "", createdBy: "usr", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), nodeIds: nodes.map((n) => n.id), portIds: nodes.flatMap((n) => n.portIds), pipeIds: pipes.map((p) => p.id), groupIds: [], annotationIds: [], commentIds: data?.comments.map((c) => c.id) ?? [], assetIds: [], snippetIds: [], subsystemNodeIds: [] }, nodes as never, nodes.flatMap((n) => [{ id: n.portIds[0], nodeId: n.id, key: "in", label: "in", direction: "input", dataType: "any", required: false }, { id: n.portIds[1], nodeId: n.id, key: "out", label: "out", direction: "output", dataType: "any", required: false }]), pipes as never), [data?.comments, data?.system.description, data?.system.name, nodes, pipes, systemId]);
   useEffect(() => {
@@ -443,7 +461,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const createSubsystem = useCallback(() => {
     if (selectedNodeIds.length < 2) return;
     const id = `sub_${Math.random().toString(36).slice(2, 9)}`;
-    const name = `Subsystem ${subsystems.length + 1}`;
+    const name = `Group ${subsystems.length + 1}`;
     setSubsystems((prev) => [...prev, createSubsystemFromSelection({ id, name, nodeIds: selectedNodeIds })]);
   }, [selectedNodeIds, setSubsystems, subsystems.length]);
 
@@ -504,7 +522,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
       if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
       if (e.shiftKey && e.key.toLowerCase() === "o" && selectedNode) { e.preventDefault(); openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id }); }
       if (e.shiftKey && e.key.toLowerCase() === "i" && selectedNode) { e.preventDefault(); openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id }); }
-      if (e.key === "Escape") { setPendingSuggestion(null); setMergePlan(null); setSelectedNodeIds([]); setSelectedEdgeIds([]); setPaletteOpen(false); }
+      if (e.key === "Escape") { setMergePlan(null); setSelectedNodeIds([]); setSelectedEdgeIds([]); setPaletteOpen(false); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -539,10 +557,42 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   if (!data) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12">
-        <Quiet>Loading system…</Quiet>
+        <Quiet>Loading workflow…</Quiet>
       </div>
     );
   }
+
+  // People are shown by name. The bundle may only carry an id, so fall back to
+  // "You" for the signed-in person and a neutral label for everyone else.
+  const meUserId = accountName ? data.presence.find((p) => p.name === accountName)?.userId : undefined;
+  const personLabel = (userId?: string, name?: string) => {
+    if (userId && userId === meUserId) return "You";
+    if (name && name !== userId && !/^usr_/.test(name)) return name;
+    const known = userId ? data.presence.find((p) => p.userId === userId) : undefined;
+    if (known && known.name !== known.userId && !/^usr_/.test(known.name)) return known.name;
+    return "Teammate";
+  };
+  const openRename = () => {
+    setRenameName(data.system.name);
+    setRenameDescription(data.system.description ?? "");
+    setRenameError(null);
+    setRenameOpen(true);
+  };
+  const submitRename = async () => {
+    setRenameBusy(true);
+    setRenameError(null);
+    try {
+      const res = await fetch(`/api/systems/${systemId}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "rename", name: renameName, description: renameDescription }) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok) throw new Error(typeof body.error === "string" && body.error ? body.error : "The workflow could not be renamed.");
+      setRenameOpen(false);
+      reload();
+    } catch (error) {
+      setRenameError(error instanceof Error ? error.message : "The workflow could not be renamed.");
+    } finally {
+      setRenameBusy(false);
+    }
+  };
 
   const contextualInsert = (): InsertRequest => ({ mode: selectedEdge ? "selectedEdge" : selectedNode ? "selectedNode" : "canvas", edgeId: selectedEdge?.id, nodeId: selectedNode?.id });
   const patchSemantics = (pipeId: string, patch: Partial<PipeSemantics>) =>
@@ -557,34 +607,39 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     if (insertRequest.mode === "targetPort") return `Connects upstream of ${nodeTitle(insertRequest.nodeId)}.`;
     return "Places the node on the canvas.";
   })();
-  const pendingChanges = (pendingSuggestion?.changes ?? []) as any[];
-
-  const modeLabel: Record<EditorMode, string> = { design: "Inspector", validation: "Validation", simulation: "Simulation", versions: "Versions", agent: "Builder agent" };
+  const modeLabel: Record<EditorMode, string> = { design: "Inspector", validation: "Validation", simulation: "Simulation", versions: "Versions", agent: "Assistant" };
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-5 px-6 pb-6 pt-4 md:px-7 lg:px-8 [--editor-h:max(480px,calc(100dvh-228px))]">
       <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="truncate t-title-3 text-ink">{data.system.name}</h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate t-title-3 text-ink">{data.system.name}</h1>
+            <Button size="xs" variant="ghost" onClick={openRename}>Rename</Button>
+          </div>
           {data.system.description ? <p className="line-clamp-1 t-caption text-ink-3">{data.system.description}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-4">
           {data.presence.length > 0 ? (
-            <ul aria-label="People in this system" className="flex items-center">
-              {data.presence.map((p) => (
-                <li key={p.id} className="-ml-2 first:ml-0">
-                  <Tooltip content={p.selectedNodeId ? `${p.name} is on ${nodeTitle(p.selectedNodeId)}` : p.name}>
-                    <span className="inline-flex size-[24px] items-center justify-center rounded-full border border-raised bg-selected t-micro text-ink-2 uppercase">
-                      {p.name.slice(0, 1)}
-                    </span>
-                  </Tooltip>
-                </li>
-              ))}
+            <ul aria-label="People in this workflow" className="flex items-center">
+              {data.presence.map((p) => {
+                const label = personLabel(p.userId, p.name);
+                const here = label === "You" ? "You are" : `${label} is`;
+                return (
+                  <li key={p.id} className="-ml-2 first:ml-0">
+                    <Tooltip content={p.selectedNodeId ? `${here} on ${nodeTitle(p.selectedNodeId)}` : label}>
+                      <span aria-label={label} className="inline-flex size-[24px] items-center justify-center rounded-full border border-raised bg-selected t-micro text-ink-2 uppercase">
+                        {label.slice(0, 1)}
+                      </span>
+                    </Tooltip>
+                  </li>
+                );
+              })}
             </ul>
           ) : null}
           <span aria-live="polite"><StatusPill tone={saveTone}>{saveLabel}</StatusPill></span>
           {saveState === "error" ? <Button size="xs" variant="ghost" onClick={() => { setFailed(0); design.retry(); }}>Retry save</Button> : null}
-          <nav aria-label="System" className="flex items-center gap-2">
+          <nav aria-label="Workflow" className="flex items-center gap-2">
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/runs`}>Runs</Link></Button>
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/triggers`}>Triggers</Link></Button>
             <Button size="sm" variant="primary" loading={starting} onClick={startRun}>Run</Button>
@@ -607,7 +662,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         <ToolButton label="Duplicate selection" shortcut={["⌘", "D"]} onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}><Copy aria-hidden="true" /></ToolButton>
         <ToolButton label="Delete selection" shortcut={["⌫"]} onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}><Trash2 aria-hidden="true" /></ToolButton>
         <ToolbarRule />
-        <ToolButton label="Group into subsystem (select two or more nodes)" onClick={createSubsystem} disabled={selectedNodeIds.length < 2}><Boxes aria-hidden="true" /></ToolButton>
+        <ToolButton label="Group the selected nodes (select two or more)" onClick={createSubsystem} disabled={selectedNodeIds.length < 2}><Boxes aria-hidden="true" /></ToolButton>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="ghost">
@@ -659,7 +714,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               <div key={group.category} className="flex flex-col gap-1">
                 <SectionLabel className="px-2" action={<span className="t-micro tabular-nums text-ink-3">{group.entries.length}</span>}>{group.category}</SectionLabel>
                 <ul className="flex flex-col">
-                  {group.entries.slice(0, 8).map((entry) => {
+                  {group.entries.map((entry) => {
                     const pinned = favorites.includes(entry.nodeType);
                     return (
                       <li key={entry.nodeType} className="group relative flex items-start gap-1 rounded-8 hover:bg-state-hover">
@@ -674,7 +729,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                             <Plus aria-hidden="true" size={14} className="ml-auto shrink-0 text-ink-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" />
                           </span>
                           <span className="line-clamp-2 t-caption text-ink-3">{entry.description}</span>
-                          <span className="truncate t-mono-micro text-ink-3">{entry.inputTypes.join(", ")} → {entry.outputTypes.join(", ")}</span>
+                          {entry.inputTypes.length || entry.outputTypes.length ? <span className="truncate t-mono-micro text-ink-3">{entry.inputTypes.join(", ") || "none"} → {entry.outputTypes.join(", ") || "none"}</span> : null}
                         </button>
                         <Button
                           size="xs"
@@ -693,8 +748,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               </div>
             ))}
             <div className="flex flex-col gap-3 px-2">
-              <SectionLabel>Subsystems</SectionLabel>
-              {subsystems.length === 0 ? <Quiet>Select two or more nodes, then group them into a subsystem.</Quiet> : subsystems.map((subsystem) => {
+              <SectionLabel>Groups</SectionLabel>
+              {subsystems.length === 0 ? <Quiet>Select two or more nodes, then group them.</Quiet> : subsystems.map((subsystem) => {
                 const boundary = computeSubsystemBoundary(subsystem, pipes);
                 return (
                   <ObjectRow key={subsystem.id}>
@@ -955,14 +1010,14 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                       reload();
                     }}
                   >
-                    <Input aria-label="Comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder={selectedNode ? `Comment on ${selectedNode.title}` : "Comment on this system"} />
+                    <Input aria-label="Comment" value={comment} onChange={(e) => setComment(e.target.value)} placeholder={selectedNode ? `Comment on ${selectedNode.title}` : "Comment on this workflow"} />
                     <Button size="md" variant="secondary" type="submit">Post</Button>
                   </form>
                   {data.comments.length === 0 ? <Quiet>No comments yet.</Quiet> : (
                     <ul className="flex flex-col divide-y divide-hairline">
                       {data.comments.map((c) => (
                         <li key={c.id} className="flex flex-col gap-1 py-3">
-                          <span className="flex items-center gap-2 t-micro text-ink-3"><span className="t-mono-micro">{c.authorId}</span>{c.nodeId ? <span>on {nodeTitle(c.nodeId)}</span> : null}</span>
+                          <span className="flex items-center gap-2 t-micro text-ink-3"><span className="t-caption-medium text-ink-2">{personLabel(c.authorId)}</span>{c.nodeId ? <span>on {nodeTitle(c.nodeId)}</span> : null}</span>
                           <p className="t-body text-ink">{c.body}</p>
                         </li>
                       ))}
@@ -1043,52 +1098,6 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                 </div>
 
                 <div className="flex flex-col gap-4 border-t border-hairline pt-6">
-                  <SectionLabel>Suggested edits</SectionLabel>
-                  <Field label="What should change" htmlFor="ai-prompt">
-                    <Textarea id="ai-prompt" className="min-h-[72px]" value={aiEditPrompt} onChange={(e) => setAiEditPrompt(e.target.value)} />
-                  </Field>
-                  <div>
-                    <Button size="sm" variant="secondary" onClick={async () => {
-                      const suggestionRes = await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, prompt: aiEditPrompt }) });
-                      const suggestion = await suggestionRes.json();
-                      if (suggestion.ok) { setPendingSuggestion(suggestion.data); setAcceptedChangeIds((suggestion.data.changes ?? []).map((c: any) => c.id)); }
-                    }}>Suggest edits</Button>
-                  </div>
-                  {pendingSuggestion ? (
-                    <ObjectRow className="gap-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="t-body-medium text-ink">Review {pendingChanges.length} changes</span>
-                        <StatusPill tone="agent">Proposed</StatusPill>
-                      </div>
-                      {pendingSuggestion.summary ? <p className="t-caption text-ink-2">{pendingSuggestion.summary}</p> : null}
-                      {(pendingSuggestion.assumptions ?? []).length ? <p className="t-caption text-ink-3"><span className="text-ink-2">Assumes</span> {(pendingSuggestion.assumptions ?? []).join(" · ")}</p> : null}
-                      {(pendingSuggestion.warnings ?? []).length ? <p className="t-caption text-caution-text">{(pendingSuggestion.warnings ?? []).join(" · ")}</p> : null}
-                      <ul className="flex flex-col gap-3">
-                        {pendingChanges.map((change: any) => (
-                          <li key={change.id}>
-                            <CheckRow checked={acceptedChangeIds.includes(change.id)} onChange={(e) => setAcceptedChangeIds((prev) => e.target.checked ? [...prev, change.id] : prev.filter((id) => id !== change.id))}>
-                              <span className="block text-ink"><span className="t-mono-micro">{change.action}</span> {change.nodeId ?? change.pipeId ?? change.payload?.title ?? "entity"}</span>
-                              <span className="block text-ink-3">{change.rationale ?? "No rationale given."}</span>
-                            </CheckRow>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="xs" variant="primary" onClick={async () => {
-                          await fetch("/api/ai/suggest-edits", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ apply: true, systemId, suggestion: pendingSuggestion, acceptedChangeIds }) });
-                          setPendingSuggestion(null);
-                          setAcceptedChangeIds([]);
-                          reload();
-                        }}>Apply {acceptedChangeIds.length} selected</Button>
-                        <Button size="xs" variant="ghost" onClick={() => setAcceptedChangeIds(pendingChanges.map((c: any) => c.id))}>Select all</Button>
-                        <Button size="xs" variant="ghost" onClick={() => setAcceptedChangeIds([])}>Clear</Button>
-                        <Button size="xs" variant="ghost" onClick={() => { setPendingSuggestion(null); setAcceptedChangeIds([]); }}>Close</Button>
-                      </div>
-                    </ObjectRow>
-                  ) : null}
-                </div>
-
-                <div className="flex flex-col gap-4 border-t border-hairline pt-6">
                   <SectionLabel>Import and merge</SectionLabel>
                   <Field label="Schema" htmlFor="import-schema" hint="Paste a pipes_schema_v1 export. You review the merge before anything changes.">
                     <Textarea id="import-schema" className="min-h-[72px] font-mono" value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="{ … }" />
@@ -1158,6 +1167,30 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         </section>
       </div>
 
+      <Dialog open={renameOpen} onOpenChange={(open) => { if (!renameBusy) setRenameOpen(open); }}>
+        <DialogContent size="form">
+          <form onSubmit={(event) => { event.preventDefault(); void submitRename(); }}>
+            <DialogHeader>
+              <DialogTitle>Rename workflow</DialogTitle>
+              <DialogDescription>Everyone in the workspace sees the new name.</DialogDescription>
+            </DialogHeader>
+            <DialogBody className="flex flex-col gap-6">
+              {renameError ? <Banner role="critical" title="The name was not saved">{renameError}</Banner> : null}
+              <Field label="Name" htmlFor="rename-name">
+                <Input id="rename-name" autoFocus value={renameName} onChange={(e) => setRenameName(e.target.value)} maxLength={120} autoComplete="off" />
+              </Field>
+              <Field label="Description" htmlFor="rename-description" hint="Optional. What this workflow is for.">
+                <Textarea id="rename-description" className="min-h-[72px]" value={renameDescription} onChange={(e) => setRenameDescription(e.target.value)} maxLength={2000} />
+              </Field>
+            </DialogBody>
+            <DialogFooter className="pt-4">
+              <Button type="button" size="sm" variant="ghost" onClick={() => setRenameOpen(false)} disabled={renameBusy}>Cancel</Button>
+              <Button type="submit" size="sm" variant="primary" loading={renameBusy} disabled={!renameName.trim()}>Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={paletteOpen} onOpenChange={setPaletteOpen}>
         <DialogContent size="form" className="top-[12vh] translate-y-0">
           <DialogHeader>
@@ -1168,7 +1201,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             <Input autoFocus aria-label="Search nodes" value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags or use" />
             <ul role="listbox" aria-label="Matching nodes" className="flex max-h-[360px] flex-col gap-1 overflow-y-auto">
               {paletteResults.map((entry, idx) => (
-                <li key={`${entry.nodeType}_${idx}`} role="option" aria-selected={idx === paletteIndex}>
+                <li key={`${entry.nodeType}_${idx}`} role="option" aria-selected={idx === paletteIndex} className="flex flex-col gap-1">
+                  {paletteGrouped && entry.category !== paletteResults[idx - 1]?.category ? (
+                    <span aria-hidden="true" className={cn("px-4 t-label-caps text-ink-3", idx > 0 ? "pt-4" : undefined)}>{entry.category}</span>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => insertNodeFromEntry(entry)}
@@ -1181,10 +1217,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     <span className="flex min-w-0 flex-1 flex-col gap-1">
                       <span className="flex items-baseline gap-3">
                         <span className="truncate t-body-medium text-ink">{entry.name}</span>
-                        <span className="shrink-0 t-micro text-ink-3">{entry.category}</span>
+                        {paletteGrouped ? null : <span className="shrink-0 t-micro text-ink-3">{entry.category}</span>}
                       </span>
                       <span className="line-clamp-1 t-caption text-ink-3">{entry.description}</span>
-                      <span className="truncate t-mono-micro text-ink-3">{entry.inputTypes.join(", ")} → {entry.outputTypes.join(", ")}</span>
+                      {entry.inputTypes.length || entry.outputTypes.length ? <span className="truncate t-mono-micro text-ink-3">{entry.inputTypes.join(", ") || "none"} → {entry.outputTypes.join(", ") || "none"}</span> : null}
                     </span>
                     {idx === paletteIndex ? <Kbd className="mt-1">↵</Kbd> : null}
                   </button>
@@ -1207,17 +1243,44 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
 function MockEditorWorkspace({ systemId }: { systemId: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
+  const [missing, setMissing] = useState(false);
+  const loadedRef = useRef(false);
   const load = useCallback(async () => {
-    const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
-    const systemData = await systemRes.json();
-    if (systemData.ok) setData(systemData.data);
+    try {
+      const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
+      const systemData = await systemRes.json().catch(() => ({ ok: false }));
+      if (systemRes.ok && systemData.ok) {
+        loadedRef.current = true;
+        setData(systemData.data);
+        return;
+      }
+      // A 400 or 404 before anything loaded means there is no workflow to show.
+      if (!loadedRef.current && (systemRes.status === 400 || systemRes.status === 404 || systemRes.status === 403)) setMissing(true);
+    } catch {
+      // A dropped request is retried by the next poll.
+    }
   }, [systemId]);
 
   useEffect(() => {
+    if (missing) return;
     void load();
     const interval = setInterval(load, 1500);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [load, missing]);
+
+  if (missing) {
+    return (
+      <div className="flex flex-1 items-start justify-center px-4 py-12 md:py-24">
+        <EmptyState
+          variant="permission"
+          titleAs="h1"
+          title="This workflow does not exist or you do not have access"
+          body="Check the link, or ask the person who shared it to add you to their workspace."
+          action={<Button asChild size="sm" variant="secondary"><Link href="/dashboard">Back to dashboard</Link></Button>}
+        />
+      </div>
+    );
+  }
 
   return <EditorWorkspaceView systemId={systemId} data={data} reload={load} />;
 }

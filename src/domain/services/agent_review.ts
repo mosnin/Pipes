@@ -4,6 +4,26 @@ import { BatchPreviewItemSchema, ProposalDiffItemSchema } from "@/domain/agent_b
 import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
 import type { AgentRunService } from "@/domain/services/agent_builder";
 
+/** How a proposed edit is titled in the editor's assistant: plain words, no action ids. */
+const ACTION_TITLES: Record<string, string> = {
+  add_node: "Add a step",
+  update_node: "Update a step",
+  move_node: "Move a step",
+  delete_node: "Remove a step",
+  add_pipe: "Connect two steps",
+  delete_pipe: "Remove a connection",
+  add_annotation: "Add a note",
+  update_annotation: "Update a note",
+  create_group: "Group steps",
+  update_group: "Update a group",
+  create_version_checkpoint: "Save a checkpoint",
+  request_review: "Ask for a review",
+  no_op_explanation: "No change needed"
+};
+export function describeActionType(actionType: string): string {
+  return ACTION_TITLES[actionType] ?? actionType.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+
 const now = () => new Date().toISOString();
 
 function mapChangeType(payload: GraphActionPayload): ProposalDiffItem["changeType"] {
@@ -88,7 +108,7 @@ export class ProposalDiffService {
         entityType: entity.entityType,
         entityId: entity.entityId,
         changeType: mapChangeType(proposal.payload),
-        summary: `${proposal.actionType} on ${entity.entityId}`,
+        summary: proposal.payload.actionType === "add_node" ? `${describeActionType("add_node")}: ${proposal.payload.title}` : describeActionType(proposal.actionType),
         rationale: proposal.rationale,
         riskLevel: toRiskLevel(proposal),
         affectedRegion: affectedNodeIds(proposal.payload).join(",") || "system",
