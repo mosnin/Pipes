@@ -1,0 +1,14 @@
+Pipes
+Copyright 2026 the Pipes authors.
+
+Pipes uses the Podium design system (tokens, primitives, shell and motion),
+copied from the Podium app by the same owner.
+
+- src/components/rare/hook-sidebar.tsx is adapted from Rare UI
+  (https://rareui.com), Copyright (c) 2026 Swami Malode, used under the
+  MIT + Commons Clause + Attribution license. The copyright notice stays in
+  the file. The component may not be sold or redistributed on its own.
+- Inter (https://rsms.me/inter), SIL Open Font License 1.1, via
+  @fontsource-variable/inter. Geist Mono, SIL Open Font License 1.1, via the
+  geist package.
+- Icons are lucide (https://lucide.dev), ISC.

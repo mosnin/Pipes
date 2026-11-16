@@ -1,21 +1,31 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Suspense, useState, type CSSProperties, type ReactNode } from "react";
-import { GlobalBar, type ShellUser } from "@/components/shell/global-bar";
-import { NavSidebar } from "@/components/shell/nav-sidebar";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { NavRail, NavSidebar, type ShellUser } from "@/components/shell/nav-sidebar";
 import { SearchDialog, useSearchDialog } from "@/components/shell/search-dialog";
 import { Topbar } from "@/components/shell/topbar";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { ToastProvider } from "@/components/ui/toast";
 
+export type { ShellUser };
+
+const SIDEBAR_KEY = "pipes.sidebar";
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === "collapsed";
+  } catch {
+    return false;
+  }
+}
+
 /**
- * The chassis, as Company OS builds it: a full-width bar, a rail beneath it,
- * and the pane the page scrolls on. The body (rail + pane) is one sheet that
- * turns a corner where it meets the bar.
+ * Podium's chassis: two panels floating on the canvas, 6px apart. The sidebar
+ * on the left (or its 56px rail when collapsed) and the main panel on the
+ * right, each with 14px corners and a hairline. On phones both go edge to
+ * edge and the sidebar becomes a drawer.
  *
- * The system editor is the one route that pins the rail to its icon form,
- * because the canvas needs the horizontal room.
+ * The workflow editor starts on the rail, because the canvas needs the room.
  */
 export function ClientAppShell({
   user,
@@ -30,42 +40,60 @@ export function ClientAppShell({
   isAdmin: boolean;
   children: ReactNode;
 }): ReactNode {
-  const [open, setOpen] = useState(true);
   const pathname = usePathname();
   const search = useSearchDialog();
-  // Only the editor itself (/systems/[id]) needs the canvas width; its sub-pages keep the full rail.
-  const compact = /^\/systems\/[^/]+\/?$/.test(pathname);
+  const editor = /^\/systems\/[^/]+\/?$/.test(pathname);
+  const [collapsedPref, setCollapsedPref] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+
+  useEffect(() => setCollapsedPref(readCollapsed()), []);
+  useEffect(() => setDrawer(false), [pathname]);
+
+  const setCollapsed = (next: boolean) => {
+    setCollapsedPref(next);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, next ? "collapsed" : "open");
+    } catch {
+      /* private mode: the choice lasts for this page only */
+    }
+  };
+  const collapsed = (editor || collapsedPref) && !drawer;
 
   return (
     <ToastProvider>
-      <SidebarProvider
-        open={compact ? false : open}
-        onOpenChange={setOpen}
-        className="flex-col bg-bar"
-        style={{ "--sidebar-width": "var(--nav-w)" } as CSSProperties}
+      <a
+        href="#main"
+        className="sr-only rounded-full bg-card px-4 text-[13px] font-medium text-foreground shadow-float outline-none focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:inline-flex focus:h-9 focus:items-center"
       >
-        <a
-          href="#main"
-          className="t-caption-medium focus-ring-canvas sr-only rounded-8 border border-strong bg-raised px-2 text-ink outline-none focus:not-sr-only focus:fixed focus:top-1.5 focus:left-1.5 focus:z-[60] focus:inline-flex focus:h-8 focus:items-center"
-        >
-          Skip to content
-        </a>
-        <GlobalBar user={user} workspaceLabel={workspaceLabel} plan={plan} onOpenSearch={search.open} />
-
-        <div className="app-body flex min-h-0 w-full flex-1 overflow-hidden rounded-t-[var(--body-radius)] bg-canvas">
-          <NavSidebar isAdmin={isAdmin} />
-          <div className="workspace-canvas flex min-w-0 flex-1 flex-col overflow-y-auto bg-canvas">
-            <Suspense fallback={<div className="h-[36px] shrink-0" />}>
-              <Topbar />
-            </Suspense>
-            <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
-              {children}
-            </main>
-          </div>
+        Skip to content
+      </a>
+      <div className="flex h-dvh gap-1.5 overflow-hidden bg-canvas p-1.5 max-md:gap-0 max-md:p-0">
+        {collapsed ? (
+          <NavRail workspaceLabel={workspaceLabel} isAdmin={isAdmin} onExpand={() => setCollapsed(false)} onSearch={search.open} />
+        ) : null}
+        {/* Collapsed on desktop still needs the drawer on phones, so the full sidebar renders whenever the drawer is open. */}
+        {!collapsed || drawer ? (
+          <NavSidebar
+            user={user}
+            workspaceLabel={workspaceLabel}
+            plan={plan}
+            isAdmin={isAdmin}
+            onSearch={search.open}
+            onCollapse={() => setCollapsed(true)}
+            drawerOpen={drawer}
+            onCloseDrawer={() => setDrawer(false)}
+          />
+        ) : null}
+        <div className="workspace-canvas flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-border bg-background max-md:rounded-none max-md:border-0">
+          <Suspense fallback={<div className="h-[50px] shrink-0 border-b border-border" />}>
+            <Topbar onMenu={() => setDrawer(true)} onSearch={search.open} />
+          </Suspense>
+          <main id="main" tabIndex={-1} className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto outline-none">
+            {children}
+          </main>
         </div>
-
-        <SearchDialog controller={search} isAdmin={isAdmin} />
-      </SidebarProvider>
+      </div>
+      <SearchDialog controller={search} isAdmin={isAdmin} />
     </ToastProvider>
   );
 }

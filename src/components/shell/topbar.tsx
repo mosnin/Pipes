@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, LayoutDashboard } from "@/components/ui/icon";
+import { ChevronRight, LayoutDashboard, Menu, Search } from "@/components/ui/icon";
 import { findNavItem } from "@/components/shell/nav-config";
 import { cn } from "@/lib/utils";
 
@@ -47,8 +47,8 @@ function useWorkflowName(systemId: string | undefined): string | null {
   return (name?.id === systemId ? name.name : null) ?? workflowNames.get(systemId) ?? null;
 }
 
-/** The context line at the top of the pane: a breadcrumb, no fill, no border. */
-export function Topbar(): ReactNode {
+/** Podium's slim page bar: a 50px strip with the section icon and the breadcrumb as its title. */
+export function Topbar({ onMenu, onSearch }: { onMenu: () => void; onSearch: () => void }): ReactNode {
   const pathname = usePathname();
   const match = findNavItem(pathname);
   const systemId = pathname.startsWith("/systems/") ? pathname.split("/").filter(Boolean)[1] : undefined;
@@ -80,43 +80,35 @@ export function Topbar(): ReactNode {
     crumbs.push({ label: deslugify(pathname.split("/").filter(Boolean).pop() ?? "Home") });
   }
 
-  const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2] : null;
-
   return (
-    <div className="workspace-topbar flex min-h-[32px] flex-wrap items-center justify-between gap-1.5 px-4 pt-3 md:px-5 lg:px-6">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-1 text-ink-3">
-        <span aria-hidden="true" className="flex shrink-0 items-center">
-          <Icon className="size-[16px]" strokeWidth={1.5} />
-        </span>
-        {parent?.href ? (
-          <Link
-            href={parent.href}
-            aria-label={`Back to ${parent.label}`}
-            className="focus-ring-canvas flex size-[28px] shrink-0 items-center justify-center rounded-6 text-ink-3 outline-none hover:bg-state-hover hover:text-ink sm:hidden"
-          >
-            <ChevronLeft aria-hidden="true" strokeWidth={1.5} className="size-[16px]" />
-          </Link>
-        ) : null}
+    <header className="workspace-topbar flex h-[50px] shrink-0 items-center gap-2.5 border-b border-border px-3 md:px-5">
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label="Open menu"
+        className="press -ml-1 flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
+      >
+        <Menu className="size-[18px]" />
+      </button>
+      <span aria-hidden="true" className="hidden shrink-0 text-muted-foreground md:flex">
+        <Icon className="size-[16px]" strokeWidth={1.6} />
+      </span>
+      <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
         <ol className="flex min-w-0 items-center">
           {crumbs.map((crumb, index) => {
             const isLast = index === crumbs.length - 1;
             return (
               <li key={`${crumb.label}-${index}`} className={cn("flex min-w-0 items-center", !isLast && "hidden sm:flex")}>
-                {index > 0 ? (
-                  <ChevronRight aria-hidden="true" strokeWidth={1.5} className="mx-1 hidden size-[14px] shrink-0 text-ink-4 sm:block" />
-                ) : null}
+                {index > 0 ? <ChevronRight aria-hidden="true" strokeWidth={1.6} className="mx-1 hidden size-[14px] shrink-0 text-faint sm:block" /> : null}
                 {crumb.href && !isLast ? (
                   <Link
                     href={crumb.href}
-                    className={cn(
-                      "focus-ring-canvas truncate rounded-4 text-ink-3 transition-colors duration-[var(--dur-1)] hover:text-ink",
-                      crumb.mono ? "t-mono-hash" : "t-body-medium"
-                    )}
+                    className={cn("truncate rounded-lg text-[15px] text-muted-foreground transition-colors duration-150 hover:text-foreground", crumb.mono && "font-mono text-[13px]")}
                   >
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span aria-current={isLast ? "page" : undefined} className={cn("truncate text-ink", crumb.mono ? "t-mono-hash" : "t-body-medium")}>
+                  <span aria-current={isLast ? "page" : undefined} className={cn("truncate text-[15px] font-medium tracking-[-0.01em] text-foreground", crumb.mono && "font-mono text-[13px]")}>
                     {crumb.label}
                   </span>
                 )}
@@ -125,6 +117,14 @@ export function Topbar(): ReactNode {
           })}
         </ol>
       </nav>
-    </div>
+      <button
+        type="button"
+        onClick={onSearch}
+        aria-label="Search"
+        className="press flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
+      >
+        <Search className="size-[17px]" />
+      </button>
+    </header>
   );
 }

@@ -238,7 +238,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
                   <TR key={row.id} disabled={!!row.archivedAt}>
                     <TD>
                       <IconButton label={row.favorite ? "Remove from favorites" : "Add to favorites"} size="sm" onClick={() => toggleFavorite(row)}>
-                        <Star weight={row.favorite ? "fill" : "regular"} className={cn("size-[16px]", row.favorite ? "text-ink" : "text-ink-4")} />
+                        <Star fill={row.favorite ? "currentColor" : "none"} className={cn("size-[16px]", row.favorite ? "text-ink" : "text-ink-4")} />
                       </IconButton>
                     </TD>
                     <TD>
@@ -435,7 +435,7 @@ function SystemsMobileList({
             <li key={row.id}>
               <Link href={`/systems/${row.id}`} className="focus-ring-canvas flex flex-col gap-1.5 p-4 transition-colors hover:bg-inset focus-visible:outline-none">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  {row.favorite ? <Star weight="fill" className="size-[14px] shrink-0 text-ink" aria-label="Favorite" /> : null}
+                  {row.favorite ? <Star fill="currentColor" className="size-[14px] shrink-0 text-ink" aria-label="Favorite" /> : null}
                   <span className="t-body-strong min-w-0 flex-1 truncate text-ink">{row.name}</span>
                   <RelativeTime at={ts(row.updatedAt)} className="shrink-0" />
                 </span>
