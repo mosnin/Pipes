@@ -10,7 +10,12 @@ import { cn } from "@/lib/utils";
 interface Crumb {
   label: string;
   href?: string;
+  /** Set in mono: an identifier rather than a name. */
+  mono?: boolean;
 }
+
+/** Sub-pages of a system that get a named crumb rather than a deslugified segment. */
+const SYSTEM_SECTIONS: Record<string, string> = { runs: "Runs", triggers: "Triggers", handoff: "Handoff" };
 
 function deslugify(slug: string): string {
   const words = slug.replace(/[-_]/g, " ").trim();
@@ -27,9 +32,15 @@ export function Topbar(): ReactNode {
   if (pathname.startsWith("/systems/")) {
     const segments = pathname.split("/").filter(Boolean);
     crumbs.push({ label: "Systems", href: "/dashboard" });
-    crumbs.push({ label: segments[1] ?? "System", href: `/systems/${segments[1]}` });
-    if (segments[2]) crumbs.push({ label: deslugify(segments[2]) });
+    crumbs.push({ label: segments[1] ?? "System", href: `/systems/${segments[1]}`, mono: true });
+    if (segments[2]) crumbs.push({ label: SYSTEM_SECTIONS[segments[2]] ?? deslugify(segments[2]) });
     Icon = findNavItem("/dashboard")?.item.icon ?? Icon;
+  } else if (pathname.startsWith("/runs/") && match) {
+    // A single run: Runs, then the run's id, which is an identifier and set in mono.
+    const runId = pathname.split("/").filter(Boolean)[1];
+    Icon = match.item.icon;
+    crumbs.push({ label: match.item.label, href: match.item.href });
+    if (runId) crumbs.push({ label: decodeURIComponent(runId), mono: true });
   } else if (match) {
     Icon = match.item.icon;
     if (match.group) crumbs.push({ label: match.group });
@@ -66,12 +77,15 @@ export function Topbar(): ReactNode {
                 {crumb.href && !isLast ? (
                   <Link
                     href={crumb.href}
-                    className="focus-ring-canvas t-body-medium truncate rounded-4 text-ink-3 transition-colors duration-[var(--dur-1)] hover:text-ink"
+                    className={cn(
+                      "focus-ring-canvas truncate rounded-4 text-ink-3 transition-colors duration-[var(--dur-1)] hover:text-ink",
+                      crumb.mono ? "t-mono-hash" : "t-body-medium"
+                    )}
                   >
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span aria-current={isLast ? "page" : undefined} className={cn("t-body-medium truncate text-ink", pathname.startsWith("/systems/") && index === 1 && "t-mono-hash")}>
+                  <span aria-current={isLast ? "page" : undefined} className={cn("truncate text-ink", crumb.mono ? "t-mono-hash" : "t-body-medium")}>
                     {crumb.label}
                   </span>
                 )}

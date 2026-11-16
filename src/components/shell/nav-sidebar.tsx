@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavIcons, PanelLeft } from "@/components/ui/icon";
 import {
   Sidebar,
@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 export function NavSidebar({ isAdmin }: { isAdmin: boolean }): ReactNode {
   const pathname = usePathname();
   const groups = navGroupsFor(isAdmin);
+  const approvals = useApprovalsCount();
+  const counts: Record<NonNullable<NavItem["count"]>, number> = { approvals };
 
   return (
     <Sidebar label="Pipes navigation">
@@ -38,7 +40,7 @@ export function NavSidebar({ isAdmin }: { isAdmin: boolean }): ReactNode {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items.map((item) => (
-                    <NavRow key={item.href} item={item} pathname={pathname} />
+                    <NavRow key={item.href} item={item} pathname={pathname} count={item.count ? counts[item.count] : undefined} />
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -59,15 +61,54 @@ export function NavSidebar({ isAdmin }: { isAdmin: boolean }): ReactNode {
   );
 }
 
-function NavRow({ item, pathname }: { item: NavItem; pathname: string }): ReactNode {
+const APPROVALS_POLL_MS = 30_000;
+
+/**
+ * Runs waiting for a person to approve a step, polled every 30 seconds and
+ * again when the tab comes back into view. A failed read keeps the last count
+ * rather than flashing to zero.
+ */
+function useApprovalsCount(): number {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const read = () => {
+      if (document.visibilityState === "hidden") return;
+      fetch("/api/runs?status=waiting_approval")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (live && json?.ok && Array.isArray(json.data)) setCount(json.data.length);
+        })
+        .catch(() => undefined);
+    };
+    read();
+    const timer = window.setInterval(read, APPROVALS_POLL_MS);
+    document.addEventListener("visibilitychange", read);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", read);
+    };
+  }, []);
+  return count;
+}
+
+function NavRow({ item, pathname, count }: { item: NavItem; pathname: string; count?: number }): ReactNode {
   const active = isActive(item, pathname);
   const Icon = item.icon;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+      <SidebarMenuButton asChild isActive={active} tooltip={count ? `${item.label}, ${count} waiting` : item.label}>
         <Link href={item.href} aria-current={active ? "page" : undefined}>
           <Icon strokeWidth={1.5} className={cn("shrink-0", active ? "text-ink" : "text-ink-3")} />
           <span className="min-w-0 flex-1 truncate group-data-[collapsible=icon]:hidden">{item.label}</span>
+          {count ? (
+            <span className="t-mono-micro shrink-0 tabular text-ink-3 group-data-[collapsible=icon]:hidden">
+              <span className="sr-only">, </span>
+              {count > 99 ? "99+" : count}
+              <span className="sr-only"> waiting</span>
+            </span>
+          ) : null}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>

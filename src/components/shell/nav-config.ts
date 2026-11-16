@@ -1,6 +1,9 @@
 import {
   Activity,
+  BarChart3,
   BookOpen,
+  Bot,
+  CirclePlay,
   ClipboardList,
   Code2,
   CreditCard,
@@ -11,8 +14,10 @@ import {
   LifeBuoy,
   ListChecks,
   MessageSquarePlus,
+  Plug,
   ShieldCheck,
   SlidersHorizontal,
+  Stamp,
   Users,
   Workflow,
   type LucideIcon
@@ -23,6 +28,8 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   exact?: boolean;
+  /** A live count drawn right-aligned in the row, hidden at zero. */
+  count?: "approvals";
 }
 
 export interface NavGroup {
@@ -36,6 +43,8 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { href: "/dashboard", label: "Systems", icon: Workflow },
+      { href: "/runs", label: "Runs", icon: CirclePlay },
+      { href: "/approvals", label: "Approvals", icon: Stamp, count: "approvals" },
       { href: "/templates", label: "Templates", icon: LayoutGrid },
       { href: "/onboarding", label: "Get started", icon: ListChecks, exact: true }
     ]
@@ -45,10 +54,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/settings/collaboration", label: "Members", icon: Users },
       { href: "/settings/tokens", label: "API tokens", icon: KeyRound },
+      { href: "/settings/connections", label: "Connections", icon: Plug },
+      { href: "/settings/agents", label: "Connect an agent", icon: Bot },
       { href: "/settings/audit", label: "Audit log", icon: History },
       { href: "/settings/trust", label: "Trust", icon: ShieldCheck },
       { href: "/settings/operations", label: "Agent tuning", icon: SlidersHorizontal },
       { href: "/settings/billing", label: "Billing", icon: CreditCard },
+      { href: "/settings/usage", label: "Usage", icon: BarChart3 },
       { href: "/settings/feedback", label: "Feedback", icon: MessageSquarePlus }
     ]
   },
