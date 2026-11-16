@@ -63,7 +63,20 @@ export const DEFAULT_CONTRACT_TYPE_BY_NODE: Record<string, ContractType> = {
   Datastore: "json",
   Decision: "boolean",
   Router: "event",
-  Loop: "event"
+  Loop: "event",
+  Condition: "boolean",
+  Action: "json",
+  ExternalApi: "json",
+  Queue: "json",
+  Environment: "json",
+  Trigger: "event",
+  Schedule: "event",
+  HumanApproval: "any",
+  Guardrail: "any",
+  Monitor: "any",
+  Reference: "any",
+  Annotation: "any",
+  Subsystem: "any"
 };
 
 export function createDefaultNodeDefinition(input: { nodeId: string; nodeType: string; title: string; description?: string }): NodeDefinition {

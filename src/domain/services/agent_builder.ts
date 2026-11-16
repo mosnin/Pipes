@@ -10,7 +10,7 @@ import { getSkillDefinition, isSkillAllowedForRole } from "@/domain/services/age
 import { SubAgentTaskSchema, type ReconciliationRecord, type SkillInvocation, type SubAgentContextPack, type SubAgentResult, type SubAgentTask } from "@/domain/agent_builder/sub_agents";
 import type { SubAgentExecutionRequest } from "@/lib/ai/sub_agents";
 import { ModalReadySubAgentExecutor, type SubAgentExecutor } from "@/lib/runtime/sub_agent_executor";
-import { AffectedRegionService, BatchReviewService, ProposalDiffService, ProposalPreviewService, ReviewSelectionService } from "@/domain/services/agent_review";
+import { AffectedRegionService, BatchReviewService, describeActionType, ProposalDiffService, ProposalPreviewService, ReviewSelectionService } from "@/domain/services/agent_review";
 import { AgentMemoryService } from "@/domain/services/agent_memory";
 import { AgentEvaluationService } from "@/domain/services/agent_evaluation";
 import { AgentPolicyService } from "@/domain/services/agent_policy";
@@ -18,6 +18,7 @@ import { AgentRuntimeService } from "@/domain/services/agent_runtime";
 import type { RunPolicySnapshot } from "@/domain/agent_builder/policy";
 
 const now = () => new Date().toISOString();
+
 
 export interface AgentRuntime {
   executeRun(input: { service: AgentRunService; ctx: AppContext; runId: string; message: string; systemName?: string; systemDescription?: string; onEvent?: (event: RunEvent) => Promise<void> }): Promise<void>;
@@ -225,7 +226,7 @@ export class AgentRunService {
       await publish({ sessionId: run.sessionId, runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, type: "graph_action_proposed", at: now(), graphActionProposal: proposal });
       await invokeRole("propose_actions", "builder", `Generated ${proposal.actionType} proposal.`);
       const batchStatus = proposal.status === "pending_review" ? "review_required" : proposal.status === "proposed" ? "created" : "rejected";
-      await this.repos.agentBuilder.addProposalBatch(ProposalBatchSchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, stage: "propose_actions", summary: `Batch for ${proposal.actionType}`, rationale: proposal.rationale, proposalIds: [proposal.id], status: batchStatus, createdAt: now(), updatedAt: now() }));
+      await this.repos.agentBuilder.addProposalBatch(ProposalBatchSchema.omit({ id: true }).parse({ runId: run.id, workspaceId: run.workspaceId, systemId: run.systemId, stage: "propose_actions", summary: describeActionType(proposal.actionType), rationale: proposal.rationale, proposalIds: [proposal.id], status: batchStatus, createdAt: now(), updatedAt: now() }));
       await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, systemId: run.systemId as never, action: "agent_proposal_batch_created", targetType: "proposal_batch", targetId: proposal.id, outcome: "success" });
 
       if (proposal.status === "pending_review") {
@@ -589,13 +590,13 @@ export class AgentRunService {
         return {
           payload: { actionType: "delete_node", nodeId: item.task.contextPack.selectedNodeIds[0] ?? "unknown_node" } as GraphActionPayload,
           rationale: `${item.task.contextPack.subsystemId}: requested by specialist result`,
-          summary: `${item.task.contextPack.subsystemId} · risky cleanup batch`
+          summary: describeActionType("delete_node")
         };
       }
       return {
         payload: { actionType: "add_annotation", body: `Subsystem ${item.task.contextPack.subsystemId}: ${item.result.planSummary ?? "refinement"}`, nodeId: item.task.contextPack.selectedNodeIds[0] } as GraphActionPayload,
         rationale: `${item.task.contextPack.subsystemId}: safe refinement`,
-        summary: `${item.task.contextPack.subsystemId} · safe refinement batch`
+        summary: describeActionType("add_annotation")
       };
     }));
     await this.repos.agentBuilder.addProposalBatch(ProposalBatchSchema.omit({ id: true }).parse({
