@@ -1,14 +1,25 @@
-# Pipes Protocol (Hardened)
+# Pipes protocol
 
-## Overview
-Pipes protocol exposes token-authenticated REST and MCP transports over the same bounded services.
-Business rules (permissions, validation, entitlements, version safety) remain in `src/domain/services/bounded.ts`.
+Pipes has two ways in for code and agents, both behind the same tokens,
+permissions and audit log:
 
-## Auth and token guide
-1. Create token in Settings → Tokens or `POST /api/settings/tokens`.
-2. Copy secret once.
+- **MCP** at `/api/mcp`: how agents list workflows and run them step by step.
+  OAuth clients only need the URL. See [mcp.md](mcp.md).
+- **REST** under `/api/protocol/*`: reading and editing workflows from code.
+  This page covers it.
+
+Business rules (permissions, validation, entitlements, version safety) live in
+`src/domain/services/bounded.ts`; both transports go through them. API and MCP
+access start on the Pro plan.
+
+## Tokens
+1. Create a token in Settings, API tokens (or `POST /api/settings/tokens`).
+2. Copy the secret; it is shown once and stored as a hash.
 3. Send `Authorization: Bearer ptk_...`.
-4. Capabilities and optional `systemScope` are enforced before service execution.
+4. Capabilities and the optional `systemScope` are checked before anything runs.
+
+OAuth clients connected to `/api/mcp` receive the same kind of token, named
+after the client, and it can be revoked in the same place.
 
 ## Error model
 See `docs/errors.md`.
@@ -26,14 +37,20 @@ If the same key is replayed with the same body, previous success is returned wit
 If replayed with a different body, response is `CONFLICT`.
 
 ## Rate limits
-Token-authenticated protocol requests use fixed-window limits by token actor + transport bucket.
-- REST reads: 120/min bucket
-- REST writes: 60/min bucket
-- MCP tool calls: 120/min bucket
+Fixed one-minute windows per token:
+- REST reads: 120 a minute
+- REST writes: 60 a minute
+- MCP (`/api/mcp`): 240 requests a minute
 
-Exceeded requests return `RATE_LIMITED` (HTTP 429).
+Exceeded REST requests return `RATE_LIMITED` (HTTP 429).
+
+## Usage
+Every token-authenticated REST request counts as one API call toward the
+workspace's monthly allowance (`src/domain/usage/service.ts`).
 
 ## REST routes
+Paths use `systems`, the older name for workflows; `systemId` is a workflow id.
+
 Read:
 - `GET /api/protocol/systems`
 - `GET /api/protocol/systems/:systemId`
@@ -51,12 +68,16 @@ Write:
 - `POST /api/protocol/comments`
 
 ## MCP
-See `docs/mcp.md`.
+See [mcp.md](mcp.md) for the server, OAuth and the run loop.
+
+The older `POST /api/protocol/mcp` endpoint (`{ "tool": "...", "input": {} }`)
+still works for existing integrations, but it is not an MCP server and does
+not expose runs. New integrations should use `/api/mcp`.
 
 ## Observability
 - Audit entries include actor, action, target, outcome, timestamp.
 - Protocol writes include request correlation ID + transport metadata (`rest`/`mcp`).
-- Audit API supports filtering by actor, actorId, action prefix, system, transport, outcome, and time window, plus CSV export.
+- Audit API supports filtering by actor, actorId, action prefix, workflow, transport, outcome, and time window, plus CSV export.
 
 ## Machine-readable API
 OpenAPI spec: `docs/openapi/protocol.json`.
@@ -77,7 +98,7 @@ curl http://localhost:3000/api/protocol/systems \
   -H 'authorization: Bearer ptk_...'
 ```
 
-Create a system from schema:
+Create a workflow from a schema:
 ```bash
 curl -X POST http://localhost:3000/api/protocol/import/system \
   -H 'authorization: Bearer ptk_...' \
@@ -86,7 +107,7 @@ curl -X POST http://localhost:3000/api/protocol/import/system \
   -d '{"canonical":"{...pipes_schema_v1...}"}'
 ```
 
-Export a system:
+Export a workflow:
 ```bash
 curl http://localhost:3000/api/protocol/systems/sys_123/schema \
   -H 'authorization: Bearer ptk_...'

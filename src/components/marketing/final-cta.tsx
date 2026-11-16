@@ -1,13 +1,15 @@
 import type { ReactNode } from "react";
 import { CutButton } from "@/components/marketing/cut-button";
 import { getEntitlements } from "@/domain/templates/plans";
+import { MONTHLY_INCLUDED } from "@/domain/usage/service";
 
 const FREE_SYSTEMS = getEntitlements("Free").maxSystems;
+const FREE_RUNS = MONTHLY_INCLUDED.Free.runs;
 
 /** The closing band every marketing page ends on. */
 export function FinalCta({
-  title = "Write the procedure down once.",
-  body = `Start free with ${FREE_SYSTEMS} workflows. Upgrade when your team needs shared editing, version history or API and MCP access.`,
+  title = "Write the workflow down once.",
+  body = `Start free with ${FREE_SYSTEMS} workflows and ${FREE_RUNS} runs a month. Upgrade when your agents need API and MCP access, or your team needs shared editing and version history.`,
   source,
 }: {
   title?: string;

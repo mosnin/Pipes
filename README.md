@@ -1,223 +1,125 @@
 # Pipes
 
-Pipes is a visual and machine-readable system design platform for agentic systems.
+Pipes is where teams design, store and version the workflows and loops their
+agents follow, and where agents run them. A workflow is a graph of steps
+(agent steps, tools, human approvals, loops, conditions and routers). An agent
+connects over MCP, starts a run and walks it one step at a time; Pipes holds
+the procedure and the state, the agent does the work.
 
-## Structured creation milestone
-This pass adds:
-- structured AI draft generation + edit suggestions (with explicit review/commit flow)
-- template catalog and instantiation into editable systems
-- canonical import diagnostics and safe commit path
-- canonical export in JSON and Markdown forms
-- selective AI edit review with per-change acceptance/rejection
-- existing-system import merge planning with pre-merge checkpoints
-- editor trust cues for collaboration occupancy and review states
+Next.js 16 (App Router) with Convex for storage, plus a mock mode for local
+work.
 
-## Core guarantees
-- canonical source of truth is `pipes_schema_v1`
-- AI calls remain server-side in `src/lib/ai`
-- AI outputs are schema-validated before commit
-- AI features are gated by entitlements (Builder required)
-- AI never writes persistent state without explicit commit/apply requests
+## Features
 
-## Key routes
-- `POST /api/ai/generate-system` (draft + commit)
-- `POST /api/ai/suggest-edits` (suggest + apply)
-- `POST /api/import/system`
-- `GET /api/systems/[systemId]/export?format=json|markdown`
-- `GET /api/templates` and `POST /api/templates/[templateId]/instantiate`
-- protocol REST + MCP routes under `/api/protocol/*` (see `docs/protocol.md`)
+- **Visual editor.** Step types include agent steps, tools, human approvals,
+  loops with iteration limits, and conditions and routers. Each step carries
+  instructions, a done-when line, skills and connections
+  (`StepSpec` in `src/domain/runs/types.ts`).
+- **Runs over MCP.** An MCP server at `/api/mcp` (Streamable HTTP, OAuth 2.1
+  or API tokens) with `list_workflows`, `get_workflow`, `start_run`,
+  `get_current_step`, `complete_step`, `get_run`, `list_runs`, `cancel_run`
+  and a few template, export and comment tools (`src/lib/mcp/tools.ts`).
+- **Human approvals.** An approval step pauses the run until a person
+  approves, rejects or sends it back from the Approvals inbox.
+- **Triggers.** An inbound webhook per workflow, cron schedules and signed
+  outbound run events (`src/domain/triggers`).
+- **Connections.** MCP servers, HTTP APIs and skills that steps use, with
+  secrets encrypted at rest (`src/domain/connections`).
+- **History.** Versions, run history per workflow and version, comments and
+  an audit log.
+- **Templates and portability.** Starter templates, and import and export as
+  `pipes_schema_v1`.
+- **Usage and plans.** Runs, steps and calls are metered against monthly
+  allowances (`src/domain/usage/service.ts`). Plans live in
+  `src/domain/templates/plans.ts`: API and MCP access start on Pro, AI
+  drafting is on Builder. Free stops new runs once its monthly runs are used;
+  paid plans keep running and bill overage.
+- **Workspaces.** Members and roles, invites, and API tokens with scoped
+  capabilities.
 
-## Protocol docs
-- token lifecycle, normalized actors, audits, REST/MCP examples: `docs/protocol.md`
-- protocol error model: `docs/errors.md`
-- MCP guide: `docs/mcp.md`
-- OpenAPI spec: `docs/openapi/protocol.json`
-- SDK examples: `examples/protocol/client.ts`, `examples/protocol/client.py`
+## Run it
 
-## Run in mock mode
+### Mock mode
+
+No external services. Data lives in a local file, `.pipes-db.json` by default (`PIPES_MOCK_DB_FILE` moves it).
+
 ```bash
-cp .env.example .env.local
-# PIPES_USE_MOCKS=true
-# NEXT_PUBLIC_PIPES_USE_MOCKS=true
+cp .env.example .env.local   # PIPES_USE_MOCKS=true, NEXT_PUBLIC_PIPES_USE_MOCKS=true
 npm install
 npm run dev
 ```
 
-## Run in real provider mode
-Real mode stores everything in Convex and uses first-party email and password
-accounts. Auth0 is optional.
+### Real mode
+
+Everything is stored in Convex, with first-party email and password accounts.
 
 ```bash
 cp .env.example .env.local
 # PIPES_USE_MOCKS=false
 # NEXT_PUBLIC_PIPES_USE_MOCKS=false
-# PIPES_SESSION_SECRET=<32+ random characters>   # required in production
-# PIPES_CONVEX_SERVER_KEY=<32+ random characters> # also set on Convex: npx convex env set PIPES_CONVEX_SERVER_KEY <value>
+# PIPES_SESSION_SECRET=<32+ random characters>
+# PIPES_CONVEX_SERVER_KEY=<32+ random characters>
+npx convex env set PIPES_CONVEX_SERVER_KEY <the same value>
 npm install
-npx convex dev            # first run creates a deployment and writes CONVEX_URL; keep it running
+npx convex dev   # first run creates a deployment and writes CONVEX_URL; keep it running
 npm run dev
 ```
 
 No Convex account? `CONVEX_AGENT_MODE=anonymous npx convex dev` runs a local
 backend on http://127.0.0.1:3210. Set `CONVEX_URL` to the deployment URL.
 
-Optional providers: `AUTH0_*` (sign in with Auth0 instead of passwords),
-`OPENAI_API_KEY`, `CREEM_*` (billing), `RESEND_API_KEY` (email).
+## Environment variables
 
-### Provider smoke test
-With the app running in real mode:
+| Variable | Purpose |
+| --- | --- |
+| `PIPES_USE_MOCKS`, `NEXT_PUBLIC_PIPES_USE_MOCKS` | `true` for mock mode, `false` for real mode |
+| `NEXT_PUBLIC_APP_URL` | Public URL of the app |
+| `CONVEX_URL`, `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT` | Convex deployment |
+| `PIPES_CONVEX_SERVER_KEY` | Shared secret between the server and Convex; set it on both |
+| `PIPES_SESSION_SECRET` | Signs sessions; required for real sign-in in production |
+| `PIPES_ENCRYPTION_KEY` | Encrypts connection secrets (falls back to a key derived from `PIPES_SESSION_SECRET`) |
+| `CRON_SECRET` | Bearer secret for `GET /api/cron/schedules`; call it every minute or few |
+| `PIPES_ADMIN_ALLOWLIST` | Emails allowed into the internal `/admin` pages |
+| `AUTH0_*` | Optional: sign in with Auth0 instead of passwords |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | Optional: AI drafting |
+| `CREEM_*` | Optional: billing |
+| `RESEND_API_KEY` | Optional: email |
 
-```bash
-BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
-# against a local anonymous Convex deployment, also exercise paid-plan paths:
-SMOKE_UPGRADE_WITH_CONVEX=1 BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
-```
-
-## Agents, runs and triggers
-- **MCP server** at `/api/mcp` with OAuth 2.1 (see `docs/mcp.md`). Agents call
-  `start_run`, do each step, and `complete_step` until the run finishes.
-- **Step specs** (instructions, done-when, skills, connections, loop limits,
-  approver role) live in a per-workflow design document on the server.
-- **Human approvals** pause a run until a person decides it under Approvals.
-- **Triggers**: an inbound webhook per workflow (`POST /api/hooks/{systemId}`
-  with `x-pipes-key`), cron schedules fired by `GET /api/cron/schedules`
-  (`Authorization: Bearer $CRON_SECRET`, call it every minute or few), and
-  signed outbound run events (`x-pipes-signature: sha256=HMAC(secret, ts.body)`).
-- **Connections**: MCP servers, HTTP APIs and skills, secrets encrypted at rest.
-- **Usage** is metered (runs, steps, API and MCP calls) against plan allowances.
+See `.env.example` for the full list.
 
 ## Testing
+
 ```bash
 npm run lint
 npm run typecheck
-npm run test
+npm run test          # unit tests (vitest, tests/unit)
+npm run test:e2e      # end-to-end tests (playwright, tests/e2e)
 ```
 
-## Vercel deployment configuration
-- This repository is a **Next.js** app and includes `vercel.json` with `"framework": "nextjs"` to force correct framework detection.
-- In Vercel project settings, ensure **Root Directory** points to this repo root (the folder containing `package.json` with `next` dependency and `next.config.ts`).
-- Build command should be `npm run build` and install command should be `npm install` (defaults are fine with `vercel.json`).
+Smoke tests against a running server in real mode:
 
+```bash
+# two accounts walking the main user journeys over HTTP; the second line also exercises paid-plan paths
+BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
+SMOKE_UPGRADE_WITH_CONVEX=1 BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
 
-## Post-launch instrumentation and support pass
-- bounded product signal contract is documented in `docs/product_signals.md`
-- internal operator support surface: `/admin`
-- internal insights surface: `/admin/insights`
-- richer audit filtering + CSV export: `/settings/audit`
-- internal operator auth model: `PIPES_ADMIN_ALLOWLIST` (mock fallback: `owner@pipes.local`)
+# workflows end to end: step specs, runs over MCP, approvals, connections,
+# webhooks, cron, OAuth and usage (start the server with CRON_SECRET set)
+BASE_URL=http://localhost:3000 CRON_SECRET=... node scripts/smoke-workflow.mjs
+```
 
-## Enterprise trust and scale pass
-- workspace trust settings: `/settings/trust`
-- workspace export manifest endpoint: `GET /api/settings/export/workspace`
-- enterprise auth readiness model: shared vs `sso_ready` (Auth0 connection metadata + allowed domain validation)
-- safer permission admin: owner immutability, explicit role-change confirmation, audited role changes
-- bounded lifecycle posture: archive/restore for systems, workspace deactivate/reactivate, no hard delete
-- see `docs/enterprise_trust.md` for supported vs deferred enterprise controls
+## Docs
 
-## Conversion and growth pass
-- strengthened homepage narrative and CTA structure around real product capabilities
-- coherent logged-out IA additions: `/use-cases`, `/compare`, template detail pages
-- bounded public content model in `src/lib/public/content.ts`
-- bounded growth event model and route in `src/lib/public/metrics.ts` and `/api/marketing/signal`
-- growth/discovery model documented in `docs/growth_model.md`
+- `docs/mcp.md`: the MCP server, authentication and the run loop
+- `docs/protocol.md`: the REST API, tokens, idempotency and rate limits
+- `docs/errors.md`: REST error codes
+- `docs/openapi/protocol.json`: OpenAPI description of the REST routes
+- `docs/product_overview.md`: what Pipes does today
+- `docs/architecture.md`, `docs/domain_model.md`: how it is built
+- `docs/local_development.md`: running locally
+- `docs/DESIGN_LANGUAGE.md` and `anti-slop.md`: the design rules every UI change follows
 
+## Deploying
 
-## Editor performance and resilience pass
-- React Flow node rendering is memoized and heavy editor derivations use deferred/memoized computation.
-- Editor history uses explicit graph actions with undo/redo shortcuts (`Cmd/Ctrl+Z`, `Shift+Cmd/Ctrl+Z`).
-- Save state is explicit: `Saved`, `Saving`, `Unsaved local changes`, `Sync delayed`, `Error saving`.
-- Autosave uses a bounded queued operation model with retry; pending operations are buffered for reload recovery and remain subordinate to persisted state.
-- Editor crash boundaries isolate canvas/inspector failures and provide calm recovery actions.
-- Lightweight reliability signals are emitted through `signal.editor_*` events via existing audit-backed ProductSignalService.
-
-
-## System library and activation pass
-- Introduces a tags-first library model with favorites, recents, archive/restore, filters, and sort controls via bounded `SystemLibraryService`.
-- Dashboard now supports quick create, template launch, search, status filtering, tag filtering, and favorite/archive management.
-- Onboarding now captures lightweight role/use-case context and routes users through blank/template/AI/import first-value paths.
-- Activation and library quality events are tracked through bounded product signals (`signal.onboarding_*`, `signal.first_*`, `signal.activation_achieved`, `signal.library_*`).
-
-
-## Launch readiness polish
-- Accessibility sweep: improved focus visibility, status semantics, labeled controls, and settings navigation structure.
-- Responsive hardening: app shell, dashboard grids, settings nav, and editor layout now degrade intentionally at narrower widths.
-- State clarity: loading/empty/error messaging tightened on dashboard, onboarding recommendations, and settings pages.
-- Added release docs: `docs/launch_checklist.md`, `docs/accessibility.md`, `docs/qa_checklist.md`.
-
-## Beta launch operations pass
-- Internal release review surface: `/admin/release` (environment readiness, critical flow checklist, failure rollups, protocol errors, activation, invite/billing checks).
-- Internal issue triage surface: `/admin/issues` (feedback queue + status workflow + grouped failures).
-- Structured feedback intake for early users: `/settings/feedback` and `POST /api/feedback`.
-- Detailed launch workflow and staged rollout notes: `docs/beta_operations.md`.
-
-## Agent builder realtime foundation
-- System editor now includes a first-class builder chat panel attached to a system.
-- Sessions, runs, messages, and run events are persisted and replayable.
-- Streamed output is normalized into typed run events (not graph truth).
-- Current boundary is planning/explanation only; agent graph mutation is intentionally deferred.
-- See `docs/agent_builder.md` for full model and runtime boundaries.
-
-
-## Agent graph action loop (milestone)
-
-The builder agent now emits typed graph action proposals (`add_node`, `move_node`, `delete_node`, `add_pipe`, `delete_pipe`, `add_annotation`, etc.) and only applies graph changes through the trusted graph service path. Safe actions are auto-applied, review-required actions are held for explicit approve/reject in UI.
-
-
-## Agent builder tools + approvals milestone
-
-Builder runs now include structured planning, bounded tool calls, approval requests for risky actions, and checkpoint-aware apply guarantees. Runs can pause in `waiting_for_approval` and resume after explicit decisions through typed approval routes.
-
-
-## Multi-stage specialist builder milestone
-
-Agent runs now progress through explicit stages (`intake`, `inspect_context`, `plan`, `design_structure`, `validate_design`, `propose_actions`, `wait_for_approval`, `apply`, `summarize`, `completed|blocked|failed`) with specialist role activity, plan revisions, and proposal batch lineage persisted for replay and trust.
-
-## Real bounded sub-agent execution milestone
-
-- Sub-agent tasks now execute through a real provider boundary in provider mode (`src/lib/ai/sub_agents.ts`) with strict JSON normalization.
-- Mock mode remains deterministic and uses the same contracts as provider mode.
-- The runtime seam is explicit (`src/lib/runtime/sub_agent_executor.ts`) with inline + modal-ready dispatch posture.
-- Sub-agent tasks and skill invocations persist execution lifecycle and normalized outputs.
-- Reconciliation persists explicit outcomes and feeds plan revisions and proposal batches.
-- Mutation authority is unchanged: sub-agents do not mutate graph state directly; all graph edits still use typed proposals + trusted apply.
-
-- Agent builder review now includes real per-batch diff generation, dependency-safe selective approval, explicit preview state, and affected-region metadata routes for calm review UX.
-
-## Agent memory and continuity milestone
-
-- Builder runs now retrieve bounded prior memory (plan summaries, decision records, reusable patterns, continuation refs) before planning.
-- Explicit builder strategies are persisted and selectable (`architecture_first`, `subsystem_first`, `validation_heavy`, etc.).
-- Pattern artifacts and decision memory are inspectable through agent memory APIs and UI panel sections.
-- Memory reuse remains advisory: trusted typed proposal/apply flow remains the only graph mutation authority.
-
-## Evaluation and learning loop
-
-Agent runs now persist explicit evaluation artifacts (run quality, proposal-batch outcomes, strategy and skill performance, pattern promotion/demotion, and typed learning artifacts). Retrieval for future runs is evaluation-aware: promoted patterns and strong strategies are boosted, while demoted patterns are still visible but deprioritized.
-
-## Collaborative agent building
-
-Pipes now supports explicit collaborative run review: shared run presence, threaded review comments on proposal batches/diff items, collaborative approval input with owner/admin final authority, persisted handoff records, and first-class revision requests. These artifacts are inspectable and auditable, and do not create a second mutation path.
-
-## Agent policy and operational control
-
-Workspaces can now define explicit agent policy (tools, risk posture, approval strictness, runtime/cost limits, escalation). Each run resolves and stores a policy snapshot, and policy decisions/escalations are persisted for inspection and audit.
-
-
-## Agent operations and tuning
-
-This milestone adds explicit run control (pause/resume/cancel/retry/fork), replay summaries, run comparison, and workspace tuning artifacts for presets, version views, skill bindings, and bounded experiment assignment. Operator APIs live under `/api/agent/*` and remain thin over domain services.
-
-
-## Implementation handoff and delivery
-
-Pipes can now generate typed implementation handoff packages from accepted persisted system state. Packages include structured artifacts (implementation plan, architecture spec, task breakdown, coding-agent prompt pack, QA checklist, risk register), support target variants (human, Codex, Claude Code, general LLM), require review before export, and provide deterministic markdown/JSON/prompt-pack exports.
-
-
-## Real runtime stack: Agents SDK + Modal + Convex authority
-
-Real mode now routes sub-agent tasks through an explicit runtime stack: host-side orchestration authority, policy-aware runtime target resolution (`inline_host`, `modal_worker`, `modal_sandbox`), optional OpenAI Agents SDK harness usage behind the AI boundary, and Modal-backed bounded execution for eligible tasks. Convex/mock persisted artifacts remain the only replay truth and graph mutation authority remains typed proposal/apply only.
-
-
-## Sandbox artifacts and external workspace support
-
-Sandbox-backed tasks now produce explicit, browsable artifacts with normalization records, preview metadata, and provenance linking run/task/session -> artifact. The host orchestrator remains authoritative: raw sandbox output is never treated as trusted app truth until normalized. Bounded workspace mount refs and file bundle refs support controlled external-workspace style inputs for sandbox assembly flows (including handoff bundle assembly).
+The repo deploys to Vercel as a Next.js app (`vercel.json`). Build with
+`npm run build`; run `npx convex deploy` for the Convex functions.

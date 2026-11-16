@@ -23,7 +23,7 @@ import { nodeTypeValues } from "@/domain/pipes_schema_v1/schema";
 import { publicContentService } from "@/domain/services/public";
 
 const description =
-  "Pipes is where teams design, store and version the workflows and loops their agents follow, as graphs any agent can read over MCP or a REST API.";
+  "Pipes is where teams design, store and version the workflows their agents follow. Agents run them step by step over MCP, with human approvals, triggers and a full run history.";
 
 export const metadata: Metadata = {
   title: { absolute: "Pipes | The workflows your agents follow" },
@@ -36,13 +36,38 @@ export const metadata: Metadata = {
   },
 };
 
-const MCP_EXAMPLE = `POST /api/protocol/mcp
-Authorization: Bearer ptk_...
+/* The run loop as an agent sees it: tool calls to /api/mcp, trimmed. */
+const RUN_LOOP = `// 1. Start a run. Pipes returns the first step.
+start_run {
+  "systemId": "sys_support",
+  "input": { "ticket": "T-4821" }
+}
 
-{
-  "tool": "get_system",
-  "input": { "systemId": "sys_support_triage" }
-}`;
+{ "runId": "run_8f2c", "status": "running",
+  "step": {
+    "title": "Classifier",
+    "instructions": "Tag it billing, bug or how-to.",
+    "doneWhen": "The ticket has one tag."
+  },
+  "options": [ ... ] }
+
+// 2. Do the step, report it, get the next one.
+complete_step {
+  "runId": "run_8f2c",
+  "nodeId": "classifier",
+  "output": { "tag": "billing" }
+}
+
+// 3. Repeat until status is "completed".`;
+
+const WEBHOOK = `curl -X POST \\
+  https://your-pipes-host/api/hooks/sys_support \\
+  -H 'x-pipes-key: <webhook key>' \\
+  -H 'content-type: application/json' \\
+  -d '{ "ticket": "T-4821" }'
+
+{ "ok": true,
+  "data": { "runId": "run_9a1d", "status": "running" } }`;
 
 export default function HomePage() {
   const home = publicContentService.getHome();
@@ -53,8 +78,8 @@ export default function HomePage() {
   return (
     <MarketingShell>
       <Hero
-        title="The workflows your agents follow, designed and kept in one place."
-        lead="Draw each procedure as a graph of agent steps, tool calls, human approvals, loops and branches. Pipes keeps every version and hands the current one to any agent over MCP or a REST API."
+        title={home.hero.title}
+        lead={home.hero.lead}
         primary={{
           label: home.hero.primaryCta.label,
           href: home.hero.primaryCta.href,
@@ -73,8 +98,8 @@ export default function HomePage() {
           <SectionHeading
             id="idea-heading"
             kicker="What is Pipes?"
-            title="A home for the procedures your agents run."
-            lead="Most agent procedures live in a prompt, a script and somebody's memory. Pipes gives each one a typed graph that people can review and agents can read, so the steps, the approvals and the branches are written down once and reused."
+            title="A home for the workflows your agents run."
+            lead="Most agent workflows live in a prompt, a script and somebody's memory. Pipes writes each one down as steps people can review, then holds the run while an agent works through it, so nobody has to trust that the agent remembered the approval."
           />
           <SpecList
             className="mt-10"
@@ -82,17 +107,17 @@ export default function HomePage() {
               {
                 term: "For teams running agents",
                 detail:
-                  "Keep the planner, the retriever and the reviewer in one procedure instead of three prompts that drift apart.",
+                  "Keep the planner, the retriever and the reviewer in one workflow instead of three prompts that drift apart.",
               },
               {
                 term: "For operations",
                 detail:
-                  "Put the policy check and the human sign-off on the graph, where everyone can see where a request stops for review.",
+                  "Put the policy check and the sign-off in the workflow, and see every run that stopped for review and who decided it.",
               },
               {
                 term: "For developers",
                 detail:
-                  "Read and update the same procedure from code, with scoped tokens, idempotent writes and an audit trail.",
+                  "Connect any MCP client with a URL, start runs from a webhook or a schedule, and edit workflows from code over REST.",
               },
             ]}
           />
@@ -103,8 +128,8 @@ export default function HomePage() {
         <Container className="flex flex-col gap-12">
           <FeatureRow
             id="design-heading"
-            kicker="1. Design the procedure"
-            title="Draw the steps, and say what each one is."
+            kicker="1. Design the workflow"
+            title="Draw the steps, and say how each one gets done."
             visual={
               <SceneFrame caption={`The ${nodeTypeValues.length} step types in Pipes Schema v1.`}>
                 <ul className="flex flex-wrap gap-3 p-7">
@@ -121,14 +146,13 @@ export default function HomePage() {
             }
           >
             <p>
-              Start from a template or a blank canvas. Add agents, tools, models,
-              prompts and memory, then join them with pipes. Each port declares
-              the data it carries: text, numbers, JSON, events or files.
+              Start from a template or a blank canvas. Add agent steps, tools,
+              human approvals, loops and routers, then join them with pipes.
             </p>
             <p>
-              Loops, routers, conditions and human approvals are steps of their
-              own, so the parts of a procedure that usually live in someone&apos;s
-              head end up on the graph.
+              Each step carries plain instructions, a line that says when it is
+              done, and the skills and connections it should use. Loops get an
+              iteration limit, so a review that never passes still ends.
             </p>
             <TrackedLink
               href="/templates"
@@ -140,50 +164,22 @@ export default function HomePage() {
             </TrackedLink>
           </FeatureRow>
 
-          {supportOps ? (
-            <FeatureRow
-              id="check-heading"
-              kicker="2. Check it before it runs"
-              title="Validate the structure and walk the paths."
-              reverse
-              visual={
-                <SceneFrame caption="Support Ops System: a policy check and a human review before anything is resolved.">
-                  <div className="bg-inset px-6 py-8">
-                    <TemplateGraph template={supportOps} vertical listOnMobile={false} />
-                  </div>
-                </SceneFrame>
-              }
-            >
-              <p>
-                Validation reads the graph the way a reviewer would. It flags
-                steps that are not connected, steps no input can reach, pipes
-                between incompatible port types and cycles outside a loop step.
-                Simulation then walks a run through it, step by step from the
-                first input or trigger, so you see where a request ends up before
-                an agent is ever pointed at it.
-              </p>
-              <p>
-                Comments sit on the procedure itself, and roles decide who can
-                edit, who can comment and who can only read.
-              </p>
-            </FeatureRow>
-          ) : null}
-
           <FeatureRow
-            id="share-heading"
-            kicker="3. Hand it to every agent"
-            title="One current version, read the same way by people and agents."
-            visual={<CodeBlock label="An agent asking for a procedure over MCP" code={MCP_EXAMPLE} />}
+            id="run-heading"
+            kicker="2. Let an agent run it"
+            title="Agents walk the workflow one step at a time."
+            reverse
+            visual={<CodeBlock label="A run over MCP, trimmed" code={RUN_LOOP} />}
           >
             <p>
-              Save a version when the procedure changes. Agents fetch it through
-              the MCP endpoint or the REST API with a token you issue, limited to
-              the capabilities and the procedures you choose.
+              Pipes runs an MCP server. Add its URL to Claude, ChatGPT, Cursor
+              or your own agent and sign in, or use an API token.
             </p>
             <p>
-              Both transports run through the same permission and validation
-              rules as the editor, and every protocol write lands in the audit
-              log with its request ID.
+              The agent starts a run, gets the current step with everything it
+              needs, does the work and reports back. Pipes records the output,
+              picks the next step and enforces the loop limits. The agent never
+              has to keep the workflow in its head.
             </p>
             <TrackedLink
               href="/protocol"
@@ -191,9 +187,90 @@ export default function HomePage() {
               metadata={{ source: "home" }}
               className="t-link w-fit"
             >
-              Read the protocol
+              How agents connect
             </TrackedLink>
           </FeatureRow>
+
+          {supportOps ? (
+            <FeatureRow
+              id="approve-heading"
+              kicker="3. Sign off where it matters"
+              title="Human approvals pause the run until a person decides."
+              visual={
+                <SceneFrame caption="Support Ops System: the run stops at Escalation Review until someone decides.">
+                  <div className="bg-inset px-6 py-8">
+                    <TemplateGraph template={supportOps} vertical listOnMobile={false} />
+                  </div>
+                </SceneFrame>
+              }
+            >
+              <p>
+                When a run reaches an approval step it waits in the Approvals
+                inbox. A person approves it, rejects it, or sends it back to an
+                earlier step with a comment, and the agent carries on from there.
+              </p>
+              <p>
+                Each approval step can say which role may decide it, and the
+                decision is kept with the run: who, when and why.
+              </p>
+            </FeatureRow>
+          ) : null}
+
+          <FeatureRow
+            id="trigger-heading"
+            kicker="4. Start runs from anywhere"
+            title="Webhooks, schedules and the tools your steps need."
+            reverse
+            visual={<CodeBlock label="Starting a run from another system" code={WEBHOOK} />}
+          >
+            <p>
+              Every workflow can have an inbound webhook and cron schedules, so
+              a new ticket or a Monday morning starts a run on its own. Pipes
+              sends signed events back out when a run starts, finishes, fails or
+              needs an approval.
+            </p>
+            <p>
+              Connections hold the MCP servers, HTTP APIs and skills your steps
+              use. Their secrets are encrypted at rest, and a step only hands
+              them to tokens you have allowed to read them.
+            </p>
+          </FeatureRow>
+        </Container>
+      </Section>
+
+      <Section className="border-t border-hairline" labelledBy="record-heading">
+        <Container>
+          <SectionHeading
+            id="record-heading"
+            kicker="On the record"
+            title="Every version and every run, kept."
+            lead="When someone asks what an agent did last week, the answer is in Pipes, not in a chat log."
+          />
+          <SpecList
+            className="mt-10"
+            rows={[
+              {
+                term: "Versions",
+                detail:
+                  "Save a version when the workflow changes. Each run records the version it followed, and later edits never change a run in progress.",
+              },
+              {
+                term: "Run history",
+                detail:
+                  "Every step a run took, what it produced, any notes, and who or what performed it, per workflow and per version.",
+              },
+              {
+                term: "Comments and audit log",
+                detail:
+                  "Discuss a workflow on the workflow itself, down to a single step. API writes and completed MCP tool calls land in the audit log.",
+              },
+              {
+                term: "Import and export",
+                detail:
+                  "Move a workflow between workspaces or into version control as a Pipes Schema v1 document.",
+              },
+            ]}
+          />
         </Container>
       </Section>
 
@@ -203,7 +280,7 @@ export default function HomePage() {
             id="templates-heading"
             kicker="Templates"
             title="You do not have to start from a blank canvas."
-            lead="Each starter template opens as an editable procedure in your workspace. Keep it as it is, or use it as the first draft of your own."
+            lead="Each starter template opens as an editable workflow in your workspace. Keep it as it is, or use it as the first draft of your own."
           />
           <ul className="mt-10 grid gap-6 md:grid-cols-2">
             {templates.map((template) => (
@@ -232,7 +309,7 @@ export default function HomePage() {
           <SectionHeading
             id="use-cases-heading"
             kicker="Use cases"
-            title="Where teams put Pipes to work."
+            title="Workflows teams hand to their agents."
           />
           <ul className="mt-10 divide-y divide-hairline border-y border-hairline">
             {useCases.map((entry) => (
@@ -257,7 +334,7 @@ export default function HomePage() {
           <SectionHeading
             id="how-heading"
             kicker="Getting started"
-            title="Your first procedure in three steps."
+            title="Your first run in three steps."
             lead="Create a free workspace, open a template or start blank, and point an agent at the result when you are ready."
           />
           <SpecList
@@ -265,17 +342,17 @@ export default function HomePage() {
             rows={[
               {
                 term: "Create a workspace",
-                detail: "Sign in and name it. Onboarding asks what you are building and suggests a template.",
+                detail: "Sign up and name it. Onboarding asks what you are building and suggests a template.",
               },
               {
-                term: "Draw the procedure",
-                detail: "Start from a template, a blank canvas or an imported schema, then validate it.",
+                term: "Draw the workflow",
+                detail: "Start from a template, a blank canvas or an imported schema, and write the instructions for each step.",
               },
               {
                 term: "Connect an agent",
                 detail: (
                   <>
-                    Issue a token in Settings and call the procedure over MCP or REST.{" "}
+                    Add the MCP server URL to your agent and ask it to run the workflow.{" "}
                     <Link href="/pricing" className="t-link">
                       API and MCP access
                     </Link>{" "}
@@ -291,7 +368,7 @@ export default function HomePage() {
               variant="outline"
               track={{ event: "protocol_docs_viewed", metadata: { source: "home_steps" } }}
             >
-              See the protocol
+              See how agents connect
             </CutButton>
           </div>
         </Container>

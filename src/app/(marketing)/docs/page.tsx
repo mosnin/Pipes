@@ -9,7 +9,7 @@ import { Container, Section, SectionHeading, SpecList } from "@/components/marke
 export const metadata: Metadata = {
   title: "Docs",
   description:
-    "Where to read about Pipes: the protocol, MCP tools, templates and plans, plus the guides that ship with the source.",
+    "Where to read about Pipes: connecting agents over MCP, the run loop, the REST API, templates and plans, plus the guides that ship with the source.",
 };
 
 export default function DocsPage() {
@@ -18,7 +18,7 @@ export default function DocsPage() {
       <PageIntro
         kicker="Docs"
         title="Read about Pipes."
-        lead="The reference for calling Pipes from code is on this site. Longer guides, from local development to the domain model, ship with the source in its docs folder."
+        lead="The reference for connecting agents and calling Pipes from code is on this site. Longer guides, from local development to the domain model, ship with the source in its docs folder."
       />
 
       <Section className="pt-0" labelledBy="site-heading">
@@ -28,18 +28,29 @@ export default function DocsPage() {
             className="max-w-[860px]"
             rows={[
               {
-                term: "Protocol",
+                term: "Connect an agent",
                 detail: (
                   <>
-                    Tokens, capabilities, REST routes, idempotency, rate limits and errors.{" "}
+                    The MCP server URL, signing in with OAuth, and API tokens for clients without it.{" "}
                     <TrackedLink
-                      href="/protocol"
+                      href="/protocol#connect"
                       event="protocol_docs_viewed"
                       metadata={{ source: "docs_page" }}
                       className="t-link"
                     >
-                      Read the protocol
+                      Connect an agent
                     </TrackedLink>
+                  </>
+                ),
+              },
+              {
+                term: "The run loop",
+                detail: (
+                  <>
+                    How an agent starts a run, does each step and reports it until the run is done.{" "}
+                    <Link href="/protocol#runs" className="t-link">
+                      Read the run loop
+                    </Link>
                   </>
                 ),
               },
@@ -47,9 +58,20 @@ export default function DocsPage() {
                 term: "MCP tools",
                 detail: (
                   <>
-                    The ten tools at the MCP endpoint and what each one does.{" "}
+                    Every tool on the MCP server and the capability it needs.{" "}
                     <Link href="/protocol#mcp" className="t-link">
                       See the tools
+                    </Link>
+                  </>
+                ),
+              },
+              {
+                term: "REST API",
+                detail: (
+                  <>
+                    Reading and editing workflows from code, idempotency, rate limits and errors.{" "}
+                    <Link href="/protocol#rest" className="t-link">
+                      See the routes
                     </Link>
                   </>
                 ),
@@ -92,9 +114,10 @@ export default function DocsPage() {
           <SpecList
             className="max-w-[860px]"
             rows={[
-              { term: "docs/protocol.md", detail: "The protocol guide, with end-to-end request examples.", mono: true },
-              { term: "docs/mcp.md", detail: "The MCP transport and its tools.", mono: true },
-              { term: "docs/errors.md", detail: "Every protocol error code.", mono: true },
+              { term: "docs/mcp.md", detail: "The MCP server: authentication, the run loop and every tool.", mono: true },
+              { term: "docs/protocol.md", detail: "The REST API, tokens and idempotency, with request examples.", mono: true },
+              { term: "docs/product_overview.md", detail: "What Pipes does today, feature by feature.", mono: true },
+              { term: "docs/errors.md", detail: "Every REST error code.", mono: true },
               { term: "docs/openapi", detail: "The OpenAPI description of the REST routes.", mono: true },
               { term: "docs/domain_model.md", detail: "The canonical schema, templates and how AI drafts are reviewed before they commit.", mono: true },
               { term: "docs/local_development.md", detail: "Running Pipes locally in mock mode.", mono: true },

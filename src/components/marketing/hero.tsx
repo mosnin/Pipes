@@ -69,7 +69,7 @@ export function Hero({
                   </span>
                 </span>
                 <span className="t-mono-hash shrink-0 text-ink-3 tabular">
-                  {template.nodes.length} nodes · {template.pipes.length} pipes
+                  {template.nodes.length} steps · {template.pipes.length} pipes
                 </span>
               </div>
               <div className="grid lg:grid-cols-[220px_1fr]">

@@ -9,7 +9,7 @@ import { publicContentService } from "@/domain/services/public";
 export const metadata: Metadata = {
   title: "Compare",
   description:
-    "Where Pipes fits next to Figma, Miro, Lucidchart and AI-generated diagrams, and when each of them is the better choice.",
+    "Where Pipes fits next to procedures written in docs and prompts, and next to automation tools like n8n and Zapier, and when each of them is the better choice.",
 };
 
 export default function CompareIndexPage() {
@@ -19,7 +19,7 @@ export default function CompareIndexPage() {
       <PageIntro
         kicker="Compare"
         title="Where Pipes fits next to the tools you already use."
-        lead="Diagramming and whiteboard tools are good at what they do. Pipes does a narrower job: it keeps a procedure as a typed graph that people review and agents read. These pages say plainly where that difference matters and where it does not."
+        lead="Pipes keeps a workflow as steps people review and agents run, one step at a time, with approvals and a record of every run. That is a narrower job than a doc or an automation tool. These pages say plainly where the difference matters and where it does not."
       />
       <Section className="pt-0" labelledBy="page-title">
         <Container>
