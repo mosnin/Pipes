@@ -97,7 +97,7 @@ export function RailRow({
           // THE RAIL EXCEPTION (§5.3): square on the edge that touches the spine,
           // rounded on the other. The row yields its corner so the spine reads as
           // one continuous bound edge instead of a stack of interrupted arcs.
-          "relative min-h-[60px] rounded-[0_8px_8px_0] py-3 pl-3 pr-4",
+          "relative min-h-[60px] rounded-r-lg py-3 pl-3 pr-4",
           "transition-colors duration-[var(--dur-1)] ease-linear",
           // The hover fill is conditional on the row actually containing
           // something pressable. A state fill under a cursor that has nothing to

@@ -76,7 +76,7 @@ export function HookList({ children, className, color = "var(--accent)", start =
       ro.disconnect();
       mo.disconnect();
     };
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => setHover(null), [pathname]);
 

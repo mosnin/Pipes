@@ -39,7 +39,7 @@ export const buttonVariants = cva(
         lg: "h-11 gap-2 px-6 text-[15px] [&_svg:not([data-spinner])]:size-4",
       },
       variant: {
-        primary: "bg-primary text-primary-foreground hover:opacity-90 aria-disabled:hover:opacity-100",
+        primary: "bg-primary text-primary-foreground hover:bg-action-hover aria-disabled:hover:bg-primary",
         secondary: [
           "border border-border bg-card text-foreground hover:bg-muted/60",
           "dark:border-transparent dark:bg-muted dark:hover:bg-border-strong",

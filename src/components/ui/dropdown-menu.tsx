@@ -111,10 +111,15 @@ export function DropdownMenuItem({
       className={cn(rowBase, destructive && rowDestructive, className)}
       {...props}
     >
-      {children}
+      {/* With `asChild` Radix needs exactly one child, so the reason slot is only added when there is one. */}
       {reason ? (
-        <span className="ml-auto pl-3 t-micro text-ink-4">{reason}</span>
-      ) : null}
+        <>
+          {children}
+          <span className="ml-auto pl-3 t-micro text-ink-4">{reason}</span>
+        </>
+      ) : (
+        children
+      )}
     </DropdownMenuPrimitive.Item>
   );
 }

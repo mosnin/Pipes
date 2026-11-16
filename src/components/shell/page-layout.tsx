@@ -1,6 +1,6 @@
 /**
  * The two shapes a page takes, measured off the reference — see
- * `docs/SHOPIFY_MEASUREMENTS.md`.
+ * `docs/DESIGN.md`.
  *
  * An index page and a single-column form are 640 wide. A detail page is two
  * columns: 652 of main, an 18px gutter, and a 292px aside, 962 in all. They

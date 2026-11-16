@@ -34,7 +34,7 @@ export const DialogClose = DialogPrimitive.Close;
 export const DialogPortal = DialogPrimitive.Portal;
 
 /**
- * Two widths, measured — see `docs/SHOPIFY_MEASUREMENTS.md`. The reference
+ * Two widths, measured — see `docs/DESIGN.md`. The reference
  * ships a small modal at 620 and a large one at 880, and nothing between.
  * Both centre at 755.6 @1512, which is also where the top bar's search field
  * centres: two unrelated elements on different screens landing on one axis is
@@ -100,7 +100,7 @@ export function DialogContent({
           // pair collapses into ONE border-radius utility: a caller passing
           // `rounded-0` for an edge-anchored panel then wins at every width
           // instead of only above the breakpoint.
-          "[--dlg-r:20px] rounded-[var(--dlg-r)]",
+          "rounded-[20px]",
           "bg-card p-0 shadow-modal outline-none",
           // The reference insets a modal's header, body and footer by 16 —
           // measured at x=588 against a left edge of 567, on both the title

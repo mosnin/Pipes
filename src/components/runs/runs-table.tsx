@@ -77,16 +77,17 @@ export function RunsTable({ label, rows, loading, showWorkflow = false, empty }:
 
       <div className="hidden lg:block">
         <DataTable>
-          <Table aria-label={label} className="min-w-[960px] table-fixed">
+          <Table aria-label={label} className="min-w-[900px] table-fixed">
             <colgroup>
               {showWorkflow ? <col /> : null}
-              <col className="w-[200px]" />
-              <col className={showWorkflow ? "w-[136px]" : "w-[160px]"} />
-              <col className="w-[112px]" />
-              <col className={showWorkflow ? "w-[160px]" : "w-[200px]"} />
-              <col className="w-[88px]" />
-              <col className="w-[112px]" />
-              {showWorkflow ? <col className="w-[140px]" /> : <col />}
+              {/* Fixed columns leave the workflow name at least 240px on Podium's 1024px measure. */}
+              <col className="w-[128px]" />
+              <col className={showWorkflow ? "w-[124px]" : "w-[160px]"} />
+              <col className="w-[96px]" />
+              <col className={showWorkflow ? "w-[128px]" : "w-[200px]"} />
+              <col className="w-[64px]" />
+              <col className="w-[96px]" />
+              {showWorkflow ? <col className="w-[128px]" /> : <col />}
             </colgroup>
             <THead>
               <TR>

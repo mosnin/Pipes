@@ -6,23 +6,28 @@ agents follow. Next.js 16 (App Router) + Convex, with a mock mode
 
 ## Design rules are blocking
 
-Pipes uses the Company OS design language wholesale: same tokens, type,
-primitives and chassis. Before writing or changing any UI, page, component or
-piece of user-facing copy:
+Pipes uses the Podium design system wholesale: the same tokens, type, corners,
+primitives, chassis and motion as the Podium app. Before writing or changing
+any UI, page, component or piece of user-facing copy:
 
-1. Read [anti-slop.md](anti-slop.md). All twenty-one rules are mandatory and
-   blocking. No italics, no em dashes in copy, no decorative icons, no
-   border-accent bars, no side drawers, sentence case, human copy.
-2. [docs/DESIGN_LANGUAGE.md](docs/DESIGN_LANGUAGE.md) is the visual contract
-   and [docs/SHOPIFY_MEASUREMENTS.md](docs/SHOPIFY_MEASUREMENTS.md) the
-   measured geometry. `src/app/globals.css` implements both; use its tokens
-   and type roles (`bg-raised`, `text-ink-2`, `t-body`, `t-mono-hash`...),
-   never a hard-coded hex.
-3. Build from the primitives in `src/components/ui/*`, `src/components/data/*`,
-   `src/components/layouts/archetypes.tsx` and `src/components/shell/*`.
-   Import each from its own file. Icons only from `@/components/ui/icon`.
+1. [docs/DESIGN.md](docs/DESIGN.md) is the visual contract. `src/app/globals.css`
+   implements it; use its tokens (`bg-card`, `bg-muted`, `text-muted-foreground`,
+   `bg-floor/12`, or the older names aliased onto the same values) and type
+   roles (`t-body`, `t-mono-hash`...), never a hard-coded hex. Corners are 8px,
+   14px, 20px or full. Spacing is Tailwind's default scale.
+2. Read [anti-slop.md](anti-slop.md). Its rules are blocking: no italics, no em
+   dashes in copy, no decorative icons, no border-accent bars, no gradient or
+   glass chrome, sentence case, human copy. Two places where Podium's system
+   is the decision: lucide is the chosen icon set (rule 9), and on phones the
+   sidebar is a navigation drawer (rule 21 still forbids slide-over panels for
+   content).
+3. Reuse the primitive, don't restyle by hand. Build from
+   `src/components/ui/*`, `src/components/data/*`,
+   `src/components/layouts/archetypes.tsx` and `src/components/shell/*`, each
+   imported from its own file. If a primitive can't do what you need, extend it
+   so every use gets the change. Icons only from `@/components/ui/icon`.
 4. Render the surface at 375px and 1440px in light and dark and look at it.
    "It looks fine in the code" is not a check.
 
-When the Company OS design system changes, port the change here rather than
-letting the two drift.
+When Podium's design system changes, port the change here rather than letting
+the two drift.

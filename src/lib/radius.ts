@@ -9,7 +9,7 @@
  */
 
 /** Buttons, inputs, filters, tabs, panels that morph out of a control. */
-export const CONTROL_RADIUS = 10;
+export const CONTROL_RADIUS = 14;
 
 /** A control nested inside another, so the curves sit concentric. */
-export const CONTROL_RADIUS_INNER = 6;
+export const CONTROL_RADIUS_INNER = 8;

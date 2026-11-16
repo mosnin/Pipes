@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { HookList } from "@/components/rare/hook-sidebar";
 import { Avatar } from "@/components/ledger/author-stamp";
 import {
@@ -129,9 +129,13 @@ function Section({ title, children }: { title?: string; children: ReactNode }): 
   );
 }
 
+const subscribeNothing = (): (() => void) => () => {};
+
 function ThemeButton({ className }: { className?: string }): ReactNode {
   const { resolvedTheme, setTheme } = useTheme();
-  const dark = resolvedTheme === "dark";
+  // The server cannot know the theme, so the label settles after mount.
+  const mounted = useSyncExternalStore(subscribeNothing, () => true, () => false);
+  const dark = mounted && resolvedTheme === "dark";
   return (
     <button
       type="button"

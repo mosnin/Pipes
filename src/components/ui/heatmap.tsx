@@ -255,7 +255,7 @@ function ValueIndicator({
 
   return (
     <div
-      className="transition-colors rounded-md"
+      className="transition-colors rounded-lg"
       style={{
         borderRadius: 4,
         backgroundColor: color,

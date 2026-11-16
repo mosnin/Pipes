@@ -6,7 +6,7 @@
 
 /* ==========================================================================
    LEDGER INSTRUMENT — the CompanyOS Web design language, version 2.
-   Normative spec: docs/DESIGN_LANGUAGE.md. Every value here comes from it.
+   Normative spec: docs/DESIGN.md. Every value here comes from it.
    The palette and scale follow the developer dashboard the product is
    styled after: a #212121 ground with a darker #131313 rail in the dark
    theme, a white page with a #f7f7f7 rail in the light one, 15px body
@@ -554,7 +554,7 @@ body {
    because a column of numbers that does not align on the digit is a defect.
 
    THE SCALE IS THE REFERENCE'S. Measured off the admin screens in
-   docs/SHOPIFY_MEASUREMENTS.md: a 13px body, a 12px caption, a 14px card
+   docs/DESIGN.md: a 13px body, a 12px caption, a 14px card
    heading, a 20px page title. The scale these replace ran two steps larger
    at every rung — a 15px body and a 28px page title — and that gap, not the
    palette, is what made an early pass read as "the same app in grey". A

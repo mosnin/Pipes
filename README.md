@@ -117,7 +117,7 @@ BASE_URL=http://localhost:3000 CRON_SECRET=... node scripts/smoke-workflow.mjs
 - `docs/product_overview.md`: what Pipes does today
 - `docs/architecture.md`, `docs/domain_model.md`: how it is built
 - `docs/local_development.md`: running locally
-- `docs/DESIGN_LANGUAGE.md` and `anti-slop.md`: the design rules every UI change follows
+- `docs/DESIGN.md` (the Podium design system) and `anti-slop.md`: the design rules every UI change follows
 
 ## Deploying
 

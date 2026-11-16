@@ -163,7 +163,7 @@ export function TabsTrigger({
     );
   }
 
-  const radius = variant === "pill" ? "rounded-full" : "rounded-md";
+  const radius = variant === "pill" ? "rounded-full" : "rounded-lg";
 
   return (
     <div className="relative">

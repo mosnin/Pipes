@@ -2,7 +2,7 @@
 
 /**
  * The confirmation pill, measured off `order-fulfilled` — see
- * `docs/SHOPIFY_MEASUREMENTS.md`. 44 high, `#1a1a1a`, content-width, and
+ * `docs/DESIGN.md`. 44 high, `#1a1a1a`, content-width, and
  * centred on the *pane's* centre rather than the viewport's: at 1920 it sits
  * at x=959.5, which is 755.6 @1512 — the same axis the top bar's search field
  * and both modal widths centre on.

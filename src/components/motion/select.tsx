@@ -241,7 +241,7 @@ export function SelectTrigger({ className, children }: SelectTriggerProps) {
         borderBottomRightRadius: isTop ? INSTANT_TRANSITION : kfT,
       }}
       className={cn(
-        "relative z-10 flex w-full items-center justify-between gap-[8px] rounded-[10px] border border-border bg-background px-[12px] py-[8px] text-sm text-foreground outline-none transition-colors",
+        "relative z-10 flex w-full items-center justify-between gap-[8px] rounded-[14px] border border-border bg-background px-[12px] py-[8px] text-sm text-foreground outline-none transition-colors",
         "hover:border-(--color-border-strong) focus-visible:ring-2 focus-visible:ring-foreground/20",
         "disabled:pointer-events-none disabled:opacity-50",
         className,
