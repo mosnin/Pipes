@@ -23,6 +23,7 @@ export async function POST(request: Request, { params }: Params) {
     const body = await request.json();
     if (body.action === "archive") await services.library.archive(ctx, systemId);
     if (body.action === "restore") await services.library.restore(ctx, systemId);
+    if (body.action === "rename") await services.systems.update(ctx, systemId, { name: body.name, description: body.description });
     return NextResponse.json(success({ systemId }));
   } catch (error) {
     return NextResponse.json(failure((error as Error).message), { status: 400 });

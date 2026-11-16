@@ -51,6 +51,7 @@ export type SystemBundle = {
 export interface UsersRepository {
   provision(identity: ProvisionIdentity): Promise<AppContext>;
   findByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
+  rename(externalId: string, name: string): Promise<void>;
 }
 
 export interface WorkspacesRepository {
@@ -71,6 +72,7 @@ export interface SystemsRepository {
   ownerOf(ref: { systemId?: string; nodeId?: string; pipeId?: string }): Promise<{ systemId: string; workspaceId: string } | null>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
+  update(systemId: string, patch: { name?: string; description?: string }): Promise<void>;
 }
 
 export interface GraphRepository {

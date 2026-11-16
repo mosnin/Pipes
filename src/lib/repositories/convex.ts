@@ -49,6 +49,9 @@ export function createConvexRepositories(): RepositorySet {
       },
       async findByEmail() {
         return null;
+      },
+      async rename(externalId, name) {
+        await getConvexHttpClient().mutation(api.app.updateUserName, { externalId, name });
       }
     },
     workspaces: {
@@ -98,6 +101,9 @@ export function createConvexRepositories(): RepositorySet {
       },
       async archive(systemId) {
         await convexArchiveSystem(systemId);
+      },
+      async update(systemId, patch) {
+        await getConvexHttpClient().mutation(api.app.updateSystem, { systemId: systemId as never, ...patch });
       },
       async restore(systemId) {
         const client = getConvexHttpClient();

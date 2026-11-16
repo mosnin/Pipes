@@ -77,6 +77,14 @@ export function createMockRepositories(): RepositorySet {
       async findByEmail(email) {
         const user = store.readDb().users.find((u) => u.email === email);
         return user ? { id: user.id, email: user.email, name: user.name } : null;
+      },
+      async rename(externalId, name) {
+        const db = store.readDb();
+        const user = db.users.find((u) => u.externalId === externalId);
+        if (user) {
+          user.name = name;
+          store.writeDb(db);
+        }
       }
     },
     workspaces: {
@@ -123,6 +131,15 @@ export function createMockRepositories(): RepositorySet {
         const systemId = ref.systemId ?? (ref.nodeId ? db.nodes.find((n) => n.id === ref.nodeId)?.systemId : undefined) ?? (ref.pipeId ? db.pipes.find((p) => p.id === ref.pipeId)?.systemId : undefined);
         const system = systemId ? db.systems.find((s) => s.id === systemId) : undefined;
         return system ? { systemId: system.id, workspaceId: system.workspaceId } : null;
+      },
+      async update(systemId, patch) {
+        const db = store.readDb();
+        const system = db.systems.find((s) => s.id === systemId);
+        if (!system) throw new Error("System not found.");
+        if (patch.name !== undefined) system.name = patch.name;
+        if (patch.description !== undefined) system.description = patch.description;
+        system.updatedAt = now();
+        store.writeDb(db);
       },
       async archive(systemId) {
         const db = store.readDb();

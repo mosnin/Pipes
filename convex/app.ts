@@ -39,6 +39,24 @@ export const createSystem = mutation({
   }
 });
 
+export const updateSystem = mutation({
+  args: { systemId: v.id("systems"), name: v.optional(v.string()), description: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const patch: Record<string, string> = { updatedAt: now() };
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.description !== undefined) patch.description = args.description;
+    await ctx.db.patch(args.systemId, patch);
+  }
+});
+
+export const updateUserName = mutation({
+  args: { externalId: v.string(), name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.query("users").withIndex("by_external", (q) => q.eq("externalId", args.externalId)).first();
+    if (user) await ctx.db.patch(user._id, { name: args.name, updatedAt: now() });
+  }
+});
+
 export const archiveSystem = mutation({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => ctx.db.patch(args.systemId, { archivedAt: now(), updatedAt: now() })

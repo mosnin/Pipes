@@ -65,6 +65,14 @@ export class SystemService {
   async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.getBundle(systemId); }
   async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.archive(systemId); }
   async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.restore(systemId); }
+  async update(ctx: AppContext, systemId: string, patch: { name?: string; description?: string }) {
+    this.access.ensureCanEdit(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
+    const name = patch.name === undefined ? undefined : patch.name.trim().slice(0, 120);
+    if (name !== undefined && !name) throw new Error("A workflow needs a name.");
+    const description = patch.description === undefined ? undefined : patch.description.trim().slice(0, 2000);
+    await this.repos.systems.update(systemId, { name, description });
+  }
 }
 
 export class GraphService {
