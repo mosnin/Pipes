@@ -33,7 +33,8 @@ export function ClientAppShell({
   const [open, setOpen] = useState(true);
   const pathname = usePathname();
   const search = useSearchDialog();
-  const compact = pathname.startsWith("/systems/");
+  // Only the editor itself (/systems/[id]) needs the canvas width; its sub-pages keep the full rail.
+  const compact = /^\/systems\/[^/]+\/?$/.test(pathname);
 
   return (
     <ToastProvider>

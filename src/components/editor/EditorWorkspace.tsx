@@ -75,7 +75,7 @@ const ROUTE_OPTIONS: Array<{ value: PipeRouteKind; label: string }> = [
 ];
 const INSPECTOR_TABS: Array<{ value: InspectorTab; label: string }> = [
   { value: "overview", label: "Overview" },
-  { value: "agent", label: "Agent" },
+  { value: "agent", label: "Instructions" },
   { value: "inputs", label: "Inputs" },
   { value: "outputs", label: "Outputs" },
   { value: "config", label: "Config" },
@@ -772,7 +772,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               { value: "validation", label: "Validation", count: errorCount + warningCount },
               { value: "simulation", label: "Simulation" },
               { value: "versions", label: "Versions" },
-              { value: "agent", label: "Agent" }
+              { value: "agent", label: "Assistant" }
             ]}
           />
           <div className={cn("flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 py-5", mode === "agent" && "hidden")}>
