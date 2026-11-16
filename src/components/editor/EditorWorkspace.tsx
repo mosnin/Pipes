@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
@@ -1223,13 +1222,10 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
   return <EditorWorkspaceView systemId={systemId} data={data} reload={load} />;
 }
 
-function RealEditorWorkspace({ systemId }: { systemId: string }) {
-  const bundle = useQuery(api.app.getSystemBundle, { systemId: systemId as never });
-  const data = bundle ? normalizeBundle(bundle) : null;
-  return <EditorWorkspaceView systemId={systemId} data={data} reload={() => {}} />;
-}
-
+/**
+ * The editor loads through the Pipes API in every mode. The browser never
+ * talks to Convex directly: Convex functions are locked to the Pipes server.
+ */
 export function EditorWorkspace({ systemId }: { systemId: string }) {
-  if (!clientRuntimeFlags.useMocks && clientRuntimeFlags.hasConvex) return <RealEditorWorkspace systemId={systemId} />;
   return <MockEditorWorkspace systemId={systemId} />;
 }

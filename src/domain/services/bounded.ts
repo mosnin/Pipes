@@ -168,7 +168,38 @@ export class CollaborationService {
   }
 }
 
-export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing` }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
+export class BillingService {
+  constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
+  async getSummary(ctx: AppContext) {
+    const state = await this.repos.entitlements.getPlanState(ctx.workspaceId);
+    return { plan: state.plan, status: state.status, entitlements: getEntitlements(state.plan), billingMode: getBillingService().mode, hasBillingCustomer: Boolean(state.externalCustomerId) };
+  }
+  private returnUrl(status?: string) {
+    const url = new URL("/settings/billing", env.NEXT_PUBLIC_APP_URL);
+    if (status) url.searchParams.set("status", status);
+    return url.toString();
+  }
+  async startCheckout(ctx: AppContext, plan: "Pro" | "Builder", email?: string) {
+    this.access.ensureCanManageMembers(ctx);
+    if (plan !== "Pro" && plan !== "Builder") throw new Error("Choose the Pro or Builder plan.");
+    const billing = getBillingService();
+    const session = await billing.createCheckoutSession({ workspaceId: ctx.workspaceId, plan, email, successUrl: this.returnUrl("success"), cancelUrl: this.returnUrl("cancel") });
+    // Demo mode has no payment provider: apply the plan so the flow can be tried end to end.
+    if (billing.mode === "mock") await this.repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan, status: "active" });
+    return session;
+  }
+  async startPortal(ctx: AppContext) {
+    this.access.ensureCanManageMembers(ctx);
+    const state = await this.repos.entitlements.getPlanState(ctx.workspaceId);
+    return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, customerId: state.externalCustomerId, returnUrl: this.returnUrl() });
+  }
+  async handleWebhook(request: Request) {
+    const event = await getBillingService().parseWebhook(request);
+    if (!event) return false;
+    await this.repos.entitlements.upsertPlanState(event);
+    return true;
+  }
+}
 
 export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
 
@@ -180,6 +211,7 @@ export class ProtocolService {
   }
   async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string }) {
     this.ensureCanManageTokens(ctx);
+    if (!getEntitlements(ctx.plan).apiMcpAccess) throw new Error("API and MCP access start on the Pro plan. Upgrade to create tokens.");
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
@@ -227,6 +259,8 @@ export class ProtocolService {
   }
   async revokeToken(ctx: AppContext, tokenId: string) {
     this.ensureCanManageTokens(ctx);
+    const owned = (await this.repos.agentTokens.list(ctx.workspaceId)).some((token) => token.id === tokenId);
+    if (!owned) throw new Error("Token not found.");
     await this.repos.agentTokens.revoke(tokenId);
     await this.repos.audits.add({
       actorType: ctx.actorType,

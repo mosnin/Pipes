@@ -67,11 +67,12 @@ const workspaceId = await check("get system bundle", async () => {
 });
 
 // Paid-plan paths (versions, collaboration) need a plan. Against a local Convex
-// deployment the smoke test upgrades its own workspace directly.
+// deployment the smoke test upgrades its own workspace directly (needs
+// PIPES_CONVEX_SERVER_KEY in the environment, the same value Convex has).
 if (process.env.SMOKE_UPGRADE_WITH_CONVEX === "1") {
   await check("upgrade workspace to Builder (local Convex)", async () => {
     const { execFileSync } = await import("node:child_process");
-    execFileSync("npx", ["convex", "run", "app:upsertPlanState", JSON.stringify({ workspaceId, plan: "Builder", status: "active" })], { stdio: "pipe", env: { ...process.env, CONVEX_AGENT_MODE: "anonymous" } });
+    execFileSync("npx", ["convex", "run", "app:upsertPlanState", JSON.stringify({ workspaceId, plan: "Builder", status: "active", serverKey: process.env.PIPES_CONVEX_SERVER_KEY })], { stdio: "pipe", env: { ...process.env, CONVEX_AGENT_MODE: "anonymous" } });
   });
 }
 
@@ -167,6 +168,10 @@ await check("agent session + run", async () => {
   const session = expectOk(await owner("/api/agent/sessions", { method: "POST", body: { systemId, title: "Smoke session" } }), "session");
   const run = expectOk(await owner("/api/agent/runs", { method: "POST", body: { sessionId: session.id ?? session.sessionId, systemId, message: "Add a guardrail before output" } }), "run");
   return `run ${run.id ?? run.runId ?? "created"}`;
+});
+await check("forged billing webhook is rejected", async () => {
+  const res = await fetch(`${BASE}/api/webhooks/creem`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ workspaceId, plan: "Builder", status: "active" }) });
+  if (res.status !== 401) throw new Error(`expected 401, got ${res.status}`);
 });
 await check("log out then dashboard redirects", async () => {
   await owner("/api/auth/logout");

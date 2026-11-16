@@ -1,19 +1,11 @@
 "use client";
 
-import { ConvexProvider } from "convex/react";
 import { MotionConfig } from "motion/react";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { IconProvider } from "@/components/ui/icon";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { getConvexReactClient } from "@/lib/convex/reactClient";
-import { clientRuntimeFlags } from "@/lib/env/client";
-
-function DataProvider({ children }: { children: ReactNode }) {
-  if (clientRuntimeFlags.useMocks || !clientRuntimeFlags.hasConvex) return <>{children}</>;
-  return <ConvexProvider client={getConvexReactClient()}>{children}</ConvexProvider>;
-}
 
 export function Providers({ children }: { children: ReactNode }): ReactNode {
   return (
@@ -21,7 +13,7 @@ export function Providers({ children }: { children: ReactNode }): ReactNode {
       <MotionConfig reducedMotion="user">
         <IconProvider>
           <TooltipProvider>
-            <DataProvider>{children}</DataProvider>
+            {children}
           </TooltipProvider>
         </IconProvider>
       </MotionConfig>

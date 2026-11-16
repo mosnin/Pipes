@@ -24,7 +24,6 @@ const STATUS_ROLE: Record<string, SignalRole> = {
 const FEATURES: { key: Exclude<keyof Entitlements, "maxSystems">; label: string }[] = [
   { key: "collaboration", label: "Collaboration" },
   { key: "versionHistory", label: "Version history" },
-  { key: "advancedValidation", label: "Advanced validation" },
   { key: "simulation", label: "Simulation" },
   { key: "apiMcpAccess", label: "REST and MCP access" },
   { key: "aiGeneration", label: "AI generation" }

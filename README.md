@@ -52,6 +52,7 @@ cp .env.example .env.local
 # PIPES_USE_MOCKS=false
 # NEXT_PUBLIC_PIPES_USE_MOCKS=false
 # PIPES_SESSION_SECRET=<32+ random characters>   # required in production
+# PIPES_CONVEX_SERVER_KEY=<32+ random characters> # also set on Convex: npx convex env set PIPES_CONVEX_SERVER_KEY <value>
 npm install
 npx convex dev            # first run creates a deployment and writes CONVEX_URL; keep it running
 npm run dev

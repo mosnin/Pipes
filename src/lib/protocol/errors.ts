@@ -1,6 +1,7 @@
 export type ProtocolErrorCode =
   | "AUTH_REQUIRED"
   | "AUTH_INVALID"
+  | "PLAN_REQUIRED"
   | "PERMISSION_DENIED"
   | "SCOPE_VIOLATION"
   | "VALIDATION_ERROR"

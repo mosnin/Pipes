@@ -74,11 +74,24 @@ await new Promise((r) => receiver.listen(3999, r));
 
 await check("sign up", async () => data(await call("/api/auth/signup", { method: "POST", body: { name: "Flow Owner", email: `flow-${stamp}@example.com`, password: "correct horse battery" } }), "signup") && "");
 
+await check("Free plan cannot create API tokens", async () => {
+  const res = await call("/api/settings/tokens", { method: "POST", body: { name: "free", capabilities: ["runs:read"] } });
+  if (res.status < 400) throw new Error(`token created on Free: ${res.status}`);
+});
+
 const systemId = await check("create workflow", async () => data(await call("/api/systems", { method: "POST", body: { name: "Refund desk" } }), "create").systemId);
 const idOf = (result) => (typeof result === "string" ? result : result?.id);
 const add = async (type, title, x) => idOf(data(await call("/api/graph", { method: "POST", body: { action: "addNode", systemId, type, title, x, y: 100 } }), "addNode").result);
 const pipe = async (fromNodeId, toNodeId) => idOf(data(await call("/api/graph", { method: "POST", body: { action: "addPipe", systemId, fromNodeId, toNodeId } }), "addPipe").result);
 const tokenOf = (d) => d.token ?? d.secret ?? d.plaintext;
+
+if (process.env.SMOKE_UPGRADE_WITH_CONVEX === "1") {
+  await check("upgrade workspace to Pro (local Convex)", async () => {
+    const bundle = data(await call(`/api/systems/${systemId}`), "bundle");
+    const { execFileSync } = await import("node:child_process");
+    execFileSync("npx", ["convex", "run", "app:upsertPlanState", JSON.stringify({ workspaceId: bundle.system.workspaceId, plan: "Pro", status: "active", serverKey: process.env.PIPES_CONVEX_SERVER_KEY })], { stdio: "pipe", env: { ...process.env, CONVEX_AGENT_MODE: "anonymous" } });
+  });
+}
 
 const ids = {};
 await check("build graph", async () => {

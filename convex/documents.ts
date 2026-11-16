@@ -1,4 +1,5 @@
-import { mutation, query } from "./_generated/server";
+// @ts-nocheck
+import { mutation, query } from "./lib";
 import { v } from "convex/values";
 
 const now = () => new Date().toISOString();

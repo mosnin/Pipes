@@ -262,7 +262,7 @@ export function createMockRepositories(): RepositorySet {
       },
       async getPlanState(workspaceId) {
         const row = store.readDb().planState.find((p) => p.workspaceId === workspaceId);
-        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing" };
+        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing", externalCustomerId: row?.externalCustomerId };
       },
       async upsertPlanState(input) {
         const db = store.readDb();

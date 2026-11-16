@@ -10,6 +10,7 @@
 
 import type * as app from "../app.js";
 import type * as documents from "../documents.js";
+import type * as lib from "../lib.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   app: typeof app;
   documents: typeof documents;
+  lib: typeof lib;
 }>;
 
 /**

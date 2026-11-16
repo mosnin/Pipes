@@ -42,7 +42,6 @@ const ROWS: { label: string; key: keyof Entitlements }[] = [
   { label: "Simulation", key: "simulation" },
   { label: "Shared editing and comments", key: "collaboration" },
   { label: "Version history", key: "versionHistory" },
-  { label: "Advanced validation", key: "advancedValidation" },
   { label: "API and MCP access", key: "apiMcpAccess" },
   { label: "AI drafting and edit suggestions", key: "aiGeneration" },
 ];
