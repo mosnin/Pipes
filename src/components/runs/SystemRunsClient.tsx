@@ -36,6 +36,7 @@ function median(values: number[]): number | undefined {
 
 /** Where a failed run stopped: its last step, or failing that the step named in its error. */
 function stopStep(row: RunSummary, lastStepTitle: Record<string, string>): string | undefined {
+  if (row.stoppedAtTitle) return row.stoppedAtTitle;
   if (lastStepTitle[row.id]) return lastStepTitle[row.id];
   if (row.currentStepTitle) return row.currentStepTitle;
   const match = row.error?.match(/^(.+?) (failed|was rejected)/);
@@ -117,7 +118,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
   // read once each to find where they stopped. Capped: the table is a trend,
   // not an audit.
   useEffect(() => {
-    const pending = rows.filter((r) => r.status === "failed" && !fetched.current.has(r.id)).slice(0, 40);
+    const pending = rows.filter((r) => r.status === "failed" && !r.stoppedAtTitle && !fetched.current.has(r.id)).slice(0, 40);
     if (pending.length === 0) return;
     for (const run of pending) fetched.current.add(run.id);
     void Promise.all(

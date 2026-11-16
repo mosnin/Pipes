@@ -10,6 +10,8 @@ export const RUN_KIND = "workflow_run";
 export type RunSummary = Pick<WorkflowRun, "id" | "systemId" | "systemName" | "versionId" | "versionName" | "status" | "trigger" | "startedAt" | "endedAt" | "error" | "currentNodeId" | "startedBy"> & {
   stepCount: number;
   currentStepTitle?: string;
+  /** For failed or canceled runs: the step the run stopped at. */
+  stoppedAtTitle?: string;
   durationMs?: number;
 };
 
@@ -32,6 +34,7 @@ export function summarize(run: WorkflowRun): RunSummary {
     startedBy: run.startedBy,
     stepCount: run.steps.filter((s) => s.completedAt).length,
     currentStepTitle: current?.title,
+    stoppedAtTitle: run.status === "failed" || run.status === "canceled" ? run.steps[run.steps.length - 1]?.nodeTitle : undefined,
     durationMs: run.endedAt ? new Date(run.endedAt).getTime() - new Date(run.startedAt).getTime() : undefined
   };
 }
@@ -145,13 +148,13 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
       return after;
     },
 
-    async decide(ctx: AppContext, runId: string, input: { decision: "approved" | "rejected" | "sent_back"; comment?: string; sendBackTo?: string }): Promise<WorkflowRun> {
+    async decide(ctx: AppContext, runId: string, input: { decision: "approved" | "rejected" | "sent_back"; comment?: string; sendBackTo?: string; actorLabel?: string }): Promise<WorkflowRun> {
       const before = await load(ctx, runId);
       const required = before.currentNodeId ? before.snapshot.steps[before.currentNodeId]?.approverRole ?? "Editor" : "Editor";
       if (ctx.actorType !== "user" || (ROLE_RANK[ctx.role] ?? 0) < ROLE_RANK[required]) {
         throw new RunError("not_allowed", `Only a person with the ${required} role or higher can decide this approval.`);
       }
-      const after = decideApproval(before, { ...input, by: actorFor(ctx) });
+      const after = decideApproval(before, { decision: input.decision, comment: input.comment, sendBackTo: input.sendBackTo, by: actorFor(ctx, input.actorLabel) });
       await save(after);
       await audit(ctx, `run.approval.${input.decision}`, after, "success", { nodeId: before.currentNodeId });
       await afterTransition(ctx, before, after);
