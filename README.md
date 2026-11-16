@@ -72,6 +72,19 @@ BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
 SMOKE_UPGRADE_WITH_CONVEX=1 BASE_URL=http://localhost:3000 node scripts/smoke-provider.mjs
 ```
 
+## Agents, runs and triggers
+- **MCP server** at `/api/mcp` with OAuth 2.1 (see `docs/mcp.md`). Agents call
+  `start_run`, do each step, and `complete_step` until the run finishes.
+- **Step specs** (instructions, done-when, skills, connections, loop limits,
+  approver role) live in a per-workflow design document on the server.
+- **Human approvals** pause a run until a person decides it under Approvals.
+- **Triggers**: an inbound webhook per workflow (`POST /api/hooks/{systemId}`
+  with `x-pipes-key`), cron schedules fired by `GET /api/cron/schedules`
+  (`Authorization: Bearer $CRON_SECRET`, call it every minute or few), and
+  signed outbound run events (`x-pipes-signature: sha256=HMAC(secret, ts.body)`).
+- **Connections**: MCP servers, HTTP APIs and skills, secrets encrypted at rest.
+- **Usage** is metered (runs, steps, API and MCP calls) against plan allowances.
+
 ## Testing
 ```bash
 npm run lint
