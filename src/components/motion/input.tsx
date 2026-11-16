@@ -136,10 +136,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           // tailwind-merge kept both and source order decided — so every
           // field in the product was a capsule no matter what the caller
           // asked for. The geometry belongs here, where it can be measured.
-          "relative h-[var(--control-h-field)] overflow-hidden rounded-8 border transition-colors duration-200",
-          "border-border",
-          focused && !hasError && "border-foreground/40 ring-2 ring-ring/40",
-          hasError && "border-destructive ring-2 ring-destructive/25",
+          "relative h-9 overflow-hidden rounded-[14px] border transition-[border-color,box-shadow] duration-150",
+          "border-border hover:border-border-strong",
+          focused && !hasError && "border-accent ring-4 ring-accent/15 hover:border-accent",
+          hasError && "border-destructive ring-4 ring-destructive/15",
           disabled && "opacity-60",
           classNames?.field,
         )}

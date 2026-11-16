@@ -94,19 +94,19 @@ export function Select({
                   // select's resting state.
                   "w-full border border-border bg-raised text-ink outline-none",
                   "transition-[background-color,border-color,color,box-shadow] duration-[var(--dur-1)] ease-[var(--ease-out)]",
-                  "hover:border-strong focus-ring focus-visible:border-ink",
+                  "hover:border-border-strong focus-visible:border-accent focus-visible:ring-4 focus-visible:ring-accent/15",
                   "disabled:cursor-not-allowed disabled:text-ink-4",
                 )
               : cn(
-                  "focus-ring flex w-full items-center rounded-6 border border-transparent bg-transparent text-ink outline-none",
-                  "transition-colors duration-[var(--dur-1)] ease-linear hover:border-border focus-visible:bg-inset",
+                  "focus-ring flex w-full items-center rounded-lg border border-transparent bg-transparent text-ink outline-none",
+                  "transition-colors duration-150 ease-linear hover:bg-muted focus-visible:bg-muted",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 ),
             "flex items-center justify-between gap-1.5 text-left",
             size === "md"
-              ? "h-[36px] rounded-10 pl-3 pr-2 t-body"
-              : "h-[32px] rounded-8 pl-2 pr-1.5 t-caption",
-            variant === "quiet" && "rounded-6",
+              ? "h-9 rounded-[14px] pl-3 pr-2.5 t-body"
+              : "h-8 rounded-[14px] pl-3 pr-2 t-caption",
+            variant === "quiet" && "rounded-lg",
             aria["aria-invalid"] &&
               "border-critical-border hover:border-critical-border focus-visible:border-critical-border",
             className,

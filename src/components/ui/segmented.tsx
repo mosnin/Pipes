@@ -54,13 +54,14 @@ const TRACK_SIZE = {
   // exactly the §9.3 thumb heights (28 → 22, 34 → 28). The 2px padding is on
   // the 4pt scale; the extra 1px of the spec's "3px inner padding" is the
   // border itself.
-  sm: "h-[32px] p-0.5",
-  md: "h-[36px] p-0.5",
+  // Podium: a 26px track with a 2px inset; the pill is 6px inside an 8px track.
+  sm: "h-[26px] p-[2px]",
+  md: "h-[30px] p-[2px]",
 } as const;
 
 const SEGMENT_SIZE = {
-  sm: "min-w-[40px] px-3 t-micro",
-  md: "min-w-[48px] px-4 t-caption-medium",
+  sm: "min-w-[40px] px-2.5 text-[12px] font-medium",
+  md: "min-w-[48px] px-3 text-[13px] font-medium",
 } as const;
 
 export function Segmented<T extends string>({
@@ -184,12 +185,12 @@ export function Segmented<T extends string>({
       onKeyDown={disabled ? undefined : onKeyDown}
       className={cn(
         "relative isolate inline-flex shrink-0 items-stretch",
-        "rounded-8 bg-segment-track",
+        "rounded-lg bg-segment-track",
         // Focus rings the TRACK, not the segment (§9.3), so the control reads
         // as one object under the keyboard. The first stop of the two-stop ring
         // takes the ground the control was dropped on; callers that place it on
         // canvas or an inset set `--seg-ground` through `className`.
-        "has-[:focus-visible]:shadow-[0_0_0_2px_var(--seg-ground,var(--surface-raised)),0_0_0_4px_var(--focus-ring)]",
+        "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent/55",
         TRACK_SIZE[size],
         // An empty control still occupies its footprint: the frame always
         // renders (§11.2), so a range picker awaiting its options is a quiet
@@ -204,12 +205,12 @@ export function Segmented<T extends string>({
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-y-0.5 left-0 z-0 rounded-6",
+            "pointer-events-none absolute inset-y-[2px] left-0 z-0 rounded-[6px]",
             // Dark steps the thumb one rung above a card so it still reads as
             // lifted off the near-black track (§9.3). Both are semantic tokens;
             // there is no hardcoded colour behind the variant.
-            "bg-segment-thumb shadow-thumb",
-            "transition-[transform,width] duration-[var(--dur-2)] ease-[var(--ease-move)]",
+            "bg-seg-pill shadow-pill",
+            "transition-[transform,width] duration-[var(--duration-fast)] ease-[var(--ease-podium-out)]",
           )}
           style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }}
         />
@@ -233,13 +234,13 @@ export function Segmented<T extends string>({
             onClick={() => select(option.value)}
             className={cn(
               "relative z-[1] inline-flex select-none items-center justify-center",
-              "whitespace-nowrap rounded-6 outline-none",
+              "whitespace-nowrap rounded-[6px] outline-none",
               // Only the label colour crossfades (§7.3); no fill appears under
               // an inactive segment on hover, because the thumb is the only
               // fill this control owns.
               "transition-colors duration-[var(--dur-1)] ease-linear",
               "disabled:cursor-not-allowed disabled:text-ink-4 disabled:hover:text-ink-4",
-              active ? "text-ink" : "text-ink-2 hover:text-ink",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               SEGMENT_SIZE[size],
             )}
           >

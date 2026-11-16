@@ -41,14 +41,14 @@ const overlayMotion = [
   "data-[state=open]:data-[side=left]:slide-in-from-right-[4px]",
   "data-[state=open]:data-[side=right]:slide-in-from-left-[4px]",
   "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-98",
-  "data-[state=closed]:duration-[120ms] data-[state=closed]:ease-[var(--ease-in)]",
+  "data-[state=closed]:duration-[120ms] data-[state=closed]:ease-[var(--ease-out)]",
 ];
 
 const overlaySurface = [
   // z 100 on the §5.9 ladder: above sticky chrome and the sidebar, below the
   // dialog scrim.
   "z-[100] min-w-[200px] max-w-[320px] max-h-[60vh] overflow-y-auto overflow-x-hidden",
-  "rounded-12 border border-border bg-overlay p-1 shadow-elev-2",
+  "rounded-[14px] bg-card p-1.5 shadow-float",
 ];
 
 export function DropdownMenuContent({
@@ -72,13 +72,13 @@ export function DropdownMenuContent({
  * `--text-tertiary`. `t-body` carries the label; nothing here sets a size.
  */
 const rowBase = [
-  "relative flex h-[36px] cursor-default select-none items-center gap-2 rounded-8 px-2",
-  "t-body text-ink-2 outline-none",
+  "relative flex h-8 cursor-default select-none items-center gap-2.5 rounded-lg px-2",
+  "text-[13px] text-foreground outline-none",
   "transition-colors duration-[var(--dur-1)] ease-linear",
-  "[&_svg]:size-[14px] [&_svg]:shrink-0 [&_svg]:text-ink-3",
+  "[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
   // Radix marks the active descendant with `data-highlighted` for both pointer
   // and keyboard, so hover and roving focus land on the same treatment.
-  "data-[highlighted]:bg-state-hover data-[highlighted]:text-ink",
+  "data-[highlighted]:bg-muted data-[highlighted]:text-foreground",
   "data-[highlighted]:[&_svg]:text-ink-2",
   "data-[disabled]:pointer-events-none data-[disabled]:text-ink-4",
   "data-[disabled]:[&_svg]:text-ink-4",
@@ -217,7 +217,7 @@ export function DropdownMenuSeparator({
     <DropdownMenuPrimitive.Separator
       // Bled through the menu's 4px padding so the rule reads as a division of
       // the whole panel rather than a short dash floating between two rows.
-      className={cn("-mx-1 my-1 h-px bg-hairline", className)}
+      className={cn("-mx-1.5 my-1.5 h-px bg-border", className)}
       {...props}
     />
   );
@@ -229,7 +229,7 @@ export function DropdownMenuLabel({
 }: ComponentProps<typeof DropdownMenuPrimitive.Label>): ReactNode {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn("px-2 pt-1.5 pb-1 t-group-label text-ink-3", className)}
+      className={cn("px-2 pt-1.5 pb-1 text-xs text-muted-foreground", className)}
       {...props}
     />
   );

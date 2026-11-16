@@ -52,7 +52,7 @@ export function PageHeader({
     // Measured against the reference's index page: the title's cap sits
     // 23.6px below the pane's top edge and the card starts 19.7px under it.
     // `PageShell` already supplies 16 of that top inset as its gutter.
-    <header className={cn("pb-5 pt-1", className)}>
+    <header className={cn("t-stagger pb-7", className)}>
       {/* justify-between, never a flex-1 spacer, so the action cluster lands at
           the same x on every route (anti-pattern 40). Below `sm` the cluster
           drops under the title block: a primary button beside a title on a
@@ -61,7 +61,7 @@ export function PageHeader({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col justify-center sm:flex-1">
           {kicker ? (
-            <span className="t-label-caps mb-2 text-ink-3">{kicker}</span>
+            <span className="mb-2 text-[13px] text-muted-foreground">{kicker}</span>
           ) : null}
           <h1
             className={cn(
@@ -72,7 +72,7 @@ export function PageHeader({
             {title}
           </h1>
           {description ? (
-            <p className="t-caption mt-1.5 max-w-[90ch] text-ink-3">
+            <p className="mt-2.5 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
               {description}
             </p>
           ) : null}

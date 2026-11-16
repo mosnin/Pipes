@@ -46,15 +46,15 @@ export function Card({
         // darker than the other three — the reference draws a card as a sheet
         // resting on the pane, not as a rectangle outlined on it, and that
         // single darker line under it is the whole of the effect.
-        "relative rounded-12 border border-border bg-raised text-ink",
-        "shadow-[0_1px_0_0_var(--line-strong)]",
+        // Podium: a white card, a hairline, 14px corners. No shadow in the flow.
+        "relative rounded-[14px] border border-border bg-card text-ink",
         padded && "p-4",
         interactive && [
           "h-full cursor-pointer",
           // Transition the two properties that change and nothing else — never
           // `transition: all`, which animates layout on hover (§13.61).
-          "transition-[box-shadow,border-color] duration-[var(--dur-2)] ease-[var(--ease-out)]",
-          "hover:border-strong hover:shadow-elev-1-hover",
+          "transition-[border-color] duration-150 ease-[var(--ease-out)]",
+          "hover:border-border-strong",
           // --state-active is an alpha fill, so the press must composite OVER
           // the raised ground rather than replace it.
           "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:content-['']",

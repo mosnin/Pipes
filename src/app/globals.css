@@ -811,8 +811,8 @@ body {
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
-    text-decoration-color: var(--link-underline);
-    transition: text-decoration-color var(--dur-1) linear;
+    text-decoration-color: transparent;
+    transition: text-decoration-color var(--dur-2) ease;
   }
   .t-link:hover {
     text-decoration-color: var(--accent-text);
@@ -821,36 +821,31 @@ body {
   /* The two-stop focus ring. The first stop is the ground the control sits
      on, so the offset gap actually reads on every rung. */
   .focus-ring:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px var(--surface-raised),
-      0 0 0 4px var(--focus-ring);
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
+    box-shadow: none;
   }
   .focus-ring-canvas:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px var(--surface-canvas),
-      0 0 0 4px var(--focus-ring);
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
+    box-shadow: none;
   }
   .focus-ring-inset:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px var(--surface-inset),
-      0 0 0 4px var(--focus-ring);
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
+    box-shadow: none;
   }
   .focus-ring-rail:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px var(--surface-rail),
-      0 0 0 4px var(--focus-ring);
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
+    box-shadow: none;
   }
   /* On the bar the ring's first stop is the bar's own fill, so a focused
      control there reads as ringed rather than as a light rectangle. */
   .focus-ring-bar:focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px var(--bar-fill),
-      0 0 0 4px var(--bar-ink);
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 1px;
+    box-shadow: none;
   }
 }
 

@@ -58,7 +58,7 @@ export function DialogOverlay({
     <DialogPrimitive.Overlay
       className={cn(
         // z 200 on the §5.9 ladder — under the panel at 210, over everything else.
-        "fixed inset-0 z-[200] bg-scrim",
+        "fixed inset-0 z-[200] bg-scrim backdrop-blur-[2px]",
         // §7.3: the scrim is a linear opacity ramp over `--dur-3`; it does not
         // scale or move, because it is not an object.
         "duration-[var(--dur-3)] ease-linear",
@@ -100,14 +100,14 @@ export function DialogContent({
           // pair collapses into ONE border-radius utility: a caller passing
           // `rounded-0` for an edge-anchored panel then wins at every width
           // instead of only above the breakpoint.
-          "[--dlg-r:16px] max-[480px]:[--dlg-r:12px] rounded-[var(--dlg-r)]",
-          "border border-border bg-overlay p-0 shadow-elev-3 outline-none",
+          "[--dlg-r:20px] rounded-[var(--dlg-r)]",
+          "bg-card p-0 shadow-modal outline-none",
           // The reference insets a modal's header, body and footer by 16 —
           // measured at x=588 against a left edge of 567, on both the title
           // row and a body label. The panel itself carries no padding, so a
           // header band and a footer reach the panel's edges without having
           // to bleed back out through it.
-          "[--dialog-gutter:16px] gap-0",
+          "[--dialog-gutter:24px] gap-0",
           DIALOG_WIDTH[size],
           // §7.3: scale(0.97)→1 + translateY(8px)→0 over `--dur-4`
           // `--ease-emphasis`; exit 160ms, opacity and scale only.
@@ -157,9 +157,9 @@ export function DialogHeader({
       className={cn(
         // 52 including its rule: the band fills y 444..507 and the rule sits at
         // 508..509, measured on `modal-adjust-store-credit` at x=1200.
-        "flex min-h-[52px] shrink-0 flex-col justify-center gap-0.5 rounded-t-[inherit]",
-        "border-b border-hairline bg-band",
-        "px-[var(--dialog-gutter,0px)] py-1 pe-16",
+        // Podium: no band, no rule. The title sits in the card's own padding.
+        "flex shrink-0 flex-col justify-center gap-1 rounded-t-[inherit]",
+        "px-[var(--dialog-gutter,0px)] pb-3 pt-5 pe-16",
         className,
       )}
       {...props}
@@ -183,7 +183,7 @@ export function DialogTitle({
       // Chosen rather than layered: two `t-*` role classes on one element would
       // resolve by source order in globals.css, not by intent.
       className={cn(
-        size === "title-1" ? "t-title-1" : "t-title-3",
+        size === "title-1" ? "text-[22px] font-semibold leading-[28px] tracking-[-0.02em]" : "text-[17px] font-medium leading-[22px] tracking-[-0.01em]",
         "text-ink",
         className,
       )}
@@ -268,8 +268,8 @@ export function DialogFooter({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-end gap-1 rounded-b-[inherit]",
-        "px-[var(--dialog-gutter,0px)] pb-2",
+        "flex shrink-0 items-center justify-end gap-2 rounded-b-[inherit]",
+        "px-[var(--dialog-gutter,0px)] pb-5 pt-2",
         className,
       )}
       {...props}
@@ -329,7 +329,7 @@ export function ConfirmDialog({
           {destructive ? (
             <span
               aria-hidden="true"
-              className="flex size-[36px] shrink-0 items-center justify-center rounded-12 bg-critical-wash text-critical-text"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"
             >
               <TriangleAlert className="size-[18px]" strokeWidth={1.5} />
             </span>

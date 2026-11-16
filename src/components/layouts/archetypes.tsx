@@ -36,14 +36,16 @@ import { cn } from "@/lib/utils";
  * inset too, every page re-declares `py-*` and the drift this component
  * exists to end simply reappears on the other axis.
  */
-const PAGE_GUTTER = "px-4 py-4";
+// Podium: 40px above the body on desktop, a phone-width gutter below md.
+const PAGE_GUTTER = "px-4 pb-12 pt-6 md:px-8 md:pt-10";
 
 export type PageMeasure = "prose" | "page" | "bleed";
 
 /** §6.3 — exactly three container modes. There is no fourth. */
 const MEASURE: Record<PageMeasure, string> = {
-  prose: "max-w-[var(--prose-max)]",
-  page: "max-w-[var(--page-max)]",
+  // Podium's measures: max-w-3xl for settings and forms, max-w-5xl for overviews.
+  prose: "max-w-3xl",
+  page: "max-w-5xl",
   bleed: "max-w-none",
 };
 

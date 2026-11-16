@@ -28,11 +28,10 @@ export const controlBase = [
   "border border-border",
   "transition-[background-color,border-color,color,box-shadow]",
   "duration-[var(--dur-1)] ease-[var(--ease-out)]",
-  "placeholder:text-ink-4",
-  "hover:border-strong",
-  // The two-stop ring's first stop is the surface the control sits ON — a card —
-  // so the offset gap actually reads against the cavity (§5.8).
-  "focus-ring focus-visible:border-ink focus-visible:outline-none",
+  "placeholder:text-faint",
+  "hover:border-border-strong",
+  // Podium's field focus: an accent edge with a soft 4px accent halo.
+  "focus-visible:border-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/15",
   "disabled:cursor-not-allowed disabled:text-ink-4 disabled:placeholder:text-ink-4",
   // Read-only drops the edge entirely: the well remains, the affordance does not.
   // Guarded with `enabled:` because `:read-only` also matches a disabled input,
@@ -84,7 +83,7 @@ export function Textarea({
       className={cn(
         controlBase,
         // Vertical only: horizontal resize breaks the column grid it sits in.
-        "min-h-[96px] resize-y rounded-8 px-2 py-1.5",
+        "min-h-[96px] resize-y rounded-[14px] px-3 py-2",
         invalid &&
           "border-critical-border pr-8 hover:border-critical-border focus-visible:border-critical-border",
         className,
@@ -201,14 +200,14 @@ export function SearchInput({
         aria-hidden="true"
         size={14}
         strokeWidth={1.25}
-        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-ink-3"
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
       />
       <input
         type="search"
         onChange={handleChange}
         className={cn(
           controlBase,
-          "h-[36px] rounded-10 pl-10",
+          "h-9 rounded-[14px] pl-9",
           // Native search decorations would collide with the clear button.
           "[&::-webkit-search-cancel-button]:appearance-none",
           clearable ? "pr-10" : "pr-3",

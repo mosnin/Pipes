@@ -1,52 +1,26 @@
-import {
-  Funnel,
-  Inbox,
-  Lock,
-  Search,
-  TriangleAlert,
-  type LucideIcon,
-} from "@/components/ui/icon";
 import type { ReactNode } from "react";
+import { EmptyArt, type EmptyArtKind } from "@/components/ui/empty-art";
+import { TriangleAlert, type LucideIcon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
 /* ==========================================================================
-   EMPTY STATE — §9.37, §11.3
+   EMPTY STATE, Podium's (docs/DESIGN.md, Empty states).
 
-   "A company that has committed nothing must look finished, not broken."
-   Five variants, and they differ in three things at once: the tile, the copy,
-   and — the part that always gets skipped — the PRIMARY ACTION. Never-created
-   offers creation; filtered-out offers clearing, styled secondary, because
-   clearing is not creation; permission offers no create at all.
-
-   No illustrations. No mascots. No exclamation marks. No marketing copy.
+   A small isometric figure in sky blue, a medium title, one muted sentence
+   and the action that fills the list. Centred. The variant picks the figure
+   and the action's role: never-created offers creation, filtered-out offers
+   clearing, permission offers nothing to create. An error is the one state
+   without art: it is a status, so it gets the destructive icon tile.
    ========================================================================== */
 
 export type EmptyVariant =
   "never" | "filtered" | "search" | "error" | "permission";
 
-/** git's empty tree — the literal statement that nothing has been committed. */
-const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
-
-interface VariantSpec {
-  icon: LucideIcon;
-  /** 48px for a state about the object; 32px when the data merely did not match. */
-  size: 48 | 32;
-  tile: string;
-  glyph: string;
-}
-
-const VARIANT: Record<EmptyVariant, VariantSpec> = {
-  never: { icon: Inbox, size: 48, tile: "bg-inset", glyph: "text-ink-3" },
-  filtered: { icon: Funnel, size: 32, tile: "bg-inset", glyph: "text-ink-3" },
-  search: { icon: Search, size: 32, tile: "bg-inset", glyph: "text-ink-3" },
-  // The one tinted tile: an error is a status, so it earns its wash (§4.6.10).
-  error: {
-    icon: TriangleAlert,
-    size: 48,
-    tile: "bg-critical-wash",
-    glyph: "text-critical-text",
-  },
-  permission: { icon: Lock, size: 48, tile: "bg-inset", glyph: "text-ink-3" },
+const VARIANT_ART: Record<Exclude<EmptyVariant, "error">, EmptyArtKind> = {
+  never: "files",
+  filtered: "search",
+  search: "search",
+  permission: "pins",
 };
 
 export interface EmptyStateProps {
@@ -67,6 +41,10 @@ export interface EmptyStateProps {
    * not the mark a CFO should meet first.
    */
   emptyTree?: boolean;
+  /** Pick the figure yourself when the list has an obvious one (people, activity, apps...). */
+  art?: EmptyArtKind;
+  /** Smaller figure and tighter padding, for side panels and cards. */
+  compact?: boolean;
   /**
    * The title is a paragraph by default so the surrounding outline stays the
    * page's. When the empty state IS the page (a not-found route), pass `h1`
@@ -83,60 +61,31 @@ export function EmptyState({
   action,
   secondaryAction,
   variant = "never",
-  emptyTree = false,
+  art,
+  compact = false,
   titleAs: Title = "p",
   className,
 }: EmptyStateProps): ReactNode {
-  const spec = VARIANT[variant];
-  const Glyph = icon ?? spec.icon;
-  const isLarge = spec.size === 48;
-
+  const ErrorGlyph: LucideIcon = icon ?? TriangleAlert;
   return (
     <div
       className={cn(
-        // Centred 400px column, padding 48px 24px. Inside a card, callers drop
-        // to `py-8` (32px); a full-page state opens up to 96px.
-        "flex w-full max-w-[440px] flex-col items-start px-6 py-12 text-left",
+        "t-enter mx-auto flex w-full max-w-sm flex-col items-center text-center",
+        compact ? "gap-1.5 px-4 py-6" : "gap-2 px-6 py-10",
         className,
       )}
     >
-      {emptyTree ? (
-        <div className="relative w-[20ch]" aria-hidden="true">
-          {/* Struck through its centre: this tree is empty, by definition. */}
-          <span className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-hairline" />
-          <span className="t-mono-hash block break-all text-ink-4">
-            {EMPTY_TREE}
-          </span>
-        </div>
+      {variant === "error" ? (
+        <span aria-hidden="true" className="mb-1 flex size-11 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+          <ErrorGlyph className="size-5" />
+        </span>
       ) : (
-        <div
-          className={cn(
-            // Icon-tile ratio, radius ~= 0.30 x size: 48 -> 14, 32 -> 10 (§5.4).
-            "flex items-center justify-center",
-            isLarge
-              ? "h-[48px] w-[48px] rounded-14"
-              : "h-[32px] w-[32px] rounded-10",
-            spec.tile,
-          )}
-        >
-          <Glyph
-            size={isLarge ? 24 : 16}
-            strokeWidth={isLarge ? 2 : 1.5}
-            aria-hidden="true"
-            className={spec.glyph}
-          />
-        </div>
+        <EmptyArt kind={art ?? VARIANT_ART[variant]} size={compact ? 96 : 132} className={compact ? "mb-0.5" : "-mb-1"} />
       )}
-
-      {/* A <p> unless the caller says otherwise: the surrounding outline is the
-          page's to own, and a hardcoded <h3> here would break it wherever
-          this lands (§12.6). */}
-      <Title className="t-title-4 mt-4 text-ink">{title}</Title>
-
-      {body ? <div className="t-caption mt-2 text-ink-2">{body}</div> : null}
-
+      <Title className="text-[14px] font-medium text-foreground">{title}</Title>
+      {body ? <div className="text-[13px] leading-5 text-pretty text-muted-foreground">{body}</div> : null}
       {action || secondaryAction ? (
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <div className={cn("flex flex-wrap items-center justify-center gap-2", compact ? "mt-2" : "mt-3")}>
           {action}
           {secondaryAction}
         </div>
