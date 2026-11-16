@@ -1279,3 +1279,38 @@ dialog.t-modal[open]::backdrop {
   .t-shimmer { color: var(--text-secondary); background: none; }
 }
 
+
+/*
+ * Toasts: Ding (lib/toast.tsx), dressed in Podium's tokens. Doubled class so
+ * these win over the stylesheet Ding injects at runtime. A card-coloured
+ * pill with the float shadow and a hairline; status glyphs use the app's
+ * meaning colours; the action is our black pill (white in dark).
+ */
+.tst-viewport.tst-viewport {
+  --tst-bg: var(--surface-raised);
+  --tst-fg: var(--text-primary);
+  --tst-ring: var(--line-border);
+  --tst-shadow: var(--shadow-float);
+  --tst-success: var(--positive-mark);
+  --tst-error: var(--critical-mark);
+  --tst-warning: var(--caution-mark);
+  --tst-info: var(--accent);
+  --tst-size: 44px;
+  --tst-radius: 22px;
+  --tst-pad: 16px;
+  font: 500 14px/1.3 var(--font-sans);
+  letter-spacing: -0.005em;
+}
+.dark .tst-viewport.tst-viewport {
+  --tst-shadow: 0 0 0 1px var(--line-border), 0 12px 32px -8px rgb(0 0 0 / 0.5);
+}
+.tst-viewport.tst-viewport .tst-title { font-weight: 500; }
+.tst-viewport.tst-viewport .tst-desc { color: var(--text-secondary); opacity: 1; font-weight: 400; }
+.tst-viewport.tst-viewport .tst-meta { color: var(--text-quaternary); opacity: 1; }
+.tst-viewport.tst-viewport .tst-action { background: var(--action-fill); color: var(--action-label); font-weight: 500; }
+.tst-viewport.tst-viewport .tst-secondary { background: transparent; color: var(--text-secondary); }
+.tst-viewport.tst-viewport .tst-action:hover { background: var(--action-fill-hover); }
+.tst-viewport.tst-viewport .tst-secondary:hover { background: var(--surface-selected); color: var(--text-primary); }
+.tst-viewport.tst-viewport .tst-close:hover { background: var(--surface-selected); }
+.tst-viewport.tst-viewport .tst-action:focus-visible,
+.tst-viewport.tst-viewport .tst-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

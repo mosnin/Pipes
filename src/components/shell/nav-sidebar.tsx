@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { HookList } from "@/components/rare/hook-sidebar";
+import { GetStartedRow } from "@/components/shell/intro";
 import { Avatar } from "@/components/ledger/author-stamp";
 import {
   DropdownMenu,
@@ -263,7 +264,8 @@ export function NavSidebar({
         <nav aria-label="Pipes" className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-5">
           {navGroupsFor(isAdmin).map((group, index) => (
             <Section key={group.label ?? `group-${index}`} title={group.label}>
-              {group.items.map((item) => (
+              {index === 0 ? <GetStartedRow rowClassName={rowCls} /> : null}
+              {group.items.filter((item) => item.href !== "/onboarding").map((item) => (
                 <NavRow key={item.href} item={item} pathname={pathname} count={item.count ? counts[item.count] : undefined} />
               ))}
             </Section>

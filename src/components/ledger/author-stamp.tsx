@@ -1,11 +1,10 @@
-import { Bot } from "@/components/ui/icon";
 import type { ReactNode } from "react";
-import SmoothAgentAvatar from "@/components/smoothui/agent-avatar";
+import { Avatar as PodiumAvatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export interface AvatarProps {
   label: string;
-  /** ROUND is a person, SQUARE is a process. This is not decoration (§5.3). */
+  /** A person or an agent: agents carry their colour field and the asterisk badge. */
   kind?: "human" | "agent";
   /** A saved profile image wins; the seeded preset is the human fallback. */
   imageUrl?: string | null;
@@ -15,89 +14,12 @@ export interface AvatarProps {
 }
 
 /**
- * LEDGER INSTRUMENT — Avatar (§5.3, §9.25).
- *
- * THE LOAD-BEARING RULE OF THIS FILE: human identity is a fully round avatar;
- * agent identity is a rounded square on `--agent-wash`. Authorship is marked by
- * SHAPE first and hue second, which is what makes it survive greyscale,
- * colour-blindness, print and a 16px rendering — none of which a violet-only
- * convention survives. Everywhere a machine can write (timeline, revision
- * history, run detail, key detail) this distinction is the fastest read on the
- * screen.
- *
- * A saved human profile photo is shown when present. Otherwise a deterministic
- * SmoothUI preset is generated from the label, so a person keeps the same
- * recognizable fallback everywhere without storing another identity field.
- * Presets are static in dense ledger views to avoid a wall of ambient motion.
+ * Podium's avatar under the ledger's name: always a circle. People get a soft
+ * pastel from their name, agents their colour field and the asterisk badge, so
+ * authorship never relies on colour alone. A saved photo wins over both.
  */
-export function Avatar({
-  label,
-  kind = "human",
-  imageUrl,
-  size = 24,
-  className,
-}: AvatarProps): ReactNode {
-  const agent = kind === "agent";
-
-  if (!agent && imageUrl) {
-    return (
-      <span
-        role="img"
-        aria-label={label}
-        style={{ width: size, height: size }}
-        className={cn(
-          "inline-flex shrink-0 overflow-hidden rounded-full bg-inset shadow-[inset_0_0_0_1px_var(--neutral-wash)]",
-          className,
-        )}
-      >
-        {/* Arbitrary user profile origins cannot be enumerated in next/image's
-            remotePatterns. The native image is intentionally clipped here. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageUrl}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          className="size-full object-cover"
-        />
-      </span>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <SmoothAgentAvatar
-        seed={label}
-        size={size}
-        animated={false}
-        aria-label={`${label} preset avatar`}
-        className={cn(
-          "shrink-0 shadow-[inset_0_0_0_1px_var(--neutral-wash)]",
-          className,
-        )}
-      />
-    );
-  }
-
-  return (
-    <span
-      role="img"
-      aria-label={`${label} (agent)`}
-      style={{ width: size, height: size }}
-      className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden",
-        cn("bg-agent-wash text-agent-text", agentRadius(size)),
-        className,
-      )}
-    >
-      <Bot
-        aria-hidden="true"
-        size={glyphFor(size)}
-        strokeWidth={glyphFor(size) <= 14 ? 1.25 : 1.5}
-      />
-    </span>
-  );
+export function Avatar({ label, kind = "human", imageUrl, size = 24, className }: AvatarProps): ReactNode {
+  return <PodiumAvatar name={label} kind={kind} imageUrl={imageUrl} size={size} className={className} />;
 }
 
 export interface AuthorStampProps {
