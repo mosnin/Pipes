@@ -53,11 +53,12 @@ async function handleOne(message: JsonRpcRequest, request: Request, auth: Awaite
       const tool = MCP_TOOLS.find((t) => t.name === params?.name);
       if (!tool) return rpcError(id, -32602, `Unknown tool: ${params?.name}`);
       const workflow = createWorkflowServices(auth.repositories);
-      await workflow.usage.record(auth.ctx.workspaceId, "mcp_call", { actorType: auth.ctx.actorType });
       try {
         if (auth.ctx.actorType === "agent" && !hasCapability(auth.ctx.capabilities, tool.capability)) {
           throw new ProtocolError("PERMISSION_DENIED", `This token is missing the ${tool.capability} capability.`, 403);
         }
+        // Only calls that are allowed to run count as usage.
+        await workflow.usage.record(auth.ctx.workspaceId, "mcp_call", { actorType: auth.ctx.actorType });
         const value = await tool.handler(params?.arguments ?? {}, { ctx: auth.ctx, services: auth.services, workflow, repositories: auth.repositories });
         await auth.repositories.audits
           .add({ actorType: auth.ctx.actorType, actorId: auth.ctx.actorId, workspaceId: auth.ctx.workspaceId, action: `mcp.${tool.name}`, targetType: "tool", targetId: tool.name, outcome: "success", metadata: JSON.stringify({ transport: "mcp" }) })
