@@ -57,11 +57,11 @@ export function MarketingHeader(): ReactNode {
   return (
     <>
       <div ref={sentinelRef} aria-hidden="true" className="h-px w-full" />
-      <div className="fixed inset-x-0 top-0 z-50 px-4">
+      <div className="fixed inset-x-0 top-0 z-50 px-2">
         <header
           data-stuck={stuck || open}
           className={cn(
-            "mk-header mx-auto mt-4 flex h-[56px] w-full items-center justify-between px-6",
+            "mk-header mx-auto mt-2 flex h-[56px] w-full items-center justify-between px-4",
             "transition-[max-width,background-color,border-color,box-shadow] duration-[var(--dur-4)] ease-[var(--ease-emphasis)]",
             stuck || open
               ? "max-w-[1200px] rounded-12 border border-border bg-raised shadow-elev-2"
@@ -72,7 +72,7 @@ export function MarketingHeader(): ReactNode {
             <Link
               href="/"
               aria-label="Pipes home"
-              className="focus-ring-canvas flex items-center gap-4 rounded-4 text-ink focus-visible:outline-none"
+              className="focus-ring-canvas flex items-center gap-2 rounded-4 text-ink focus-visible:outline-none"
             >
               <span className="inline-flex shrink-0 items-center" aria-hidden="true">
                 <Mark size={24} />
@@ -98,10 +98,10 @@ export function MarketingHeader(): ReactNode {
             </nav>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="t-mk-nav focus-ring-canvas hidden rounded-4 px-4 py-3 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink focus-visible:outline-none lg:inline-flex"
+              className="t-mk-nav focus-ring-canvas hidden rounded-4 px-2 py-1.5 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink focus-visible:outline-none lg:inline-flex"
             >
               Log in
             </Link>
@@ -137,9 +137,9 @@ export function MarketingHeader(): ReactNode {
               animate={{ height: "auto", opacity: 1 }}
               exit={reduced ? { opacity: 0 } : { height: 0, opacity: 0 }}
               transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
-              className="mx-auto mt-2 max-h-[calc(100dvh-96px)] max-w-[1200px] overflow-y-auto rounded-12 border border-border bg-raised shadow-elev-3 lg:hidden"
+              className="mx-auto mt-1 max-h-[calc(100dvh-96px)] max-w-[1200px] overflow-y-auto rounded-12 border border-border bg-raised shadow-elev-3 lg:hidden"
             >
-              <div className="flex flex-col p-6">
+              <div className="flex flex-col p-4">
                 {NAV.map((item) => {
                   const isOpen = accordion === item.id;
                   if (!item.children) {
@@ -148,7 +148,7 @@ export function MarketingHeader(): ReactNode {
                         key={item.id}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className="t-body-strong border-b border-hairline py-6 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink"
+                        className="t-body-strong border-b border-hairline py-4 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink"
                       >
                         {item.title}
                       </Link>
@@ -160,7 +160,7 @@ export function MarketingHeader(): ReactNode {
                         type="button"
                         onClick={() => setAccordion(isOpen ? null : item.id)}
                         aria-expanded={isOpen}
-                        className="t-body-strong flex w-full items-center justify-between py-6 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink"
+                        className="t-body-strong flex w-full items-center justify-between py-4 text-ink-2 transition-colors duration-[var(--dur-1)] hover:text-ink"
                       >
                         {item.title}
                         <ChevronDown
@@ -181,11 +181,11 @@ export function MarketingHeader(): ReactNode {
                         )}
                       >
                         <div className="overflow-hidden">
-                          <div className="flex flex-col gap-2 pb-5">
+                          <div className="flex flex-col gap-1 pb-3">
                             <Link
                               href={item.href}
                               onClick={() => setOpen(false)}
-                              className="rounded-8 px-4 py-4 transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
+                              className="rounded-8 px-2 py-2 transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
                             >
                               <span className="t-body-strong block text-ink">
                                 All templates
@@ -196,7 +196,7 @@ export function MarketingHeader(): ReactNode {
                                 key={child.href}
                                 href={child.href}
                                 onClick={() => setOpen(false)}
-                                className="rounded-8 px-4 py-4 transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
+                                className="rounded-8 px-2 py-2 transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
                               >
                                 <span className="t-body-strong block text-ink">
                                   {child.title}
@@ -212,7 +212,7 @@ export function MarketingHeader(): ReactNode {
                     </div>
                   );
                 })}
-                <div className="flex flex-col gap-4 pt-6">
+                <div className="flex flex-col gap-2 pt-4">
                   <CutButton
                     href="/signup?source=header_menu"
                     track={{ event: "signup_started", metadata: { source: "header_menu" } }}
@@ -254,13 +254,13 @@ function DesktopLinks({ pathname }: { pathname: string }): ReactNode {
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActive(null);
       }}
-      className="relative flex items-center gap-2"
+      className="relative flex items-center gap-1"
     >
       {NAV.map((item) => {
         const current =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
         const base = cn(
-          "t-mk-nav focus-ring-canvas flex items-center gap-2 rounded-4 px-4 py-3 transition-colors duration-[var(--dur-1)] focus-visible:outline-none",
+          "t-mk-nav focus-ring-canvas flex items-center gap-1 rounded-4 px-2 py-1.5 transition-colors duration-[var(--dur-1)] focus-visible:outline-none",
           current || active === item.id
             ? "text-ink"
             : "text-ink-2 hover:text-ink",
@@ -306,14 +306,14 @@ function MegaMenu({ id }: { id: string }): ReactNode {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={reduced ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}
       transition={{ duration: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
-      className="absolute -left-4 top-[44px] w-[520px] origin-top-left rounded-12 border border-border bg-overlay p-2 shadow-elev-3"
+      className="absolute -left-2 top-[44px] w-[520px] origin-top-left rounded-12 border border-border bg-overlay p-1 shadow-elev-3"
     >
-      <div className="flex flex-col gap-1 rounded-8 bg-object p-2 ring-1 ring-hairline">
+      <div className="flex flex-col gap-0.5 rounded-8 bg-object p-1 ring-1 ring-hairline">
         {item.children.map((child) => (
           <Link
             key={child.href}
             href={child.href}
-            className="focus-ring flex flex-col gap-1 rounded-8 px-4 py-4 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none"
+            className="focus-ring flex flex-col gap-0.5 rounded-8 px-2 py-2 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none"
           >
             <span className="t-body-strong text-ink">{child.title}</span>
             <span className="t-caption text-ink-3">{child.description}</span>
@@ -321,7 +321,7 @@ function MegaMenu({ id }: { id: string }): ReactNode {
         ))}
         <Link
           href={item.href}
-          className="focus-ring t-body-strong rounded-8 px-4 py-4 text-ink-2 transition-colors duration-[var(--dur-1)] hover:bg-state-hover hover:text-ink focus-visible:outline-none"
+          className="focus-ring t-body-strong rounded-8 px-2 py-2 text-ink-2 transition-colors duration-[var(--dur-1)] hover:bg-state-hover hover:text-ink focus-visible:outline-none"
         >
           All templates
         </Link>

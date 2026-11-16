@@ -30,10 +30,10 @@ export default function UseCasesPage() {
                   href={`/use-cases/${entry.slug}`}
                   event="use_case_viewed"
                   metadata={{ source: "use_cases_index", slug: entry.slug }}
-                  className="focus-ring-canvas grid gap-3 rounded-4 px-3 py-8 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[320px_1fr] md:gap-10"
+                  className="focus-ring-canvas grid gap-1.5 rounded-4 px-1.5 py-6 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[320px_1fr] md:gap-10"
                 >
                   <span className="t-mk-h4 text-ink">{entry.title}</span>
-                  <span className="flex flex-col gap-3">
+                  <span className="flex flex-col gap-1.5">
                     <span className="t-mk-body text-ink-2">{entry.problem}</span>
                     <span className="t-body text-ink-3">{entry.fit}</span>
                   </span>

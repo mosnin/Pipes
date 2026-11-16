@@ -24,7 +24,7 @@ export function AuthFrame({
   return (
     <main
       id="main"
-      className="flex min-h-dvh items-center justify-center bg-canvas px-6 py-12"
+      className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-16"
     >
       <div className="w-full" style={{ maxWidth: width }}>
         <div className="flex flex-col items-center text-center">
@@ -35,12 +35,12 @@ export function AuthFrame({
           >
             <Mark size={30} />
           </Link>
-          <h1 className="t-title-1 mt-8 text-ink">{title}</h1>
-          {subtitle ? <p className="t-body mt-3 text-ink-2">{subtitle}</p> : null}
+          <h1 className="t-title-1 mt-6 text-ink">{title}</h1>
+          {subtitle ? <p className="t-body mt-1.5 text-ink-2">{subtitle}</p> : null}
         </div>
         <div className="mt-10">{children}</div>
         {footer ? (
-          <p className="t-body mt-9 text-center text-ink-2">{footer}</p>
+          <p className="t-body mt-8 text-center text-ink-2">{footer}</p>
         ) : null}
       </div>
     </main>

@@ -92,13 +92,13 @@ export function ConnectionsView(): ReactNode {
         </Banner>
       ) : null}
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         {loaded && connections.length === 0 && !loadError ? (
           <Card>
             <EmptyState
               title="No connections yet"
               body="Add the MCP servers and APIs your steps use, so every agent that runs them gets the same address and credentials."
-              className="py-9"
+              className="py-8"
             />
           </Card>
         ) : (
@@ -131,7 +131,7 @@ export function ConnectionsView(): ReactNode {
                   {c.url}
                 </span>,
                 c.hasSecret ? (
-                  <span key="s" className="flex flex-col gap-1">
+                  <span key="s" className="flex flex-col gap-0.5">
                     <span className="t-mono-hash text-ink">
                       {c.secretPreview ?? "Stored"}
                     </span>
@@ -258,9 +258,9 @@ function CreateConnectionForm({
           Something a step calls while it runs.
         </DialogDescription>
       </DialogHeader>
-      <DialogBody className="flex flex-col gap-6">
+      <DialogBody className="flex flex-col gap-4">
         {error ? <Banner role="critical">{error}</Banner> : null}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           <span id={`${id}-type`} className="t-caption-medium text-ink">
             Type
           </span>
@@ -313,7 +313,7 @@ function CreateConnectionForm({
             placeholder="Create and update issues in the Support team."
           />
         </Field>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <Field
             label="Header"
             htmlFor={`${id}-header`}
@@ -344,7 +344,7 @@ function CreateConnectionForm({
           </Field>
         </div>
       </DialogBody>
-      <DialogFooter className="pt-4">
+      <DialogFooter className="pt-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
         </Button>

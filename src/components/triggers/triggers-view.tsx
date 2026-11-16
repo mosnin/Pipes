@@ -144,7 +144,7 @@ type Act = <T>(
 function LoadingCard(): ReactNode {
   return (
     <Card>
-      <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-3 p-4">
         <Skeleton className="h-[14px] w-[240px]" />
         <Skeleton className="h-[14px] w-[200px]" />
       </div>
@@ -208,10 +208,10 @@ function WebhookSection({
       {!triggers ? (
         <LoadingCard />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {key ? (
             <Banner role="caution" title="Copy this key now. It is shown once.">
-              <div className="mt-2 flex flex-wrap items-center gap-4">
+              <div className="mt-1 flex flex-wrap items-center gap-2">
                 <code className="t-mono-hash min-w-0 break-all text-ink">
                   {key}
                 </code>
@@ -227,7 +227,7 @@ function WebhookSection({
                 {
                   label: "Accepting calls",
                   value: (
-                    <span className="inline-flex items-center gap-4">
+                    <span className="inline-flex items-center gap-2">
                       <span className="t-body text-ink-2">
                         {triggers.webhookEnabled
                           ? "On"
@@ -362,7 +362,7 @@ function SchedulesSection({
         </>
       }
     >
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         <Card>
           <form
             onSubmit={(event) => {
@@ -370,7 +370,7 @@ function SchedulesSection({
               void add();
             }}
           >
-            <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
               <Field
                 label="Cron expression"
                 htmlFor={`${id}-cron`}
@@ -430,7 +430,7 @@ function SchedulesSection({
             <EmptyState
               title="No schedules yet"
               body="Add one above to start runs on a timetable."
-              className="py-9"
+              className="py-8"
             />
           </Card>
         ) : (
@@ -590,13 +590,13 @@ function OutboundSection({
       {!triggers ? (
         <LoadingCard />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {secret ? (
             <Banner
               role="caution"
               title="Copy this signing secret now. It is shown once."
             >
-              <div className="mt-2 flex flex-wrap items-center gap-4">
+              <div className="mt-1 flex flex-wrap items-center gap-2">
                 <code className="t-mono-hash min-w-0 break-all text-ink">
                   {secret}
                 </code>
@@ -612,7 +612,7 @@ function OutboundSection({
                 void save();
               }}
             >
-              <div className="flex flex-col gap-7 p-6">
+              <div className="flex flex-col gap-5 p-4">
                 <Field
                   label="Endpoint URL"
                   htmlFor={`${id}-url`}
@@ -635,11 +635,11 @@ function OutboundSection({
                     spellCheck={false}
                   />
                 </Field>
-                <fieldset className="flex flex-col gap-3">
-                  <legend className="t-caption-medium mb-3 text-ink">
+                <fieldset className="flex flex-col gap-1.5">
+                  <legend className="t-caption-medium mb-1.5 text-ink">
                     Events
                   </legend>
-                  <div className="-mx-4 grid grid-cols-1 gap-1 md:grid-cols-2">
+                  <div className="-mx-2 grid grid-cols-1 gap-0.5 md:grid-cols-2">
                     {EVENTS.map((event) => (
                       <CheckRow
                         key={event.value}
@@ -663,7 +663,7 @@ function OutboundSection({
                 <span className="t-caption tabular text-ink-3">
                   {eventValue.length} of {EVENTS.length} events
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   {triggers.outboundConfigured ? (
                     <Button
                       type="button"
@@ -688,7 +688,7 @@ function OutboundSection({
             </form>
           </Card>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <p className="t-body max-w-[90ch] text-ink-2">
               Every request carries{" "}
               <code className="t-mono-hash text-ink">x-pipes-timestamp</code>{" "}

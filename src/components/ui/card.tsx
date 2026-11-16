@@ -48,7 +48,7 @@ export function Card({
         // single darker line under it is the whole of the effect.
         "relative rounded-12 border border-border bg-raised text-ink",
         "shadow-[0_1px_0_0_var(--line-strong)]",
-        padded && "p-6",
+        padded && "p-4",
         interactive && [
           "h-full cursor-pointer",
           // Transition the two properties that change and nothing else — never
@@ -90,13 +90,13 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        "flex justify-between gap-5",
+        "flex justify-between gap-3",
         ruled
           ? // Measured: 16px sides, a 44px single-line row, a rule beneath.
-            "min-h-[44px] items-center border-b border-border px-6 py-3"
+            "min-h-[44px] items-center border-b border-border px-4 py-1.5"
           : // Unruled: 16px of air to the content below, which `CardContent`
             // supplies as its own top padding (§6.2 heading -> content 16px).
-            "items-start px-6 pt-6",
+            "items-start px-4 pt-4",
         className,
       )}
       {...props}
@@ -141,7 +141,7 @@ export function CardContent({
       // 16px body padding; 12px between sibling blocks, enforced rather than
       // remembered. A table or list body overrides with `p-0` and bleeds to the
       // card edge (§9.13).
-      className={cn("flex flex-col gap-5 p-6", className)}
+      className={cn("flex flex-col gap-3 p-4", className)}
       {...props}
     />
   );
@@ -163,7 +163,7 @@ export function CardFooter({
         // `rounded-b-[inherit]` so an inset footer follows whatever radius the
         // card is wearing (12 default, 14 dense, 16 page-level) instead of
         // squaring off over it.
-        "flex min-h-[44px] items-center justify-between gap-5 rounded-b-[inherit] border-t border-border px-6 py-3",
+        "flex min-h-[44px] items-center justify-between gap-3 rounded-b-[inherit] border-t border-border px-4 py-1.5",
         inset && "bg-inset",
         className,
       )}
@@ -188,7 +188,7 @@ export function CardSection({
   return (
     <div
       className={cn(
-        "flex flex-col gap-5 border-t border-border p-7 first:border-t-0",
+        "flex flex-col gap-3 border-t border-border p-5 first:border-t-0",
         className,
       )}
       {...props}
@@ -219,12 +219,12 @@ export function CardToolbar({
 }: CardToolbarProps): ReactNode {
   return (
     <CardHeader ruled={ruled} className={className}>
-      <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-1">
         <CardTitle>{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 items-center gap-4">{actions}</div>
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
       ) : null}
     </CardHeader>
   );

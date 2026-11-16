@@ -37,7 +37,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
       {token ? (
         <ResetPasswordForm token={token} />
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <Banner role="critical" title="This reset link is missing its token">
             Open the link from the email again, or ask for a new one.
           </Banner>

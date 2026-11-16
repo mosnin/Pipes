@@ -92,7 +92,7 @@ export function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          "fixed left-1/2 top-1/2 z-[210] flex w-full flex-col gap-5",
+          "fixed left-1/2 top-1/2 z-[210] flex w-full flex-col gap-3",
           // Centring uses the standalone `translate` property, so the enter
           // animation's `transform` composes with it instead of fighting it.
           "-translate-x-1/2 -translate-y-1/2",
@@ -122,7 +122,7 @@ export function DialogContent({
           // stay as they are rather than each growing a wrapper.
           "[&>[data-slot=dialog-title]]:px-[var(--dialog-gutter,0px)]",
           "[&>[data-slot=dialog-title]]:pt-[var(--dialog-gutter,0px)]",
-          "[&>[data-slot=dialog-title]]:pe-12",
+          "[&>[data-slot=dialog-title]]:pe-16",
           "[&>[data-slot=dialog-description]]:px-[var(--dialog-gutter,0px)]",
           "[&>[data-slot=dialog-title]+[data-slot=dialog-description]]:mt-1.5",
           className,
@@ -135,7 +135,7 @@ export function DialogContent({
             <IconButton
               label="Close"
               size="sm"
-              className="absolute end-3 top-2"
+              className="absolute end-1.5 top-1"
             >
               <X aria-hidden="true" />
             </IconButton>
@@ -157,9 +157,9 @@ export function DialogHeader({
       className={cn(
         // 52 including its rule: the band fills y 444..507 and the rule sits at
         // 508..509, measured on `modal-adjust-store-credit` at x=1200.
-        "flex min-h-[52px] shrink-0 flex-col justify-center gap-1 rounded-t-[inherit]",
+        "flex min-h-[52px] shrink-0 flex-col justify-center gap-0.5 rounded-t-[inherit]",
         "border-b border-hairline bg-band",
-        "px-[var(--dialog-gutter,0px)] py-2 pe-12",
+        "px-[var(--dialog-gutter,0px)] py-1 pe-16",
         className,
       )}
       {...props}
@@ -238,7 +238,7 @@ export function DialogBody({
       data-scrolled={scrolled || undefined}
       className={cn(
         "max-h-[60vh] overflow-y-auto",
-        "px-[var(--dialog-gutter,0px)] py-4",
+        "px-[var(--dialog-gutter,0px)] py-2",
         // The header already draws a rule, so the body's own scroll rule would
         // double it. It stays for a body used without a header.
         "border-t border-transparent transition-colors duration-[120ms] ease-linear",
@@ -268,8 +268,8 @@ export function DialogFooter({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-end gap-2 rounded-b-[inherit]",
-        "px-[var(--dialog-gutter,0px)] pb-4",
+        "flex shrink-0 items-center justify-end gap-1 rounded-b-[inherit]",
+        "px-[var(--dialog-gutter,0px)] pb-2",
         className,
       )}
       {...props}
@@ -325,7 +325,7 @@ export function ConfirmDialog({
             ?.focus();
         }}
       >
-        <DialogHeader className="flex-row gap-5 pr-0">
+        <DialogHeader className="flex-row gap-3 pr-0">
           {destructive ? (
             <span
               aria-hidden="true"
@@ -334,7 +334,7 @@ export function ConfirmDialog({
               <TriangleAlert className="size-[18px]" strokeWidth={1.5} />
             </span>
           ) : null}
-          <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <DialogTitle size={destructive ? "title-1" : "title-3"}>
               {title}
             </DialogTitle>
@@ -410,7 +410,7 @@ function ConfirmBody({
         // Deliberately not a `Field`: its label role is `label-caps`, and
         // upper-casing the phrase would misstate the string the user has to
         // reproduce character for character.
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           <label htmlFor={phraseId} className="t-caption text-ink-2">
             Type{" "}
             {/* 12px mono inside 13px sans is the 0.92em x-height match of §3.2. */}

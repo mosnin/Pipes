@@ -102,10 +102,10 @@ export function Select({
                   "transition-colors duration-[var(--dur-1)] ease-linear hover:border-border focus-visible:bg-inset",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 ),
-            "flex items-center justify-between gap-3 text-left",
+            "flex items-center justify-between gap-1.5 text-left",
             size === "md"
-              ? "h-[36px] rounded-10 pl-5 pr-4 t-body"
-              : "h-[32px] rounded-8 pl-4 pr-3 t-caption",
+              ? "h-[36px] rounded-10 pl-3 pr-2 t-body"
+              : "h-[32px] rounded-8 pl-2 pr-1.5 t-caption",
             variant === "quiet" && "rounded-6",
             aria["aria-invalid"] &&
               "border-critical-border hover:border-critical-border focus-visible:border-critical-border",

@@ -477,18 +477,6 @@
      nothing else in the product is allowed an off-scale margin. */
   --mark-body: 7px; /* 6px dot against t-body's 20px line */
   --mark-caption: 5px; /* 7px dot against t-caption's 18px line */
-  --spacing-1: 2px;
-  --spacing-2: 4px;
-  --spacing-3: 6px;
-  --spacing-4: 8px;
-  --spacing-5: 12px;
-  --spacing-6: 16px;
-  --spacing-7: 20px;
-  --spacing-8: 24px;
-  --spacing-9: 32px;
-  --spacing-10: 40px;
-  --spacing-11: 48px;
-  --spacing-12: 64px;
 
   /* type */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

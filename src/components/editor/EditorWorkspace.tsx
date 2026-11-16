@@ -556,7 +556,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   if (!data) {
     return (
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="flex flex-1 items-center justify-center px-4 py-16">
         <Quiet>Loading workflow…</Quiet>
       </div>
     );
@@ -610,23 +610,23 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const modeLabel: Record<EditorMode, string> = { design: "Inspector", validation: "Validation", simulation: "Simulation", versions: "Versions", agent: "Assistant" };
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-5 px-6 pb-6 pt-4 md:px-7 lg:px-8 [--editor-h:max(480px,calc(100dvh-228px))]">
-      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex min-w-0 items-center gap-2">
+    <div className="flex min-w-0 flex-1 flex-col gap-3 px-4 pb-4 pt-2 md:px-5 lg:px-6 [--editor-h:max(480px,calc(100dvh-228px))]">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex min-w-0 items-center gap-1">
             <h1 className="truncate t-title-3 text-ink">{data.system.name}</h1>
             <Button size="xs" variant="ghost" onClick={openRename}>Rename</Button>
           </div>
           {data.system.description ? <p className="line-clamp-1 t-caption text-ink-3">{data.system.description}</p> : null}
         </div>
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="flex shrink-0 items-center gap-2">
           {data.presence.length > 0 ? (
             <ul aria-label="People in this workflow" className="flex items-center">
               {data.presence.map((p) => {
                 const label = personLabel(p.userId, p.name);
                 const here = label === "You" ? "You are" : `${label} is`;
                 return (
-                  <li key={p.id} className="-ml-2 first:ml-0">
+                  <li key={p.id} className="-ml-1 first:ml-0">
                     <Tooltip content={p.selectedNodeId ? `${here} on ${nodeTitle(p.selectedNodeId)}` : label}>
                       <span aria-label={label} className="inline-flex size-[24px] items-center justify-center rounded-full border border-raised bg-selected t-micro text-ink-2 uppercase">
                         {label.slice(0, 1)}
@@ -639,7 +639,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           ) : null}
           <span aria-live="polite"><StatusPill tone={saveTone}>{saveLabel}</StatusPill></span>
           {saveState === "error" ? <Button size="xs" variant="ghost" onClick={() => { setFailed(0); design.retry(); }}>Retry save</Button> : null}
-          <nav aria-label="Workflow" className="flex items-center gap-2">
+          <nav aria-label="Workflow" className="flex items-center gap-1">
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/runs`}>Runs</Link></Button>
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/triggers`}>Triggers</Link></Button>
             <Button size="sm" variant="primary" loading={starting} onClick={startRun}>Run</Button>
@@ -650,14 +650,14 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         <Banner role="critical" title="The run did not start" action={<Button size="xs" variant="ghost" onClick={() => setRunError(null)}>Dismiss</Button>}>{runError}</Banner>
       ) : null}
 
-      <div role="toolbar" aria-label="Editor actions" className="flex flex-wrap items-center gap-2 rounded-12 border border-border bg-raised px-3 py-2">
+      <div role="toolbar" aria-label="Editor actions" className="flex flex-wrap items-center gap-1 rounded-12 border border-border bg-raised px-1.5 py-1">
         <ToolButton label="Undo" shortcut={["⌘", "Z"]} onClick={undo} disabled={history.undo.length === 0}><Undo2 aria-hidden="true" /></ToolButton>
         <ToolButton label="Redo" shortcut={["⇧", "⌘", "Z"]} onClick={redo} disabled={history.redo.length === 0}><Undo2 aria-hidden="true" className="-scale-x-100" /></ToolButton>
         <ToolbarRule />
         <Button size="sm" variant="secondary" onClick={() => openInsertPalette(contextualInsert())}>
           <Plus aria-hidden="true" />
           Insert node
-          <span className="ml-1 hidden sm:inline-flex"><Chord keys={["⌘", "K"]} /></span>
+          <span className="ml-0.5 hidden sm:inline-flex"><Chord keys={["⌘", "K"]} /></span>
         </Button>
         <ToolButton label="Duplicate selection" shortcut={["⌘", "D"]} onClick={duplicateSelection} disabled={selectedNodeIds.length === 0}><Copy aria-hidden="true" /></ToolButton>
         <ToolButton label="Delete selection" shortcut={["⌫"]} onClick={deleteSelection} disabled={selectedNodeIds.length === 0 && selectedEdgeIds.length === 0}><Trash2 aria-hidden="true" /></ToolButton>
@@ -686,15 +686,15 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
         <ToolButton label={routeFocusMode ? "Route focus on" : "Route focus off"} pressed={routeFocusMode} onClick={() => setRouteFocusMode((value) => !value)}><Waypoints aria-hidden="true" /></ToolButton>
         <ToolButton label="Fit content" shortcut={["⌘", "0"]} onClick={() => setFitRequest((n) => n + 1)}><ScanSearch aria-hidden="true" /></ToolButton>
         <ToolButton label="Frame selection" shortcut={["⇧", "F"]} onClick={() => setFrameRequest((n) => n + 1)} disabled={selectedNodeIds.length === 0}><Target aria-hidden="true" /></ToolButton>
-        <span className="ml-auto hidden items-center gap-2 t-micro text-ink-3 lg:inline-flex">
+        <span className="ml-auto hidden items-center gap-1 t-micro text-ink-3 lg:inline-flex">
           {nodes.length} nodes · {pipes.length} pipes
         </span>
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[256px_minmax(0,1fr)_400px] 2xl:grid-cols-[288px_minmax(0,1fr)_420px]">
+      <div className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-[256px_minmax(0,1fr)_400px] 2xl:grid-cols-[288px_minmax(0,1fr)_420px]">
         <section aria-label="Node library" className="order-3 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-12 border border-border bg-raised md:h-[520px] xl:order-1 xl:h-[var(--editor-h)]">
-          <div className="flex flex-col gap-3 border-b border-hairline px-5 py-4">
-            <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1.5 border-b border-hairline px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="t-label-caps text-ink">Node library</h2>
               <span className="t-micro tabular-nums text-ink-3">{favorites.length} pinned · {recents.length} recent</span>
             </div>
@@ -702,29 +702,29 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             <button
               type="button"
               onClick={() => openInsertPalette(contextualInsert())}
-              className="flex items-center justify-between gap-4 rounded-8 px-2 py-1 text-left t-caption text-ink-3 transition-colors duration-[var(--dur-1)] hover:bg-state-hover hover:text-ink focus-ring outline-none"
+              className="flex items-center justify-between gap-2 rounded-8 px-1 py-0.5 text-left t-caption text-ink-3 transition-colors duration-[var(--dur-1)] hover:bg-state-hover hover:text-ink focus-ring outline-none"
             >
               Insert at the selection
               <Kbd>/</Kbd>
             </button>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
-            {groupedLibrary.length === 0 ? <Quiet className="px-2">No node matches “{libraryQuery}”.</Quiet> : null}
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-1.5 py-2">
+            {groupedLibrary.length === 0 ? <Quiet className="px-1">No node matches “{libraryQuery}”.</Quiet> : null}
             {groupedLibrary.map((group) => (
-              <div key={group.category} className="flex flex-col gap-1">
-                <SectionLabel className="px-2" action={<span className="t-micro tabular-nums text-ink-3">{group.entries.length}</span>}>{group.category}</SectionLabel>
+              <div key={group.category} className="flex flex-col gap-0.5">
+                <SectionLabel className="px-1" action={<span className="t-micro tabular-nums text-ink-3">{group.entries.length}</span>}>{group.category}</SectionLabel>
                 <ul className="flex flex-col">
                   {group.entries.map((entry) => {
                     const pinned = favorites.includes(entry.nodeType);
                     return (
-                      <li key={entry.nodeType} className="group relative flex items-start gap-1 rounded-8 hover:bg-state-hover">
+                      <li key={entry.nodeType} className="group relative flex items-start gap-0.5 rounded-8 hover:bg-state-hover">
                         <button
                           type="button"
                           onClick={() => insertNodeFromEntry(entry, contextualInsert())}
-                          className="flex min-w-0 flex-1 flex-col gap-1 rounded-8 px-2 py-3 text-left focus-ring outline-none"
+                          className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-8 px-1 py-1.5 text-left focus-ring outline-none"
                           aria-label={`Add ${entry.name}`}
                         >
-                          <span className="flex items-center gap-2">
+                          <span className="flex items-center gap-1">
                             <span className="truncate t-body-medium text-ink">{entry.name}</span>
                             <Plus aria-hidden="true" size={14} className="ml-auto shrink-0 text-ink-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" />
                           </span>
@@ -737,7 +737,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                           aria-pressed={pinned}
                           aria-label={pinned ? `Unpin ${entry.name}` : `Pin ${entry.name}`}
                           onClick={() => toggleFavorite(entry.nodeType)}
-                          className={cn("mt-2 mr-1", !pinned && "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100")}
+                          className={cn("mt-1 mr-0.5", !pinned && "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100")}
                         >
                           {pinned ? "Pinned" : "Pin"}
                         </Button>
@@ -747,18 +747,18 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                 </ul>
               </div>
             ))}
-            <div className="flex flex-col gap-3 px-2">
+            <div className="flex flex-col gap-1.5 px-1">
               <SectionLabel>Groups</SectionLabel>
               {subsystems.length === 0 ? <Quiet>Select two or more nodes, then group them.</Quiet> : subsystems.map((subsystem) => {
                 const boundary = computeSubsystemBoundary(subsystem, pipes);
                 return (
                   <ObjectRow key={subsystem.id}>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="truncate t-body-medium text-ink">{subsystem.name}</span>
                       <StatusPill tone="neutral">{subsystem.collapsed ? "Collapsed" : "Expanded"}</StatusPill>
                     </div>
                     <span className="t-caption tabular-nums text-ink-3">{subsystem.nodeIds.length} nodes · {boundary.inboundNodeIds.length} in · {boundary.outboundNodeIds.length} out</span>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">
                       <Button size="xs" variant="secondary" onClick={() => toggleSubsystemCollapse(subsystem.id)}>{subsystem.collapsed ? "Expand" : "Collapse"}</Button>
                       <Button size="xs" variant="ghost" onClick={() => { setSelectedNodeIds(subsystem.nodeIds); setFrameRequest((n) => n + 1); }}>Open in context</Button>
                       <Button size="xs" variant="ghost" onClick={() => detachSubsystemCopy(subsystem.id)} disabled={!subsystem.reusableSourceId}>Detach local copy</Button>
@@ -820,7 +820,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             value={mode}
             onValueChange={(value) => setMode(value as EditorMode)}
             label="Editor mode"
-            className="shrink-0 border-hairline px-4"
+            className="shrink-0 border-hairline px-2"
             items={[
               { value: "design", label: "Design" },
               { value: "validation", label: "Validation", count: errorCount + warningCount },
@@ -829,14 +829,14 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               { value: "agent", label: "Assistant" }
             ]}
           />
-          <div className={cn("flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 py-5", mode === "agent" && "hidden")}>
+          <div className={cn("flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-3 py-3", mode === "agent" && "hidden")}>
             {mode === "design" ? (
               <EditorErrorBoundary area="Inspector" onRecover={reload} onCrash={(area) => trackSignal("editor_crash_boundary_triggered", { area })}>
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4">
                   <SectionLabel>Inspector</SectionLabel>
                   {selectedEdge ? (
-                    <div className="flex flex-col gap-5">
-                      <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-0.5">
                         <span className="t-body-medium text-ink">{nodeTitle(selectedEdge.fromNodeId)} → {nodeTitle(selectedEdge.toNodeId)}</span>
                         <span className="t-mono-micro text-ink-3">{selectedEdge.id}</span>
                       </div>
@@ -855,19 +855,19 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     </div>
                   ) : null}
                   {selectedNode ? (
-                    <div key={selectedNode.id} className="flex flex-col gap-5">
-                      <div className="flex flex-col gap-1">
+                    <div key={selectedNode.id} className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-0.5">
                         <span className="t-title-compact text-ink">{selectedNode.title}</span>
                         <span className="t-mono-micro text-ink-3">{selectedNode.type} · {selectedNode.id}</span>
                       </div>
                       {occupancy.length > 1 ? <Banner role="caution" title="Someone else is here">Also open for {occupancy.map((p) => p.name).join(", ")}. Edits may overlap.</Banner> : null}
-                      <div role="group" aria-label="Node section" className="flex flex-wrap gap-1">
+                      <div role="group" aria-label="Node section" className="flex flex-wrap gap-0.5">
                         {INSPECTOR_TABS.map((tab) => (
                           <Button key={tab.value} size="xs" variant="ghost" aria-pressed={inspectorTab === tab.value} onClick={() => setInspectorTab(tab.value)}>{tab.label}</Button>
                         ))}
                       </div>
                       {inspectorTab === "overview" ? (
-                        <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-3">
                           <Field label="Title" htmlFor="node-title">
                             <Input id="node-title" defaultValue={selectedNode.title} onBlur={(e) => recordAction({ action: "updateNode", nodeId: selectedNode.id, title: e.target.value }, { action: "updateNode", nodeId: selectedNode.id, title: selectedNode.title })} />
                           </Field>
@@ -880,7 +880,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                           <Field label="Purpose" htmlFor="node-purpose">
                             <Input id="node-purpose" value={selectedDefinition?.overview.purpose ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, purpose: e.target.value } }))} />
                           </Field>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2">
                             <Field label="Owner" htmlFor="node-owner">
                               <Input id="node-owner" value={selectedDefinition?.overview.owner ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, owner: e.target.value } }))} />
                             </Field>
@@ -904,7 +904,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         const contract = inspectorTab === "inputs" ? "input" : "output";
                         const def = selectedDefinition[contract];
                         return (
-                          <div className="flex flex-col gap-5">
+                          <div className="flex flex-col gap-3">
                             <p className="t-mono-micro text-ink-3">{summarizeContract(def)}</p>
                             <Field label="Port type" htmlFor={`${contract}-port`}>
                               <Select id={`${contract}-port`} size="sm" value={def.portType} onValueChange={(value) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, [contract]: { ...current[contract], portType: value as ContractType } }))} options={CONTRACT_OPTIONS} />
@@ -918,8 +918,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                             <SectionLabel action={<Button size="xs" variant="secondary" onClick={() => addDefinitionField(contract)}><Plus aria-hidden="true" />Add field</Button>}>Fields</SectionLabel>
                             {def.fields.length === 0 ? <Quiet>No fields yet.</Quiet> : null}
                             {def.fields.map((field) => (
-                              <ObjectRow key={field.id} className="gap-4">
-                                <div className="grid grid-cols-[minmax(0,1fr)_112px] gap-3">
+                              <ObjectRow key={field.id} className="gap-2">
+                                <div className="grid grid-cols-[minmax(0,1fr)_112px] gap-1.5">
                                   <Input aria-label="Field key" className="font-mono" value={field.key} onChange={(e) => updateDefinitionField(contract, field.id, { key: e.target.value })} placeholder="field_key" />
                                   <Select aria-label="Field type" size="sm" value={field.type} onValueChange={(value) => updateDefinitionField(contract, field.id, { type: value as ContractType })} options={CONTRACT_OPTIONS} />
                                 </div>
@@ -943,7 +943,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         );
                       })() : null}
                       {inspectorTab === "config" && selectedDefinition ? (
-                        <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-3">
                           <Field label="Configuration" htmlFor="cfg-notes"><Textarea id="cfg-notes" value={selectedDefinition.configNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, configNotes: e.target.value }))} /></Field>
                           <Field label="Field mapping" htmlFor="cfg-mapping"><Textarea id="cfg-mapping" value={selectedDefinition.mappingNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, mappingNotes: e.target.value }))} /></Field>
                           <Field label="Expression placeholders" htmlFor="cfg-expr"><Textarea id="cfg-expr" className="font-mono" value={selectedDefinition.expressionPlaceholders ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, expressionPlaceholders: e.target.value }))} /></Field>
@@ -952,7 +952,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         </div>
                       ) : null}
                       {inspectorTab === "notes" && selectedDefinition ? (
-                        <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-3">
                           <Field label="Assumptions" htmlFor="notes-assumptions"><Textarea id="notes-assumptions" value={selectedDefinition.overview.assumptions ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, assumptions: e.target.value } }))} /></Field>
                           <Field label="Failure modes" htmlFor="notes-failure"><Textarea id="notes-failure" value={selectedDefinition.overview.failureNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, failureNotes: e.target.value } }))} /></Field>
                           <Field label="Implementation" htmlFor="notes-impl"><Textarea id="notes-impl" value={selectedDefinition.overview.implementationNotes ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, implementationNotes: e.target.value } }))} /></Field>
@@ -960,17 +960,17 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         </div>
                       ) : null}
                       {inspectorTab === "validation" && selectedDefinition ? (
-                        <div className="flex flex-col gap-6">
-                          <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-4">
+                          <div className="flex flex-col gap-1.5">
                             <SectionLabel>Contract</SectionLabel>
                             {definitionIssues.length === 0 ? <StatusPill tone="positive">No definition issues</StatusPill> : definitionIssues.map((issue) => (
-                              <div key={issue} className="flex items-start gap-3"><StatusPill tone="caution">Warning</StatusPill><p className="t-caption text-ink-2">{issue}</p></div>
+                              <div key={issue} className="flex items-start gap-1.5"><StatusPill tone="caution">Warning</StatusPill><p className="t-caption text-ink-2">{issue}</p></div>
                             ))}
                           </div>
-                          <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-1.5">
                             <SectionLabel>Compatibility</SectionLabel>
                             {compatibilityHints.length === 0 ? <Quiet>No connected nodes to compare.</Quiet> : compatibilityHints.map((hint, index) => (
-                              <div key={`${hint.nodeTitle}_${index}`} className="flex items-start gap-3">
+                              <div key={`${hint.nodeTitle}_${index}`} className="flex items-start gap-1.5">
                                 <StatusPill tone={hint.hint.compatible ? "positive" : "caution"}>{hint.hint.compatible ? "Fits" : "Check"}</StatusPill>
                                 <p className="t-caption text-ink-2"><span className="text-ink">{hint.direction === "inbound" ? "From" : "To"} {hint.nodeTitle}.</span> {hint.hint.reason}</p>
                               </div>
@@ -979,13 +979,13 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         </div>
                       ) : null}
                       {inspectorTab === "docs" && selectedDefinition ? (
-                        <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-3">
                           <Field label="Linked asset" htmlFor="docs-asset"><Input id="docs-asset" className="font-mono" value={selectedDefinition.overview.linkedAsset ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedAsset: e.target.value } }))} placeholder="Asset id or URL" /></Field>
                           <Field label="Linked snippet" htmlFor="docs-snippet"><Input id="docs-snippet" className="font-mono" value={selectedDefinition.overview.linkedSnippet ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, linkedSnippet: e.target.value } }))} placeholder="Snippet id or URL" /></Field>
                           <Field label="Reference" htmlFor="docs-ref"><Input id="docs-ref" className="font-mono" value={selectedDefinition.overview.docsRef ?? ""} onChange={(e) => updateNodeDefinition(selectedNode.id, (current) => ({ ...current, overview: { ...current.overview, docsRef: e.target.value } }))} placeholder="Docs URL" /></Field>
                         </div>
                       ) : null}
-                      <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-5">
+                      <div className="flex flex-wrap items-center gap-1 border-t border-hairline pt-3">
                         <Button size="xs" variant="secondary" onClick={() => openInsertPalette({ mode: "sourcePort", nodeId: selectedNode.id, at: selectedNode.position })}>Add downstream <Chord keys={["⇧", "O"]} /></Button>
                         <Button size="xs" variant="secondary" onClick={() => openInsertPalette({ mode: "targetPort", nodeId: selectedNode.id, at: selectedNode.position })}>Add upstream <Chord keys={["⇧", "I"]} /></Button>
                         <Button size="xs" variant="destructive" className="ml-auto" onClick={() => {
@@ -999,10 +999,10 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     <Quiet>Select a node or a pipe to inspect it. Double-click empty canvas to insert a node there.</Quiet>
                   ) : null}
                 </div>
-                <div className="flex flex-col gap-4 border-t border-hairline pt-6">
+                <div className="flex flex-col gap-2 border-t border-hairline pt-4">
                   <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{data.comments.length}</span>}>Comments</SectionLabel>
                   <form
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1"
                     onSubmit={async (event) => {
                       event.preventDefault();
                       await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, body: comment, nodeId: selectedNodeId }) });
@@ -1016,8 +1016,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   {data.comments.length === 0 ? <Quiet>No comments yet.</Quiet> : (
                     <ul className="flex flex-col divide-y divide-hairline">
                       {data.comments.map((c) => (
-                        <li key={c.id} className="flex flex-col gap-1 py-3">
-                          <span className="flex items-center gap-2 t-micro text-ink-3"><span className="t-caption-medium text-ink-2">{personLabel(c.authorId)}</span>{c.nodeId ? <span>on {nodeTitle(c.nodeId)}</span> : null}</span>
+                        <li key={c.id} className="flex flex-col gap-0.5 py-1.5">
+                          <span className="flex items-center gap-1 t-micro text-ink-3"><span className="t-caption-medium text-ink-2">{personLabel(c.authorId)}</span>{c.nodeId ? <span>on {nodeTitle(c.nodeId)}</span> : null}</span>
                           <p className="t-body text-ink">{c.body}</p>
                         </li>
                       ))}
@@ -1028,15 +1028,15 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             ) : null}
 
             {mode === "validation" ? (
-              <div className="flex flex-col gap-6">
-                <div className="grid grid-cols-2 gap-4 rounded-10 border border-hairline bg-object px-5 py-4">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-2 rounded-10 border border-hairline bg-object px-3 py-2">
                   <Fact label="Errors"><span className={errorCount ? "text-critical-text" : undefined}>{errorCount}</span></Fact>
                   <Fact label="Warnings"><span className={warningCount ? "text-caution-text" : undefined}>{warningCount}</span></Fact>
                 </div>
                 {validationReport.issues.length === 0 ? <Quiet>No issues. Every node and pipe checks out.</Quiet> : (
                   <ul className="flex flex-col divide-y divide-hairline">
                     {validationReport.issues.map((issue) => (
-                      <li key={issue.id} className="flex items-start gap-3 py-3">
+                      <li key={issue.id} className="flex items-start gap-1.5 py-1.5">
                         <StatusPill tone={severityTone(issue.severity)} className="capitalize">{issue.severity}</StatusPill>
                         <p className="min-w-0 flex-1 t-caption text-ink-2">{issue.message}</p>
                         {issue.nodeId ? <Button size="xs" variant="ghost" onClick={() => { setSelectedNodeIds([issue.nodeId as string]); setFrameRequest((n) => n + 1); setMode("design"); }}>Show</Button> : null}
@@ -1048,21 +1048,21 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             ) : null}
 
             {mode === "simulation" ? (
-              <div className="flex flex-col gap-6">
-                <div className="grid grid-cols-3 gap-4 rounded-10 border border-hairline bg-object px-5 py-4">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-3 gap-2 rounded-10 border border-hairline bg-object px-3 py-2">
                   <Fact label="Status"><StatusPill tone={sim.status === "success" ? "positive" : sim.status === "error" ? "critical" : "caution"} className="capitalize">{sim.status}</StatusPill></Fact>
                   <Fact label="Steps">{sim.steps.length}</Fact>
                   <Fact label="Pipes traversed">{tracedEdgeIds.length}</Fact>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
                   <SectionLabel>Branch decisions</SectionLabel>
                   {traceSummary.branchDecisions.length === 0 ? <Quiet>No labelled branches in this run.</Quiet> : traceSummary.branchDecisions.map((item) => <p key={item} className="t-mono-micro text-ink-2">{item}</p>)}
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
                   <SectionLabel>Loops</SectionLabel>
                   {traceSummary.loopSummaries.length === 0 ? <Quiet>No loop revisits detected.</Quiet> : traceSummary.loopSummaries.map((item) => <p key={item} className="t-caption text-ink-2">{item}</p>)}
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
                   <SectionLabel>Blocked or invalid routes</SectionLabel>
                   {traceSummary.blocked.length === 0 ? <Quiet>Nothing blocked the trace.</Quiet> : traceSummary.blocked.map((item) => <p key={item} className="t-caption text-critical-text">{item}</p>)}
                   {invalidPipeIds.length > 0 ? <p className="t-caption text-ink-2">Validation errors on pipes <span className="t-mono-micro">{invalidPipeIds.join(", ")}</span></p> : null}
@@ -1071,11 +1071,11 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             ) : null}
 
             {mode === "versions" ? (
-              <div className="flex flex-col gap-8">
-                <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
                   <SectionLabel>Checkpoints</SectionLabel>
                   <form
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1"
                     onSubmit={async (event) => {
                       event.preventDefault();
                       await fetch(`/api/systems/${systemId}/versions`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: versionName }) });
@@ -1088,7 +1088,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   {data.versions.length === 0 ? <Quiet>No checkpoints saved yet.</Quiet> : (
                     <ul className="flex flex-col divide-y divide-hairline">
                       {data.versions.map((v) => (
-                        <li key={v.id} className="flex items-center justify-between gap-4 py-3">
+                        <li key={v.id} className="flex items-center justify-between gap-2 py-1.5">
                           <span className="truncate t-body-medium text-ink">{v.name}</span>
                           <span className="shrink-0 t-micro tabular-nums text-ink-3">{new Date(v.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                         </li>
@@ -1097,7 +1097,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   )}
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-hairline pt-6">
+                <div className="flex flex-col gap-2 border-t border-hairline pt-4">
                   <SectionLabel>Import and merge</SectionLabel>
                   <Field label="Schema" htmlFor="import-schema" hint="Paste a pipes_schema_v1 export. You review the merge before anything changes.">
                     <Textarea id="import-schema" className="min-h-[72px] font-mono" value={importPayload} onChange={(e) => setImportPayload(e.target.value)} placeholder="{ … }" />
@@ -1110,8 +1110,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                     }}>Plan merge</Button>
                   </div>
                   {mergePlan?.ok ? (
-                    <ObjectRow className="gap-4">
-                      <div className="grid grid-cols-3 gap-4">
+                    <ObjectRow className="gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <Fact label="Additions">{mergePlan.summary?.additions ?? 0}</Fact>
                         <Fact label="Updates">{mergePlan.summary?.updates ?? 0}</Fact>
                         <Fact label="Conflicts"><span className={(mergePlan.summary?.conflicts ?? 0) > 0 ? "text-critical-text" : undefined}>{mergePlan.summary?.conflicts ?? 0}</span></Fact>
@@ -1135,9 +1135,9 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                   ) : null}
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-hairline pt-6">
+                <div className="flex flex-col gap-2 border-t border-hairline pt-4">
                   <SectionLabel>Export</SectionLabel>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     <Button size="sm" variant="secondary" onClick={() => window.open(`/api/systems/${systemId}/export?format=json`, "_blank")}><Download aria-hidden="true" />JSON</Button>
                     <Button size="sm" variant="secondary" onClick={() => window.open(`/api/systems/${systemId}/export?format=markdown`, "_blank")}><Download aria-hidden="true" />Markdown</Button>
                   </div>
@@ -1174,7 +1174,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
               <DialogTitle>Rename workflow</DialogTitle>
               <DialogDescription>Everyone in the workspace sees the new name.</DialogDescription>
             </DialogHeader>
-            <DialogBody className="flex flex-col gap-6">
+            <DialogBody className="flex flex-col gap-4">
               {renameError ? <Banner role="critical" title="The name was not saved">{renameError}</Banner> : null}
               <Field label="Name" htmlFor="rename-name">
                 <Input id="rename-name" autoFocus value={renameName} onChange={(e) => setRenameName(e.target.value)} maxLength={120} autoComplete="off" />
@@ -1183,7 +1183,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                 <Textarea id="rename-description" className="min-h-[72px]" value={renameDescription} onChange={(e) => setRenameDescription(e.target.value)} maxLength={2000} />
               </Field>
             </DialogBody>
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-2">
               <Button type="button" size="sm" variant="ghost" onClick={() => setRenameOpen(false)} disabled={renameBusy}>Cancel</Button>
               <Button type="submit" size="sm" variant="primary" loading={renameBusy} disabled={!renameName.trim()}>Save</Button>
             </DialogFooter>
@@ -1197,41 +1197,41 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             <DialogTitle>Insert node</DialogTitle>
             <DialogDescription>{insertContextLabel}</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 p-6">
+          <div className="flex flex-col gap-2 p-4">
             <Input autoFocus aria-label="Search nodes" value={paletteQuery} onChange={(e) => { setPaletteQuery(e.target.value); setPaletteIndex(0); }} placeholder="Search nodes, tags or use" />
-            <ul role="listbox" aria-label="Matching nodes" className="flex max-h-[360px] flex-col gap-1 overflow-y-auto">
+            <ul role="listbox" aria-label="Matching nodes" className="flex max-h-[360px] flex-col gap-0.5 overflow-y-auto">
               {paletteResults.map((entry, idx) => (
-                <li key={`${entry.nodeType}_${idx}`} role="option" aria-selected={idx === paletteIndex} className="flex flex-col gap-1">
+                <li key={`${entry.nodeType}_${idx}`} role="option" aria-selected={idx === paletteIndex} className="flex flex-col gap-0.5">
                   {paletteGrouped && entry.category !== paletteResults[idx - 1]?.category ? (
-                    <span aria-hidden="true" className={cn("px-4 t-label-caps text-ink-3", idx > 0 ? "pt-4" : undefined)}>{entry.category}</span>
+                    <span aria-hidden="true" className={cn("px-2 t-label-caps text-ink-3", idx > 0 ? "pt-2" : undefined)}>{entry.category}</span>
                   ) : null}
                   <button
                     type="button"
                     onClick={() => insertNodeFromEntry(entry)}
                     onMouseMove={() => { if (idx !== paletteIndex) setPaletteIndex(idx); }}
                     className={cn(
-                      "flex w-full items-start gap-4 rounded-8 px-4 py-3 text-left outline-none focus-ring",
+                      "flex w-full items-start gap-2 rounded-8 px-2 py-1.5 text-left outline-none focus-ring",
                       idx === paletteIndex ? "bg-state-selected" : "hover:bg-state-hover"
                     )}
                   >
-                    <span className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="flex items-baseline gap-3">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex items-baseline gap-1.5">
                         <span className="truncate t-body-medium text-ink">{entry.name}</span>
                         {paletteGrouped ? null : <span className="shrink-0 t-micro text-ink-3">{entry.category}</span>}
                       </span>
                       <span className="line-clamp-1 t-caption text-ink-3">{entry.description}</span>
                       {entry.inputTypes.length || entry.outputTypes.length ? <span className="truncate t-mono-micro text-ink-3">{entry.inputTypes.join(", ") || "none"} → {entry.outputTypes.join(", ") || "none"}</span> : null}
                     </span>
-                    {idx === paletteIndex ? <Kbd className="mt-1">↵</Kbd> : null}
+                    {idx === paletteIndex ? <Kbd className="mt-0.5">↵</Kbd> : null}
                   </button>
                 </li>
               ))}
-              {paletteResults.length === 0 ? <li><Quiet className="px-4 py-3">No node matches this search.</Quiet></li> : null}
+              {paletteResults.length === 0 ? <li><Quiet className="px-2 py-1.5">No node matches this search.</Quiet></li> : null}
             </ul>
-            <p className="flex flex-wrap items-center gap-4 t-micro text-ink-3">
-              <span className="inline-flex items-center gap-2"><Chord keys={["↑", "↓"]} />move</span>
-              <span className="inline-flex items-center gap-2"><Kbd>↵</Kbd>insert</span>
-              <span className="inline-flex items-center gap-2"><Kbd>esc</Kbd>close</span>
+            <p className="flex flex-wrap items-center gap-2 t-micro text-ink-3">
+              <span className="inline-flex items-center gap-1"><Chord keys={["↑", "↓"]} />move</span>
+              <span className="inline-flex items-center gap-1"><Kbd>↵</Kbd>insert</span>
+              <span className="inline-flex items-center gap-1"><Kbd>esc</Kbd>close</span>
             </p>
           </div>
         </DialogContent>
@@ -1270,7 +1270,7 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
 
   if (missing) {
     return (
-      <div className="flex flex-1 items-start justify-center px-4 py-12 md:py-24">
+      <div className="flex flex-1 items-start justify-center px-2 py-16 md:py-24">
         <EmptyState
           variant="permission"
           titleAs="h1"

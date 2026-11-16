@@ -52,10 +52,10 @@ export const buttonVariants = cva(
         // and every padding below is one of the twelve steps, but the heights
         // are the reference's own — 24 · 28 · 32 · 40, with 28 the default
         // because that is what a page header's action row measures.
-        xs: "h-[24px] gap-2 px-3 t-control [&_svg:not([data-spinner])]:size-[14px]",
-        sm: "h-[28px] gap-2 px-4 t-control [&_svg:not([data-spinner])]:size-[16px]",
-        md: "h-[32px] gap-3 px-5 t-body-medium [&_svg:not([data-spinner])]:size-[16px]",
-        lg: "h-[40px] gap-3 px-6 t-body-medium [&_svg:not([data-spinner])]:size-[16px]",
+        xs: "h-[24px] gap-1 px-1.5 t-control [&_svg:not([data-spinner])]:size-[14px]",
+        sm: "h-[28px] gap-1 px-2 t-control [&_svg:not([data-spinner])]:size-[16px]",
+        md: "h-[32px] gap-1.5 px-3 t-body-medium [&_svg:not([data-spinner])]:size-[16px]",
+        lg: "h-[40px] gap-1.5 px-4 t-body-medium [&_svg:not([data-spinner])]:size-[16px]",
       },
       variant: {
         primary: [
@@ -122,7 +122,7 @@ export const buttonVariants = cva(
         variant: "link",
         // A link is text, not a control box: it drops the pill geometry and
         // sits on the baseline of whatever sentence contains it.
-        class: "h-auto gap-2 rounded-2 p-0 align-baseline",
+        class: "h-auto gap-1 rounded-2 p-0 align-baseline",
       },
     ],
     defaultVariants: { variant: "secondary", size: "sm" },
@@ -255,8 +255,8 @@ export function IconButton({
         "aria-disabled:hover:bg-transparent aria-disabled:hover:text-ink-3",
         // §6.5: where the visual box is below the required target, expand it with
         // an invisible pseudo-element — never by growing the box.
-        "before:absolute before:-inset-4 before:content-['']",
-        "pointer-coarse:before:-inset-6",
+        "before:absolute before:-inset-2 before:content-['']",
+        "pointer-coarse:before:-inset-4",
         iconButtonSizes[size],
         variant === "secondary" &&
           "border border-border bg-raised text-ink-3 hover:border-strong",

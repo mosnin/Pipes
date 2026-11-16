@@ -46,11 +46,11 @@ export function CopyButton({ text, label = "Copy", className }: { text: string; 
 export function CodeSnippet({ label, code, className }: { label: ReactNode; code: string; className?: string }): ReactNode {
   return (
     <figure className={cn("min-w-0 overflow-hidden rounded-12 border border-border bg-raised", className)}>
-      <figcaption className="flex min-h-[44px] items-center justify-between gap-5 border-b border-hairline px-6 py-3">
+      <figcaption className="flex min-h-[44px] items-center justify-between gap-3 border-b border-hairline px-4 py-1.5">
         <span className="t-caption min-w-0 truncate text-ink-2">{label}</span>
         <CopyButton text={code} />
       </figcaption>
-      <pre tabIndex={0} className="focus-ring-inset t-mono-code overflow-x-auto bg-inset px-6 py-5 text-ink outline-none">
+      <pre tabIndex={0} className="focus-ring-inset t-mono-code overflow-x-auto bg-inset px-4 py-3 text-ink outline-none">
         <code>{code}</code>
       </pre>
     </figure>

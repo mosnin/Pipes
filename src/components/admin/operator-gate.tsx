@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 export function OperatorGate({ error }: { error: string }) {
   return (
     <Card>
-      <EmptyState variant="permission" title="Operator access required" body={error} className="py-9" />
+      <EmptyState variant="permission" title="Operator access required" body={error} className="py-8" />
     </Card>
   );
 }

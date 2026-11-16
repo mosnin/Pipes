@@ -68,7 +68,7 @@ export function ToastProvider({
         // The pane, not the viewport: the rail is 240 wide, so the pane's
         // centre is 120px right of the window's. `--nav-w` is the rail,
         // and `--rail-w` is a different thing entirely.
-        className="pointer-events-none fixed inset-x-0 bottom-8 z-[300] flex justify-center max-[900px]:ps-0 ps-[var(--nav-w)]"
+        className="pointer-events-none fixed inset-x-0 bottom-6 z-[300] flex justify-center max-[900px]:ps-0 ps-[var(--nav-w)]"
         aria-live="polite"
       >
         {toast ? (
@@ -83,9 +83,9 @@ export function ToastProvider({
               type="button"
               onClick={dismiss}
               aria-label="Dismiss"
-              className="focus-ring -me-1 grid size-6 place-items-center rounded-6 text-inverse/70 transition-colors hover:text-inverse"
+              className="focus-ring -me-0.5 grid size-4 place-items-center rounded-6 text-inverse/70 transition-colors hover:text-inverse"
             >
-              <X aria-hidden="true" className="size-4" />
+              <X aria-hidden="true" className="size-2" />
             </button>
           </div>
         ) : null}
@@ -96,7 +96,7 @@ export function ToastProvider({
 
 function cnToast(): string {
   return [
-    "pointer-events-auto flex h-[44px] items-center gap-3 rounded-8 bg-ink px-4",
+    "pointer-events-auto flex h-[44px] items-center gap-1.5 rounded-8 bg-ink px-2",
     "shadow-elev-3",
     "animate-in fade-in-0 slide-in-from-bottom-2",
     "duration-[var(--dur-3)] ease-[var(--ease-emphasis)]",

@@ -33,7 +33,7 @@ export function Separator({
       className={cn(
         // A hairline is exactly 1px and never scales (§5.5).
         "shrink-0 bg-hairline",
-        orientation === "horizontal" ? "h-px w-full" : "mx-5 h-[18px] w-px",
+        orientation === "horizontal" ? "h-px w-full" : "mx-3 h-[18px] w-px",
         className,
       )}
     />

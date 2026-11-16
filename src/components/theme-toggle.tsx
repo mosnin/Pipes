@@ -34,7 +34,7 @@ export function ThemeChoice(): ReactNode {
   const value: Choice = mounted ? ((theme as Choice) ?? "system") : "system";
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-1.5">
       <Switch
         checked={value === "system"}
         onCheckedChange={(follow) =>

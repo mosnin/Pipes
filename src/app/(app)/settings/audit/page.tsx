@@ -62,7 +62,7 @@ export default function AuditSettingsPage() {
     >
       <SettingsSection title="Filters">
         <Card>
-          <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="Actor type" htmlFor={`${fieldId}-actor-type`}>
               <Select id={`${fieldId}-actor-type`} size="sm" value={actorType} onValueChange={setActorType} options={[{ value: "", label: "Any" }, { value: "user", label: "User" }, { value: "agent", label: "Agent" }]} />
             </Field>
@@ -119,7 +119,7 @@ export default function AuditSettingsPage() {
               variant={filtered ? "filtered" : "never"}
               title={filtered ? "No events match these filters" : "No audit events yet"}
               body={filtered ? "Clear a filter to widen the search." : "Events appear here once an agent calls the protocol or someone works on a workflow."}
-              className="py-9"
+              className="py-8"
             />
           }
         />

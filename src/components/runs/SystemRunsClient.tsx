@@ -178,7 +178,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
       />
 
       {error ? (
-        <Banner role="critical" title="Something went wrong" className="mb-6">
+        <Banner role="critical" title="Something went wrong" className="mb-4">
           {error}
         </Banner>
       ) : null}
@@ -193,7 +193,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
           loading={loading}
           empty={
             <EmptyState
-              className="py-9"
+              className="py-8"
               icon={Activity}
               title="This workflow has not run yet"
               body="Start a run to walk it step by step yourself, or hand the workflow to an agent over MCP. Every run lands here with its outcome."
@@ -208,7 +208,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
         />
       </section>
 
-      <section aria-labelledby="versions-heading" className="mt-9">
+      <section aria-labelledby="versions-heading" className="mt-8">
         <SectionHeading>
           <span id="versions-heading">Results by version</span>
         </SectionHeading>
@@ -221,7 +221,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
 function VersionResults({ versions, loading }: { versions: VersionResult[]; loading: boolean }): ReactNode {
   if (!loading && versions.length === 0) {
     return (
-      <div className="flex min-h-[160px] items-center rounded-12 border border-border bg-raised px-6">
+      <div className="flex min-h-[160px] items-center rounded-12 border border-border bg-raised px-4">
         <p className="t-caption max-w-[60ch] text-ink-3">
           Once runs finish, each version shows its success rate, median run time and the step where failed runs most often stopped, so you can tell whether a change helped.
         </p>
@@ -231,11 +231,11 @@ function VersionResults({ versions, loading }: { versions: VersionResult[]; load
 
   return (
     <>
-      <ul className="flex flex-col gap-5 lg:hidden">
+      <ul className="flex flex-col gap-3 lg:hidden">
         {versions.map((v) => (
-          <li key={v.name} className="rounded-12 border border-border bg-raised p-6">
+          <li key={v.name} className="rounded-12 border border-border bg-raised p-4">
             <p className="t-body-strong text-ink">{v.name}</p>
-            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5">
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
               <VersionFact label="Runs" value={String(v.runs)} />
               <VersionFact label="Success rate" value={rateLabel(v)} meta={finishedLabel(v)} />
               <VersionFact label="Median duration" value={formatDuration(v.medianMs) ?? "No finished runs"} />
@@ -269,7 +269,7 @@ function VersionResults({ versions, loading }: { versions: VersionResult[]; load
                   <TD className="t-body-strong">{v.name}</TD>
                   <TD numeric>{v.runs}</TD>
                   <TD numeric>
-                    <span className="flex flex-col items-end gap-1">
+                    <span className="flex flex-col items-end gap-0.5">
                       <span>{rateLabel(v)}</span>
                       <span className="t-caption text-ink-3">{finishedLabel(v)}</span>
                     </span>
@@ -288,7 +288,7 @@ function VersionResults({ versions, loading }: { versions: VersionResult[]; load
 
 function VersionFact({ label, value, meta }: { label: string; value: string; meta?: string }): ReactNode {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <dt className="t-caption text-ink-3">{label}</dt>
       <dd className="t-body tabular text-ink">{value}</dd>
       {meta ? <dd className="t-caption text-ink-3">{meta}</dd> : null}

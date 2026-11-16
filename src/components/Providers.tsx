@@ -24,7 +24,7 @@ export function Providers({ children }: { children: ReactNode }): ReactNode {
             toast: "!bg-overlay !border-border !text-ink !rounded-12 !shadow-elev-2 !font-sans",
             title: "!t-body-strong",
             description: "!t-caption !text-ink-2",
-            actionButton: "!h-8 !rounded-8 !bg-control !px-4 !t-caption-medium !text-ink hover:!bg-selected focus-ring-canvas !outline-none"
+            actionButton: "!h-6 !rounded-8 !bg-control !px-2 !t-caption-medium !text-ink hover:!bg-selected focus-ring-canvas !outline-none"
           }
         }}
       />

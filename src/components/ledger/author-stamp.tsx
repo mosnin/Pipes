@@ -127,7 +127,7 @@ export function AuthorStamp({
   className,
 }: AuthorStampProps): ReactNode {
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-3", className)}>
+    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
       <Avatar
         label={label}
         kind={kind}

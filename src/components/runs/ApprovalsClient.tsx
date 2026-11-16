@@ -58,7 +58,7 @@ export function ApprovalsClient(): ReactNode {
       <PageHeader title="Approvals" description="Runs paused at a human approval step. The longest wait is at the top." />
 
       {error ? (
-        <Banner role="critical" title="Approvals could not be loaded" className="mb-6">
+        <Banner role="critical" title="Approvals could not be loaded" className="mb-4">
           {error}
         </Banner>
       ) : null}
@@ -68,7 +68,7 @@ export function ApprovalsClient(): ReactNode {
       ) : rows.length === 0 ? (
         <Card className="flex min-h-[280px] items-center justify-center">
           <EmptyState
-            className="py-9"
+            className="py-8"
             icon={Stamp}
             title="Nothing is waiting for you"
             body="When a run reaches a human approval step, it stops here until someone approves it, rejects it or sends it back to an earlier step."
@@ -83,7 +83,7 @@ export function ApprovalsClient(): ReactNode {
               title={row.currentStepTitle ?? "Approval"}
               subtitle={`${row.systemName} · Started by ${actorName(row.startedBy)}${row.approverRole ? ` · ${row.approverRole} or above` : ""}`}
               trailing={
-                <span className="flex flex-col items-end gap-1">
+                <span className="flex flex-col items-end gap-0.5">
                   <span className="t-micro hidden text-ink-3 sm:inline">Waiting since</span>
                   <RelativeTime at={ts(row.waitingSince ?? row.startedAt)} />
                 </span>

@@ -60,7 +60,7 @@ export function SkeletonText({
   // empty animated band.
   if (lines <= 0) return null;
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
+    <div className={cn("flex flex-col gap-2", className)}>
       {Array.from({ length: lines }, (_, index) => (
         <Skeleton
           key={index}

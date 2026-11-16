@@ -171,11 +171,11 @@ export function StepList({
   return (
     <ol className={cn("flex flex-col divide-y divide-hairline", className)}>
       {template.nodes.map((node, index) => (
-        <li key={node.id} className="flex items-baseline gap-5 py-4">
+        <li key={node.id} className="flex items-baseline gap-3 py-2">
           <span className="t-mono-hash w-[2ch] shrink-0 text-ink-4 tabular">
             {index + 1}
           </span>
-          <span className="flex min-w-0 flex-col gap-1">
+          <span className="flex min-w-0 flex-col gap-0.5">
             <span className="t-body-strong text-ink">{node.title}</span>
             <span className="t-caption text-ink-3">{nodeTypeLabel(node.type)}</span>
           </span>

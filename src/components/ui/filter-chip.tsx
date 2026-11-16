@@ -66,13 +66,13 @@ export function FilterChip({
   const hasLeading = Boolean(Icon) || Boolean(dot);
 
   const shell = cn(
-    "relative inline-flex h-[32px] shrink-0 select-none items-center gap-3",
+    "relative inline-flex h-[32px] shrink-0 select-none items-center gap-1.5",
     "whitespace-nowrap rounded-full border t-caption-strong outline-none",
     // §9.1's ban on `transition: all` holds everywhere: only what changes.
     "transition-[background-color,border-color,color] duration-[var(--dur-2)] ease-[var(--ease-out)]",
     // A 14px leading element buys its room out of the horizontal padding so the
     // chip does not grow into a lozenge.
-    hasLeading ? "px-4" : "px-5",
+    hasLeading ? "px-2" : "px-3",
     active
       ? "border-transparent bg-inverse text-ink-inverse hover:bg-inverse-hover"
       : "border-border bg-raised text-ink-2 hover:border-strong hover:bg-state-hover hover:text-ink",
@@ -140,7 +140,7 @@ export function FilterChip({
       <span
         className={cn(
           shell,
-          "pr-2",
+          "pr-1",
           "has-[:focus-visible]:shadow-[0_0_0_2px_var(--surface-raised),0_0_0_4px_var(--focus-ring)]",
         )}
       >
@@ -149,7 +149,7 @@ export function FilterChip({
           aria-pressed={active}
           disabled={disabled}
           onClick={onClick}
-          className="inline-flex items-center gap-3 outline-none"
+          className="inline-flex items-center gap-1.5 outline-none"
         >
           {body}
         </button>
@@ -194,7 +194,7 @@ export function ChipRule({ className }: { className?: string }): ReactNode {
     <span
       aria-hidden="true"
       className={cn(
-        "mx-5 h-[18px] w-px shrink-0 self-center bg-hairline",
+        "mx-3 h-[18px] w-px shrink-0 self-center bg-hairline",
         className,
       )}
     />
@@ -247,7 +247,7 @@ export function ChipRow({
       ref={ref}
       role="group"
       className={cn(
-        "flex items-center gap-4 overflow-x-auto",
+        "flex items-center gap-2 overflow-x-auto",
         // The bar owns its own scrolling so the page body never scrolls
         // sideways (§12.7); the scrollbar itself is chrome we do not want.
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",

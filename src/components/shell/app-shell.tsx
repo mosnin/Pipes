@@ -46,7 +46,7 @@ export function ClientAppShell({
       >
         <a
           href="#main"
-          className="t-caption-medium focus-ring-canvas sr-only rounded-8 border border-strong bg-raised px-4 text-ink outline-none focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:inline-flex focus:h-9 focus:items-center"
+          className="t-caption-medium focus-ring-canvas sr-only rounded-8 border border-strong bg-raised px-2 text-ink outline-none focus:not-sr-only focus:fixed focus:top-1.5 focus:left-1.5 focus:z-[60] focus:inline-flex focus:h-8 focus:items-center"
         >
           Skip to content
         </a>

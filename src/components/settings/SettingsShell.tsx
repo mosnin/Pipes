@@ -29,7 +29,7 @@ export function SettingsShell({
   return (
     <PageShell measure={measure}>
       <PageHeader title={title} description={description} actions={actions} meta={meta} />
-      <div className="flex flex-col gap-9">{children}</div>
+      <div className="flex flex-col gap-8">{children}</div>
     </PageShell>
   );
 }
@@ -52,10 +52,10 @@ export function SettingsSection({
   const id = useId();
   return (
     <section aria-labelledby={id}>
-      <SectionHeading action={action} className={description ? "mb-2" : undefined}>
+      <SectionHeading action={action} className={description ? "mb-1" : undefined}>
         <span id={id}>{title}</span>
       </SectionHeading>
-      {description ? <p className="t-caption mb-5 max-w-[90ch] text-ink-3">{description}</p> : null}
+      {description ? <p className="t-caption mb-3 max-w-[90ch] text-ink-3">{description}</p> : null}
       {children}
     </section>
   );

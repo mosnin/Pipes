@@ -145,7 +145,7 @@ export default function PricingPage() {
         title="Start free. Move up when your agents need it."
         lead="Each workspace has its own plan, with a monthly allowance of runs, steps and calls. Free stops when its runs are used. Pro adds shared editing, version history and API and MCP access, and keeps running past the allowance. Builder adds room and AI drafting."
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton
             href="/signup?source=pricing"
             track={{ event: "pricing_cta_clicked", metadata: { source: "pricing_primary" } }}
@@ -161,27 +161,27 @@ export default function PricingPage() {
       <Section id="plans" className="pt-0" labelledBy="plans-heading">
         <Container className="flex flex-col gap-10">
           <SectionHeading id="plans-heading" kicker="Plans" title="Choose what your workspace needs." />
-          <ol className="grid gap-5 lg:grid-cols-3">
+          <ol className="grid gap-3 lg:grid-cols-3">
             {planValues.map((plan) => {
               const featured = plan === "Pro";
               return (
                 <li
                   key={plan}
                   className={cn(
-                    "flex flex-col gap-7 rounded-12 border bg-raised p-8 shadow-elev-1",
+                    "flex flex-col gap-5 rounded-12 border bg-raised p-6 shadow-elev-1",
                     featured ? "border-strong" : "border-border",
                   )}
                 >
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
                     <p className="t-label-caps text-ink-3">{plan}</p>
                     <p className="t-mk-h3 text-ink">
                       {number.format(MONTHLY_INCLUDED[plan].runs)} runs a month
                     </p>
                     <p className="t-mk-body text-ink-2">{PLAN_COPY[plan].summary}</p>
                   </div>
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col gap-1.5">
                     {features(plan).map((feature) => (
-                      <li key={feature} className="t-body flex gap-3 text-ink-2">
+                      <li key={feature} className="t-body flex gap-1.5 text-ink-2">
                         <span
                           aria-hidden="true"
                           className="mt-[9px] size-[5px] shrink-0 rounded-full bg-ink-4"
@@ -190,7 +190,7 @@ export default function PricingPage() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-auto flex flex-col gap-4">
+                  <div className="mt-auto flex flex-col gap-2">
                     <p className="t-caption text-ink-3">
                       {plan === "Free"
                         ? "When the month's runs are used, new runs stop until next month."
@@ -221,11 +221,11 @@ export default function PricingPage() {
             <table className="w-full min-w-[640px] border-collapse">
               <thead>
                 <tr className="bg-inset">
-                  <th scope="col" className="t-label-caps px-7 py-5 text-left text-ink-3">
+                  <th scope="col" className="t-label-caps px-5 py-3 text-left text-ink-3">
                     Limit
                   </th>
                   {planValues.map((plan) => (
-                    <th key={plan} scope="col" className="t-label-caps px-7 py-5 text-left text-ink-3">
+                    <th key={plan} scope="col" className="t-label-caps px-5 py-3 text-left text-ink-3">
                       {plan}
                     </th>
                   ))}
@@ -234,14 +234,14 @@ export default function PricingPage() {
               <tbody className="divide-y divide-hairline">
                 {TABLE.map((row) => (
                   <tr key={row.label}>
-                    <th scope="row" className="t-body px-7 py-5 text-left font-normal text-ink">
+                    <th scope="row" className="t-body px-5 py-3 text-left font-normal text-ink">
                       {row.label}
                     </th>
                     {planValues.map((plan) => (
                       <td
                         key={plan}
                         className={cn(
-                          "t-body tabular px-7 py-5",
+                          "t-body tabular px-5 py-3",
                           row.muted?.(plan) ? "text-ink-4" : "text-ink-2",
                         )}
                       >

@@ -105,7 +105,7 @@ export function Banner({
         // `overflow-hidden` clips the left rule into the 12px corner radius, so
         // the bar follows the card edge instead of poking out past it. The
         // action slot sits 16px clear of the edge, so its focus ring survives.
-        "relative flex w-full items-start gap-5 overflow-hidden rounded-12 border px-6 py-5",
+        "relative flex w-full items-start gap-3 overflow-hidden rounded-12 border px-4 py-3",
         // The 3px left rule, r-2, inset 1px so it sits inside the border rather
         // than on top of it.
         "before:absolute before:inset-y-px before:left-px before:w-[3px] before:rounded-2 before:content-['']",
@@ -120,7 +120,7 @@ export function Banner({
         aria-hidden="true"
         className={cn("shrink-0", glyph)}
       />
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {title ? <p className="t-body-strong text-ink">{title}</p> : null}
         {children ? (
           <div className="t-caption text-ink-2">{children}</div>

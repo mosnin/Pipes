@@ -125,18 +125,18 @@ export default function HomePage() {
       </Section>
 
       <Section className="pt-0" labelledBy="design-heading">
-        <Container className="flex flex-col gap-12">
+        <Container className="flex flex-col gap-16">
           <FeatureRow
             id="design-heading"
             kicker="1. Design the workflow"
             title="Draw the steps, and say how each one gets done."
             visual={
               <SceneFrame caption={`The ${nodeTypeValues.length} step types in Pipes Schema v1.`}>
-                <ul className="flex flex-wrap gap-3 p-7">
+                <ul className="flex flex-wrap gap-1.5 p-5">
                   {nodeTypeValues.map((type) => (
                     <li
                       key={type}
-                      className="t-mono-hash rounded-8 border border-hairline bg-object px-4 py-2 text-ink-2"
+                      className="t-mono-hash rounded-8 border border-hairline bg-object px-2 py-1 text-ink-2"
                     >
                       {nodeTypeLabel(type)}
                     </li>
@@ -198,7 +198,7 @@ export default function HomePage() {
               title="Human approvals pause the run until a person decides."
               visual={
                 <SceneFrame caption="Support Ops System: the run stops at Escalation Review until someone decides.">
-                  <div className="bg-inset px-6 py-8">
+                  <div className="bg-inset px-4 py-6">
                     <TemplateGraph template={supportOps} vertical listOnMobile={false} />
                   </div>
                 </SceneFrame>
@@ -282,19 +282,19 @@ export default function HomePage() {
             title="You do not have to start from a blank canvas."
             lead="Each starter template opens as an editable workflow in your workspace. Keep it as it is, or use it as the first draft of your own."
           />
-          <ul className="mt-10 grid gap-6 md:grid-cols-2">
+          <ul className="mt-10 grid gap-4 md:grid-cols-2">
             {templates.map((template) => (
               <li key={template.id}>
                 <TrackedLink
                   href={`/templates/${template.slug}`}
                   event="template_detail_viewed"
                   metadata={{ source: "home", templateId: template.id }}
-                  className="focus-ring-canvas group flex h-full flex-col gap-3 rounded-12 border border-border bg-raised p-7 shadow-elev-1 transition-[box-shadow,border-color] duration-[var(--dur-2)] hover:border-strong hover:shadow-elev-1-hover focus-visible:outline-none"
+                  className="focus-ring-canvas group flex h-full flex-col gap-1.5 rounded-12 border border-border bg-raised p-5 shadow-elev-1 transition-[box-shadow,border-color] duration-[var(--dur-2)] hover:border-strong hover:shadow-elev-1-hover focus-visible:outline-none"
                 >
                   <span className="t-label-caps text-ink-3">{template.category}</span>
                   <span className="t-mk-h4 text-ink">{template.title}</span>
                   <span className="t-body text-ink-2">{template.description}</span>
-                  <span className="t-mono-hash mt-auto pt-3 text-ink-3">
+                  <span className="t-mono-hash mt-auto pt-1.5 text-ink-3">
                     {template.preview} · {template.complexity}
                   </span>
                 </TrackedLink>
@@ -318,7 +318,7 @@ export default function HomePage() {
                   href={`/use-cases/${entry.slug}`}
                   event="use_case_viewed"
                   metadata={{ source: "home", slug: entry.slug }}
-                  className="focus-ring-canvas grid gap-2 rounded-4 px-3 py-6 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[300px_1fr] md:gap-8"
+                  className="focus-ring-canvas grid gap-1 rounded-4 px-1.5 py-4 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[300px_1fr] md:gap-6"
                 >
                   <span className="t-body-strong text-ink">{entry.title}</span>
                   <span className="t-body text-ink-2">{entry.problem}</span>
@@ -362,7 +362,7 @@ export default function HomePage() {
               },
             ]}
           />
-          <div className="mt-8">
+          <div className="mt-6">
             <CutButton
               href="/protocol"
               variant="outline"

@@ -310,7 +310,7 @@ export function SidebarHeader({
   return (
     <div
       data-slot="sidebar-header"
-      className={cn("flex shrink-0 flex-col gap-3 p-4", className)}
+      className={cn("flex shrink-0 flex-col gap-1.5 p-2", className)}
       {...props}
     />
   );
@@ -323,7 +323,7 @@ export function SidebarFooter({
   return (
     <div
       data-slot="sidebar-footer"
-      className={cn("flex shrink-0 flex-col gap-3 p-4", className)}
+      className={cn("flex shrink-0 flex-col gap-1.5 p-2", className)}
       {...props}
     />
   );
@@ -371,7 +371,7 @@ export function SidebarGroupLabel({
     <div
       data-slot="sidebar-group-label"
       className={cn(
-        "t-group-label flex h-[28px] shrink-0 items-center ps-5 pe-7 text-ink-3",
+        "t-group-label flex h-[28px] shrink-0 items-center ps-3 pe-5 text-ink-3",
         "transition-[margin,opacity] duration-[var(--dur-3)] ease-linear",
         "group-data-[collapsible=icon]:-mt-[28px] group-data-[collapsible=icon]:opacity-0",
         className,
@@ -457,7 +457,7 @@ export function SidebarMenuButton({
         // edge, an 8px gap to an 18px icon, a 13px label. The row IS the
         // pill — pitch and pill height are both 28, so the selected row
         // fills its slot with no vertical gap above or below it.
-        "peer/menu-button flex w-full items-center gap-4 overflow-hidden rounded-8 px-4 text-left",
+        "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-8 px-2 text-left",
         // The reference's rail is not quiet: its top-level rows are dark and
         // medium-weight, and only the sub-items under an expanded section
         // drop to grey and regular. Ours had every row at body weight in
@@ -562,7 +562,7 @@ export function SidebarMenuSubButton({
         // 24 to the parent row's 28, and the label lands on the parent's
         // label rather than past it: 16 of row inset + an 18px icon + a 16px
         // gap is 50.
-        "flex h-[24px] min-w-0 items-center gap-4 overflow-hidden rounded-8 pe-4 ps-[50px]",
+        "flex h-[24px] min-w-0 items-center gap-2 overflow-hidden rounded-8 pe-2 ps-[50px]",
         isActive ? "t-body-strong" : "t-body",
         "text-ink-2 outline-none",
         "transition-colors duration-[var(--dur-1)] ease-linear",
@@ -593,7 +593,7 @@ export function SidebarMenuSkeleton({
     <div
       data-slot="sidebar-menu-skeleton"
       className={cn(
-        "flex h-[40px] items-center gap-5 rounded-10 px-5",
+        "flex h-[40px] items-center gap-3 rounded-10 px-3",
         "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0",
         className,
       )}

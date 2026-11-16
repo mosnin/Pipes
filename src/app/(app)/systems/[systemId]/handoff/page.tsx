@@ -117,13 +117,13 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
               </Button>
             ]
           }))}
-          empty={<EmptyState title="No handoff packages" body="Generate a package once the workflow design is accepted." className="py-9" />}
+          empty={<EmptyState title="No handoff packages" body="Generate a package once the workflow design is accepted." className="py-8" />}
         />
       </SettingsSection>
 
       {selected ? (
         <SettingsSection title={selected.package.title} action={statusPill(selected.package.status)}>
-          <div className="flex flex-col gap-7">
+          <div className="flex flex-col gap-5">
             <RecordTable
               noun="artifact"
               columns={[{ label: "Artifact" }, { label: "Type", className: "w-[200px]" }, { label: "Target", className: "w-[180px]" }]}
@@ -131,7 +131,7 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
                 key: a.id ?? `${a.title}-${index}`,
                 cells: [a.title, <span key="y" className="t-mono-hash text-ink-2">{a.type}</span>, <span key="g" className="text-ink-2">{targetLabel(a.target)}</span>]
               }))}
-              empty={<EmptyState title="No artifacts in this package" className="py-9" />}
+              empty={<EmptyState title="No artifacts in this package" className="py-8" />}
             />
 
             {sandboxArtifacts.length > 0 ? (
@@ -153,8 +153,8 @@ export default function SystemHandoffPage({ params }: { params: Promise<{ system
 
             <Card>
               <CardToolbar title="Review" description="Approve the package, send it back for stricter rollout steps, or export it as a Markdown bundle." />
-              <CardFooter className="mt-6 flex-wrap justify-end">
-                <div className="flex flex-wrap items-center gap-4">
+              <CardFooter className="mt-4 flex-wrap justify-end">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="secondary"
                     size="sm"

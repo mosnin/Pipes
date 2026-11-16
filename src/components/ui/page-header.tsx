@@ -52,16 +52,16 @@ export function PageHeader({
     // Measured against the reference's index page: the title's cap sits
     // 23.6px below the pane's top edge and the card starts 19.7px under it.
     // `PageShell` already supplies 16 of that top inset as its gutter.
-    <header className={cn("pb-7 pt-2", className)}>
+    <header className={cn("pb-5 pt-1", className)}>
       {/* justify-between, never a flex-1 spacer, so the action cluster lands at
           the same x on every route (anti-pattern 40). Below `sm` the cluster
           drops under the title block: a primary button beside a title on a
           375px screen squeezes the description into a ten-character column
           and then overflows the header on top of the kicker. */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col justify-center sm:flex-1">
           {kicker ? (
-            <span className="t-label-caps mb-4 text-ink-3">{kicker}</span>
+            <span className="t-label-caps mb-2 text-ink-3">{kicker}</span>
           ) : null}
           <h1
             className={cn(
@@ -72,19 +72,19 @@ export function PageHeader({
             {title}
           </h1>
           {description ? (
-            <p className="t-caption mt-3 max-w-[90ch] text-ink-3">
+            <p className="t-caption mt-1.5 max-w-[90ch] text-ink-3">
               {description}
             </p>
           ) : null}
         </div>
         {actions ? (
-          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-4 sm:shrink-0 sm:justify-end">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
             {actions}
           </div>
         ) : null}
       </div>
       {meta ? (
-        <div className="t-caption mt-5 flex flex-wrap items-center gap-5 text-ink-3">
+        <div className="t-caption mt-3 flex flex-wrap items-center gap-3 text-ink-3">
           {meta}
         </div>
       ) : null}
@@ -109,7 +109,7 @@ export function Toolbar({ children, className }: ToolbarProps): ReactNode {
   return (
     <div
       className={cn(
-        "flex min-h-[36px] flex-wrap items-center gap-5",
+        "flex min-h-[36px] flex-wrap items-center gap-3",
         className,
       )}
     >
@@ -142,7 +142,7 @@ export function SectionHeading({
     <div
       className={cn(
         // 12px clear of the card below it (§9.14).
-        "mb-5 flex items-center justify-between gap-5",
+        "mb-3 flex items-center justify-between gap-3",
         className,
       )}
     >

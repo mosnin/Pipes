@@ -315,12 +315,12 @@ export function AgentChatPanel({
   const plainText = (text?: string) => (text && !/\b[a-z0-9]+_[a-z0-9_]+\b/i.test(text) ? text : undefined);
 
   if (access.status === "loading") {
-    return <div className="px-5 py-5"><Quiet>Checking your plan…</Quiet></div>;
+    return <div className="px-3 py-3"><Quiet>Checking your plan…</Quiet></div>;
   }
 
   if (access.status === "ready" && !access.aiGeneration) {
     return (
-      <div className="flex flex-col gap-4 px-5 py-5">
+      <div className="flex flex-col gap-2 px-3 py-3">
         <Banner
           title="The assistant is part of the Builder plan"
           action={<Button asChild size="xs" variant="ghost"><Link href="/settings/billing">See plans</Link></Button>}
@@ -332,10 +332,10 @@ export function AgentChatPanel({
   }
 
   return (
-    <div className="flex flex-col gap-6 px-5 py-5">
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 px-3 py-3">
+      <div className="flex flex-col gap-2">
         {runStatus !== "idle" ? (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-1.5">
             <StatusPill tone={statusTone(runStatus)} className="capitalize">{runStatus}</StatusPill>
           </div>
         ) : null}
@@ -350,7 +350,7 @@ export function AgentChatPanel({
           />
         ) : null}
         <form
-          className="flex flex-col gap-3 rounded-12 border border-border bg-object p-3"
+          className="flex flex-col gap-1.5 rounded-12 border border-border bg-object p-1.5"
           onSubmit={(event) => { event.preventDefault(); if (!busy) void runPrompt(); }}
         >
           <Textarea
@@ -361,10 +361,10 @@ export function AgentChatPanel({
               if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !busy) { event.preventDefault(); void runPrompt(); }
             }}
             placeholder="Describe a change, such as: add a human approval before anything is sent"
-            className="min-h-[72px] border-transparent bg-transparent px-2 py-1 hover:border-transparent"
+            className="min-h-[72px] border-transparent bg-transparent px-1 py-0.5 hover:border-transparent"
           />
-          <div className="flex items-center justify-between gap-3">
-            <span className="hidden items-center gap-2 t-micro text-ink-3 sm:inline-flex"><Kbd>⌘</Kbd><Kbd>↵</Kbd>to ask</span>
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="hidden items-center gap-1 t-micro text-ink-3 sm:inline-flex"><Kbd>⌘</Kbd><Kbd>↵</Kbd>to ask</span>
             <Button type="submit" size="sm" variant="secondary" disabled={busy || !prompt.trim()} loading={busy} className="ml-auto">
               <Send aria-hidden="true" />
               Ask
@@ -375,12 +375,12 @@ export function AgentChatPanel({
       </div>
 
       {pendingApprovals.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{pendingApprovals.length}</span>}>Waiting for your approval</SectionLabel>
           {pendingApprovals.map((approval) => (
-            <ObjectRow key={approval.id} className="gap-3">
+            <ObjectRow key={approval.id} className="gap-1.5">
               <p className="t-caption text-ink">{approval.reason}</p>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button size="xs" variant="primary" onClick={() => decideApproval(approval.id, "approved")}>Approve</Button>
                 <Button size="xs" variant="ghost" onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button>
               </div>
@@ -390,19 +390,19 @@ export function AgentChatPanel({
       ) : null}
 
       {assistantText ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           <SectionLabel>Answer</SectionLabel>
           <p className="whitespace-pre-wrap t-body-read text-ink">{assistantText}</p>
         </div>
       ) : runStatus === "idle" ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           <p className="t-body-medium text-ink">Ask for a change to this workflow</p>
           <p className="t-caption text-ink-3">The assistant reads the workflow and proposes edits, such as new steps, routes or approvals. Nothing changes until you review the edits and apply them.</p>
         </div>
       ) : null}
 
       {reviewableBatches.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
           <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{reviewableBatches.length}</span>}>Proposed edits</SectionLabel>
           {reviewableBatches.map((batch) => {
             const loaded = batchDiffs[batch.id];
@@ -411,9 +411,9 @@ export function AgentChatPanel({
             const validation = selectionValidation[batch.id];
             const previewEnabled = previewEnabledByBatch[batch.id] ?? true;
             return (
-              <ObjectRow key={batch.id} className="gap-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-1">
+              <ObjectRow key={batch.id} className="gap-2">
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex min-w-0 flex-col gap-0.5">
                     <span className="t-body-medium text-ink">{batch.summary}</span>
                     {plainText(batch.rationale) ? <span className="t-caption text-ink-3">{plainText(batch.rationale)}</span> : null}
                   </div>
@@ -421,7 +421,7 @@ export function AgentChatPanel({
                 </div>
                 {validation && !validation.valid ? <p className="t-caption text-critical-text">{validation.blockedReason}</p> : null}
                 {diffs.length > 0 ? (
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col gap-1.5">
                     {diffs.map((diff) => (
                       <li key={diff.id}>
                         <CheckRow
@@ -445,12 +445,12 @@ export function AgentChatPanel({
                     ))}
                   </ul>
                 ) : loaded ? null : <Quiet>Loading the edits…</Quiet>}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   <Button size="xs" variant="primary" onClick={() => applySelectionDecision(batch.id, "approve_selected")}>Apply selected</Button>
                   <Button size="xs" variant="secondary" onClick={() => applySelectionDecision(batch.id, "approve_all")}>Apply all</Button>
                   <Button size="xs" variant="destructive" onClick={() => applySelectionDecision(batch.id, "reject_all")}>Discard all</Button>
                 </div>
-                <div className="flex flex-wrap gap-2 border-t border-hairline pt-3">
+                <div className="flex flex-wrap gap-1 border-t border-hairline pt-1.5">
                   <Button size="xs" variant="ghost" aria-pressed={previewEnabled} onClick={async () => {
                     const next = !previewEnabled;
                     setPreviewEnabledByBatch((prev) => ({ ...prev, [batch.id]: next }));
@@ -509,19 +509,19 @@ export function AgentChatPanel({
 function Disclosure({ title, count, children }: { title: string; count?: number; children: ReactNode }): ReactNode {
   return (
     <details className="group border-t border-hairline">
-      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-6 py-4 outline-none focus-ring [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-6 py-2 outline-none focus-ring [&::-webkit-details-marker]:hidden">
         <span className="t-label-caps text-ink">{title}</span>
         {count !== undefined ? <span className="t-micro tabular-nums text-ink-3">{count}</span> : null}
         <ChevronDown aria-hidden="true" size={14} className="ml-auto text-ink-3 transition-transform duration-[var(--dur-2)] group-open:rotate-180" />
       </summary>
-      <div className="flex flex-col gap-6 pb-6">{children}</div>
+      <div className="flex flex-col gap-4 pb-4">{children}</div>
     </details>
   );
 }
 
 function Lines({ title, empty, rows }: { title: string; empty: string; rows: Array<{ id: string; text: ReactNode }> }): ReactNode {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <span className="t-caption-medium text-ink">{title}</span>
       {rows.length === 0 ? <Quiet>{empty}</Quiet> : rows.map((row) => <p key={row.id} className="t-caption text-ink-3">{row.text}</p>)}
     </div>

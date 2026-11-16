@@ -32,7 +32,7 @@ export function Wordmark({ className }: { className?: string }): ReactNode {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-4 text-ink",
+        "inline-flex shrink-0 items-center gap-2 text-ink",
         className,
       )}
     >

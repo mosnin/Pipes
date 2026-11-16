@@ -7,9 +7,9 @@ import { FOOTER_COLUMNS } from "@/components/marketing/nav";
 export function MarketingFooter(): ReactNode {
   return (
     <footer className="border-t border-border">
-      <div className="mk-container flex flex-col gap-12 py-12">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
-          <div className="flex flex-col gap-6">
+      <div className="mk-container flex flex-col gap-16 py-16">
+        <div className="grid gap-16 lg:grid-cols-[1.4fr_2fr]">
+          <div className="flex flex-col gap-4">
             <Link
               href="/"
               aria-label="Pipes home"
@@ -27,9 +27,9 @@ export function MarketingFooter(): ReactNode {
           </div>
           <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
             {FOOTER_COLUMNS.map((column) => (
-              <div key={column.title} className="flex flex-col gap-6">
+              <div key={column.title} className="flex flex-col gap-4">
                 <p className="t-label-caps text-ink-3">{column.title}</p>
-                <ul className="flex flex-col gap-4">
+                <ul className="flex flex-col gap-2">
                   {column.links.map((link) => (
                     <li key={link.href}>
                       <Link
@@ -45,7 +45,7 @@ export function MarketingFooter(): ReactNode {
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-3 border-t border-hairline pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1.5 border-t border-hairline pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="t-caption text-ink-3">{new Date().getFullYear()} Pipes.</p>
           <p className="t-caption text-ink-3">
             Workflows for people and the agents that work beside them.

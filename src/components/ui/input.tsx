@@ -84,9 +84,9 @@ export function Textarea({
       className={cn(
         controlBase,
         // Vertical only: horizontal resize breaks the column grid it sits in.
-        "min-h-[96px] resize-y rounded-8 px-4 py-3",
+        "min-h-[96px] resize-y rounded-8 px-2 py-1.5",
         invalid &&
-          "border-critical-border pr-9 hover:border-critical-border focus-visible:border-critical-border",
+          "border-critical-border pr-8 hover:border-critical-border focus-visible:border-critical-border",
         className,
       )}
       {...props}
@@ -126,7 +126,7 @@ export function Field({
 }: FieldProps): ReactNode {
   const message = error ?? hint;
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div className={cn("flex flex-col gap-1.5", className)}>
       <LabelPrimitive.Root
         htmlFor={htmlFor}
         className="t-caption-medium text-ink"
@@ -143,7 +143,7 @@ export function Field({
             aria-hidden="true"
             size={14}
             strokeWidth={1.25}
-            className="pointer-events-none absolute right-5 top-[9px] text-critical"
+            className="pointer-events-none absolute right-3 top-[9px] text-critical"
           />
         ) : null}
       </div>
@@ -201,7 +201,7 @@ export function SearchInput({
         aria-hidden="true"
         size={14}
         strokeWidth={1.25}
-        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-3"
+        className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-ink-3"
       />
       <input
         type="search"
@@ -211,7 +211,7 @@ export function SearchInput({
           "h-[36px] rounded-10 pl-10",
           // Native search decorations would collide with the clear button.
           "[&::-webkit-search-cancel-button]:appearance-none",
-          clearable ? "pr-10" : "pr-5",
+          clearable ? "pr-10" : "pr-3",
         )}
         {...props}
       />
@@ -221,7 +221,7 @@ export function SearchInput({
           aria-label="Clear search"
           onClick={onClear}
           className={cn(
-            "absolute right-3 top-1/2 -translate-y-1/2",
+            "absolute right-1.5 top-1/2 -translate-y-1/2",
             "inline-flex size-[24px] items-center justify-center rounded-6",
             "text-ink-3 transition-[background-color,color,box-shadow]",
             "duration-[var(--dur-1)] ease-[var(--ease-out)]",
@@ -229,7 +229,7 @@ export function SearchInput({
             "focus-ring focus-visible:outline-none",
             // 24px is under the 28px dense floor, so the target is expanded
             // invisibly rather than by growing the glyph (§6.5).
-            "before:absolute before:-inset-4 before:content-[''] pointer-coarse:before:-inset-6",
+            "before:absolute before:-inset-2 before:content-[''] pointer-coarse:before:-inset-4",
           )}
         >
           <X aria-hidden="true" size={14} strokeWidth={1.5} />

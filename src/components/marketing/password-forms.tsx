@@ -38,7 +38,7 @@ export function PasswordLoginForm({ returnTo, initialError }: { returnTo: string
   const { busy, error, onSubmit } = useForm("/api/auth/login", returnTo);
   const message = error ?? initialError;
   return (
-    <form className="flex flex-col gap-5" onSubmit={(e) => onSubmit(e, { email, password, returnTo })}>
+    <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { email, password, returnTo })}>
       {message ? (
         <div role="alert">
           <Banner role="critical" title="Sign-in didn't finish">
@@ -52,7 +52,7 @@ export function PasswordLoginForm({ returnTo, initialError }: { returnTo: string
       <Field label="Password" htmlFor="login-password">
         <Input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
-      <Link href="/forgot-password" className="t-link t-caption focus-ring-canvas -mt-2 self-start rounded-2 focus-visible:outline-none">
+      <Link href="/forgot-password" className="t-link t-caption focus-ring-canvas -mt-1 self-start rounded-2 focus-visible:outline-none">
         Forgot password?
       </Link>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
@@ -69,7 +69,7 @@ export function PasswordSignupForm({ source }: { source: string }): ReactNode {
   const { busy, error, onSubmit } = useForm("/api/auth/signup", "/onboarding");
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-3"
       onSubmit={(e) => {
         void fetch("/api/marketing/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event: "signup_started", metadata: { source } }) }).catch(() => undefined);
         return onSubmit(e, { name, email, password, returnTo: "/onboarding" });
@@ -104,7 +104,7 @@ export function ForgotPasswordForm(): ReactNode {
   const [sentTo, setSentTo] = useState<string | null>(null);
   if (sentTo) {
     return (
-      <div className="flex flex-col gap-6" aria-live="polite">
+      <div className="flex flex-col gap-4" aria-live="polite">
         <Banner role="positive" title="Check your email">
           If {sentTo} has a Pipes account, a link to set a new password is on its way. It works once and expires after an hour.
         </Banner>
@@ -116,7 +116,7 @@ export function ForgotPasswordForm(): ReactNode {
   }
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-3"
       onSubmit={async (event) => {
         event.preventDefault();
         setBusy(true);
@@ -140,7 +140,7 @@ export function ResetPasswordForm({ token }: { token: string }): ReactNode {
   const [password, setPassword] = useState("");
   const { busy, error, onSubmit } = useForm("/api/auth/reset", "/dashboard");
   return (
-    <form className="flex flex-col gap-5" onSubmit={(e) => onSubmit(e, { token, password })}>
+    <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { token, password })}>
       {error ? (
         <div role="alert">
           <Banner role="critical" title="Your password wasn't changed">

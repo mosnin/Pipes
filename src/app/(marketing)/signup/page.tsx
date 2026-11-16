@@ -48,10 +48,10 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
       }
     >
       <SignupSourceTracker source={source} />
-      <div className="flex flex-col gap-8">
-        <ol className="flex flex-wrap items-center justify-center gap-4">
+      <div className="flex flex-col gap-6">
+        <ol className="flex flex-wrap items-center justify-center gap-2">
           {STEPS.map((step, index) => (
-            <li key={step} className="flex items-center gap-4">
+            <li key={step} className="flex items-center gap-2">
               {index > 0 ? <span aria-hidden="true" className="h-px w-[16px] bg-strong" /> : null}
               <span className={index === 0 ? "t-label-caps text-ink" : "t-label-caps text-ink-3"}>
                 {step}
@@ -59,15 +59,15 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
             </li>
           ))}
         </ol>
-        <Card className="flex flex-col gap-6 p-7">
+        <Card className="flex flex-col gap-4 p-5">
           <dl className="flex flex-col divide-y divide-hairline">
-            <div className="flex flex-col gap-1 pb-5">
+            <div className="flex flex-col gap-0.5 pb-3">
               <dt className="t-body-strong text-ink">Free to start</dt>
               <dd className="t-body text-ink-2">
                 Up to {free.maxSystems} workflows, with validation and simulation.
               </dd>
             </div>
-            <div className="flex flex-col gap-1 pt-5">
+            <div className="flex flex-col gap-0.5 pt-3">
               <dt className="t-body-strong text-ink">Then pick a starting point</dt>
               <dd className="t-body text-ink-2">
                 A template, a blank canvas or an imported schema. Onboarding suggests one.

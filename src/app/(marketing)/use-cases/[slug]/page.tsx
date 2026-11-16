@@ -47,7 +47,7 @@ export default async function UseCaseDetailPage({ params }: { params: Promise<{ 
         title={entry.title}
         lead={entry.problem}
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton
             href={`/signup?source=use_case_${entry.slug}`}
             track={{ event: "signup_started", metadata: { source: `use_case_${entry.slug}` } }}
@@ -58,18 +58,18 @@ export default async function UseCaseDetailPage({ params }: { params: Promise<{ 
       </PageIntro>
 
       <Section className="pt-0" labelledBy="fit-heading">
-        <Container className="grid gap-12 lg:grid-cols-2">
-          <div className="flex flex-col gap-6">
+        <Container className="grid gap-16 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <p className="t-label-caps text-ink-3">Why Pipes fits</p>
             <h2 id="fit-heading" className="t-mk-h3 max-w-[28ch] text-balance text-ink">
               {entry.fit}
             </h2>
           </div>
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             <h2 className="t-label-caps text-ink-3">How to set it up</h2>
             <ol className="divide-y divide-hairline border-y border-hairline">
               {entry.workflow.map((step, index) => (
-                <li key={step} className="flex items-baseline gap-5 py-5">
+                <li key={step} className="flex items-baseline gap-3 py-3">
                   <span className="t-mono-hash w-[2ch] shrink-0 text-ink-4 tabular">{index + 1}</span>
                   <span className="t-mk-body text-ink">{step}</span>
                 </li>
@@ -83,19 +83,19 @@ export default async function UseCaseDetailPage({ params }: { params: Promise<{ 
         <Section className="border-t border-hairline" labelledBy="templates-heading">
           <Container>
             <SectionHeading id="templates-heading" kicker="Templates" title="Start from one of these." />
-            <ul className="mt-10 grid gap-6 md:grid-cols-2">
+            <ul className="mt-10 grid gap-4 md:grid-cols-2">
               {templates.map((template) => (
                 <li key={template.id}>
                   <TrackedLink
                     href={`/templates/${template.slug}`}
                     event="template_detail_viewed"
                     metadata={{ source: "use_case", useCase: entry.slug, templateId: template.id }}
-                    className="focus-ring-canvas flex h-full flex-col gap-3 rounded-12 border border-border bg-raised p-7 shadow-elev-1 transition-[box-shadow,border-color] duration-[var(--dur-2)] hover:border-strong hover:shadow-elev-1-hover focus-visible:outline-none"
+                    className="focus-ring-canvas flex h-full flex-col gap-1.5 rounded-12 border border-border bg-raised p-5 shadow-elev-1 transition-[box-shadow,border-color] duration-[var(--dur-2)] hover:border-strong hover:shadow-elev-1-hover focus-visible:outline-none"
                   >
                     <span className="t-label-caps text-ink-3">{template.category}</span>
                     <span className="t-mk-h4 text-ink">{template.title}</span>
                     <span className="t-body text-ink-2">{template.description}</span>
-                    <span className="t-mono-hash mt-auto pt-3 text-ink-3">{template.preview}</span>
+                    <span className="t-mono-hash mt-auto pt-1.5 text-ink-3">{template.preview}</span>
                   </TrackedLink>
                 </li>
               ))}

@@ -33,10 +33,10 @@ export function NavSidebar({ isAdmin }: { isAdmin: boolean }): ReactNode {
   return (
     <Sidebar label="Pipes navigation">
       <NavIcons>
-        <SidebarContent className="gap-4 ps-5 pe-7 pb-5 pt-4">
+        <SidebarContent className="gap-2 ps-3 pe-5 pb-3 pt-2">
           {groups.map((group, index) => (
             <SidebarGroup key={group.label ?? `group-${index}`}>
-              {group.label ? <SidebarGroupLabel className="ps-3 pe-0">{group.label}</SidebarGroupLabel> : null}
+              {group.label ? <SidebarGroupLabel className="ps-1.5 pe-0">{group.label}</SidebarGroupLabel> : null}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {group.items.map((item) => (
@@ -48,7 +48,7 @@ export function NavSidebar({ isAdmin }: { isAdmin: boolean }): ReactNode {
           ))}
         </SidebarContent>
 
-        <SidebarFooter className="ps-5 pe-7 pb-4 pt-3">
+        <SidebarFooter className="ps-3 pe-5 pb-2 pt-1.5">
           <SidebarMenu>
             {FOOTER_ITEMS.map((item) => (
               <NavRow key={item.href} item={item} pathname={pathname} />

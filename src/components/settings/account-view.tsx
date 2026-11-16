@@ -71,7 +71,7 @@ export function AccountView(): ReactNode {
 function LoadingCard(): ReactNode {
   return (
     <Card>
-      <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-3 p-4">
         <Skeleton className="h-[14px] w-[220px]" />
         <Skeleton className="h-[32px] w-full" />
         <Skeleton className="h-[14px] w-[260px]" />
@@ -106,7 +106,7 @@ function ProfileCard({ account, onRenamed }: { account: Account; onRenamed: (nam
           router.refresh();
         }}
       >
-        <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col gap-4 p-4">
           <Field label="Name" htmlFor={`${id}-name`} error={error ?? undefined} hint="Shown to your teammates and on the work you sign.">
             <Input
               id={`${id}-name`}
@@ -154,7 +154,7 @@ function PasswordCard(): ReactNode {
           toast("Password changed");
         }}
       >
-        <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col gap-4 p-4">
           {error ? (
             <div role="alert">
               <Banner role="critical" title="Your password did not change">

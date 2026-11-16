@@ -39,26 +39,26 @@ export function RunsTable({ label, rows, loading, showWorkflow = false, empty }:
         {loading && rows.length === 0 ? (
           <ul className="divide-y divide-hairline">
             {Array.from({ length: 3 }, (_, index) => (
-              <li key={index} className="flex flex-col gap-3 p-6">
+              <li key={index} className="flex flex-col gap-1.5 p-4">
                 <Skeleton className="h-[13px] w-[55%]" />
                 <Skeleton className="h-[11px] w-[72%]" />
               </li>
             ))}
           </ul>
         ) : showEmpty ? (
-          <div className="flex min-h-[240px] items-center justify-center p-6">{empty}</div>
+          <div className="flex min-h-[240px] items-center justify-center p-4">{empty}</div>
         ) : (
           <ul className="divide-y divide-hairline">
             {rows.map((row) => {
               const duration = formatDuration(runDuration(row, now));
               return (
                 <li key={row.id}>
-                  <Link href={`/runs/${row.id}`} className="focus-ring-canvas flex flex-col gap-3 p-6 transition-colors hover:bg-state-hover focus-visible:outline-none">
-                    <span className="flex min-w-0 items-center gap-4">
+                  <Link href={`/runs/${row.id}`} className="focus-ring-canvas flex flex-col gap-1.5 p-4 transition-colors hover:bg-state-hover focus-visible:outline-none">
+                    <span className="flex min-w-0 items-center gap-2">
                       <span className="t-body-strong min-w-0 flex-1 truncate text-ink">{showWorkflow ? row.systemName : row.versionName ?? "Unversioned draft"}</span>
                       <RunStatusPill status={row.status} />
                     </span>
-                    <span className="t-caption flex flex-wrap items-center gap-x-4 gap-y-2 text-ink-3">
+                    <span className="t-caption flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-3">
                       <RelativeTime at={ts(row.startedAt)} />
                       <span>{actorName(row.startedBy)}</span>
                       <span className="tabular">{row.stepCount === 1 ? "1 step" : `${row.stepCount} steps`}</span>

@@ -50,7 +50,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {passwordMode ? (
         <PasswordLoginForm returnTo={safeReturnTo(returnTo)} initialError={message} />
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           {message ? (
             <div role="alert">
               <Banner role="critical" title="Sign-in didn't finish">

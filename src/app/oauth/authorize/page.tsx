@@ -45,22 +45,22 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
   const scopes = request.scope.split(" ");
   return (
     <AuthFrame width={440} title={`Connect ${request.client.clientName}`} subtitle={`${request.client.clientName} wants to use Pipes as ${user.name} (${user.email}).`}>
-      <div className="flex flex-col gap-6">
-        <div className="rounded-12 border border-border bg-raised p-5">
+      <div className="flex flex-col gap-4">
+        <div className="rounded-12 border border-border bg-raised p-3">
           <p className="t-caption-medium text-ink">It will be able to</p>
-          <ul className="mt-3 flex flex-col gap-2">
+          <ul className="mt-1.5 flex flex-col gap-1">
             {scopes.map((scope) => (
               <li key={scope} className="t-body text-ink-2">
                 {OAUTH_SCOPES[scope]?.label ?? scope}
               </li>
             ))}
           </ul>
-          <p className="t-caption mt-4 text-ink-3">
+          <p className="t-caption mt-2 text-ink-3">
             It gets an API token you can revoke any time under API tokens. It will return you to{" "}
             <span className="t-mono-hash break-all text-ink-2">{new URL(request.redirectUri).host || request.redirectUri}</span>.
           </p>
         </div>
-        <form method="post" action="/api/oauth/authorize" className="flex flex-col gap-3">
+        <form method="post" action="/api/oauth/authorize" className="flex flex-col gap-1.5">
           <input type="hidden" name="query" value={query} />
           <Button type="submit" name="decision" value="approve" variant="primary" size="lg" className="w-full">
             Allow access

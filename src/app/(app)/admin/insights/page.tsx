@@ -85,7 +85,7 @@ export default function AdminInsightsPage() {
               noun="signal"
               columns={[{ label: "Signal" }, { label: "Count", numeric: true, className: "w-[120px]" }]}
               rows={data.recentSignalCounts.map((r: any) => ({ key: r.event, cells: [<span key="e" className="t-mono-hash">{r.event}</span>, String(r.count)] }))}
-              empty={<EmptyState title="No recent signals" body="Signal counts fill in as people use the product." className="py-9" />}
+              empty={<EmptyState title="No recent signals" body="Signal counts fill in as people use the product." className="py-8" />}
             />
           </SettingsSection>
         </>

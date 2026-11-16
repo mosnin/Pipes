@@ -57,7 +57,7 @@ export default function TokensSettingsPage() {
     >
       {secret ? (
         <Banner role="caution" title="Copy this token now. It is shown once.">
-          <div className="mt-2 flex flex-col gap-3">
+          <div className="mt-1 flex flex-col gap-1.5">
             <code className="t-mono-hash block break-all text-ink">{secret}</code>
             {authHeader ? (
               <span>
@@ -70,7 +70,7 @@ export default function TokensSettingsPage() {
 
       <SettingsSection title="New token">
         {!canCreate ? (
-          <PlanNote title="API tokens are on the Pro plan" className="mb-5">
+          <PlanNote title="API tokens are on the Pro plan" className="mb-3">
             {billing ? `This workspace is on the ${billing.plan} plan. REST and MCP access start on Pro.` : null}
           </PlanNote>
         ) : null}
@@ -81,13 +81,13 @@ export default function TokensSettingsPage() {
               void create();
             }}
           >
-            <div className="flex flex-col gap-7 p-6">
+            <div className="flex flex-col gap-5 p-4">
               <Field label="Name" htmlFor={`${fieldId}-name`} hint="Name it after the client that will use it." className="max-w-[360px]">
                 <Input id={`${fieldId}-name`} value={name} onChange={(e) => setName(e.target.value)} placeholder="Token name" />
               </Field>
-              <fieldset className="flex flex-col gap-3">
-                <legend className="t-caption-medium mb-3 text-ink">Capabilities</legend>
-                <div className="-mx-4 grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
+              <fieldset className="flex flex-col gap-1.5">
+                <legend className="t-caption-medium mb-1.5 text-ink">Capabilities</legend>
+                <div className="-mx-2 grid grid-cols-1 gap-0.5 sm:grid-cols-2 lg:grid-cols-3">
                   {AGENT_CAPABILITIES.map((cap) => (
                     <CheckRow
                       key={cap}
@@ -101,7 +101,7 @@ export default function TokensSettingsPage() {
               </fieldset>
             </div>
             {error ? (
-              <div role="alert" className="px-6 pb-6">
+              <div role="alert" className="px-4 pb-4">
                 <Banner role="critical" title="The token wasn't created">
                   {error}
                 </Banner>
@@ -161,7 +161,7 @@ export default function TokensSettingsPage() {
             <EmptyState
               title="No tokens yet"
               body="Create a token when you are ready to connect a REST or MCP client."
-              className="py-9"
+              className="py-8"
             />
           }
         />

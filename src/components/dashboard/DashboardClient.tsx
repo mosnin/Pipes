@@ -145,7 +145,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         }
       />
 
-      <Toolbar className="mb-6 flex-wrap">
+      <Toolbar className="mb-4 flex-wrap">
         <SearchInput
           aria-label="Filter workflows"
           placeholder="Filter by name, description or tag"
@@ -173,7 +173,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
             options={[{ value: "__all", label: "All tags" }, ...library.availableTags.map((tag) => ({ value: tag, label: tag }))]}
           />
         ) : null}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-1.5">
           <Select size="sm" value={sort} onValueChange={(value) => setSort(value as SortKey)} options={SORTS} />
           <Segmented<Density>
             className="hidden lg:flex"
@@ -264,7 +264,7 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
         </DataTable>
       </div>
 
-      <section aria-labelledby="templates-heading" className="mt-9 flex flex-col gap-4">
+      <section aria-labelledby="templates-heading" className="mt-8 flex flex-col gap-2">
         <SectionHeading
           action={
             <Button asChild variant="ghost" size="sm">
@@ -318,9 +318,9 @@ export function DashboardClient({ initialLibrary }: { initialLibrary: LibraryPay
 function TagList({ tags }: { tags: string[] }): ReactNode {
   if (tags.length === 0) return <span className="t-caption text-ink-3">No tags</span>;
   return (
-    <span className="flex min-w-0 flex-wrap gap-2">
+    <span className="flex min-w-0 flex-wrap gap-1">
       {tags.slice(0, 3).map((tag) => (
-        <span key={tag} className="t-mono-micro inline-flex h-[20px] items-center rounded-6 bg-inset px-2 text-ink-2">
+        <span key={tag} className="t-mono-micro inline-flex h-[20px] items-center rounded-6 bg-inset px-1 text-ink-2">
           {tag}
         </span>
       ))}
@@ -331,7 +331,7 @@ function TagList({ tags }: { tags: string[] }): ReactNode {
 
 function RowActions({ row, onRename, onTags, onArchive }: { row: LibraryRow; onRename: () => void; onTags: () => void; onArchive: (archived: boolean) => void }): ReactNode {
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1">
       <Button asChild variant="secondary" size="xs">
         <Link href={`/systems/${row.id}`}>Open</Link>
       </Button>
@@ -372,7 +372,7 @@ function SystemsEmpty({ variant, onClear, onNew }: { variant: "never" | "filtere
   if (variant === "never") {
     return (
       <EmptyState
-        className="py-9"
+        className="py-8"
         icon={Workflow}
         variant="never"
         title="No workflows yet"
@@ -388,7 +388,7 @@ function SystemsEmpty({ variant, onClear, onNew }: { variant: "never" | "filtere
   }
   return (
     <EmptyState
-      className="py-9"
+      className="py-8"
       variant="filtered"
       title="No workflows match these filters"
       body="Try a different search, tag or view."
@@ -419,22 +419,22 @@ function SystemsMobileList({
       {loading && rows.length === 0 ? (
         <ul className="divide-y divide-border">
           {Array.from({ length: 3 }, (_, index) => (
-            <li key={index} className="flex flex-col gap-2 p-6">
+            <li key={index} className="flex flex-col gap-1 p-4">
               <Skeleton className="h-[13px] w-[55%]" />
               <Skeleton className="h-[11px] w-[72%]" />
             </li>
           ))}
         </ul>
       ) : emptyVariant ? (
-        <div className="flex min-h-[280px] items-center justify-center p-6">
+        <div className="flex min-h-[280px] items-center justify-center p-4">
           <SystemsEmpty variant={emptyVariant} onClear={onClear} onNew={onNew} />
         </div>
       ) : (
         <ul className="divide-y divide-border">
           {rows.map((row) => (
             <li key={row.id}>
-              <Link href={`/systems/${row.id}`} className="focus-ring-canvas flex flex-col gap-3 p-6 transition-colors hover:bg-inset focus-visible:outline-none">
-                <span className="flex min-w-0 items-center gap-3">
+              <Link href={`/systems/${row.id}`} className="focus-ring-canvas flex flex-col gap-1.5 p-4 transition-colors hover:bg-inset focus-visible:outline-none">
+                <span className="flex min-w-0 items-center gap-1.5">
                   {row.favorite ? <Star weight="fill" className="size-[14px] shrink-0 text-ink" aria-label="Favorite" /> : null}
                   <span className="t-body-strong min-w-0 flex-1 truncate text-ink">{row.name}</span>
                   <RelativeTime at={ts(row.updatedAt)} className="shrink-0" />
@@ -526,7 +526,7 @@ function CreateSystemDialog({
               <DialogTitle>{copy.title}</DialogTitle>
               <DialogDescription>{copy.description}</DialogDescription>
             </DialogHeader>
-            <DialogBody className="flex flex-col gap-5">
+            <DialogBody className="flex flex-col gap-3">
               {mode === "blank" ? (
                 <Field label="Name" htmlFor="new-system-name">
                   <Input id="new-system-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Customer refund review" />
@@ -591,7 +591,7 @@ function TagsDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClose
             <DialogTitle>Edit tags</DialogTitle>
             <DialogDescription>{row ? `Tags help you find ${row.name} later. Separate them with commas.` : null}</DialogDescription>
           </DialogHeader>
-          <DialogBody className="flex flex-col gap-5">
+          <DialogBody className="flex flex-col gap-3">
             <Field label="Tags" htmlFor="workflow-tags">
               <Input id="workflow-tags" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="support, refunds" />
             </Field>
@@ -649,7 +649,7 @@ function RenameDialog({ row, onClose, onSaved }: { row: LibraryRow | null; onClo
             <DialogTitle>Rename workflow</DialogTitle>
             <DialogDescription>The name and description show on the dashboard, in runs and to agents reading it.</DialogDescription>
           </DialogHeader>
-          <DialogBody className="flex flex-col gap-5">
+          <DialogBody className="flex flex-col gap-3">
             <Field label="Name" htmlFor="rename-workflow-name">
               <Input id="rename-workflow-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
             </Field>

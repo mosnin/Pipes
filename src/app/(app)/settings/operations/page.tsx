@@ -42,7 +42,7 @@ export default function OperationsSettingsPage() {
             key: p.id ?? p.name,
             cells: [<span key="n" className="t-body-strong">{p.name}</span>, <span key="b" className="text-ink-2">{sentenceCase(p.batchingPosture)}</span>, <span key="r" className="text-ink-2">{sentenceCase(p.reviewHint)}</span>]
           }))}
-          empty={<EmptyState title="No builder presets" body="Presets set how large a batch an agent proposes and how closely it is reviewed." className="py-9" />}
+          empty={<EmptyState title="No builder presets" body="Presets set how large a batch an agent proposes and how closely it is reviewed." className="py-8" />}
         />
       </SettingsSection>
 
@@ -55,7 +55,7 @@ export default function OperationsSettingsPage() {
             ...versions.promptVersions.map((p) => ({ key: `prompt-${p.id}`, cells: ["Prompt", <span key="i" className="t-mono-hash">{p.id}</span>, status(p.status)] })),
             ...versions.strategyVersions.map((s) => ({ key: `strategy-${s.id}`, cells: ["Strategy", <span key="i" className="t-mono-hash">{s.id}</span>, status(s.status)] }))
           ]}
-          empty={<EmptyState title="No versions recorded" body="Prompt and strategy versions appear here once an agent run is tuned." className="py-9" />}
+          empty={<EmptyState title="No versions recorded" body="Prompt and strategy versions appear here once an agent run is tuned." className="py-8" />}
         />
       </SettingsSection>
 
@@ -68,7 +68,7 @@ export default function OperationsSettingsPage() {
             key: `${s.skillId}-${s.version}`,
             cells: [<span key="s" className="t-mono-hash">{s.skillId}</span>, String(s.version), status(s.status)]
           }))}
-          empty={<EmptyState title="No skills bound" body="A skill binding pins the version of a skill agents in this workspace call." className="py-9" />}
+          empty={<EmptyState title="No skills bound" body="A skill binding pins the version of a skill agents in this workspace call." className="py-8" />}
         />
       </SettingsSection>
     </SettingsShell>

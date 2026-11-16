@@ -61,11 +61,11 @@ export default function FeedbackSettingsPage() {
             void submit();
           }}
         >
-          <div className="grid grid-cols-1 gap-7 p-6 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 p-4 sm:grid-cols-2">
             <Field label="Category" htmlFor={`${fieldId}-category`}>
               <Select id={`${fieldId}-category`} size="sm" value={category} onValueChange={setCategory} options={CATEGORIES} />
             </Field>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
               <span className="t-caption-medium text-ink">Severity</span>
               <Segmented
                 label="Severity"

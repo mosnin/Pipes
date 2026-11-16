@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
  * inset too, every page re-declares `py-*` and the drift this component
  * exists to end simply reappears on the other axis.
  */
-const PAGE_GUTTER = "px-6 py-6";
+const PAGE_GUTTER = "px-4 py-4";
 
 export type PageMeasure = "prose" | "page" | "bleed";
 
@@ -121,7 +121,7 @@ export function SplitLayout({
     <div
       className={cn(
         // 24px gutter — the layout grid's column gutter (§6.3).
-        "grid grid-cols-1 gap-8 lg:items-start",
+        "grid grid-cols-1 gap-6 lg:items-start",
         railSide === "left"
           ? "lg:grid-cols-[clamp(280px,var(--rail-w),360px)_minmax(0,1fr)]"
           : "lg:grid-cols-[minmax(0,1fr)_clamp(280px,var(--rail-w),360px)]",
@@ -174,7 +174,7 @@ export function MasterDetail({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 gap-8 lg:grid-cols-[minmax(320px,44%)_minmax(0,1fr)] lg:items-start",
+        "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(320px,44%)_minmax(0,1fr)] lg:items-start",
         className,
       )}
     >
@@ -247,7 +247,7 @@ export function FocusRoute({
       {/* Sticky, z-10 — the sticky-header rung of the ladder (§5.9). */}
       <header className="sticky top-0 z-10 h-[var(--header-h)] shrink-0 border-b border-border bg-rail">
         <div
-          className="absolute inset-x-0 top-0 h-1 bg-track"
+          className="absolute inset-x-0 top-0 h-0.5 bg-track"
           role={measured ? "progressbar" : undefined}
           aria-label={measured ? "Completion" : undefined}
           aria-valuemin={measured ? 0 : undefined}
@@ -256,11 +256,11 @@ export function FocusRoute({
           aria-hidden={measured ? undefined : true}
         >
           {/* Neutral progress fills monochrome (§4.6/7) — this meter encodes
-              no threshold, so it carries no hue. `min-w-1` keeps the 2px stub
+              no threshold, so it carries no hue. `min-w-0.5` keeps the 2px stub
               visible at zero. */}
           <div
             className={cn(
-              "h-full min-w-1 transition-[width] duration-[var(--dur-3)] ease-[var(--ease-out)]",
+              "h-full min-w-0.5 transition-[width] duration-[var(--dur-3)] ease-[var(--ease-out)]",
               pct === 0 ? "bg-hairline" : "bg-ink",
             )}
             style={{ width: `${pct}%` }}
@@ -272,7 +272,7 @@ export function FocusRoute({
             takes `min-w-0` — the auto track resolves before the fr tracks, so
             zeroing the side minimums too would let a long title crush the
             close button to nothing instead of truncating itself. */}
-        <div className="grid h-full grid-cols-[1fr_auto_1fr] items-center gap-5 px-5 sm:px-6">
+        <div className="grid h-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-3 sm:px-4">
           <div className="flex items-center justify-start">
             {onClose ? (
               <IconButton label="Close" size="md" onClick={onClose}>

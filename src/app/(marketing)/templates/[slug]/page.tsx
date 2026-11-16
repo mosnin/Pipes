@@ -58,7 +58,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
         title={template.title}
         lead={`${template.description} A ${template.complexity} starting point for ${template.useCase.toLowerCase()}.`}
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton
             href={`/signup?source=template_detail_${template.slug}`}
             track={{
@@ -93,11 +93,11 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
               </div>
             </SceneFrame>
             <div className="grid gap-10 lg:grid-cols-2">
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <h3 className="t-mk-h4 text-ink">Steps, in order</h3>
                 <StepList template={graph} className="border-y border-hairline" />
               </div>
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4">
                 <h3 className="t-mk-h4 text-ink">At a glance</h3>
                 <SpecList
                   rows={[
@@ -127,7 +127,7 @@ export default async function TemplateDetailPage({ params }: { params: Promise<{
                     href={`/use-cases/${entry.slug}`}
                     event="use_case_viewed"
                     metadata={{ source: "template_detail", templateId: template.id, slug: entry.slug }}
-                    className="focus-ring-canvas grid gap-2 rounded-4 px-3 py-6 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[300px_1fr] md:gap-8"
+                    className="focus-ring-canvas grid gap-1 rounded-4 px-1.5 py-4 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[300px_1fr] md:gap-6"
                   >
                     <span className="t-body-strong text-ink">{entry.title}</span>
                     <span className="t-body text-ink-2">{entry.fit}</span>

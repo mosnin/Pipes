@@ -85,7 +85,7 @@ export default function AdminPage() {
               <StatCell label="Invites" value={ws.invites.length} />
               <StatCell label="Tokens" value={ws.tokens.length} />
             </StatStrip>
-            <p className="t-caption tabular mt-5 text-ink-3">
+            <p className="t-caption tabular mt-3 text-ink-3">
               {ws.health.favorites} favorites · {ws.health.recentReopens} recent reopens
             </p>
           </SettingsSection>
@@ -134,7 +134,7 @@ export default function AdminPage() {
                   a.systemId ? <span key="s" className="t-mono-hash text-ink-2">{a.systemId}</span> : null
                 ]
               }))}
-              empty={<EmptyState variant="filtered" title="No audits" body="No events match the current lookup." className="py-9" />}
+              empty={<EmptyState variant="filtered" title="No audits" body="No events match the current lookup." className="py-8" />}
             />
           </SettingsSection>
 
@@ -150,7 +150,7 @@ export default function AdminPage() {
                   <span key="tg" className="t-mono-hash text-ink-2">{`${a.targetType}:${a.targetId ?? ""}`}</span>
                 ]
               }))}
-              empty={<EmptyState title="No signals yet" body="Product signals appear as people use the workspace." className="py-9" />}
+              empty={<EmptyState title="No signals yet" body="Product signals appear as people use the workspace." className="py-8" />}
             />
           </SettingsSection>
         </>

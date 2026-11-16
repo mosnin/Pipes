@@ -104,7 +104,7 @@ export function StatusPill({
         // Measured on the reference's "Active": 52 x 20 with an 8px radius.
         // 0 8px 0 6px — the leading mark is optically tighter than the
         // trailing edge of a label.
-        "inline-flex h-[20px] max-w-[160px] shrink-0 items-center gap-2 rounded-8 pl-3 pr-4",
+        "inline-flex h-[20px] max-w-[160px] shrink-0 items-center gap-1 rounded-8 pl-1.5 pr-2",
         WASH[role],
         className,
       )}

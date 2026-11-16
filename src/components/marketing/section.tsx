@@ -63,7 +63,7 @@ export function SectionHeading({
     return (
       <div
         className={cn(
-          "flex flex-col gap-6",
+          "flex flex-col gap-4",
           align === "center" && "mx-auto items-center text-center",
           className,
         )}
@@ -81,11 +81,11 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        "grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-12",
+        "grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-start lg:gap-16",
         className,
       )}
     >
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {kicker ? <Kicker>{kicker}</Kicker> : null}
         <h2 id={id} className="t-mk-h2 max-w-[18ch] text-balance text-ink">
           {title}
@@ -119,13 +119,13 @@ export function FeatureRow({
   return (
     <div
       className={cn(
-        "grid items-center gap-10 lg:grid-cols-2 lg:gap-12",
+        "grid items-center gap-10 lg:grid-cols-2 lg:gap-16",
         className,
       )}
     >
       <div
         className={cn(
-          "flex flex-col gap-6",
+          "flex flex-col gap-4",
           reverse ? "lg:order-2" : "lg:order-1",
         )}
       >
@@ -133,7 +133,7 @@ export function FeatureRow({
         <h2 id={id} className="t-mk-h3 max-w-[22ch] text-balance text-ink">
           {title}
         </h2>
-        <div className="t-mk-body flex max-w-[52ch] flex-col gap-5 text-pretty text-ink-2">
+        <div className="t-mk-body flex max-w-[52ch] flex-col gap-3 text-pretty text-ink-2">
           {children}
         </div>
       </div>
@@ -155,7 +155,7 @@ export function SceneFrame({
   caption?: string;
 }): ReactNode {
   return (
-    <figure className={cn("flex flex-col gap-4", className)}>
+    <figure className={cn("flex flex-col gap-2", className)}>
       <div className="relative w-full overflow-hidden rounded-12 border border-border bg-raised shadow-elev-1">
         {children}
       </div>
@@ -184,7 +184,7 @@ export function SpecList({
       {rows.map((row) => (
         <div
           key={row.term}
-          className="grid gap-3 px-7 py-6 sm:grid-cols-[220px_1fr] sm:gap-8"
+          className="grid gap-1.5 px-5 py-4 sm:grid-cols-[220px_1fr] sm:gap-6"
         >
           <dt
             className={cn(

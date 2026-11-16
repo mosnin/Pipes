@@ -18,12 +18,12 @@ export function CodeBlock({
         className,
       )}
     >
-      <figcaption className="t-caption border-b border-hairline px-6 py-4 text-ink-3">
+      <figcaption className="t-caption border-b border-hairline px-4 py-2 text-ink-3">
         {label}
       </figcaption>
       <pre
         tabIndex={0}
-        className="focus-ring-inset t-mono-code overflow-x-auto bg-inset px-6 py-5 text-ink outline-none"
+        className="focus-ring-inset t-mono-code overflow-x-auto bg-inset px-4 py-3 text-ink outline-none"
       >
         <code>{code}</code>
       </pre>

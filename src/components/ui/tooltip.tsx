@@ -90,7 +90,7 @@ export function Tooltip({
             // control, below toasts (400) — §5.9's ladder, extended by one rung
             // for the surface that must read over all of them.
             "z-[350] max-w-[260px]",
-            "rounded-6 bg-inverse px-4 py-2 t-micro text-ink-inverse shadow-elev-2",
+            "rounded-6 bg-inverse px-2 py-1 t-micro text-ink-inverse shadow-elev-2",
             // §7.3: opacity + a 4px travel from the trigger edge + a 0.98 scale,
             // 200ms in; the exit is the 0.6× rule, opacity and scale only.
             "animate-in fade-in-0 zoom-in-95",

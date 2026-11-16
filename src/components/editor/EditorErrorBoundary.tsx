@@ -20,12 +20,12 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <div role="alert" className="flex h-full min-h-[160px] flex-col items-start justify-center gap-4 px-6 py-6">
-        <div className="flex flex-col gap-1">
+      <div role="alert" className="flex h-full min-h-[160px] flex-col items-start justify-center gap-2 px-4 py-4">
+        <div className="flex flex-col gap-0.5">
           <p className="t-body-strong text-ink">{this.props.area} is temporarily unavailable.</p>
           <p className="t-caption text-ink-3">Reload this panel, or go back to the dashboard.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           <Button size="sm" variant="secondary" onClick={() => { this.setState({ hasError: false, message: undefined }); this.props.onRecover?.(); }}>Reload panel</Button>
           <Button size="sm" variant="ghost" onClick={() => { window.location.href = "/dashboard"; }}>Back to dashboard</Button>
         </div>

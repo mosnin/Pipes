@@ -109,7 +109,7 @@ export default function ProtocolPage() {
         title="Connect any agent over MCP."
         lead="Pipes runs an MCP server at /api/mcp. An agent lists your workflows, starts a run and works through it one step at a time while Pipes keeps the state. A REST API covers reading and editing workflows from code."
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton href="#connect">Connect an agent</CutButton>
           <CutButton
             href="/docs"
@@ -129,7 +129,7 @@ export default function ProtocolPage() {
             title="Most clients only need the URL."
             lead="Claude, ChatGPT, Cursor and other clients that support MCP authorization sign in with OAuth: Pipes shows a consent page in your workspace and issues the client its own token, which you can revoke under API tokens. Clients without OAuth send an API token instead."
           />
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <CodeBlock label="Add Pipes to Claude Code" code={CLAUDE_CODE} />
             <CodeBlock label="Or call it with an API token" code={TOKEN_CALL} />
           </div>
@@ -169,13 +169,13 @@ export default function ProtocolPage() {
             lead="OAuth clients get what you approve on the consent page. API tokens get the capabilities you pick when you create them: runs:write to start and complete runs, connections:secrets to receive connection headers in step payloads."
           />
           <SpecList rows={MCP_TOOLS.map((row) => ({ ...row, mono: true }))} className="max-w-[860px]" />
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <p className="t-label-caps text-ink-3">Capabilities</p>
-            <ul className="flex flex-wrap gap-3">
+            <ul className="flex flex-wrap gap-1.5">
               {AGENT_CAPABILITIES.map((capability) => (
                 <li
                   key={capability}
-                  className="t-mono-hash rounded-8 border border-hairline bg-raised px-4 py-2 text-ink-2"
+                  className="t-mono-hash rounded-8 border border-hairline bg-raised px-2 py-1 text-ink-2"
                 >
                   {capability}
                 </li>
@@ -194,11 +194,11 @@ export default function ProtocolPage() {
             lead="The REST API reads and writes workflows with the same tokens. Paths use systems, the older name for workflows. Writes that create something accept an Idempotency-Key header: replay the same key with the same body and you get the first result back; a different body returns CONFLICT."
           />
           <div className="grid gap-10 lg:grid-cols-2">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <h3 className="t-label-caps text-ink-3">Read</h3>
               <SpecList rows={REST_READ.map((row) => ({ ...row, mono: true }))} />
             </div>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <h3 className="t-label-caps text-ink-3">Write</h3>
               <SpecList rows={REST_WRITE.map((row) => ({ ...row, mono: true }))} />
             </div>

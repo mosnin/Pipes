@@ -66,12 +66,12 @@ export function RunsIndexClient(): ReactNode {
     <PageShell measure="page">
       <PageHeader title="Runs" description="Every time an agent or a person walks a workflow, newest first." />
 
-      <Toolbar className="mb-6">
+      <Toolbar className="mb-4">
         <Segmented<Filter> label="Filter runs by status" size="sm" value={filter} onValueChange={setFilter} options={FILTERS} />
       </Toolbar>
 
       {error ? (
-        <Banner role="critical" title="Runs could not be loaded" className="mb-6">
+        <Banner role="critical" title="Runs could not be loaded" className="mb-4">
           {error}
         </Banner>
       ) : null}
@@ -84,7 +84,7 @@ export function RunsIndexClient(): ReactNode {
         empty={
           filter === "all" ? (
             <EmptyState
-              className="py-9"
+              className="py-8"
               icon={Activity}
               title="No runs yet"
               body="A run starts when an agent picks up a workflow over MCP or the API, or when someone starts one from a workflow's run history."
@@ -96,7 +96,7 @@ export function RunsIndexClient(): ReactNode {
             />
           ) : (
             <EmptyState
-              className="py-9"
+              className="py-8"
               variant="filtered"
               title={FILTERED_TITLE[filter]}
               body="Runs show up here as soon as one reaches this state."

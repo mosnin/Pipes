@@ -114,7 +114,7 @@ export default function AdminIssuesPage() {
                   variant={filtered ? "filtered" : "never"}
                   title={filtered ? "No feedback matches these filters" : "No feedback yet"}
                   body={filtered ? "Widen the status or category filter." : "Feedback people send from Settings lands here for triage."}
-                  className="py-9"
+                  className="py-8"
                 />
               }
             />
@@ -126,7 +126,7 @@ export default function AdminIssuesPage() {
               footer={false}
               columns={[{ label: "Group" }, { label: "Count", numeric: true, className: "w-[120px]" }]}
               rows={data.failureGroups.map((group: any) => ({ key: group.key, cells: [group.label, String(group.count)] }))}
-              empty={<EmptyState title="No failure groups" className="py-9" />}
+              empty={<EmptyState title="No failure groups" className="py-8" />}
             />
           </SettingsSection>
         </>

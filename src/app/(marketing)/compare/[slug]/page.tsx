@@ -44,7 +44,7 @@ export default async function CompareDetailPage({ params }: { params: Promise<{ 
         title={entry.title}
         lead={entry.summary}
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton
             href="/signup?source=compare_page"
             track={{ event: "signup_started", metadata: { source: `compare_${entry.slug}` } }}
@@ -55,25 +55,25 @@ export default async function CompareDetailPage({ params }: { params: Promise<{ 
       </PageIntro>
 
       <Section className="pt-0" labelledBy="differs-heading">
-        <Container className="grid gap-12 lg:grid-cols-2">
-          <div className="flex flex-col gap-6">
+        <Container className="grid gap-16 lg:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <h2 id="differs-heading" className="t-label-caps text-ink-3">
               Where Pipes differs
             </h2>
             <ul className="divide-y divide-hairline border-y border-hairline">
               {entry.differences.map((difference) => (
-                <li key={difference} className="t-mk-body py-5 text-ink">
+                <li key={difference} className="t-mk-body py-3 text-ink">
                   {difference}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="flex flex-col gap-12">
-            <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-16">
+            <div className="flex flex-col gap-4">
               <h2 className="t-label-caps text-ink-3">When the other choice is better</h2>
               <p className="t-mk-body max-w-[52ch] text-pretty text-ink-2">{entry.otherFit}</p>
             </div>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
               <h2 className="t-label-caps text-ink-3">Where Pipes fits</h2>
               <p className="t-mk-h4 max-w-[36ch] text-pretty text-ink">{entry.bestFor}</p>
             </div>

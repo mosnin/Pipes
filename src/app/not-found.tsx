@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 export default function NotFound(): ReactNode {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas px-6">
+    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4">
       <EmptyState
         icon={FileQuestion}
         titleAs="h1"

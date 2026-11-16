@@ -95,8 +95,8 @@ export function EmptyState({
     <div
       className={cn(
         // Centred 400px column, padding 48px 24px. Inside a card, callers drop
-        // to `py-9` (32px); a full-page state opens up to 96px.
-        "flex w-full max-w-[440px] flex-col items-start px-8 py-11 text-left",
+        // to `py-8` (32px); a full-page state opens up to 96px.
+        "flex w-full max-w-[440px] flex-col items-start px-6 py-12 text-left",
         className,
       )}
     >
@@ -131,12 +131,12 @@ export function EmptyState({
       {/* A <p> unless the caller says otherwise: the surrounding outline is the
           page's to own, and a hardcoded <h3> here would break it wherever
           this lands (§12.6). */}
-      <Title className="t-title-4 mt-6 text-ink">{title}</Title>
+      <Title className="t-title-4 mt-4 text-ink">{title}</Title>
 
-      {body ? <div className="t-caption mt-4 text-ink-2">{body}</div> : null}
+      {body ? <div className="t-caption mt-2 text-ink-2">{body}</div> : null}
 
       {action || secondaryAction ? (
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {action}
           {secondaryAction}
         </div>

@@ -119,7 +119,7 @@ export function MembersView({ me }: { me: CurrentMember }) {
 
       <SettingsSection title="Invite someone">
         {!canInvite ? (
-          <PlanNote title="Inviting people is on the Pro plan" className="mb-5">
+          <PlanNote title="Inviting people is on the Pro plan" className="mb-3">
             {billing ? `This workspace is on the ${billing.plan} plan, which doesn't include collaboration.` : null}
           </PlanNote>
         ) : null}
@@ -130,7 +130,7 @@ export function MembersView({ me }: { me: CurrentMember }) {
               void sendInvite();
             }}
           >
-            <div className="grid grid-cols-1 gap-6 p-6 sm:grid-cols-[minmax(0,1fr)_180px]">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_180px]">
               <Field label="Email" htmlFor={`${fieldId}-email`}>
                 <Input id={`${fieldId}-email`} type="email" required disabled={!canInvite} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" />
               </Field>
@@ -139,7 +139,7 @@ export function MembersView({ me }: { me: CurrentMember }) {
               </Field>
             </div>
             {inviteError ? (
-              <div role="alert" className="px-6 pb-6">
+              <div role="alert" className="px-4 pb-4">
                 <Banner role="critical" title="The invite wasn't sent">
                   {inviteError}
                 </Banner>
@@ -155,7 +155,7 @@ export function MembersView({ me }: { me: CurrentMember }) {
         </Card>
       </SettingsSection>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         <Toolbar>
           <SearchInput
             aria-label="Search members or invites"

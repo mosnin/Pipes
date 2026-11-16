@@ -85,13 +85,13 @@ export function HashChip({
       title={value}
       aria-label={`Copy hash ${value}`}
       className={cn(
-        "group focus-ring relative inline-flex shrink-0 items-center gap-3",
+        "group focus-ring relative inline-flex shrink-0 items-center gap-1.5",
         "border border-hairline bg-inset text-ink-2",
         full
-          ? "h-[28px] rounded-6 px-4 t-mono-hash-lg"
+          ? "h-[28px] rounded-6 px-2 t-mono-hash-lg"
           : // §6.5 — the 20px box stays dense and buys its 28px hit target from
             // an invisible inset expansion. The visual box never grows.
-            "h-[20px] rounded-4 px-3 t-mono-hash before:absolute before:inset-[-4px] before:content-['']",
+            "h-[20px] rounded-4 px-1.5 t-mono-hash before:absolute before:inset-[-4px] before:content-['']",
         className,
       )}
     >

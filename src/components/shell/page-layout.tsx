@@ -49,8 +49,8 @@ export function PageSplit({
       )}
       {...props}
     >
-      <div className="flex min-w-0 flex-col gap-4">{children}</div>
-      <div className="flex min-w-0 flex-col gap-4">{aside}</div>
+      <div className="flex min-w-0 flex-col gap-2">{children}</div>
+      <div className="flex min-w-0 flex-col gap-2">{aside}</div>
     </div>
   );
 }

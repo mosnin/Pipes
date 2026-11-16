@@ -107,14 +107,14 @@ export function OnboardingClient(): ReactNode {
 
   return (
     <PageShell measure="page">
-      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-7">
+      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
         <PageHeader title="Get started" description="Tell us what you are building and pick a way in. You can change everything later." />
 
-        <section aria-labelledby="about-heading" className="flex flex-col gap-4">
+        <section aria-labelledby="about-heading" className="flex flex-col gap-2">
           <SectionHeading>
             <span id="about-heading">About your work</span>
           </SectionHeading>
-          <Card padded className="grid gap-5 sm:grid-cols-2">
+          <Card padded className="grid gap-3 sm:grid-cols-2">
             <Field label="What do you do?" htmlFor="onboarding-role">
               <Select id="onboarding-role" value={role} onValueChange={setRole} options={ROLES} />
             </Field>
@@ -124,7 +124,7 @@ export function OnboardingClient(): ReactNode {
           </Card>
         </section>
 
-        <section aria-labelledby="start-heading" className="flex flex-col gap-4">
+        <section aria-labelledby="start-heading" className="flex flex-col gap-2">
           <SectionHeading>
             <span id="start-heading">Choose how to start</span>
           </SectionHeading>
@@ -154,7 +154,7 @@ export function OnboardingClient(): ReactNode {
           </GroupedList>
         </section>
 
-        <section aria-labelledby="templates-heading" className="flex flex-col gap-4">
+        <section aria-labelledby="templates-heading" className="flex flex-col gap-2">
           <SectionHeading>
             <span id="templates-heading">Or begin from a template</span>
           </SectionHeading>

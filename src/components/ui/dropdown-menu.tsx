@@ -48,7 +48,7 @@ const overlaySurface = [
   // z 100 on the §5.9 ladder: above sticky chrome and the sidebar, below the
   // dialog scrim.
   "z-[100] min-w-[200px] max-w-[320px] max-h-[60vh] overflow-y-auto overflow-x-hidden",
-  "rounded-12 border border-border bg-overlay p-2 shadow-elev-2",
+  "rounded-12 border border-border bg-overlay p-1 shadow-elev-2",
 ];
 
 export function DropdownMenuContent({
@@ -72,7 +72,7 @@ export function DropdownMenuContent({
  * `--text-tertiary`. `t-body` carries the label; nothing here sets a size.
  */
 const rowBase = [
-  "relative flex h-[36px] cursor-default select-none items-center gap-4 rounded-8 px-4",
+  "relative flex h-[36px] cursor-default select-none items-center gap-2 rounded-8 px-2",
   "t-body text-ink-2 outline-none",
   "transition-colors duration-[var(--dur-1)] ease-linear",
   "[&_svg]:size-[14px] [&_svg]:shrink-0 [&_svg]:text-ink-3",
@@ -113,7 +113,7 @@ export function DropdownMenuItem({
     >
       {children}
       {reason ? (
-        <span className="ml-auto pl-5 t-micro text-ink-4">{reason}</span>
+        <span className="ml-auto pl-3 t-micro text-ink-4">{reason}</span>
       ) : null}
     </DropdownMenuPrimitive.Item>
   );
@@ -131,10 +131,10 @@ export function DropdownMenuCheckboxItem({
 }: ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>): ReactNode {
   return (
     <DropdownMenuPrimitive.CheckboxItem
-      className={cn(rowBase, "pl-9", className)}
+      className={cn(rowBase, "pl-8", className)}
       {...props}
     >
-      <span className="absolute left-5 inline-flex size-[20px] items-center justify-center">
+      <span className="absolute left-3 inline-flex size-[20px] items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
           <Check aria-hidden="true" className="text-ink!" strokeWidth={1.5} />
         </DropdownMenuPrimitive.ItemIndicator>
@@ -155,10 +155,10 @@ export function DropdownMenuRadioItem({
 }): ReactNode {
   return (
     <DropdownMenuPrimitive.RadioItem
-      className={cn(rowBase, "pl-9", className)}
+      className={cn(rowBase, "pl-8", className)}
       {...props}
     >
-      <span className="absolute left-5 inline-flex size-[20px] items-center justify-center">
+      <span className="absolute left-3 inline-flex size-[20px] items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
           {indicator ?? (
             <Circle
@@ -217,7 +217,7 @@ export function DropdownMenuSeparator({
     <DropdownMenuPrimitive.Separator
       // Bled through the menu's 4px padding so the rule reads as a division of
       // the whole panel rather than a short dash floating between two rows.
-      className={cn("-mx-2 my-2 h-px bg-hairline", className)}
+      className={cn("-mx-1 my-1 h-px bg-hairline", className)}
       {...props}
     />
   );
@@ -229,7 +229,7 @@ export function DropdownMenuLabel({
 }: ComponentProps<typeof DropdownMenuPrimitive.Label>): ReactNode {
   return (
     <DropdownMenuPrimitive.Label
-      className={cn("px-4 pt-3 pb-2 t-group-label text-ink-3", className)}
+      className={cn("px-2 pt-1.5 pb-1 t-group-label text-ink-3", className)}
       {...props}
     />
   );
@@ -242,7 +242,7 @@ export function DropdownMenuShortcut({
 }: ComponentProps<"span">): ReactNode {
   return (
     <span
-      className={cn("ml-auto pl-5 t-micro tabular text-ink-4", className)}
+      className={cn("ml-auto pl-3 t-micro tabular text-ink-4", className)}
       {...props}
     />
   );
@@ -261,7 +261,7 @@ export function DropdownMenuEmpty({
   return (
     <div
       className={cn(
-        "flex h-[32px] select-none items-center px-5 t-caption text-ink-4",
+        "flex h-[32px] select-none items-center px-3 t-caption text-ink-4",
         className,
       )}
       {...props}

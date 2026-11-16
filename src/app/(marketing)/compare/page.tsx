@@ -30,7 +30,7 @@ export default function CompareIndexPage() {
                   href={`/compare/${item.slug}`}
                   event="comparison_page_viewed"
                   metadata={{ source: "compare_index", slug: item.slug }}
-                  className="focus-ring-canvas grid gap-3 rounded-4 px-3 py-8 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[320px_1fr] md:gap-10"
+                  className="focus-ring-canvas grid gap-1.5 rounded-4 px-1.5 py-6 transition-colors duration-[var(--dur-1)] hover:bg-state-hover focus-visible:outline-none md:grid-cols-[320px_1fr] md:gap-10"
                 >
                   <span className="t-mk-h4 text-ink">{item.title}</span>
                   <span className="t-mk-body text-ink-2">{item.summary}</span>

@@ -152,7 +152,7 @@ function BillingSettings() {
       <SettingsSection title="Plan limits">
         <Card aria-live="polite">
           {!entitlements ? (
-            <div className="flex flex-col gap-5 p-6">
+            <div className="flex flex-col gap-3 p-4">
               <Skeleton className="h-[14px] w-[240px]" />
               <Skeleton className="h-[14px] w-[200px]" />
               <Skeleton className="h-[14px] w-[220px]" />
@@ -172,23 +172,23 @@ function BillingSettings() {
       </SettingsSection>
 
       <SettingsSection title="Plans">
-        <ol className="grid gap-5 lg:grid-cols-3">
+        <ol className="grid gap-3 lg:grid-cols-3">
           {PLANS.map((plan) => {
             const limits = getEntitlements(plan);
             const current = summary?.plan === plan;
             return (
               <li
                 key={plan}
-                className={cn("flex flex-col gap-6 rounded-12 border bg-raised p-7", current ? "border-strong" : "border-border")}
+                className={cn("flex flex-col gap-4 rounded-12 border bg-raised p-5", current ? "border-strong" : "border-border")}
               >
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="t-title-3 text-ink">{plan}</span>
                     {current ? <StatusPill role="info">Current</StatusPill> : null}
                   </div>
                   <span className="t-caption tabular text-ink-2">Up to {limits.maxSystems} workflows</span>
                 </div>
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-1">
                   {FEATURES.filter((feature) => limits[feature.key]).map((feature) => (
                     <li key={feature.key} className="t-caption text-ink-2">
                       {feature.label}
@@ -206,7 +206,7 @@ function BillingSettings() {
             );
           })}
         </ol>
-        <p className="t-caption mt-5 text-ink-3">
+        <p className="t-caption mt-3 text-ink-3">
           {summary?.billingMode === "mock"
             ? "This is a demo deployment: upgrading applies the plan at once and takes no payment."
             : "Checkout and invoices open in the billing provider. Manage billing changes or cancels the current plan."}

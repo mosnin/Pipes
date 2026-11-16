@@ -24,8 +24,8 @@ export function DailyBars({ points, noun, className }: { points: DailyPoint[]; n
   const dayOf = (day: string) => String(Number(day.slice(8, 10)));
 
   return (
-    <figure className={cn("flex flex-col gap-3", className)}>
-      <div className="flex items-stretch gap-4">
+    <figure className={cn("flex flex-col gap-1.5", className)}>
+      <div className="flex items-stretch gap-2">
         <div aria-hidden="true" className="t-mono-micro flex w-[40px] shrink-0 flex-col justify-between text-right tabular text-ink-3">
           <span>{fmt(max)}</span>
           <span>0</span>

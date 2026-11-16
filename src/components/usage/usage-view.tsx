@@ -114,9 +114,9 @@ export function UsageView(): ReactNode {
         <Card aria-live="polite">
           <div className="grid grid-cols-1 md:grid-cols-3">
             {METRICS.map((m, index) => (
-              <div key={m.key} className={index > 0 ? "border-t border-border p-7 md:border-l md:border-t-0" : "p-7"}>
+              <div key={m.key} className={index > 0 ? "border-t border-border p-5 md:border-l md:border-t-0" : "p-5"}>
                 {summary ? (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
                     <Meter
                       label={m.label}
                       value={summary.totals[m.key]}
@@ -131,7 +131,7 @@ export function UsageView(): ReactNode {
                     <span className="t-caption text-ink-3">{m.description}</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
                     <Skeleton className="h-[14px] w-[96px]" />
                     <Skeleton className="h-[6px] w-full" />
                     <Skeleton className="h-[12px] w-[120px]" />
@@ -196,7 +196,7 @@ export function UsageView(): ReactNode {
             <Skeleton className="h-[180px] w-full" />
           )}
           {summary && points.every((p) => p.value === 0) ? (
-            <p className="t-caption mt-5 text-ink-3">No {chosen.noun} recorded in {monthLabel}.</p>
+            <p className="t-caption mt-3 text-ink-3">No {chosen.noun} recorded in {monthLabel}.</p>
           ) : null}
         </Card>
       </SettingsSection>

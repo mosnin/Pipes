@@ -146,7 +146,7 @@ export function SearchDialog({ controller, isAdmin }: { controller: SearchContro
     >
       <DialogContent size="form" showClose={false} className="overflow-hidden">
         <DialogTitle className="sr-only">Search Pipes</DialogTitle>
-        <div className="p-4">
+        <div className="p-2">
           <SearchInput
             autoFocus
             role="combobox"
@@ -178,13 +178,13 @@ export function SearchDialog({ controller, isAdmin }: { controller: SearchContro
             }}
           />
         </div>
-        <div id={listId} role="listbox" aria-label="Results" className="max-h-[420px] overflow-y-auto border-t border-hairline p-2">
+        <div id={listId} role="listbox" aria-label="Results" className="max-h-[420px] overflow-y-auto border-t border-hairline p-1">
           {entries.length === 0 ? (
-            <p className="t-body px-4 py-6 text-ink-3">{loading ? "Searching" : "Nothing matches that."}</p>
+            <p className="t-body px-2 py-4 text-ink-3">{loading ? "Searching" : "Nothing matches that."}</p>
           ) : (
             groups.map((group) => (
-              <div key={group.name} role="group" aria-labelledby={`${listId}-${group.name}`} className="pb-2 last:pb-0">
-                <p id={`${listId}-${group.name}`} className="t-caption-medium px-3 pt-3 pb-2 text-ink-3">
+              <div key={group.name} role="group" aria-labelledby={`${listId}-${group.name}`} className="pb-1 last:pb-0">
+                <p id={`${listId}-${group.name}`} className="t-caption-medium px-1.5 pt-1.5 pb-1 text-ink-3">
                   {group.name}
                 </p>
                 {group.items.map(({ entry, index }) => {
@@ -201,7 +201,7 @@ export function SearchDialog({ controller, isAdmin }: { controller: SearchContro
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => go(entry.href)}
                       className={cn(
-                        "flex h-[36px] w-full cursor-pointer items-center gap-4 rounded-8 px-3 text-left outline-none transition-colors duration-[var(--dur-1)]",
+                        "flex h-[36px] w-full cursor-pointer items-center gap-2 rounded-8 px-1.5 text-left outline-none transition-colors duration-[var(--dur-1)]",
                         selected ? "bg-selected text-ink" : "text-ink-2 hover:bg-state-hover"
                       )}
                     >

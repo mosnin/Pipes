@@ -32,7 +32,7 @@ export function ConnectAgentView(): ReactNode {
         title="Sign in with OAuth"
         description="Claude, ChatGPT and Cursor only need the URL. Add Pipes as a custom connector or MCP server in the client's settings, sign in when it asks, and approve access to this workspace."
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           <CodeSnippet label="Claude Code" code={`claude mcp add --transport http pipes ${mcpUrl}`} />
           <p className="t-caption text-ink-3">
             Clients find the sign-in flow on their own through <span className="t-mono-hash text-ink-2">/.well-known/oauth-authorization-server</span>.
@@ -52,9 +52,9 @@ export function ConnectAgentView(): ReactNode {
           </>
         }
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           <CodeSnippet label="Request header" code="Authorization: Bearer <token>" />
-          <p className="t-caption-medium mt-2 text-ink">Capabilities to grant the token</p>
+          <p className="t-caption-medium mt-1 text-ink">Capabilities to grant the token</p>
           <Card>
             <FactList
               facts={[
@@ -75,9 +75,9 @@ export function ConnectAgentView(): ReactNode {
         <Card>
           <ol className="flex flex-col">
             {LOOP.map((item, index) => (
-              <li key={item.title} className="flex gap-6 border-t border-hairline px-6 py-5 first:border-t-0">
+              <li key={item.title} className="flex gap-4 border-t border-hairline px-4 py-3 first:border-t-0">
                 <span className="t-mono-hash w-[20px] shrink-0 pt-[1px] tabular text-ink-3">{index + 1}</span>
-                <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex min-w-0 flex-col gap-1">
                   <span className={item.mono ? "t-mono-hash text-ink" : "t-body-strong text-ink"}>{item.title}</span>
                   <span className="t-body text-ink-2">{item.body}</span>
                 </div>

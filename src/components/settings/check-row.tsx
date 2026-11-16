@@ -30,7 +30,7 @@ export function CheckRow({
       aria-checked={checked}
       onClick={onToggle}
       className={cn(
-        "flex w-full items-start gap-5 rounded-8 px-4 py-3 text-left",
+        "flex w-full items-start gap-3 rounded-8 px-2 py-1.5 text-left",
         "outline-none transition-colors duration-[var(--dur-1)] ease-linear focus-ring",
         "hover:bg-state-hover active:bg-state-active"
       )}
@@ -45,7 +45,7 @@ export function CheckRow({
       >
         <Check size={12} strokeWidth={2} />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className={cn(mono ? "t-mono-hash" : "t-body", "text-ink")}>{label}</span>
         {description ? <span className="t-caption text-ink-3">{description}</span> : null}
       </span>

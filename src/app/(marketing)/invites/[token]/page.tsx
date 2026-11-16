@@ -73,7 +73,7 @@ export default function InviteAcceptPage() {
             : "You have been invited to a Pipes workspace."
       }
     >
-      <div className="flex flex-col gap-6" aria-live="polite">
+      <div className="flex flex-col gap-4" aria-live="polite">
         {state.kind === "checking" ? (
           <Skeleton className="h-[44px] w-full rounded-10" />
         ) : state.kind === "invalid" ? (

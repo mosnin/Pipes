@@ -132,7 +132,7 @@ export function TableFilters({
   return (
     <div
       className={cn(
-        "flex h-[44px] shrink-0 items-center gap-5 border-b border-hairline px-5",
+        "flex h-[44px] shrink-0 items-center gap-3 border-b border-hairline px-3",
         className,
       )}
     >
@@ -141,7 +141,7 @@ export function TableFilters({
           <button
             type="button"
             onClick={onOpenViews}
-            className="focus-ring-inset -mx-2 flex shrink-0 items-center gap-2 rounded-8 px-2 py-1 t-body-strong text-ink outline-none transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
+            className="focus-ring-inset -mx-1 flex shrink-0 items-center gap-1 rounded-8 px-1 py-0.5 t-body-strong text-ink outline-none transition-colors duration-[var(--dur-1)] hover:bg-state-hover"
           >
             {view}
             <ChevronsUpDown aria-hidden="true" className="size-[13px] text-ink-3" />
@@ -156,7 +156,7 @@ export function TableFilters({
           searchable; drawing an inert one here would be a control that
           looks like it works. */}
       {onValueChange ? (
-        <label className="flex min-w-0 flex-1 items-center gap-4">
+        <label className="flex min-w-0 flex-1 items-center gap-2">
           <Search aria-hidden="true" className="size-[16px] shrink-0 text-ink-3" />
           <span className="sr-only">{placeholder}</span>
           <input
@@ -175,7 +175,7 @@ export function TableFilters({
       )}
 
       {actions ? (
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1">
           <span aria-hidden="true" className="h-[20px] w-px bg-hairline" />
           {actions}
         </div>
@@ -194,7 +194,7 @@ export function TableFootnote({
 }: ComponentProps<"p">): ReactNode {
   return (
     <p
-      className={cn("t-caption mt-6 text-center text-ink-3", className)}
+      className={cn("t-caption mt-4 text-center text-ink-3", className)}
       {...props}
     />
   );
@@ -347,7 +347,7 @@ export function TD({
         // No rule between columns: see `TH`. The row's own hairline is the
         // only line in the table body.
         "align-middle",
-        density === "compact" ? "px-5 py-2" : "px-6 py-3",
+        density === "compact" ? "px-3 py-1" : "px-4 py-1.5",
         numeric ? "t-cell tabular text-right text-ink" : "t-cell text-ink",
         className,
       )}
@@ -388,7 +388,7 @@ export function TH({
   ...props
 }: THProps): ReactNode {
   const density = useContext(DensityContext);
-  const pad = density === "compact" ? "px-5" : "px-6";
+  const pad = density === "compact" ? "px-3" : "px-4";
 
   // No icon. The reference's column heads are text and, when sortable, a
   // caret — nothing else. An icon per column turns a header row into a
@@ -403,7 +403,7 @@ export function TH({
   );
 
   const row = cn(
-    "flex h-[35px] w-full items-center gap-3",
+    "flex h-[35px] w-full items-center gap-1.5",
     pad,
     numeric && "justify-end",
   );
@@ -518,7 +518,7 @@ export function CellStack({
     <span
       data-cell-stack=""
       title={compact && typeof meta === "string" ? meta : undefined}
-      className={cn("flex min-w-0 flex-col gap-2", className)}
+      className={cn("flex min-w-0 flex-col gap-1", className)}
     >
       <span
         data-cell-title=""
@@ -566,7 +566,7 @@ export function TableFooter({
   return (
     <div
       className={cn(
-        "flex min-h-[48px] flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-border bg-raised px-6 py-4",
+        "flex min-h-[48px] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border bg-raised px-4 py-2",
         className,
       )}
     >
@@ -574,7 +574,7 @@ export function TableFooter({
         {safe.toLocaleString("en-US")} {label}
       </span>
       {children ? (
-        <div className="flex flex-wrap items-center gap-5">{children}</div>
+        <div className="flex flex-wrap items-center gap-3">{children}</div>
       ) : null}
     </div>
   );
@@ -611,9 +611,9 @@ export function TablePagination({
     onPageChange(Math.min(Math.max(1, next), last));
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-5", className)}>
+    <div className={cn("flex flex-wrap items-center gap-3", className)}>
       {pageSize !== undefined && onPageSizeChange ? (
-        <label className="t-caption flex items-center gap-3 text-ink-3">
+        <label className="t-caption flex items-center gap-1.5 text-ink-3">
           <span className="hidden sm:inline">Show</span>
           <Select
             size="sm"
@@ -629,7 +629,7 @@ export function TablePagination({
           <span className="hidden sm:inline">per page</span>
         </label>
       ) : null}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <IconButton
           label="First page"
           size="sm"
@@ -648,7 +648,7 @@ export function TablePagination({
         >
           <ChevronLeft strokeWidth={1.5} className="size-[14px]!" />
         </IconButton>
-        <span className="t-caption tabular px-3 text-ink-2">
+        <span className="t-caption tabular px-1.5 text-ink-2">
           {current} of {last}
         </span>
         <IconButton

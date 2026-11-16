@@ -128,8 +128,8 @@ export function StatCell({
   const metric = typeof value === "number" ? formatMetric(value) : null;
 
   return (
-    <div className={cn("flex min-h-[120px] flex-col gap-5 p-7", className)}>
-      <div className="flex items-center gap-3 text-ink-2">
+    <div className={cn("flex min-h-[120px] flex-col gap-3 p-5", className)}>
+      <div className="flex items-center gap-1.5 text-ink-2">
         {Icon ? (
           <Icon
             aria-hidden="true"
@@ -152,7 +152,7 @@ export function StatCell({
 
       {/* items-end sits the sparkline on the value's baseline rather than
           centring it against the value's line box. */}
-      <div className="flex items-end justify-between gap-6">
+      <div className="flex items-end justify-between gap-4">
         {empty ? (
           <span className="t-metric-stat text-ink-3">{NO_VALUE}</span>
         ) : metric ? (
@@ -183,7 +183,7 @@ export function StatCell({
         ) : null}
       </div>
 
-      <div className="-mt-2">
+      <div className="-mt-1">
         {delta ? (
           <Delta {...delta} />
         ) : empty ? (
@@ -231,7 +231,7 @@ export function Delta({
       : "text-critical-text";
 
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
+    <span className={cn("inline-flex items-center gap-1", className)}>
       {zero ? (
         // The glyph slot is held open so the numerals of a row of cells still
         // start on the same x, whether or not each one has a direction.
@@ -244,7 +244,7 @@ export function Delta({
       </span>
       <span className="sr-only">{zero ? "no change" : up ? "up" : "down"}</span>
       {suffix ? (
-        <span className="t-micro ml-1 text-ink-3">{suffix}</span>
+        <span className="t-micro ml-0.5 text-ink-3">{suffix}</span>
       ) : null}
     </span>
   );

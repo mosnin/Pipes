@@ -105,10 +105,10 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
     }
     return (
       <PageShell measure="page">
-        <div className="flex flex-col gap-6 pt-2">
+        <div className="flex flex-col gap-4 pt-1">
           <Skeleton className="h-[28px] w-[40%]" />
           <Skeleton className="h-[14px] w-[60%]" />
-          <Skeleton className="mt-6 h-[320px] w-full rounded-12" />
+          <Skeleton className="mt-4 h-[320px] w-full rounded-12" />
         </div>
       </PageShell>
     );
@@ -122,7 +122,7 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
     <PageShell measure="page">
       <RunHeader run={run} busy={busy} onCancel={() => setConfirmCancel(true)} />
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3">
         {actionError ? (
           <Banner role="critical" title="That did not go through">
             {actionError}
@@ -138,9 +138,9 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
       </div>
 
       <SplitLayout
-        className={actionError || loadError || run.status === "failed" || run.status === "canceled" ? "mt-7" : undefined}
+        className={actionError || loadError || run.status === "failed" || run.status === "canceled" ? "mt-5" : undefined}
         main={
-          <div className="flex flex-col gap-9">
+          <div className="flex flex-col gap-8">
             {run.status === "running" && current.step ? (
               <CurrentStepPanel key={stepKey} run={run} current={current} busy={busy} onComplete={(body) => act("complete", body)} />
             ) : null}
@@ -210,7 +210,7 @@ function RunHeader({ run, busy, onCancel }: { run: WorkflowRun; busy: boolean; o
 
 function MetaItem({ label, value }: { label: string; value: string }): ReactNode {
   return (
-    <span className="inline-flex items-baseline gap-2">
+    <span className="inline-flex items-baseline gap-1">
       <span className="text-ink-3">{label}</span>
       <span className="text-ink tabular">{value}</span>
     </span>
@@ -221,7 +221,7 @@ function RunFacts({ run }: { run: WorkflowRun }): ReactNode {
   const input = formatOutput(run.input);
   const done = run.steps.filter((s) => s.completedAt).length;
   return (
-    <div className="flex flex-col gap-9">
+    <div className="flex flex-col gap-8">
       <section aria-labelledby="run-details-heading">
         <SectionHeading>
           <span id="run-details-heading">Details</span>
@@ -257,7 +257,7 @@ function RunFacts({ run }: { run: WorkflowRun }): ReactNode {
 
 function MonoWell({ text, className }: { text: string; className?: string }): ReactNode {
   return (
-    <pre className={`t-mono-code max-h-[320px] overflow-auto whitespace-pre-wrap break-words rounded-8 bg-inset px-5 py-4 text-ink-2 ${className ?? ""}`}>
+    <pre className={`t-mono-code max-h-[320px] overflow-auto whitespace-pre-wrap break-words rounded-8 bg-inset px-3 py-2 text-ink-2 ${className ?? ""}`}>
       {text}
     </pre>
   );
@@ -265,7 +265,7 @@ function MonoWell({ text, className }: { text: string; className?: string }): Re
 
 function Block({ label, children }: { label: string; children: ReactNode }): ReactNode {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <p className="t-caption-strong text-ink-2">{label}</p>
       {children}
     </div>
@@ -299,9 +299,9 @@ function StepBrief({ current }: { current: Current }): ReactNode {
       ) : null}
       {step.skills.length ? (
         <Block label="Skills">
-          <ul className="flex flex-wrap gap-2">
+          <ul className="flex flex-wrap gap-1">
             {step.skills.map((skill) => (
-              <li key={skill} className="t-mono-micro inline-flex h-[20px] max-w-full items-center truncate rounded-6 bg-inset px-3 text-ink-2">
+              <li key={skill} className="t-mono-micro inline-flex h-[20px] max-w-full items-center truncate rounded-6 bg-inset px-1.5 text-ink-2">
                 {skill}
               </li>
             ))}
@@ -312,7 +312,7 @@ function StepBrief({ current }: { current: Current }): ReactNode {
         <Block label="Connections">
           <ul className="flex flex-col divide-y divide-hairline rounded-8 border border-hairline">
             {current.connections.map((c) => (
-              <li key={c.id} className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+              <li key={c.id} className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                 <span className="t-body-strong text-ink">
                   {c.name} <span className="t-caption text-ink-3">{c.type.toUpperCase() === "MCP" ? "MCP" : nodeTypeLabel(c.type)}</span>
                 </span>
@@ -368,8 +368,8 @@ function CurrentStepPanel({
       </SectionHeading>
       <Card>
         <CardSection>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-col gap-1">
               <h2 className="t-title-2 text-ink">{step.title}</h2>
               <p className="t-caption text-ink-3">{stepSubtitle(current)}</p>
             </div>
@@ -383,7 +383,7 @@ function CurrentStepPanel({
         </CardSection>
         <CardSection>
           <form
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-4"
             onSubmit={(event) => {
               event.preventDefault();
               if (options.length <= 1) submit("success");
@@ -398,18 +398,18 @@ function CurrentStepPanel({
             <Field label="Notes" htmlFor={`${id}-notes`} hint="Anything the next person should know. Optional.">
               <Textarea id={`${id}-notes`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Field>
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               {options.length <= 1 ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   <Button type="submit" variant="primary" size="md" disabled={busy} loading={busy}>
                     {options.length === 0 ? "Complete and finish run" : "Complete step"}
                   </Button>
                   <p className="t-caption text-ink-3">{options.length === 0 ? "This is the last step." : `Next: ${options[0].toNodeTitle}`}</p>
                 </div>
               ) : (
-                <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex min-w-0 flex-col gap-1.5">
                   <p className="t-caption-strong text-ink-2">Choose where the run goes next</p>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-1.5">
                     {options.map((option, index) => (
                       <Button
                         key={option.pipeId}
@@ -478,8 +478,8 @@ function ApprovalPanel({
       </SectionHeading>
       <Card>
         <CardSection>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-col gap-1">
               <h2 className="t-title-2 text-ink">{step.title}</h2>
               <p className="t-caption text-ink-3">{`Human approval · ${approverRole} or above can decide`}</p>
             </div>
@@ -500,7 +500,7 @@ function ApprovalPanel({
           <Field label="Comment" htmlFor={`${id}-comment`} hint="Saved with your decision and shown on the step record.">
             <Textarea id={`${id}-comment`} rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
           </Field>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-1.5">
             <Button variant="primary" size="md" disabled={busy} loading={busy} onClick={() => decide("approved")}>
               Approve
             </Button>
@@ -511,11 +511,11 @@ function ApprovalPanel({
         </CardSection>
         {earlier.length ? (
           <CardSection>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <p className="t-caption-strong text-ink-2">Send it back instead</p>
               <p className="t-caption text-ink-3">The run returns to that step and walks forward from there. Your comment goes with it.</p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
               <Select
                 aria-label="Step to send the work back to"
                 className="sm:max-w-[320px]"
@@ -549,7 +549,7 @@ function Timeline({ run }: { run: WorkflowRun }): ReactNode {
       </SectionHeading>
       <Card>
         {run.steps.length === 0 ? (
-          <p className="t-caption px-6 py-6 text-ink-3">No steps yet.</p>
+          <p className="t-caption px-4 py-4 text-ink-3">No steps yet.</p>
         ) : (
           <ol className="flex flex-col divide-y divide-hairline">
             {run.steps.map((step) => (
@@ -580,11 +580,11 @@ function TimelineStep({ step, run, titleOf, nameOf }: { step: StepRecord; run: W
   const showNotes = step.notes && !(approval && approval.comment === step.notes);
 
   return (
-    <li className="flex gap-5 px-6 py-6" aria-current={isCurrent ? "step" : undefined}>
-      <span className="t-mono-seq w-[24px] shrink-0 pt-1 text-ink-3">{String(step.index + 1).padStart(2, "0")}</span>
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <div className="flex min-w-0 flex-col gap-1">
+    <li className="flex gap-3 px-4 py-4" aria-current={isCurrent ? "step" : undefined}>
+      <span className="t-mono-seq w-[24px] shrink-0 pt-0.5 text-ink-3">{String(step.index + 1).padStart(2, "0")}</span>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <p className="t-body-strong text-ink">{step.nodeTitle}</p>
             <p className="t-caption text-ink-3">{nodeTypeLabel(step.nodeType)}</p>
           </div>
@@ -606,7 +606,7 @@ function TimelineStep({ step, run, titleOf, nameOf }: { step: StepRecord; run: W
         </p>
 
         {approval ? (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             <p className="t-body text-ink">
               {approval.decision === "approved" ? "Approved" : approval.decision === "rejected" ? "Rejected" : `Sent back to ${titleOf(approval.sentBackTo) ?? "an earlier step"}`} by {nameOf(approval.by)}
             </p>

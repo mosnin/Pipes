@@ -15,7 +15,7 @@ export interface RevisionRailProps {
  * drawn by the row that owns it, inside that row's own 28px grid track.
  *
  * That is not a stylistic preference. The code being replaced drew
- * `absolute left-[11px] top-7 h-full w-px` on the container — one tall line,
+ * `absolute left-[11px] top-5 h-full w-px` on the container — one tall line,
  * byte-identical in two pages — which is a construction that cannot survive
  * windowed rendering of a long history: the container's height is not the sum of
  * the rendered rows, so the line either stops short or runs past the last commit
@@ -97,7 +97,7 @@ export function RailRow({
           // THE RAIL EXCEPTION (§5.3): square on the edge that touches the spine,
           // rounded on the other. The row yields its corner so the spine reads as
           // one continuous bound edge instead of a stack of interrupted arcs.
-          "relative min-h-[60px] rounded-[0_8px_8px_0] py-5 pl-5 pr-6",
+          "relative min-h-[60px] rounded-[0_8px_8px_0] py-3 pl-3 pr-4",
           "transition-colors duration-[var(--dur-1)] ease-linear",
           // The hover fill is conditional on the row actually containing
           // something pressable. A state fill under a cursor that has nothing to

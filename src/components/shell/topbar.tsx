@@ -83,8 +83,8 @@ export function Topbar(): ReactNode {
   const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2] : null;
 
   return (
-    <div className="workspace-topbar flex min-h-[32px] flex-wrap items-center justify-between gap-3 px-6 pt-5 md:px-7 lg:px-8">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-2 text-ink-3">
+    <div className="workspace-topbar flex min-h-[32px] flex-wrap items-center justify-between gap-1.5 px-4 pt-3 md:px-5 lg:px-6">
+      <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-1 text-ink-3">
         <span aria-hidden="true" className="flex shrink-0 items-center">
           <Icon className="size-[16px]" strokeWidth={1.5} />
         </span>
@@ -103,7 +103,7 @@ export function Topbar(): ReactNode {
             return (
               <li key={`${crumb.label}-${index}`} className={cn("flex min-w-0 items-center", !isLast && "hidden sm:flex")}>
                 {index > 0 ? (
-                  <ChevronRight aria-hidden="true" strokeWidth={1.5} className="mx-2 hidden size-[14px] shrink-0 text-ink-4 sm:block" />
+                  <ChevronRight aria-hidden="true" strokeWidth={1.5} className="mx-1 hidden size-[14px] shrink-0 text-ink-4 sm:block" />
                 ) : null}
                 {crumb.href && !isLast ? (
                   <Link

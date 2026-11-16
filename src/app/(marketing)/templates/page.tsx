@@ -27,7 +27,7 @@ export default function TemplatesPage() {
 
       <Section className="pt-0" labelledBy="page-title">
         <Container>
-          <ul className="grid gap-6 lg:grid-cols-2">
+          <ul className="grid gap-4 lg:grid-cols-2">
             {templates.map((template) => {
               const graph = findStarterTemplate(template.id);
               return (
@@ -36,11 +36,11 @@ export default function TemplatesPage() {
                   className="flex flex-col overflow-hidden rounded-12 border border-border bg-raised shadow-elev-1"
                 >
                   {graph ? (
-                    <div className="hidden border-b border-hairline bg-inset px-6 py-8 sm:block">
+                    <div className="hidden border-b border-hairline bg-inset px-4 py-6 sm:block">
                       <TemplateGraph template={graph} listOnMobile={false} />
                     </div>
                   ) : null}
-                  <div className="flex flex-1 flex-col gap-4 p-7">
+                  <div className="flex flex-1 flex-col gap-2 p-5">
                     <p className="t-label-caps text-ink-3">
                       {template.category} · {template.useCase}
                     </p>
@@ -49,7 +49,7 @@ export default function TemplatesPage() {
                     <p className="t-mono-hash text-ink-3">
                       {template.preview} · {template.complexity}
                     </p>
-                    <div className="mt-auto flex flex-wrap items-center gap-6 pt-4">
+                    <div className="mt-auto flex flex-wrap items-center gap-4 pt-2">
                       <CutButton
                         href={`/signup?source=template_${template.slug}`}
                         track={{

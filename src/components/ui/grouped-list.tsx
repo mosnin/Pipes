@@ -50,7 +50,7 @@ export function GroupedList({
       {...props}
     >
       {isEmpty ? (
-        <li className="t-caption flex min-h-[56px] items-center px-6 py-4 text-ink-3">
+        <li className="t-caption flex min-h-[56px] items-center px-4 py-2 text-ink-3">
           {empty}
         </li>
       ) : (
@@ -92,14 +92,14 @@ export function GroupedRow({
           {leading}
         </span>
       ) : null}
-      <span className="flex min-w-0 flex-1 flex-col gap-2 text-left">
+      <span className="flex min-w-0 flex-1 flex-col gap-1 text-left">
         <span className="t-body-strong truncate text-ink">{title}</span>
         {subtitle ? (
           <span className="t-caption truncate text-ink-3">{subtitle}</span>
         ) : null}
       </span>
       {trailing ? (
-        <span className="t-body flex shrink-0 items-center gap-4 text-ink-2">
+        <span className="t-body flex shrink-0 items-center gap-2 text-ink-2">
           {trailing}
         </span>
       ) : null}
@@ -115,7 +115,7 @@ export function GroupedRow({
   );
 
   const rowClass = cn(
-    "flex w-full items-center gap-5 px-6 py-4",
+    "flex w-full items-center gap-3 px-4 py-2",
     tall ? "min-h-[56px]" : "min-h-[44px]",
     navigable && [
       "cursor-pointer transition-colors duration-[var(--dur-1)] ease-linear",
@@ -134,7 +134,7 @@ export function GroupedRow({
         // The separator, inset to the text origin and drawn on every row but
         // the first. 60px = 16 (row padding) + 32 (tile) + 12 (gap).
         "before:absolute before:right-0 before:top-0 before:h-px before:bg-hairline before:content-['']",
-        leading ? "before:left-[60px]" : "before:left-6",
+        leading ? "before:left-[60px]" : "before:left-4",
         "first:before:hidden",
       )}
     >

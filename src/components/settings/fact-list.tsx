@@ -24,7 +24,7 @@ export function FactList({ facts, className }: { facts: Fact[]; className?: stri
       {facts.map((fact, index) => (
         <div
           key={index}
-          className="flex flex-col gap-2 border-t border-hairline px-6 py-4 first:border-t-0 sm:min-h-[44px] sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+          className="flex flex-col gap-1 border-t border-hairline px-4 py-2 first:border-t-0 sm:min-h-[44px] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
         >
           <dt className="t-body text-ink-2">{fact.label}</dt>
           <dd className="t-body min-w-0 text-ink sm:text-right">{fact.value}</dd>

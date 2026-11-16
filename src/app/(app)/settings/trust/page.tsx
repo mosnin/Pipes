@@ -97,7 +97,7 @@ export default function TrustSettingsPage() {
               void saveAuth();
             }}
           >
-            <div className="grid grid-cols-1 gap-7 p-6 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 p-4 sm:grid-cols-2">
               <Field label="Mode" htmlFor={`${fieldId}-mode`} hint={data?.auth?.mode ? `Saved as ${data.auth.mode === "sso_ready" ? "SSO ready" : "shared"}.` : undefined}>
                 <Select
                   id={`${fieldId}-mode`}
@@ -182,14 +182,14 @@ export default function TrustSettingsPage() {
         description="Workflows can be archived and restored. Hard deletes are not supported, for workflows or for the workspace. Deactivating shuts the workspace down in a controlled way and can be reversed."
       >
         <Card>
-          <div className="p-6">
+          <div className="p-4">
             <Field label="Reason for deactivating" htmlFor={`${fieldId}-reason`} hint="You will be asked to type DEACTIVATE to confirm.">
               <Input id={`${fieldId}-reason`} value={deactivateReason} onChange={(e) => setDeactivateReason(e.target.value)} placeholder="Deactivation reason" />
             </Field>
           </div>
           <CardFooter inset className="flex-wrap">
             <span className="t-caption text-ink-3">Workspace state: {sentenceCase(workspaceState)}</span>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="secondary"
                 size="sm"

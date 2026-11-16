@@ -53,7 +53,7 @@ export function AgentStepPanel({
   const maxInvalid = maxText.trim() !== "" && (!Number.isInteger(maxValue) || maxValue < 1 || maxValue > 100);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <p className="t-caption text-ink-3">This is what an agent receives when a run reaches this step. Leave a field empty if the step does not need it.</p>
       <Field label="Instructions" htmlFor={`step-instructions-${nodeId}`} hint="Write it the way you would brief a colleague.">
         <Textarea
@@ -83,18 +83,18 @@ export function AgentStepPanel({
         />
       </Field>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
         <SectionLabel>Connections</SectionLabel>
         {connections.status === "loading" ? <Quiet>Loading connections…</Quiet> : null}
         {connections.status === "error" ? <Quiet>Connections could not be loaded.</Quiet> : null}
         {connections.status === "ready" && connections.items.length === 0 ? (
-          <div className="flex flex-col items-start gap-3">
+          <div className="flex flex-col items-start gap-1.5">
             <Quiet>No connections in this workspace yet. Add an MCP server or API in settings and it shows up here.</Quiet>
             <Button asChild size="xs" variant="secondary"><Link href="/settings/connections">Add a connection</Link></Button>
           </div>
         ) : null}
         {connections.status === "ready" && connections.items.length > 0 ? (
-          <ul aria-label="Connections this step uses" className="flex flex-col gap-3">
+          <ul aria-label="Connections this step uses" className="flex flex-col gap-1.5">
             {connections.items.map((connection) => (
               <li key={connection.id}>
                 <CheckRow
@@ -111,7 +111,7 @@ export function AgentStepPanel({
       </div>
 
       {isLoop ? (
-        <div className="flex flex-col gap-5 border-t border-hairline pt-5">
+        <div className="flex flex-col gap-3 border-t border-hairline pt-3">
           <SectionLabel>Loop</SectionLabel>
           <Field label="Max iterations" htmlFor={`step-max-${nodeId}`} error={maxInvalid ? "Use a whole number from 1 to 100." : undefined} hint="The run leaves the loop after this many passes. 1 to 100.">
             <Input
@@ -144,7 +144,7 @@ export function AgentStepPanel({
       ) : null}
 
       {isApproval ? (
-        <div className="flex flex-col gap-5 border-t border-hairline pt-5">
+        <div className="flex flex-col gap-3 border-t border-hairline pt-3">
           <SectionLabel>Approval</SectionLabel>
           <Field label="Approver role" htmlFor={`step-approver-${nodeId}`} hint="The run waits here until someone with this role decides.">
             <Select

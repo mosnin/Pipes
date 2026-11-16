@@ -22,14 +22,14 @@ export function FinalCta({
       aria-labelledby="final-cta-heading"
       className="border-t border-hairline"
     >
-      <div className="mk-container flex flex-col items-start gap-8 py-12 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-4">
+      <div className="mk-container flex flex-col items-start gap-6 py-16 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-2">
           <h2 id="final-cta-heading" className="t-mk-h2 text-balance text-ink">
             {title}
           </h2>
           <p className="t-mk-lead max-w-[52ch] text-ink-2">{body}</p>
         </div>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton
             href={`/signup?source=${source}`}
             size="lg"

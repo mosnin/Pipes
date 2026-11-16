@@ -34,7 +34,7 @@ const TONE_DOT: Record<Tone, string> = {
 /** A status pill: a dot plus a word, so colour is never the only carrier. */
 export function StatusPill({ tone, children, className }: { tone: Tone; children: ReactNode; className?: string }): ReactNode {
   return (
-    <span className={cn("inline-flex h-[20px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 t-micro", TONE_PILL[tone], className)}>
+    <span className={cn("inline-flex h-[20px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-1.5 t-micro", TONE_PILL[tone], className)}>
       <span aria-hidden="true" className={cn("size-[6px] shrink-0 rounded-full", TONE_DOT[tone])} />
       {children}
     </span>
@@ -59,9 +59,9 @@ export function statusTone(status: string | undefined): Tone {
 /** A pane's section heading, sentence case, with an optional trailing control. */
 export function SectionLabel({ children, action, className }: { children: ReactNode; action?: ReactNode; className?: string }): ReactNode {
   return (
-    <div className={cn("flex min-h-[28px] items-center justify-between gap-4", className)}>
+    <div className={cn("flex min-h-[28px] items-center justify-between gap-2", className)}>
       <h3 className="t-label-caps text-ink">{children}</h3>
-      {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
+      {action ? <div className="flex shrink-0 items-center gap-1">{action}</div> : null}
     </div>
   );
 }
@@ -73,7 +73,7 @@ export function Quiet({ children, className }: { children: ReactNode; className?
 
 /** A discrete row inside a pane: the `--surface-object` rung with its hairline. */
 export function ObjectRow({ className, ...props }: ComponentProps<"div">): ReactNode {
-  return <div className={cn("flex flex-col gap-2 rounded-10 border border-hairline bg-object px-5 py-4", className)} {...props} />;
+  return <div className={cn("flex flex-col gap-1 rounded-10 border border-hairline bg-object px-3 py-2", className)} {...props} />;
 }
 
 /** Shortcut chord rendered as separate keycaps. */
@@ -104,7 +104,7 @@ export function ToolButton({
   return (
     <Tooltip
       content={
-        <span className="inline-flex items-center gap-4">
+        <span className="inline-flex items-center gap-2">
           {label}
           {shortcut ? <span className="inline-flex items-center opacity-80">{shortcut.join(" ")}</span> : null}
         </span>
@@ -121,7 +121,7 @@ export function ToolButton({
 }
 
 export function ToolbarRule(): ReactNode {
-  return <span aria-hidden="true" className="mx-1 hidden h-[20px] w-px shrink-0 bg-hairline sm:block" />;
+  return <span aria-hidden="true" className="mx-0.5 hidden h-[20px] w-px shrink-0 bg-hairline sm:block" />;
 }
 
 /** A native checkbox in the accent (the checked state is an invitation to act). */
@@ -139,7 +139,7 @@ export function CheckRow({
   className?: string;
 }): ReactNode {
   return (
-    <label className={cn("flex cursor-pointer items-start gap-4 t-caption text-ink-2", disabled && "cursor-not-allowed text-ink-4", className)}>
+    <label className={cn("flex cursor-pointer items-start gap-2 t-caption text-ink-2", disabled && "cursor-not-allowed text-ink-4", className)}>
       <input
         type="checkbox"
         checked={checked}
@@ -155,7 +155,7 @@ export function CheckRow({
 /** Label-over-value pair for small facts. */
 export function Fact({ label, children }: { label: string; children: ReactNode }): ReactNode {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <span className="t-micro text-ink-3">{label}</span>
       <span className="t-body-medium tabular-nums text-ink">{children}</span>
     </div>

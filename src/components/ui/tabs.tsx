@@ -66,7 +66,7 @@ export function Tabs({
         <TabsList
           aria-label={label}
           onKeyDown={navigate}
-          className="gap-6 border-0"
+          className="gap-4 border-0"
         >
           <>
             {items.map((item) => (
@@ -76,7 +76,7 @@ export function Tabs({
                 value={item.value}
                 disabled={item.disabled}
                 tabIndex={item.value === value ? 0 : -1}
-                className="shrink-0 gap-2 whitespace-nowrap px-1 t-body-strong focus-ring outline-none disabled:opacity-50"
+                className="shrink-0 gap-1 whitespace-nowrap px-0.5 t-body-strong focus-ring outline-none disabled:opacity-50"
                 indicatorClassName="bg-ink"
               >
                 {item.label}

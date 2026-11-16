@@ -110,7 +110,7 @@ export default function AdminReleasePage() {
                   <StatusPill key="s" role={FLOW_ROLE[item.status] ?? "neutral"}>{sentenceCase(item.status)}</StatusPill>
                 ]
               }))}
-              empty={<EmptyState title="No critical flows listed" className="py-9" />}
+              empty={<EmptyState title="No critical flows listed" className="py-8" />}
             />
           </SettingsSection>
 
@@ -127,7 +127,7 @@ export default function AdminReleasePage() {
                   (item.examples ?? []).length ? <span key="e" className="t-mono-hash block whitespace-normal text-ink-2">{item.examples.join(", ")}</span> : null
                 ]
               }))}
-              empty={<EmptyState title="No failure groups" className="py-9" />}
+              empty={<EmptyState title="No failure groups" className="py-8" />}
             />
           </SettingsSection>
 

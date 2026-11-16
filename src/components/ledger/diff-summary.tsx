@@ -38,14 +38,14 @@ export function DiffSummary({
   return (
     <span
       title={`${plus} additions, ${minus} deletions`}
-      className={cn("inline-flex shrink-0 items-center gap-4", className)}
+      className={cn("inline-flex shrink-0 items-center gap-2", className)}
     >
       {unchanged ? (
         // An unchanged diff is a real answer, not an absence, so it prints a
         // value rather than collapsing (§3.5.3).
         <span className="t-mono-seq text-ink-3">±0</span>
       ) : (
-        <span className="inline-flex items-center gap-3">
+        <span className="inline-flex items-center gap-1.5">
           {/* A zero side stays on the ink ramp: hue is reserved for a value the
               reader must decode, and "no deletions" has nothing to decode (§4.1). */}
           <span
@@ -66,7 +66,7 @@ export function DiffSummary({
           </span>
         </span>
       )}
-      <span aria-hidden="true" className="inline-flex shrink-0 items-center gap-1">
+      <span aria-hidden="true" className="inline-flex shrink-0 items-center gap-0.5">
         {Array.from({ length: BLOCKS }, (_, index) => (
           <span
             key={index}

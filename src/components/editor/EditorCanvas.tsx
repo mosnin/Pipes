@@ -72,7 +72,7 @@ const PipesNode = memo(function PipesNode({ data, selected }: { data: EditorNode
   return (
     <div
       className={cn(
-        "flex min-w-[184px] max-w-[248px] flex-col gap-1 rounded-10 border bg-raised px-5 py-4 text-left",
+        "flex min-w-[184px] max-w-[248px] flex-col gap-0.5 rounded-10 border bg-raised px-3 py-2 text-left",
         "transition-[border-color,box-shadow] duration-[var(--dur-1)] ease-[var(--ease-out)]",
         subsystem && "border-dashed",
         selected ? "border-ink shadow-[0_0_0_1px_var(--text-primary)]" : "border-border hover:border-strong"
@@ -255,7 +255,7 @@ export function EditorCanvas({
       {previewItems?.filter((item) => item.previewKind === "addition" && item.x !== undefined && item.y !== undefined).map((item) => (
         <div
           key={item.diffId}
-          className="pointer-events-none absolute z-[6] rounded-6 border border-dashed border-agent-border bg-agent-wash px-3 py-1 t-micro text-agent-text"
+          className="pointer-events-none absolute z-[6] rounded-6 border border-dashed border-agent-border bg-agent-wash px-1.5 py-0.5 t-micro text-agent-text"
           style={{ left: item.x, top: item.y }}
         >
           Proposed node

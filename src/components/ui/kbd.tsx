@@ -19,8 +19,8 @@ export function Kbd({ className, ...props }: ComponentProps<"kbd">): ReactNode {
       className={cn(
         "inline-flex h-[20px] min-w-[20px] items-center justify-center align-middle",
         "rounded-4 border border-hairline border-b-2 border-b-border",
-        "bg-inset px-3 t-mono-micro text-ink-3",
-        "[&+kbd]:ml-1",
+        "bg-inset px-1.5 t-mono-micro text-ink-3",
+        "[&+kbd]:ml-0.5",
         className,
       )}
       {...props}

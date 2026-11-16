@@ -54,13 +54,13 @@ const TRACK_SIZE = {
   // exactly the §9.3 thumb heights (28 → 22, 34 → 28). The 2px padding is on
   // the 4pt scale; the extra 1px of the spec's "3px inner padding" is the
   // border itself.
-  sm: "h-[32px] p-1",
-  md: "h-[36px] p-1",
+  sm: "h-[32px] p-0.5",
+  md: "h-[36px] p-0.5",
 } as const;
 
 const SEGMENT_SIZE = {
-  sm: "min-w-[40px] px-5 t-micro",
-  md: "min-w-[48px] px-6 t-caption-medium",
+  sm: "min-w-[40px] px-3 t-micro",
+  md: "min-w-[48px] px-4 t-caption-medium",
 } as const;
 
 export function Segmented<T extends string>({
@@ -204,7 +204,7 @@ export function Segmented<T extends string>({
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-y-1 left-0 z-0 rounded-6",
+            "pointer-events-none absolute inset-y-0.5 left-0 z-0 rounded-6",
             // Dark steps the thumb one rung above a card so it still reads as
             // lifted off the near-black track (§9.3). Both are semantic tokens;
             // there is no hardcoded colour behind the variant.

@@ -28,7 +28,7 @@ export default function AboutPage() {
         title="Agents should follow the workflow you wrote."
         lead="Pipes is where teams design, store and version the workflows their agents follow, and where agents run them one step at a time. People decide the steps and sign off where it matters. Agents do the work. Pipes keeps track of both."
       >
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           <CutButton href="/signup?source=about">Start free workspace</CutButton>
           <CutButton href="/protocol" variant="outline">
             See how agents connect

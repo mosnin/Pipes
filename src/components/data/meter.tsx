@@ -108,7 +108,7 @@ export function Meter({
   return (
     <div className={cn("w-full", className)}>
       {showLabelRow ? (
-        <div className="mb-4 flex items-baseline justify-between gap-6">
+        <div className="mb-2 flex items-baseline justify-between gap-4">
           <span className="t-label-caps min-w-0 truncate text-ink-3">
             {label}
           </span>
@@ -234,7 +234,7 @@ export function SegmentMeter({
       <div
         role="img"
         aria-label={label}
-        className={cn("flex w-full items-center gap-2", className)}
+        className={cn("flex w-full items-center gap-1", className)}
       >
         {cells.map((cellRole, index) => (
           <span

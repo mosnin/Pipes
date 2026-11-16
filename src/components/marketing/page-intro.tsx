@@ -15,7 +15,7 @@ export function PageIntro({
 }): ReactNode {
   return (
     <section aria-labelledby="page-title" className="relative">
-      <div className="mk-container relative flex flex-col gap-8 pb-12 pt-12">
+      <div className="mk-container relative flex flex-col gap-6 pb-16 pt-16">
         <Kicker>{kicker}</Kicker>
         <h1
           id="page-title"
