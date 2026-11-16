@@ -12,7 +12,8 @@ import type { EvaluationRecord, LearningArtifact, PatternDemotionRecord, Pattern
 import type { ApprovalParticipantRecord, HandoffRecord, ReviewComment, ReviewDecisionRecord, ReviewThread, RevisionRequest, RunReviewer, SharedRunVisibilityState } from "@/domain/agent_builder/collaboration";
 import type { AgentPolicy, EscalationRecord, PolicyDecisionRecord, RunPolicySnapshot, RuntimeUsageRecord } from "@/domain/agent_builder/policy";
 
-const DB_FILE = path.join(process.cwd(), ".pipes-db.json");
+/** The local file-backed store. Tests point PIPES_MOCK_DB_FILE at a throwaway file. */
+const dbFile = () => process.env.PIPES_MOCK_DB_FILE || path.join(process.cwd(), ".pipes-db.json");
 
 type Membership = {
   id: string;
@@ -201,12 +202,12 @@ function seed(): DbShape {
 }
 
 function readDb(): DbShape {
-  if (!fs.existsSync(DB_FILE)) {
+  if (!fs.existsSync(dbFile())) {
     const initial = seed();
-    fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2));
+    fs.writeFileSync(dbFile(), JSON.stringify(initial, null, 2));
     return initial;
   }
-  const parsed = JSON.parse(fs.readFileSync(DB_FILE, "utf8")) as Partial<DbShape>;
+  const parsed = JSON.parse(fs.readFileSync(dbFile(), "utf8")) as Partial<DbShape>;
   return {
     ...(seed() as DbShape),
     ...parsed,
@@ -257,7 +258,7 @@ function readDb(): DbShape {
 }
 
 function writeDb(data: DbShape) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  fs.writeFileSync(dbFile(), JSON.stringify(data, null, 2));
 }
 
 export const store = {

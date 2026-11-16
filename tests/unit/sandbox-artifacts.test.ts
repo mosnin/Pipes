@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { runtimeFlags } from "@/lib/env";
 import { createMockRepositories } from "@/lib/repositories/mock";
 import { SandboxSessionService } from "@/domain/services/sandbox_session";
 import { SandboxArtifactService } from "@/domain/services/sandbox_artifact";
@@ -6,6 +7,11 @@ import { AgentRuntimeService } from "@/domain/services/agent_runtime";
 import { HandoffGenerationService } from "@/domain/services/handoff_generation";
 
 const ctx = { userId: "usr_1", workspaceId: "wks_1", role: "Owner", plan: "Pro", actorType: "user" as const, actorId: "usr_1" };
+
+// These tests cover routing when a Modal executor is configured.
+const originalHasModal = runtimeFlags.hasModal;
+beforeAll(() => { (runtimeFlags as { hasModal: boolean }).hasModal = true; });
+afterAll(() => { (runtimeFlags as { hasModal: boolean }).hasModal = originalHasModal; });
 
 const policy = {
   id: "pol_1", runId: "run_1", workspaceId: "wks_1", systemId: "sys_1", policyId: "p", resolvedFromScope: "workspace",

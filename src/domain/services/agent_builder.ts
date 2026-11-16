@@ -77,7 +77,7 @@ export class AgentRunService {
     this.memoryService = new AgentMemoryService(this.repos);
     this.evaluationService = new AgentEvaluationService(this.repos);
     this.policyService = new AgentPolicyService(this.repos);
-    this.runtimeService = new AgentRuntimeService(this.repos);
+    this.runtimeService = new AgentRuntimeService(this.repos, this.subAgentExecutor);
   }
 
   async createSession(ctx: AppContext, input: { systemId?: string; title?: string }) { return this.repos.agentBuilder.createSession({ workspaceId: ctx.workspaceId, systemId: input.systemId, title: input.title ?? "System Builder Session", createdBy: ctx.userId }); }

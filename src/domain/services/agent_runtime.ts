@@ -7,11 +7,12 @@ import { ModalExecutionService } from "@/lib/runtime/modal_execution";
 import { OpenAIAgentHarnessService } from "@/lib/ai/openai_agents_harness";
 import { SandboxSessionService } from "@/domain/services/sandbox_session";
 import { SandboxArtifactService } from "@/domain/services/sandbox_artifact";
+import type { SubAgentExecutor } from "@/lib/runtime/sub_agent_executor";
 
 const now = () => new Date().toISOString();
 const id = (p: string) => `${p}_${Math.random().toString(36).slice(2, 10)}`;
 
-export type RuntimeExecutionResult = { output: SubAgentProviderOutput; metadata: { target: "inline_host" | "modal_worker" | "modal_sandbox"; provider: "mock" | "openai"; harness: "agents_sdk" | "chat_completions" | "mock" | "modal"; routingReason: string } };
+export type RuntimeExecutionResult = { output: SubAgentProviderOutput; metadata: { target: "inline_host" | "modal_worker" | "modal_sandbox"; provider: "mock" | "openai"; harness: "agents_sdk" | "chat_completions" | "mock" | "modal" | "inline" | "modal_ready_inline"; routingReason: string } };
 
 export class AgentRuntimeService {
   private readonly routing: RuntimeRoutingService;
@@ -20,7 +21,8 @@ export class AgentRuntimeService {
   private readonly sandboxSessions: SandboxSessionService;
   private readonly sandboxArtifacts: SandboxArtifactService;
 
-  constructor(private readonly repos: RepositorySet) {
+  /** `inlineExecutor`, when given, runs inline-host tasks (the injectable seam AgentRunService exposes). */
+  constructor(private readonly repos: RepositorySet, private readonly inlineExecutor?: SubAgentExecutor) {
     this.routing = new RuntimeRoutingService(repos);
     this.modal = new ModalExecutionService();
     this.harness = new OpenAIAgentHarnessService();
@@ -65,6 +67,16 @@ export class AgentRuntimeService {
     }
 
     await this.recordLifecycle(ctx, input.task, "inline_host", "running");
+    if (this.inlineExecutor) {
+      try {
+        const executed = await this.inlineExecutor.execute({ ...input.request, task: { id: input.task.id, runId: input.task.runId } });
+        await this.recordLifecycle(ctx, input.task, "inline_host", "completed", executed.metadata.executionMode);
+        return { output: executed.output, metadata: { target: "inline_host", provider: executed.metadata.provider, harness: executed.metadata.executionMode, routingReason: decision.reason } };
+      } catch (error) {
+        await this.recordLifecycle(ctx, input.task, "inline_host", "failed", (error as Error).message);
+        throw error;
+      }
+    }
     const harness = await this.harness.execute(input.request);
     await this.recordLifecycle(ctx, input.task, "inline_host", "completed", harness.metadata.harness);
     return { output: harness.output, metadata: { target: "inline_host", provider: harness.metadata.harness === "mock" ? "mock" : "openai", harness: harness.metadata.harness, routingReason: decision.reason } };

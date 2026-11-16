@@ -1,10 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { runtimeFlags } from "@/lib/env";
 import { createMockRepositories } from "@/lib/repositories/mock";
 import { RuntimeRoutingService } from "@/domain/services/runtime_routing";
 import { AgentRuntimeService } from "@/domain/services/agent_runtime";
 import { OpenAIAgentHarnessService } from "@/lib/ai/openai_agents_harness";
 
 const ctx = { userId: "usr_1", workspaceId: "wks_1", role: "Owner", plan: "Pro", actorType: "user" as const, actorId: "usr_1" };
+
+// These tests cover routing when a Modal executor is configured.
+const originalHasModal = runtimeFlags.hasModal;
+beforeAll(() => { (runtimeFlags as { hasModal: boolean }).hasModal = true; });
+afterAll(() => { (runtimeFlags as { hasModal: boolean }).hasModal = originalHasModal; });
 
 const basePolicy = {
   id: "pol_1",
