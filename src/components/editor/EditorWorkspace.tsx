@@ -2,6 +2,8 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "convex/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Field, SearchInput } from "@/components/ui/input";
@@ -27,6 +29,8 @@ import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContrac
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
 import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
+import { AgentStepPanel, type ConnectionsState } from "@/components/editor/AgentStepPanel";
+import { useSystemDesign } from "@/components/editor/design_sync";
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -55,12 +59,9 @@ function normalizeBundle(bundle: any): SystemPayload {
 const EMPTY_HISTORY: HistoryState = { undo: [], redo: [] };
 const RECENTS_STORAGE_KEY = "pipes_editor_node_recents_v1";
 const FAVORITES_STORAGE_KEY = "pipes_editor_node_favorites_v1";
-const NODE_DEFINITIONS_PREFIX = "pipes_node_definitions_v1_";
-const SUBSYSTEMS_PREFIX = "pipes_subsystems_v1_";
-const PIPE_SEMANTICS_PREFIX = "pipes_pipe_semantics_v1_";
 
 type InsertRequest = { mode: "canvas" | "selectedNode" | "selectedEdge" | "sourcePort" | "targetPort"; at?: { x: number; y: number }; nodeId?: string; edgeId?: string };
-type InspectorTab = "overview" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
+type InspectorTab = "overview" | "agent" | "inputs" | "outputs" | "config" | "notes" | "validation" | "docs";
 type EditorMode = "design" | "validation" | "simulation" | "versions" | "agent";
 
 const CONTRACT_TYPES: ContractType[] = ["string", "number", "boolean", "json", "event", "file", "any"];
@@ -74,6 +75,7 @@ const ROUTE_OPTIONS: Array<{ value: PipeRouteKind; label: string }> = [
 ];
 const INSPECTOR_TABS: Array<{ value: InspectorTab; label: string }> = [
   { value: "overview", label: "Overview" },
+  { value: "agent", label: "Agent" },
   { value: "inputs", label: "Inputs" },
   { value: "outputs", label: "Outputs" },
   { value: "config", label: "Config" },
@@ -130,17 +132,21 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recents, setRecents] = useState<string[]>([]);
   const [insertRequest, setInsertRequest] = useState<InsertRequest>({ mode: "canvas" });
-  const [nodeDefinitions, setNodeDefinitions] = useState<Record<string, NodeDefinition>>({});
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("overview");
-  const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
   const [layoutPreset, setLayoutPreset] = useState<LayoutPreset>("left_to_right");
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [pipeSemantics, setPipeSemantics] = useState<Record<string, PipeSemantics>>({});
   const [routeFocusMode, setRouteFocusMode] = useState(false);
   const [reviewPreviewItems, setReviewPreviewItems] = useState<ReviewPreviewItem[]>([]);
   const [reviewRegion, setReviewRegion] = useState<ReviewRegion | null>(null);
   const [mode, setMode] = useState<EditorMode>("design");
   const hydratedRef = useRef(false);
+  const router = useRouter();
+  // Node definitions, route specs, subsystems and step specs are the system's design document, saved on the server.
+  const design = useSystemDesign(systemId);
+  const { nodeDefinitions, setNodeDefinitions, pipeSemantics, setPipeSemantics, subsystems, setSubsystems, steps, updateStep } = design;
+  const [connections, setConnections] = useState<ConnectionsState | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
 
   const trackSignal = useCallback(async (event: string, metadata?: Record<string, unknown>) => {
     await fetch("/api/editor/signal", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ event, metadata }) });
@@ -213,30 +219,32 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
 
   useEffect(() => localStorage.setItem(RECENTS_STORAGE_KEY, JSON.stringify(recents.slice(0, 12))), [recents]);
   useEffect(() => localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favorites)), [favorites]);
+  // Connections load the first time the Agent tab opens.
   useEffect(() => {
-    const raw = localStorage.getItem(`${NODE_DEFINITIONS_PREFIX}${systemId}`);
-    if (!raw) return;
-    setNodeDefinitions(JSON.parse(raw));
-  }, [systemId]);
-  useEffect(() => {
-    localStorage.setItem(`${NODE_DEFINITIONS_PREFIX}${systemId}`, JSON.stringify(nodeDefinitions));
-  }, [nodeDefinitions, systemId]);
-  useEffect(() => {
-    const raw = localStorage.getItem(`${SUBSYSTEMS_PREFIX}${systemId}`);
-    if (!raw) return;
-    setSubsystems(JSON.parse(raw));
-  }, [systemId]);
-  useEffect(() => {
-    localStorage.setItem(`${SUBSYSTEMS_PREFIX}${systemId}`, JSON.stringify(subsystems));
-  }, [subsystems, systemId]);
-  useEffect(() => {
-    const raw = localStorage.getItem(`${PIPE_SEMANTICS_PREFIX}${systemId}`);
-    if (!raw) return;
-    setPipeSemantics(JSON.parse(raw));
-  }, [systemId]);
-  useEffect(() => {
-    localStorage.setItem(`${PIPE_SEMANTICS_PREFIX}${systemId}`, JSON.stringify(pipeSemantics));
-  }, [pipeSemantics, systemId]);
+    if (inspectorTab !== "agent" || connections) return;
+    setConnections({ status: "loading", items: [] });
+    fetch("/api/connections", { cache: "no-store" })
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok || !body.ok) throw new Error(body.message ?? "failed");
+        setConnections({ status: "ready", items: (body.data ?? []).map((c: any) => ({ id: String(c.id), name: String(c.name ?? c.id), type: String(c.type ?? ""), url: String(c.url ?? "") })) });
+      })
+      .catch(() => setConnections({ status: "error", items: [] }));
+  }, [connections, inspectorTab]);
+
+  const startRun = useCallback(async () => {
+    setStarting(true);
+    setRunError(null);
+    try {
+      const res = await fetch(`/api/systems/${systemId}/runs`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok || !body.data?.runId) throw new Error(body.message ?? body.error ?? "The run could not start.");
+      router.push(`/runs/${body.data.runId}`);
+    } catch (error) {
+      setRunError(error instanceof Error ? error.message : "The run could not start.");
+      setStarting(false);
+    }
+  }, [router, systemId]);
 
   const enqueue = useCallback((action: EditorGraphAction) => {
     const applied = localApply(nodes, pipes, action);
@@ -326,7 +334,13 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     [flowView.flowEdges, invalidPipeIds, nodeDefinitions, pipeSemantics, pipes, routeFocusMode, selectedEdgeIds, selectedNodeId, tracedEdgeIds]
   );
 
-  const saveState = deriveSaveState({ queueLength: queue.length, inFlight, failed });
+  const graphSaveState = deriveSaveState({ queueLength: queue.length, inFlight, failed });
+  // The pill covers both the graph queue and the design document.
+  const saveState = graphSaveState === "error" || design.status === "error" ? "error"
+    : graphSaveState !== "saved" ? graphSaveState
+    : design.status === "saving" ? "saving"
+    : design.status === "pending" ? "unsaved"
+    : "saved";
   const saveLabel = { saved: "Saved", saving: "Saving…", unsaved: "Unsaved changes", sync_delayed: "Sync delayed", error: "Couldn’t save, retrying" }[saveState];
 
   const undo = useCallback(() => {
@@ -392,7 +406,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
       const next = { ...mutate(current), updatedAt: Date.now() };
       return { ...prev, [nodeId]: next };
     });
-  }, [nodes]);
+  }, [nodes, setNodeDefinitions]);
 
   const updateDefinitionField = useCallback((contract: "input" | "output", fieldId: string, patch: Partial<FieldContract>) => {
     if (!selectedNode) return;
@@ -432,15 +446,15 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
     const id = `sub_${Math.random().toString(36).slice(2, 9)}`;
     const name = `Subsystem ${subsystems.length + 1}`;
     setSubsystems((prev) => [...prev, createSubsystemFromSelection({ id, name, nodeIds: selectedNodeIds })]);
-  }, [selectedNodeIds, subsystems.length]);
+  }, [selectedNodeIds, setSubsystems, subsystems.length]);
 
   const toggleSubsystemCollapse = useCallback((subsystemId: string, collapsed?: boolean) => {
     setSubsystems((prev) => prev.map((item) => item.id === subsystemId ? { ...item, collapsed: collapsed ?? !item.collapsed } : item));
-  }, []);
+  }, [setSubsystems]);
 
   const detachSubsystemCopy = useCallback((subsystemId: string) => {
     setSubsystems((prev) => prev.map((item) => item.id === subsystemId ? { ...item, reusableSourceId: undefined } : item));
-  }, []);
+  }, [setSubsystems]);
 
   const arrangeNodes = useCallback((mode: "selected" | "all") => {
     const targetIds = mode === "selected" && selectedNodeIds.length > 0 ? selectedNodeIds : nodes.map((node) => node.id);
@@ -570,9 +584,17 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
             </ul>
           ) : null}
           <span aria-live="polite"><StatusPill tone={saveTone}>{saveLabel}</StatusPill></span>
-          {saveState === "error" ? <Button size="xs" variant="ghost" onClick={() => setFailed(0)}>Retry save</Button> : null}
+          {saveState === "error" ? <Button size="xs" variant="ghost" onClick={() => { setFailed(0); design.retry(); }}>Retry save</Button> : null}
+          <nav aria-label="System" className="flex items-center gap-2">
+            <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/runs`}>Runs</Link></Button>
+            <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/triggers`}>Triggers</Link></Button>
+            <Button size="sm" variant="primary" loading={starting} onClick={startRun}>Run</Button>
+          </nav>
         </div>
       </header>
+      {runError ? (
+        <Banner role="critical" title="The run did not start" action={<Button size="xs" variant="ghost" onClick={() => setRunError(null)}>Dismiss</Button>}>{runError}</Banner>
+      ) : null}
 
       <div role="toolbar" aria-label="Editor actions" className="flex flex-wrap items-center gap-2 rounded-12 border border-border bg-raised px-3 py-2">
         <ToolButton label="Undo" shortcut={["⌘", "Z"]} onClick={undo} disabled={history.undo.length === 0}><Undo2 aria-hidden="true" /></ToolButton>
@@ -764,8 +786,8 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                         <span className="t-body-medium text-ink">{nodeTitle(selectedEdge.fromNodeId)} → {nodeTitle(selectedEdge.toNodeId)}</span>
                         <span className="t-mono-micro text-ink-3">{selectedEdge.id}</span>
                       </div>
-                      <Field label="Label" htmlFor="pipe-label">
-                        <Input id="pipe-label" value={pipeSemantics[selectedEdge.id]?.label ?? ""} onChange={(e) => patchSemantics(selectedEdge.id, { label: e.target.value })} placeholder="What travels along this pipe" />
+                      <Field label="Label" htmlFor="pipe-label" hint="Agents choose a route by its label, so name the outcome it stands for.">
+                        <Input id="pipe-label" value={pipeSemantics[selectedEdge.id]?.label ?? ""} onChange={(e) => patchSemantics(selectedEdge.id, { label: e.target.value })} placeholder="Approved" />
                       </Field>
                       <Field label="Condition" htmlFor="pipe-condition">
                         <Input id="pipe-condition" value={pipeSemantics[selectedEdge.id]?.conditionLabel ?? ""} onChange={(e) => patchSemantics(selectedEdge.id, { conditionLabel: e.target.value })} placeholder="score > 0.8" className="font-mono" />
@@ -813,6 +835,16 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
                             </Field>
                           </div>
                         </div>
+                      ) : null}
+                      {inspectorTab === "agent" ? (
+                        <AgentStepPanel
+                          nodeId={selectedNode.id}
+                          nodeType={selectedNode.type}
+                          spec={steps[selectedNode.id]}
+                          hasLoopRoute={pipes.some((pipe) => pipe.fromNodeId === selectedNode.id && pipeSemantics[pipe.id]?.routeKind === "loop")}
+                          connections={connections ?? { status: "loading", items: [] }}
+                          onChange={(patch) => updateStep(selectedNode.id, patch)}
+                        />
                       ) : null}
                       {(inspectorTab === "inputs" || inspectorTab === "outputs") && selectedDefinition ? (() => {
                         const contract = inspectorTab === "inputs" ? "input" : "output";
