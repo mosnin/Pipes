@@ -306,7 +306,8 @@ export function EditorCanvas({
             onConnect(connection.source, connection.target);
           }
         }}
-        onEdgeClick={(_, edge) => onDeleteEdge(edge.id)}
+        // A click selects the pipe so the inspector can edit its route; Delete or the toolbar removes it.
+        onEdgesDelete={(deleted) => deleted.forEach((edge) => onDeleteEdge(edge.id))}
         onEdgeDoubleClick={(event, edge) => onRequestInsert({ mode: "selectedEdge", edgeId: edge.id, at: { x: event.clientX, y: event.clientY } })}
         onNodeDoubleClick={(event, node) => onRequestInsert({ mode: "selectedNode", nodeId: node.id, at: { x: event.clientX, y: event.clientY } })}
         onNodesDelete={(deleted) => onDeleteNodes(deleted.map((n) => n.id))}
