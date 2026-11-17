@@ -6,6 +6,7 @@
  * decides where the run goes next. The agent does the work.
  */
 
+import type { DecisionSuggestion, StepDecide } from "@/domain/decisions/types";
 import type { Micros, StepRails, WorkflowRails } from "@/domain/rails/types";
 
 export type RouteKind = "default" | "success" | "failure" | "conditional" | "loop";
@@ -28,6 +29,8 @@ export type StepSpec = {
   approverRole?: "Owner" | "Admin" | "Editor";
   /** Limits on this step: timeout, allowed outcomes, output contract, cost. See docs/rails.md. */
   rails?: StepRails;
+  /** What Pipes may judge on this step with a decision model. See docs/decisions.md. */
+  decide?: StepDecide;
 };
 
 export type RouteSpec = { routeKind: RouteKind; label?: string; conditionLabel?: string; notes?: string };
@@ -69,6 +72,12 @@ export type StepRecord = {
   idempotencyKey?: string;
   /** Why the step ended, when it was not a normal completion. */
   endReason?: "timeout" | "deadline" | "canceled";
+  /** A route Pipes suggested for this step, for the performer to confirm. */
+  suggestion?: DecisionSuggestion;
+  /** Pipes chose this step's route itself (live decisions). */
+  decidedBy?: { receiptId: string; confidence: number };
+  /** Pipes' check of the output against doneWhen. Never blocks; it flags. */
+  check?: { receiptId: string; verdict: "met" | "not_met" | "unsure"; probability?: number; reason: string };
 };
 
 export type WorkflowRun = {
@@ -134,4 +143,6 @@ export type CurrentStep = {
   options: NextOption[];
   /** One-line guidance for the performer. */
   hint: string;
+  /** A route Pipes suggests for this step, when decisions are on and it has one. */
+  suggestion?: DecisionSuggestion;
 };

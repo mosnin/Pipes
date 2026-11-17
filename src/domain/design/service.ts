@@ -34,6 +34,17 @@ function cleanText(value: unknown, max = 4000): string | undefined {
   return text || undefined;
 }
 
+function sanitizeDecide(input: any): StepSpec["decide"] {
+  if (!input || typeof input !== "object") return undefined;
+  const value = {
+    route: input.route === true || undefined,
+    verifyDoneWhen: input.verifyDoneWhen === true || undefined,
+    deliberate: input.deliberate === true || undefined,
+    consequence: ["low", "medium", "high"].includes(input.consequence) ? input.consequence : undefined
+  };
+  return value.route || value.verifyDoneWhen ? value : undefined;
+}
+
 export function sanitizeStepSpec(input: any): StepSpec {
   const max = Number(input?.maxIterations);
   const role = input?.approverRole;
@@ -45,7 +56,8 @@ export function sanitizeStepSpec(input: any): StepSpec {
     maxIterations: Number.isFinite(max) && max >= 1 ? Math.min(Math.floor(max), 100) : undefined,
     exitCondition: cleanText(input?.exitCondition, 1000),
     approverRole: role === "Owner" || role === "Admin" || role === "Editor" ? role : undefined,
-    rails: sanitizeStepRails(input?.rails)
+    rails: sanitizeStepRails(input?.rails),
+    decide: sanitizeDecide(input?.decide)
   };
 }
 

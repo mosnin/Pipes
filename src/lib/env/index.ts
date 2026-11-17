@@ -27,7 +27,16 @@ const envSchema = z.object({
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
   PIPES_ADMIN_ALLOWLIST: optionalString,
-  PIPES_SESSION_SECRET: optionalString
+  PIPES_SESSION_SECRET: optionalString,
+  // Decision models through OpenRouter (docs/decisions.md).
+  OPENROUTER_API_KEY: optionalString,
+  OPENROUTER_BASE_URL: optionalUrl,
+  PIPES_DECISIONS: z.preprocess(emptyToUndefined, z.enum(["off", "shadow", "live"]).default("shadow")),
+  PIPES_DECIDER_FAST_MODELS: optionalString,
+  PIPES_DECIDER_DELIBERATE_MODELS: optionalString,
+  PIPES_DECIDER_FAST_TIMEOUT_MS: optionalString,
+  PIPES_DECIDER_DELIBERATE_TIMEOUT_MS: optionalString,
+  PIPES_DECIDER_MAX_COST_MICROS: optionalString
 });
 
 export function buildEnv(source: NodeJS.ProcessEnv) {
@@ -43,6 +52,7 @@ export const runtimeFlags = {
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
+  hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL)
 };
 

@@ -315,8 +315,9 @@ export function describeCurrentStep(run: WorkflowRun): CurrentStep {
     previousOutputs,
     input: run.input,
     options,
-    hint,
-    rails: railsFor(run, spec, current.id)
+    hint: run.steps[run.steps.length - 1]?.suggestion && run.status === "running" ? `${hint} Pipes suggests a route: ${run.steps[run.steps.length - 1].suggestion!.label}. Pass it as next if you agree.` : hint,
+    rails: railsFor(run, spec, current.id),
+    suggestion: run.status === "running" ? run.steps[run.steps.length - 1]?.suggestion : undefined
   };
 }
 

@@ -5,9 +5,19 @@ import type { RepositorySet } from "@/lib/repositories/contracts";
 export const USAGE_KIND = "usage_event";
 
 /** Everything Pipes meters. Each event is one unit unless `quantity` says otherwise. */
-export type UsageMetric = "run_started" | "step_completed" | "api_call" | "mcp_call" | "webhook_received";
+export type UsageMetric = "run_started" | "step_completed" | "api_call" | "mcp_call" | "webhook_received" | "decision_fast" | "decision_deliberate";
 
-export type UsageEvent = { metric: UsageMetric; quantity: number; at: string; month: string; systemId?: string; runId?: string; actorType?: string };
+export type UsageEvent = {
+  metric: UsageMetric;
+  quantity: number;
+  at: string;
+  month: string;
+  systemId?: string;
+  runId?: string;
+  actorType?: string;
+  /** What the event cost Pipes, in integer micro-dollars (decisions report model spend). */
+  costMicros?: number;
+};
 
 /** Included each month per plan; usage beyond it is billable (Pro, Builder) or blocked (Free). */
 export const MONTHLY_INCLUDED: Record<Plan, Record<"runs" | "steps" | "calls", number>> = {
@@ -23,7 +33,8 @@ export function monthKey(date = new Date()): string {
   return date.toISOString().slice(0, 7);
 }
 
-const METRIC_GROUP: Record<UsageMetric, "runs" | "steps" | "calls"> = {
+/** Billable groups. Decisions are metered on their own (count and model spend) and are not in a group. */
+const METRIC_GROUP: Partial<Record<UsageMetric, "runs" | "steps" | "calls">> = {
   run_started: "runs",
   step_completed: "steps",
   api_call: "calls",
@@ -40,6 +51,8 @@ export type UsageSummary = {
   overageCents: number;
   byMetric: Record<UsageMetric, number>;
   daily: Array<{ day: string; runs: number; steps: number; calls: number }>;
+  /** Decision model calls this month and what they cost, in micro-dollars. */
+  decisions: { fast: number; deliberate: number; costMicros: number };
 };
 
 /** Pluggable hook for a billing provider that charges metered usage. */
@@ -54,9 +67,9 @@ export function createUsageService(repos: RepositorySet, reporter?: UsageReporte
      * that can be retried (a run start, a step completion): the same id is
      * written once, so a retried request is never billed twice.
      */
-    async record(workspaceId: string, metric: UsageMetric, extra: { quantity?: number; systemId?: string; runId?: string; actorType?: string; id?: string } = {}) {
+    async record(workspaceId: string, metric: UsageMetric, extra: { quantity?: number; systemId?: string; runId?: string; actorType?: string; id?: string; costMicros?: number } = {}) {
       const at = new Date().toISOString();
-      const event: UsageEvent = { metric, quantity: extra.quantity ?? 1, at, month: monthKey(), systemId: extra.systemId, runId: extra.runId, actorType: extra.actorType };
+      const event: UsageEvent = { metric, quantity: extra.quantity ?? 1, at, month: monthKey(), systemId: extra.systemId, runId: extra.runId, actorType: extra.actorType, costMicros: extra.costMicros ? Math.round(extra.costMicros) : undefined };
       const id = extra.id ? `use_${extra.id}` : `use_${crypto.randomUUID()}`;
       if (extra.id && (await repos.documents.get(USAGE_KIND, id))) return;
       await repos.documents.put<UsageEvent>({ kind: USAGE_KIND, id, workspaceId, refId: `${workspaceId}:${event.month}`, data: event });
@@ -66,10 +79,17 @@ export function createUsageService(repos: RepositorySet, reporter?: UsageReporte
     async summary(workspaceId: string, plan: Plan, month = monthKey()): Promise<UsageSummary> {
       const docs = await repos.documents.list<UsageEvent>(USAGE_KIND, { refId: `${workspaceId}:${month}` });
       const totals = { runs: 0, steps: 0, calls: 0 };
-      const byMetric = { run_started: 0, step_completed: 0, api_call: 0, mcp_call: 0, webhook_received: 0 } as Record<UsageMetric, number>;
+      const byMetric = { run_started: 0, step_completed: 0, api_call: 0, mcp_call: 0, webhook_received: 0, decision_fast: 0, decision_deliberate: 0 } as Record<UsageMetric, number>;
       const days = new Map<string, { runs: number; steps: number; calls: number }>();
+      const decisions = { fast: 0, deliberate: 0, costMicros: 0 };
       for (const doc of docs) {
         const event = doc.data;
+        if (event.metric === "decision_fast" || event.metric === "decision_deliberate") {
+          byMetric[event.metric] += event.quantity;
+          decisions[event.metric === "decision_fast" ? "fast" : "deliberate"] += event.quantity;
+          decisions.costMicros += event.costMicros ?? 0;
+          continue;
+        }
         const group = METRIC_GROUP[event.metric];
         if (!group) continue;
         totals[group] += event.quantity;
@@ -87,7 +107,7 @@ export function createUsageService(repos: RepositorySet, reporter?: UsageReporte
       };
       const overageCents = plan === "Free" ? 0 : Math.round(overage.runs * OVERAGE_CENTS.runs + overage.steps * OVERAGE_CENTS.steps + overage.calls * OVERAGE_CENTS.calls);
       const daily = [...days.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, v]) => ({ day, ...v }));
-      return { month, plan, totals, included, overage, overageCents, byMetric, daily };
+      return { month, plan, totals, included, overage, overageCents, byMetric, daily, decisions };
     },
 
     /** Free workspaces stop at their included runs; paid plans run on and pay overage. */

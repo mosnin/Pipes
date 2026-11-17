@@ -3,6 +3,8 @@ import { createDesignService } from "@/domain/design/service";
 import { enforceStepBudget, expire, gateComplete, gateStart } from "@/domain/rails/gate";
 import { eventId, makeEvent, RUN_EVENT_KIND, type StartData } from "@/domain/rails/journal";
 import { createSwitchService } from "@/domain/rails/switches";
+import type { DecisionService } from "@/domain/decisions/service";
+import { doneWhenVerdict } from "@/domain/decisions/policy";
 import type { RunEvent } from "@/domain/rails/types";
 import { cancelRun, completeStep, decideApproval, describeCurrentStep, findStartNode, isTerminal, RunError, startRun } from "@/domain/runs/engine";
 import type { Actor, CurrentStep, WorkflowRun, WorkflowSnapshot } from "@/domain/runs/types";
@@ -53,7 +55,10 @@ function actorFor(ctx: AppContext, label?: string): Actor {
 
 const ROLE_RANK: Record<string, number> = { Viewer: 0, Commenter: 1, Editor: 2, Admin: 3, Owner: 4 };
 
-export function createRunService(repos: RepositorySet, options: { reporter?: UsageReporter; onEvent?: RunEventListener } = {}) {
+const DECIDER: Actor = { type: "trigger", id: "decider", label: "Pipes decision" };
+
+export function createRunService(repos: RepositorySet, options: { reporter?: UsageReporter; onEvent?: RunEventListener; decisions?: DecisionService } = {}) {
+  const decisions = options.decisions;
   const design = createDesignService(repos);
   const usage = createUsageService(repos, options.reporter);
   const emit = async (type: Parameters<RunEventListener>[0]["type"], run: WorkflowRun) => {
@@ -125,6 +130,50 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
       if (after.status === "canceled") await emit("run.canceled", after);
     }
   }
+  /**
+   * After a run enters a step whose designer let Pipes choose the route: ask
+   * the decision engine. Live and sure: Pipes completes the step down that
+   * route itself (and may chain into another decision step). Otherwise it
+   * leaves a suggestion on the step for the performer. Never throws: a failed
+   * decision leaves the run exactly as it was.
+   */
+  async function applyDecisions(ctx: AppContext, run: WorkflowRun): Promise<WorkflowRun> {
+    if (!decisions?.enabled) return run;
+    let current = run;
+    for (let hop = 0; hop < 5; hop++) {
+      if (current.status !== "running" || !current.currentNodeId || !current.snapshot.steps[current.currentNodeId]?.decide?.route) return current;
+      const receipt = await decisions.routeStep(current).catch(() => null);
+      if (!receipt || receipt.action === "fallback" || receipt.action === "human" || !receipt.choice) return current;
+      const at = new Date().toISOString();
+      if (receipt.action === "auto") {
+        let after: WorkflowRun;
+        try {
+          after = completeStep(current, { nodeId: current.currentNodeId, outcome: "success", next: receipt.choice, performedBy: DECIDER, at, notes: receipt.reason });
+        } catch {
+          return current;
+        }
+        const idx = current.steps.length - 1;
+        after = { ...after, steps: after.steps.map((s, i) => (i === idx ? { ...s, decidedBy: { receiptId: receipt.id, confidence: receipt.confidence ?? 0 } } : s)) };
+        after = enforceStepBudget(after, at);
+        const saved = await commitRun(current, after, [{ type: "step.completed", at, actor: DECIDER, data: { nodeId: current.currentNodeId, outcome: "success", next: receipt.choice, notes: receipt.reason, decision: receipt.id } }]);
+        if (!saved) return read(ctx, current.id);
+        await usage.record(ctx.workspaceId, "step_completed", { systemId: saved.systemId, runId: saved.id, actorType: "pipes", id: `step_${saved.id}_${saved.rev}` });
+        await audit(ctx, "run.step.decided", saved, "success", { nodeId: current.currentNodeId, receiptId: receipt.id });
+        await emit("step.completed", saved);
+        await afterTransition(ctx, current, saved);
+        current = saved;
+        continue;
+      }
+      // Suggest: attach to the open step. Not an engine transition, so no journal event.
+      const label = current.snapshot.routes[receipt.choice]?.label ?? receipt.options.find((o) => o.id === receipt.choice)?.label ?? receipt.choice;
+      const idx = current.steps.length - 1;
+      const withSuggestion: WorkflowRun = { ...current, steps: current.steps.map((s, i) => (i === idx ? { ...s, suggestion: { receiptId: receipt.id, pipeId: receipt.choice, label, confidence: receipt.confidence ?? 0, reason: receipt.reason } } : s)) };
+      const saved = await commitRun(current, withSuggestion, []);
+      return saved ?? read(ctx, current.id);
+    }
+    return current;
+  }
+
 
   return {
     design,
@@ -204,7 +253,7 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
       await audit(ctx, "run.start", saved, "success", { trigger: input.trigger });
       await emit("run.started", saved);
       if (saved.status === "waiting_approval") await emit("approval.requested", saved);
-      return saved;
+      return applyDecisions(ctx, saved);
     },
 
     get: (ctx: Pick<AppContext, "workspaceId">, runId: string) => load(ctx, runId),
@@ -228,7 +277,26 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
         const at = new Date().toISOString();
         const performedBy = actorFor(ctx, input.actorLabel);
         const payload = { ...input, outcome: gate.value.outcome, performedBy, at, idempotencyKey: key };
-        let after = completeStep(before, payload);
+        let after: WorkflowRun;
+        try {
+          after = completeStep(before, payload);
+        } catch (error) {
+          // The performer's outcome names no route Pipes can pick: ask the decision engine what it meant.
+          if (!(error instanceof RunError) || error.code !== "choose_route" || !decisions?.enabled || !payload.outcome) throw error;
+          const mapped = await decisions.mapOutcome(before, payload.outcome).catch(() => null);
+          if (mapped?.action === "auto" && mapped.choice) {
+            after = completeStep(before, { ...payload, next: mapped.choice });
+          } else if (mapped?.choice) {
+            const label = before.snapshot.routes[mapped.choice]?.label ?? mapped.choice;
+            throw new RunError("choose_route", `${error.message} Pipes thinks you meant "${label}" (pass next: "${mapped.choice}").`);
+          } else throw error;
+        }
+        // A check of the output against doneWhen, when the step asks for one. It flags, it never blocks.
+        const check = decisions?.enabled ? await decisions.checkDoneWhen(before, { output: input.output, notes: input.notes }).catch(() => null) : null;
+        if (check) {
+          const idx = before.steps.length - 1;
+          after = { ...after, steps: after.steps.map((s, i) => (i === idx ? { ...s, check: { receiptId: check.id, verdict: doneWhenVerdict(check.probability), probability: check.probability, reason: check.reason } } : s)) };
+        }
         const events: Array<Omit<RunEvent, "seq" | "runId">> = [
           { type: "step.completed", at, actor: performedBy, idempotencyKey: key, data: { nodeId: before.currentNodeId, outcome: gate.value.outcome, output: input.output, notes: input.notes, next: input.next, costMicros: input.costMicros } }
         ];
@@ -243,7 +311,11 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
         await audit(ctx, "run.step.complete", saved, "success", { nodeId: before.currentNodeId, outcome: gate.value.outcome ?? "success" });
         await emit("step.completed", saved);
         await afterTransition(ctx, before, saved);
-        return saved;
+        // Label a suggestion with the route actually taken, so its accuracy can be measured.
+        const suggestion = before.steps[before.steps.length - 1]?.suggestion;
+        const taken = saved.steps[before.steps.length - 1]?.pipeId;
+        if (decisions && suggestion && taken) await decisions.label(suggestion.receiptId, taken, ctx.actorId).catch(() => undefined);
+        return applyDecisions(ctx, saved);
       }
       throw new RunError("conflict", "This run changed while your step was being saved. Get the current step and try again.");
     },
@@ -262,7 +334,12 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
         if (!saved) continue;
         await audit(ctx, `run.approval.${input.decision}`, saved, "success", { nodeId: before.currentNodeId });
         await afterTransition(ctx, before, saved);
-        return saved;
+        if (decisions) {
+          const triage = (await decisions.list(ctx.workspaceId, { runId: before.id }).catch(() => [])).find((r) => r.kind === "approval_triage" && r.nodeId === before.currentNodeId && !r.label);
+          const value = input.decision === "approved" ? "approve" : input.decision === "rejected" ? "reject" : "send_back";
+          if (triage) await decisions.label(triage.id, value, ctx.actorId).catch(() => undefined);
+        }
+        return applyDecisions(ctx, saved);
       }
       throw new RunError("conflict", "This approval changed while it was being saved. Reload and try again.");
     },

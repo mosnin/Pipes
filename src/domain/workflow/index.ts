@@ -1,4 +1,5 @@
 import { createConnectionService } from "@/domain/connections/service";
+import { createDecisionService } from "@/domain/decisions/service";
 import { createDesignService } from "@/domain/design/service";
 import { createRunService } from "@/domain/runs/service";
 import type { CurrentStep } from "@/domain/runs/types";
@@ -12,7 +13,8 @@ import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
  */
 export function createWorkflowServices(repos: RepositorySet) {
   const triggers = createTriggerService(repos);
-  const runs = createRunService(repos, { onEvent: ({ type, run }) => triggers.deliver(type, run) });
+  const decisions = createDecisionService(repos);
+  const runs = createRunService(repos, { onEvent: ({ type, run }) => triggers.deliver(type, run), decisions });
   const connections = createConnectionService(repos);
 
   return {
@@ -20,6 +22,7 @@ export function createWorkflowServices(repos: RepositorySet) {
     usage: createUsageService(repos),
     triggers,
     runs,
+    decisions,
     connections,
 
     /** The current step with its connections resolved, ready to hand to a performer. */
