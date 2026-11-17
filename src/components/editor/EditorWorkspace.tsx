@@ -1246,12 +1246,18 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
   const [missing, setMissing] = useState(false);
   const loadedRef = useRef(false);
+  // The last payload as text: an idle poll returns the same workflow, and
+  // keeping the old object spares the whole editor a re-render every 1.5s.
+  const lastBodyRef = useRef<string | null>(null);
   const load = useCallback(async () => {
     try {
       const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
       const systemData = await systemRes.json().catch(() => ({ ok: false }));
       if (systemRes.ok && systemData.ok) {
         loadedRef.current = true;
+        const body = JSON.stringify(systemData.data);
+        if (body === lastBodyRef.current) return;
+        lastBodyRef.current = body;
         setData(systemData.data);
         return;
       }
@@ -1265,7 +1271,10 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
   useEffect(() => {
     if (missing) return;
     void load();
-    const interval = setInterval(load, 1500);
+    // A hidden tab skips its polls; the next visible tick catches up.
+    const interval = setInterval(() => {
+      if (document.visibilityState !== "hidden") void load();
+    }, 1500);
     return () => clearInterval(interval);
   }, [load, missing]);
 
