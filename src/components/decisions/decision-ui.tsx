@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { StatusPill } from "@/components/ledger/status";
 import { Sparkles } from "@/components/ui/icon";
 import type { StepRecord } from "@/domain/runs/types";
+import type { DecisionSuggestion } from "@/domain/decisions/types";
 
 const pct = (n?: number) => (n === undefined ? "" : `${Math.round(n * 100)}%`);
 
@@ -51,7 +52,20 @@ export function DecisionNotes({ step }: { step: StepRecord }): ReactNode {
   );
 }
 
-type Triage = { choice?: string; confidence?: number; risk?: number; complete?: number; reason: string; action: string } | null;
+/** Pipes' suggested route on the step being performed. The suggested route becomes the primary button. */
+export function RouteSuggestion({ suggestion }: { suggestion: DecisionSuggestion }): ReactNode {
+  return (
+    <p className="flex items-start gap-2 rounded-lg bg-agent/10 px-3 py-2 text-[13px] text-foreground">
+      <Sparkles aria-hidden className="mt-[3px] size-3.5 shrink-0 text-agent" />
+      <span>
+        Pipes suggests <span className="font-medium">{suggestion.label}</span> <span className="tabular text-muted-foreground">({pct(suggestion.confidence)})</span>
+        <span className="text-muted-foreground">. {suggestion.reason}</span>
+      </span>
+    </p>
+  );
+}
+
+type Triage ={ choice?: string; confidence?: number; risk?: number; complete?: number; reason: string; action: string } | null;
 
 const RISK = ["None", "Low", "Medium", "High"];
 const DECISION_LABEL: Record<string, string> = { approve: "Approve", reject: "Reject", send_back: "Send back" };

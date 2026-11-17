@@ -59,6 +59,8 @@ export type DecisionReceipt = {
   confidence?: number;
   /** For yes/no checks: the probability it holds. */
   probability?: number;
+  /** Approval triage only: how risky approving looks, 0 (none) to 3 (high). */
+  risk?: number;
   reason: string;
   rationale?: string;
   /** What a person or performer actually did afterwards, for calibration. */

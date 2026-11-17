@@ -39,7 +39,7 @@ export function routePolicy(answers: Record<string, Answer>, input: { mode: Deci
   if (evidence !== undefined && evidence < THRESHOLDS.noFit) return { ...base, action: "human", reason: "The step does not have the information needed to choose." };
   const sure = route.confidence >= THRESHOLDS.auto[input.consequence] && (fits ?? 1) >= THRESHOLDS.fits && (evidence ?? 1) >= THRESHOLDS.evidence;
   if (sure && input.mode === "live") return { ...base, action: "auto", reason: `Confident (${Math.round(route.confidence * 100)}%) and the route fits.` };
-  if (route.confidence >= THRESHOLDS.suggest) return { ...base, action: "suggest", reason: sure ? "Confident, but decisions are in shadow mode." : `Leaning this way (${Math.round(route.confidence * 100)}%), not sure enough to act.` };
+  if (route.confidence >= THRESHOLDS.suggest) return { ...base, action: "suggest", reason: sure ? "Confident, but decisions are in shadow mode." : route.confidence >= THRESHOLDS.auto[input.consequence] ? "Leaning this way, but unsure the route fits or that there is enough to go on." : "Leaning this way, not sure enough to act." };
   return { ...base, action: "human", reason: "Too unsure to suggest a route." };
 }
 

@@ -42,7 +42,7 @@ import { HoldConfirm } from "@/components/micro/hold-confirm";
 import { MorphArrow } from "@/components/micro/morph-arrow";
 import { Avatar } from "@/components/ledger/author-stamp";
 import { RunJournal } from "@/components/runs/run-journal";
-import { DecisionNotes, TriageSuggestion } from "@/components/decisions/decision-ui";
+import { DecisionNotes, RouteSuggestion, TriageSuggestion } from "@/components/decisions/decision-ui";
 
 type Current = CurrentStep & { connections: ConnectionView[] };
 type Detail = { run: WorkflowRun; current: Current };
@@ -340,6 +340,7 @@ function CurrentStepPanel({
   const step = current.step;
   if (!step) return null;
   const options = current.options;
+  const suggested = current.suggestion ? options.find((o) => o.pipeId === current.suggestion?.pipeId) : undefined;
   const record = run.steps[run.steps.length - 1];
 
   const submit = (outcome: string, next?: string) =>
@@ -393,12 +394,13 @@ function CurrentStepPanel({
               ) : (
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <p className="t-caption-strong text-ink-2">Choose where the run goes next</p>
+                  {suggested ? <RouteSuggestion suggestion={current.suggestion!} /> : null}
                   <div className="flex flex-wrap gap-1.5">
                     {options.map((option, index) => (
                       <Button
                         key={option.pipeId}
                         type="button"
-                        variant={index === 0 ? "primary" : "secondary"}
+                        variant={(suggested ? option.pipeId === suggested.pipeId : index === 0) ? "primary" : "secondary"}
                         size="md"
                         disabled={busy}
                         className="max-w-full"

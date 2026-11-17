@@ -33,6 +33,8 @@ export function defaultClients(): DecisionClients | null {
 /** Step types whose job is choosing a route. */
 export const DECISION_NODE_TYPES = new Set(["Decision", "Router", "Condition", "Switch", "Branch"]);
 
+const triageInFlight = new Map<string, Promise<(DecisionReceipt & { risk?: number; complete?: number }) | null>>();
+
 export function createDecisionService(repos: RepositorySet, options: { clients?: DecisionClients | null; mode?: DecisionMode } = {}) {
   const clients = options.clients === undefined ? defaultClients() : options.clients;
   const mode: DecisionMode = clients ? options.mode ?? deciderConfig().mode : "off";
@@ -114,6 +116,34 @@ export function createDecisionService(repos: RepositorySet, options: { clients?:
     }
   }
 
+  async function triageOnce(run: WorkflowRun): Promise<(DecisionReceipt & { risk?: number; complete?: number }) | null> {
+      const nodeId = run.currentNodeId;
+      if (mode === "off" || !nodeId || run.status !== "waiting_approval") return null;
+      const existing = (await repos.documents.list<DecisionReceipt>(RECEIPT_KIND, { refId: run.id })).map((d) => d.data).find((r) => r.kind === "approval_triage" && r.nodeId === nodeId && (r.state as { rev?: number })?.rev === (run.rev ?? 0));
+      if (existing) return { ...existing, complete: existing.probability };
+      const canSendBack = run.steps.some((s) => s.completedAt && s.nodeId !== nodeId);
+      const state = { ...runState(run, nodeId), rev: run.rev ?? 0 };
+      const fast = await askFast(run, state, triageQuestions(canSendBack));
+      const decision = fast.result ? asChoice(fast.result.answers.decision) : undefined;
+      const riskAnswer = fast.result?.answers.risk;
+      const risk = riskAnswer?.type === "score" ? riskAnswer.score : undefined;
+      const complete = fast.result ? asNoul(fast.result.answers.complete) : undefined;
+      const options = [{ id: "approve", label: "Approve" }, { id: "reject", label: "Reject" }, ...(canSendBack ? [{ id: "send_back", label: "Send back" }] : [])];
+      const sure = decision && decision.confidence >= THRESHOLDS.suggest;
+      const receipt = await save({
+        ...base(run, "approval_triage", CONTRACTS.approvalTriage, nodeId, state, options),
+        tiers: [fast.tier],
+        action: !fast.result ? "fallback" : sure ? "suggest" : "human",
+        choice: decision?.choice,
+        confidence: decision?.confidence,
+        probability: complete,
+        risk,
+        reason: !fast.result ? "The decision model did not answer." : sure ? "A suggestion only. You decide." : "Pipes is not sure either way.",
+        costMicros: fast.tier.costMicros
+      });
+      return { ...receipt, risk, complete };
+  }
+
   return {
     mode,
     enabled: mode !== "off",
@@ -173,30 +203,13 @@ export function createDecisionService(repos: RepositorySet, options: { clients?:
      * are always decided by a person.
      */
     async triageApproval(run: WorkflowRun): Promise<(DecisionReceipt & { risk?: number; complete?: number }) | null> {
-      const nodeId = run.currentNodeId;
-      if (mode === "off" || !nodeId || run.status !== "waiting_approval") return null;
-      const existing = (await repos.documents.list<DecisionReceipt>(RECEIPT_KIND, { refId: run.id })).map((d) => d.data).find((r) => r.kind === "approval_triage" && r.nodeId === nodeId && (r.state as { rev?: number })?.rev === (run.rev ?? 0));
-      if (existing) return existing as DecisionReceipt & { risk?: number; complete?: number };
-      const canSendBack = run.steps.some((s) => s.completedAt && s.nodeId !== nodeId);
-      const state = { ...runState(run, nodeId), rev: run.rev ?? 0 };
-      const fast = await askFast(run, state, triageQuestions(canSendBack));
-      const decision = fast.result ? asChoice(fast.result.answers.decision) : undefined;
-      const riskAnswer = fast.result?.answers.risk;
-      const risk = riskAnswer?.type === "score" ? riskAnswer.score : undefined;
-      const complete = fast.result ? asNoul(fast.result.answers.complete) : undefined;
-      const options = [{ id: "approve", label: "Approve" }, { id: "reject", label: "Reject" }, ...(canSendBack ? [{ id: "send_back", label: "Send back" }] : [])];
-      const sure = decision && decision.confidence >= THRESHOLDS.suggest;
-      const receipt = await save({
-        ...base(run, "approval_triage", CONTRACTS.approvalTriage, nodeId, state, options),
-        tiers: [fast.tier],
-        action: !fast.result ? "fallback" : sure ? "suggest" : "human",
-        choice: decision?.choice,
-        confidence: decision?.confidence,
-        probability: complete,
-        reason: !fast.result ? "The decision model did not answer." : sure ? "A suggestion only. You decide." : "Pipes is not sure either way.",
-        costMicros: fast.tier.costMicros
-      });
-      return { ...receipt, risk, complete };
+      // Two page loads at once must not ask the model twice for the same approval.
+      const key = `${run.id}:${run.rev ?? 0}`;
+      const pending = triageInFlight.get(key);
+      if (pending) return pending;
+      const task = triageOnce(run).finally(() => triageInFlight.delete(key));
+      triageInFlight.set(key, task);
+      return task;
     },
 
     /** Record what actually happened after a decision, so its accuracy can be measured. */
