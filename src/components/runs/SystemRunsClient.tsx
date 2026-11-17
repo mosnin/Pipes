@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import useSWR from "swr";
 import { CellStack, DataTable, TBody, TD, TH, THead, TR, Table } from "@/components/data/table";
 import { PageShell } from "@/components/layouts/archetypes";
 import { Banner } from "@/components/ui/banner";
@@ -13,6 +14,7 @@ import { PageHeader, SectionHeading } from "@/components/ui/page-header";
 import type { WorkflowRun } from "@/domain/runs/types";
 import { RunsTable } from "@/components/runs/runs-table";
 import { callApi, formatDuration, isActive, ts, type RunSummary } from "@/components/runs/run-format";
+import type { ApiError } from "@/lib/swr";
 
 const POLL_MS = 5000;
 const UNVERSIONED = "Unversioned draft";
@@ -75,29 +77,19 @@ function resultsByVersion(rows: RunSummary[], lastStepTitle: Record<string, stri
 
 export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode {
   const router = useRouter();
-  const [rows, setRows] = useState<RunSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [systemName, setSystemName] = useState<string | null>(null);
+  const { data, error: loadError } = useSWR<RunSummary[], ApiError>(`/api/systems/${systemId}/runs`, {
+    // Poll only while a run can still change.
+    refreshInterval: (latest) => (latest?.some((row) => isActive(row.status)) ? POLL_MS : 0)
+  });
+  const rows = useMemo(() => data ?? [], [data]);
+  const loading = data === undefined && !loadError;
+  const [startError, setStartError] = useState<string | null>(null);
+  const error = loadError?.message ?? startError;
+  const [namedSystem, setSystemName] = useState<string | null>(null);
+  const systemName = rows[0]?.systemName ?? namedSystem;
   const [starting, setStarting] = useState(false);
   const [lastStepTitle, setLastStepTitle] = useState<Record<string, string>>({});
   const fetched = useRef(new Set<string>());
-
-  const load = useCallback(async () => {
-    const result = await callApi<RunSummary[]>(`/api/systems/${systemId}/runs`);
-    if (result.ok) {
-      setRows(result.data);
-      setError(null);
-      if (result.data[0]) setSystemName(result.data[0].systemName);
-    } else {
-      setError(result.message);
-    }
-    setLoading(false);
-  }, [systemId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   // The workflow's name for a history with no runs in it yet.
   useEffect(() => {
@@ -106,13 +98,6 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
       if (result.ok && result.data.system?.name) setSystemName(result.data.system.name);
     });
   }, [loading, rows.length, systemId, systemName]);
-
-  const anyLive = rows.some((row) => isActive(row.status));
-  useEffect(() => {
-    if (!anyLive) return;
-    const timer = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(timer);
-  }, [anyLive, load]);
 
   // A finished run's summary no longer names its last step, so failed runs are
   // read once each to find where they stopped. Capped: the table is a trend,
@@ -143,7 +128,7 @@ export function SystemRunsClient({ systemId }: { systemId: string }): ReactNode 
       router.push(`/runs/${result.data.runId}`);
       return;
     }
-    setError(result.message);
+    setStartError(result.message);
     setStarting(false);
   };
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import useSWR from "swr";
 import { PageShell } from "@/components/layouts/archetypes";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,9 @@ import { Activity } from "@/components/ui/icon";
 import { PageHeader, Toolbar } from "@/components/ui/page-header";
 import { GooeyNav } from "@/components/rare/gooey-nav";
 import { RunsTable } from "@/components/runs/runs-table";
-import { callApi, isActive, type RunSummary } from "@/components/runs/run-format";
+import { isActive, type RunSummary } from "@/components/runs/run-format";
 import { useIntro } from "@/lib/onboarding";
+import type { ApiError } from "@/lib/swr";
 
 type Filter = "all" | "running" | "waiting_approval" | "completed" | "failed";
 
@@ -35,34 +37,13 @@ const POLL_MS = 5000;
 export function RunsIndexClient(): ReactNode {
   useIntro("runs");
   const [filter, setFilter] = useState<Filter>("all");
-  const [rows, setRows] = useState<RunSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async (which: Filter) => {
-    const result = await callApi<RunSummary[]>(which === "all" ? "/api/runs" : `/api/runs?status=${which}`);
-    if (result.ok) {
-      setRows(result.data);
-      setError(null);
-    } else {
-      setError(result.message);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    setRows([]);
-    void load(filter);
-  }, [filter, load]);
-
-  // Keep live runs moving without a reload: poll only while something can still change.
-  const anyLive = rows.some((row) => isActive(row.status));
-  useEffect(() => {
-    if (!anyLive) return;
-    const timer = setInterval(() => void load(filter), POLL_MS);
-    return () => clearInterval(timer);
-  }, [anyLive, filter, load]);
+  const { data, error: loadError } = useSWR<RunSummary[], ApiError>(filter === "all" ? "/api/runs" : `/api/runs?status=${filter}`, {
+    // Keep live runs moving without a reload: poll only while something can still change.
+    refreshInterval: (latest) => (latest?.some((row) => isActive(row.status)) ? POLL_MS : 0)
+  });
+  const rows = data ?? [];
+  const loading = data === undefined && !loadError;
+  const error = loadError?.message ?? null;
 
   return (
     <PageShell measure="page">

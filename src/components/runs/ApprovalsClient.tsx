@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import useSWR from "swr";
 import { PageShell } from "@/components/layouts/archetypes";
 import { RelativeTime } from "@/components/ledger/relative-time";
 import { Banner } from "@/components/ui/banner";
@@ -13,10 +14,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { WorkflowRun } from "@/domain/runs/types";
 import { actorName, callApi, ts, type RunSummary } from "@/components/runs/run-format";
 import { useIntro } from "@/lib/onboarding";
+import { fetcher, type ApiError } from "@/lib/swr";
 
 type Waiting = RunSummary & { waitingSince?: string; approverRole?: string };
 
 const POLL_MS = 10000;
+
+/** Waiting runs, each with the moment it reached its approval, longest wait first. */
+async function loadWaiting(): Promise<Waiting[]> {
+  const summaries = await fetcher<RunSummary[]>("/api/runs?status=waiting_approval");
+  const detailed = await Promise.all(
+    summaries.map(async (summary): Promise<Waiting> => {
+      const detail = await callApi<{ run: WorkflowRun }>(`/api/runs/${summary.id}`);
+      if (!detail.ok) return summary;
+      const run = detail.data.run;
+      const current = run.steps[run.steps.length - 1];
+      return { ...summary, waitingSince: current?.startedAt, approverRole: run.currentNodeId ? run.snapshot.steps[run.currentNodeId]?.approverRole : undefined };
+    })
+  );
+  detailed.sort((a, b) => (ts(a.waitingSince ?? a.startedAt) ?? 0) - (ts(b.waitingSince ?? b.startedAt) ?? 0));
+  return detailed;
+}
 
 /**
  * The approval inbox. A run's summary does not say when its current step
@@ -25,35 +43,9 @@ const POLL_MS = 10000;
  */
 export function ApprovalsClient(): ReactNode {
   useIntro("approvals");
-  const [rows, setRows] = useState<Waiting[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const result = await callApi<RunSummary[]>("/api/runs?status=waiting_approval");
-    if (!result.ok) {
-      setError(result.message);
-      setRows((current) => current ?? []);
-      return;
-    }
-    const detailed = await Promise.all(
-      result.data.map(async (summary): Promise<Waiting> => {
-        const detail = await callApi<{ run: WorkflowRun }>(`/api/runs/${summary.id}`);
-        if (!detail.ok) return summary;
-        const run = detail.data.run;
-        const current = run.steps[run.steps.length - 1];
-        return { ...summary, waitingSince: current?.startedAt, approverRole: run.currentNodeId ? run.snapshot.steps[run.currentNodeId]?.approverRole : undefined };
-      })
-    );
-    detailed.sort((a, b) => (ts(a.waitingSince ?? a.startedAt) ?? 0) - (ts(b.waitingSince ?? b.startedAt) ?? 0));
-    setRows(detailed);
-    setError(null);
-  }, []);
-
-  useEffect(() => {
-    void load();
-    const timer = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(timer);
-  }, [load]);
+  const { data, error: loadError } = useSWR<Waiting[], ApiError>("approvals:waiting", loadWaiting, { refreshInterval: POLL_MS });
+  const rows = data ?? (loadError ? [] : null);
+  const error = loadError?.message ?? null;
 
   return (
     <PageShell measure="page">

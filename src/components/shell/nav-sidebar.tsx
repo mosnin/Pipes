@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
+import useSWR from "swr";
 import { HookList } from "@/components/rare/hook-sidebar";
 import { GetStartedRow } from "@/components/shell/intro";
 import { Avatar } from "@/components/ledger/author-stamp";
@@ -74,28 +75,8 @@ const APPROVALS_POLL_MS = 30_000;
  * rather than flashing to zero.
  */
 function useApprovalsCount(): number {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let live = true;
-    const read = () => {
-      if (document.visibilityState === "hidden") return;
-      fetch("/api/runs?status=waiting_approval")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (live && json?.ok && Array.isArray(json.data)) setCount(json.data.length);
-        })
-        .catch(() => undefined);
-    };
-    read();
-    const timer = window.setInterval(read, APPROVALS_POLL_MS);
-    document.addEventListener("visibilitychange", read);
-    return () => {
-      live = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", read);
-    };
-  }, []);
-  return count;
+  const { data } = useSWR<unknown[]>("/api/runs?status=waiting_approval", { refreshInterval: APPROVALS_POLL_MS });
+  return Array.isArray(data) ? data.length : 0;
 }
 
 function NavRow({ item, pathname, count }: { item: NavItem; pathname: string; count?: number }): ReactNode {
