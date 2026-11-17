@@ -3,7 +3,7 @@ import { canComment, canEditSystem, canManageMembers, canViewSystem } from "@/do
 import { PipesSchemaV1, type Role } from "@/domain/pipes_schema_v1/schema";
 import { serializePipesSchema } from "@/domain/pipes_schema_v1/serde";
 import { getEntitlements } from "@/domain/templates/plans";
-import type { AppContext, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import type { AppContext, AuditFilter, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
 import { getBillingService } from "@/lib/billing";
 import { env, resolveRuntimeMode } from "@/lib/env";
 import { getEmailService } from "@/lib/email";
@@ -283,6 +283,10 @@ export class ProtocolService {
   async listAudits(ctx: AppContext, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }) {
     this.access.ensureCanManageMembers(ctx);
     return this.repos.audits.list(ctx.workspaceId, filter);
+  }
+  async listAuditsPage(ctx: AppContext, filter?: AuditFilter & { cursor?: string | null }) {
+    this.access.ensureCanManageMembers(ctx);
+    return this.repos.audits.page(ctx.workspaceId, filter);
   }
   async writeAudit(ctx: AppContext, input: { action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; systemId?: string; metadata?: string }) {
     await this.repos.audits.add({

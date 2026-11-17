@@ -307,9 +307,37 @@ export const addAuditEvent = mutation({
   }
 });
 
+/**
+ * One page of a workspace's audit events, newest first. Filters run inside
+ * the query so a page holds matching rows; `continueCursor` is null on the
+ * last page. Transport lives in the metadata JSON and is filtered by the caller.
+ */
 export const listAuditEvents = query({
-  args: { workspaceId: v.id("workspaces") },
-  handler: async (ctx, args) => ctx.db.query("audit_events").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect()
+  args: {
+    workspaceId: v.id("workspaces"),
+    actorType: v.optional(v.string()),
+    actorId: v.optional(v.string()),
+    actionPrefix: v.optional(v.string()),
+    systemId: v.optional(v.string()),
+    outcome: v.optional(v.string()),
+    since: v.optional(v.string()),
+    until: v.optional(v.string()),
+    numItems: v.optional(v.number()),
+    cursor: v.optional(v.union(v.string(), v.null()))
+  },
+  handler: async (ctx, args) => {
+    const numItems = Math.min(Math.max(Math.floor(args.numItems ?? 100), 1), 500);
+    let q = ctx.db.query("audit_events").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).order("desc");
+    if (args.actorType) q = q.filter((f) => f.eq(f.field("actorType"), args.actorType));
+    if (args.actorId) q = q.filter((f) => f.eq(f.field("actorId"), args.actorId));
+    if (args.actionPrefix) q = q.filter((f) => f.and(f.gte(f.field("action"), args.actionPrefix), f.lt(f.field("action"), `${args.actionPrefix}￿`)));
+    if (args.systemId) q = q.filter((f) => f.eq(f.field("systemId"), args.systemId));
+    if (args.outcome) q = q.filter((f) => f.eq(f.field("outcome"), args.outcome));
+    if (args.since) q = q.filter((f) => f.gte(f.field("createdAt"), args.since));
+    if (args.until) q = q.filter((f) => f.lte(f.field("createdAt"), args.until));
+    const result = await q.paginate({ numItems, cursor: args.cursor ?? null });
+    return { page: result.page, continueCursor: result.isDone ? null : result.continueCursor };
+  }
 });
 
 export const getIdempotencyKey = query({
