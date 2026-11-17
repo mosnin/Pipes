@@ -1,9 +1,13 @@
 # DESIGN.md
 
-How Pipes looks, moves and feels. Pipes uses the **Podium design system**:
-the same tokens, type, corners, primitives, chassis and motion as the Podium
-app (`mosnin/podium`, `apps/web`). When Podium's system changes, port the change
-here rather than letting the two drift.
+How Pipes looks, moves and feels. Pipes is built on the **Podium design
+system**: the same tokens, type, corners, primitives, chassis and motion as the
+Podium app (`mosnin/podium`, `apps/web`). When Podium's primitives change, port
+the change here rather than letting the two drift.
+
+Pipes is its own product on those primitives. Its decorative layer is its own:
+the "shift" block shader, block tiles, two shape stickers and its own sweep
+palette, never Podium's gradient light, glass icons, mascots or glyph field.
 
 The code is the source of truth. Tokens live in `src/app/globals.css`,
 primitives in `src/components/ui/*`, `src/components/data/*` and
@@ -21,10 +25,10 @@ where something is alive or needs you:
 - agent origin (violet, `agent`), sparingly
 - links, focus and selection (the one blue, `accent`)
 - empty states (sky blue isometric figures, `sky`)
-- a first visit or a finished milestone (shader light)
+- a first visit or a finished milestone (the block shader)
 - finishing Get started, or opening a workflow you just made (a glimm sweep)
 - an agent is present: every agent owns a colour field
-- the day itself: Workflows greets you on light that follows the time of day
+- the day itself: Workflows greets you on blocks whose palette follows the time of day
 
 Chrome, text, controls and people stay neutral. Colour belongs to agents, live
 moments and places where work begins; that restraint is what makes them land.
@@ -173,42 +177,55 @@ Use `tabular` for anything that counts or updates.
 
 ## Shaders
 
-`ui/shader.tsx` renders the banners: plain WebGL1, a domain-warped field of
-three drifting lights over a base wash, plus a fine woven texture and film
-grain, so it reads as printed light rather than a CSS gradient. Palettes:
-`sky`, `sunrise`, `bloom`, `lagoon`, `dusk`, `ember`, `mono`. Device pixel
-ratio is capped at 1.5, rendering pauses offscreen and in hidden tabs, reduced
-motion draws one still frame, and without WebGL a CSS gradient in the same
-palette takes its place. Dark mode drops banners to about 90% brightness
-rather than tinting them. Keep it to a handful per screen.
+`ui/shader.tsx` renders Pipes' own shader, "shift": a field of square blocks on
+a grid, in a duotone (a light ground and an ink) plus a middle tone mixed from
+the two. The field slides slowly sideways while its rows shift in whole-block
+steps, eased at each step, like work moving through pipes. Where two tones
+meet, a few cells are drawn in a 4x4 ordered dither instead of a flat fill, and
+a barely visible hairline grid keeps the blocks reading as a system. It was
+written for Pipes, not taken from any library or shader collection.
+
+Palettes are duotones: `sky`, `sunrise`, `bloom`, `lagoon`, `dusk`, `ember`,
+`mono`. Grounds are light enough for dark text in both themes. `cell` sets the
+block size (26px by default, smaller on small banners). Device pixel ratio is
+capped at 1.5, rendering pauses offscreen and in hidden tabs, reduced motion
+draws one still frame, and without WebGL a still CSS block pattern in the same
+palette takes its place. Each effect run makes its own canvas, so a context
+lost on unmount is never reused. Dark mode drops banners to about 90%
+brightness. Keep it to a handful per screen.
+
+Things that sit on a shader are **block tiles** (`BlockTiles` in
+`ui/shader-banner.tsx`): square white tiles with 8px corners and a hard 3px
+offset shadow in the palette's ink, joined by square pipe segments that pulse
+in turn.
 
 Where shaders go, and nowhere else:
 
 - **Greeting band** on Workflows (`GreetingBand`): palette by the viewer's
   time of day (`sunrise` before noon, `sky` afternoon, `dusk` evening, `ember`
-  after midnight), black text on a white scrim, and the mascot sticker for the
-  hour.
+  after midnight), dark text on a light scrim, and one shape sticker.
 - **Start cards** on Workflows (`StartCard`): New workflow (`sky`), Draft with
-  AI (`bloom`), Import a schema (`lagoon`), white icon tiles on the light.
+  AI (`bloom`), Import a schema (`lagoon`), with block tiles.
 - **Intro cards** (`shell/intro.tsx`): the first time someone opens a section.
 - **The Get started popover**: the next step on its own shader.
 - **The celebration card** when Get started is done.
 - **Sign-in and sign-up art** (`marketing/auth-art.tsx`): `dusk`, a glimpse of
   a workflow an agent is walking with one step waiting on a person.
-- **Connect an agent** (`BandHeader`, `bloom`, glass icons): the agent page.
-- **Connections** (`GlyphBanner`, `lagoon`): the vendored glyph field drifting
-  in the band, as on Podium's Integrations header. Loads lazily.
+- **Connect an agent** (`BandHeader`, `bloom`) and **Connections**
+  (`BandHeader`, `lagoon`): page-opening bands with block tiles.
 
-Agent colour fields: `paletteFor(name)` gives every agent one of six palettes
-(sky, bloom, lagoon, sunrise, dusk, ember), picked from its name so it's the
-same everywhere it appears. Never use an agent's field for state.
+Agent colour fields: `paletteFor(name)` gives every agent one of six palettes,
+picked from its name so it's the same everywhere it appears; small surfaces
+(avatars) draw it as four blocks (`fieldGradient`). Never use an agent's field
+for state.
 
 ## Stickers
 
-`ui/stickers.tsx` (stick-it-up, MIT): hand-made vinyl decals that peel on
-hover, tilted a few degrees, hidden from screen readers. Three places only:
-the greeting band, the sign-in art and the celebration card. Never on working
-surfaces (lists, tables, the editor).
+`ui/stickers.tsx` (stick-it-up, MIT): two shape decals that peel on hover, a
+sparkle trio and a star burst, tilted a few degrees and hidden from screen
+readers. No characters. Three places only: the greeting band, the sign-in art
+and the celebration card. Never on working surfaces (lists, tables, the
+editor).
 
 ## Glimm
 
@@ -217,7 +234,7 @@ you navigate dozens of times an hour should not sweep on every link, so Pipes
 sweeps only when the scene changes: opening a workflow you just created (from
 Workflows or Get started) and finishing Get started (behind the celebration
 card). `src/lib/sweep.tsx` wraps the app in `SweepProvider` with
-Podium's chain, `accentChain(["#3d8bff", "#8f7cff", "#ffb8a1"])`, at 0.85
+Pipes' chain, `accentChain(["#2f8c84", "#7f9fd0", "#e8955a"])` (the lagoon, sky and sunrise inks), at 0.85
 brightness in dark mode, and offers `useSweepTo(path)` for a scene-changing
 navigation. glimm handles reduced motion and missing WebGL itself.
 
@@ -227,7 +244,7 @@ navigation. glimm handles reduced motion and missing WebGL itself.
 
 - **Intro cards**: the first time someone opens Workflows, the editor, Runs,
   Approvals, Connect an agent, Connections or Triggers, a card explains it:
-  shader banner with three glass icons, title, one sentence, three checked
+  block shader with three block tiles, title, one sentence, three checked
   points, a primary action and Close. The primary action does what it says
   (Connections opens the new connection form). Cards queue, so two never
   stack. Seen state is per viewer in localStorage. Tests set `pipes.intros`

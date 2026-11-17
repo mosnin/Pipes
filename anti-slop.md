@@ -16,14 +16,15 @@ Pipes uses Podium's design system (`docs/DESIGN.md`), and Podium spends colour
 on purpose in a few named places. These exceptions are the whole list; each is
 confined to the surfaces named, never chrome, text, controls or data.
 
-- **Rules 1, 4 and 5 on shader art.** `Shader`, `ShaderBanner`, `GlassIcons`,
-  `GreetingBand`, `BandHeader`, `GlyphBanner`, the intro and celebration cards
-  and the sign-in art draw domain-warped gradient light with film grain, and
-  frosted glass icons sit on it. Some palettes (sky, dusk) hold blue next to
-  violet. The gradient is not the identity: the interface around it is
-  near-monochrome, and the light marks the few moments that change the scene
-  (a first visit, the greeting, an agent's page, finishing setup). No
-  gradient, glass or grain on cards, panels, buttons or text.
+- **Rule 5, narrowly, on shader art.** `Shader` and the surfaces built on it
+  (`ShaderBanner`, `GreetingBand`, `BandHeader`, the intro and celebration
+  cards, the sign-in art) draw Pipes' "shift" block field: flat duotone blocks
+  with ordered-dither cells where tones meet. The dither is texture doing work
+  (it carries the edge between tones), not grain over a gradient, and there is
+  no gradient under it. It marks the few moments that change the scene (a
+  first visit, the greeting, an agent's page, finishing setup). No shader,
+  dither or texture on cards, panels, buttons or text. Rules 1 and 4 hold in
+  full: no purple-to-blue gradients and no glass.
 - **Rule 9.** lucide is the chosen icon set, as in Podium, used at Podium's
   sizes and strokes.
 - **Rule 21.** On phones the sidebar is a navigation drawer. Records still

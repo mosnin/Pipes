@@ -16,12 +16,8 @@ copied from the Podium app by the same owner.
 - src/components/micro/ adapts microinteractions from microinteractions.dev
   (https://github.com/juandinella/microinteractions.dev), Copyright (c) 2026
   Juan Di Nella, MIT: hold to confirm, text swap and the chevron morph.
-- src/components/ui/empty-art.tsx, shader.tsx and the onboarding cards are
-  copied from Podium.
-- src/vendor/glyph-card/glyph-card-black.js is the glyph card shader element
-  supplied by the owner. It embeds Geist and Geist Mono (Copyright 2024 The
-  Geist Project Authors) under the SIL Open Font License 1.1; the license text
-  is in src/vendor/glyph-card/THIRD-PARTY-NOTICES.txt.
+- src/components/ui/empty-art.tsx and the onboarding cards are adapted from
+  Podium. src/components/ui/shader.tsx is Pipes' own.
 - Stickers come from stick-it-up (https://stickitupx.com), Copyright (c) 2026
   Samiran De, MIT, used as an npm dependency.
 - Ding (https://ding.yusufcengiz.dev), MIT, is used as an npm dependency for

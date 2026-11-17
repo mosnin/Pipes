@@ -281,7 +281,7 @@ export function GetStartedRow({
                       <ShaderBanner
                         palette={s.palette}
                         icons={s.icons}
-                        className="mx-1 my-1.5 h-28 rounded-[14px] [&_.glass]:size-10 [&_.glass]:rounded-[14px] [&_.glass_svg]:size-[18px]"
+                        className="mx-1 my-1.5 h-28 rounded-[14px] "
                       />
                     ) : null}
                   </li>

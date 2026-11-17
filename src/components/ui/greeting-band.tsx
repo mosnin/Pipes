@@ -2,9 +2,9 @@
 
 import { useSyncExternalStore, type ReactNode } from "react";
 import { type Palette, Shader } from "@/components/ui/shader";
-import { Sticker, stickerForHour } from "@/components/ui/stickers";
+import { Sticker } from "@/components/ui/stickers";
 import type { LucideIcon } from "@/components/ui/icon";
-import { GlassIcons, ShaderBanner } from "@/components/ui/shader-banner";
+import { BlockTiles, ShaderBanner } from "@/components/ui/shader-banner";
 
 const subscribeNothing = (): (() => void) => () => {};
 
@@ -28,8 +28,8 @@ export function GreetingBand({ name, children }: { name?: string; children?: Rea
   return (
     <div className="relative mb-10 overflow-hidden rounded-[20px] border border-border">
       <Shader key={g.palette} palette={g.palette} className="absolute inset-0 dark:brightness-[0.92]" seed={new Date().getDate()} speed={0.7} />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/35 to-transparent dark:from-white/45 dark:via-white/15" />
-      {known ? <Sticker kind={stickerForHour(hour)} size={104} tilt={8} className="absolute bottom-3 right-6 max-sm:hidden" /> : null}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/20 to-transparent dark:from-white/40 dark:via-white/10" />
+      {known ? <Sticker kind={hour < 12 || hour >= 18 ? "star-burst" : "sparkle-trio"} size={84} tilt={8} className="absolute bottom-5 right-8 max-sm:hidden" /> : null}
       <div className="relative px-6 pb-6 pt-14 sm:px-7 sm:pr-40 sm:pt-20">
         <h1 className="text-[26px] font-medium tracking-[-0.022em] text-black/90">
           {g.text}
@@ -58,7 +58,7 @@ export function StartCard({ palette, icons, title, body, onClick, hint }: { pale
 }
 
 /**
- * A page-opening band in a fixed palette, with glass icons on the right. For
+ * A page-opening band in a fixed palette, with block tiles on the right. For
  * the few pages Podium opens on light: agent pages and conversation openings.
  * It carries the page's h1.
  */
@@ -66,10 +66,10 @@ export function BandHeader({ palette, title, icons, children }: { palette: Palet
   return (
     <div className="relative overflow-hidden rounded-[20px] border border-border">
       <Shader palette={palette} className="absolute inset-0 dark:brightness-[0.92]" speed={0.6} />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/35 to-transparent dark:from-white/45 dark:via-white/15" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/20 to-transparent dark:from-white/40 dark:via-white/10" />
       {icons ? (
         <div className="absolute inset-y-0 right-8 hidden items-center lg:flex">
-          <GlassIcons icons={icons} />
+          <BlockTiles icons={icons} palette={palette} />
         </div>
       ) : null}
       <div className="relative px-6 pb-6 pt-14 sm:px-7 sm:pt-20 lg:pr-[300px]">

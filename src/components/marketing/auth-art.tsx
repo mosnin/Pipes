@@ -25,7 +25,7 @@ export function AuthArt(): ReactNode {
       <div className="relative flex h-full flex-col items-center justify-center p-12">
         <div className="relative w-full max-w-[380px]" style={{ animation: "t-enter 700ms var(--ease-podium-out) 150ms both" }}>
           <div className="absolute -top-4 left-6 right-6 h-8 rounded-t-[20px] bg-white/45" aria-hidden />
-          <Sticker kind="mochi-laptop" size={92} tilt={10} className="absolute -right-14 -top-16 z-10" />
+          <Sticker kind="star-burst" size={80} tilt={10} className="absolute -right-14 -top-16 z-10" />
           <Sticker kind="sparkle-trio" size={54} tilt={-14} className="absolute -bottom-7 -left-6 z-10" />
           <div className="relative rounded-[14px] bg-white/90 p-4 text-[#1b1b2a] shadow-[0_24px_60px_-20px_rgb(40_30_90/0.45)] backdrop-blur">
             <div className="mb-3 flex items-center justify-between text-[13px]">

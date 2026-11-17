@@ -13,8 +13,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useCallback, type ReactNode } from "react";
 
-/** Podium's brand chain: blue, violet, peach, the same hues as the shaders. */
-const PALETTE = accentChain(["#3d8bff", "#8f7cff", "#ffb8a1"]);
+/** Pipes' chain: lagoon, sky and sunrise inks, the same hues as the block shaders. */
+const PALETTE = accentChain(["#2f8c84", "#7f9fd0", "#e8955a"]);
 
 export function SweepProvider({ children }: { children: ReactNode }): ReactNode {
   const { resolvedTheme } = useTheme();

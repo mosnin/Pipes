@@ -23,7 +23,8 @@ import { RecordTable } from "@/components/settings/record-table";
 import { request } from "@/components/connections/request";
 import { useIntro } from "@/lib/onboarding";
 import { HoldConfirm } from "@/components/micro/hold-confirm";
-import { GlyphBanner } from "@/components/ui/glyph-card";
+import { BandHeader } from "@/components/ui/greeting-band";
+import { Bot, KeyRound, Plug } from "@/components/ui/icon";
 
 type ConnectionType = "mcp" | "http" | "skill";
 
@@ -83,9 +84,9 @@ export function ConnectionsView(): ReactNode {
       title="Connections"
       description="The MCP servers, APIs and skills your workflow steps call. A step names the connections it needs, and the agent running it receives them with the step."
       banner={
-        <GlyphBanner palette="lagoon" title="Connections">
+        <BandHeader palette="lagoon" title="Connections" icons={[Plug, KeyRound, Bot]}>
           The MCP servers, APIs and skills your workflow steps call. A step names the connections it needs, and the agent running it receives them with the step.
-        </GlyphBanner>
+        </BandHeader>
       }
       actions={
         <Button variant="primary" size="sm" onClick={() => setCreating(true)}>

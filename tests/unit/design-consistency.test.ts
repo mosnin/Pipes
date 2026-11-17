@@ -26,7 +26,7 @@ function files(dir: string): string[] {
 }
 
 /** Decorative art drawn on shaders or as illustrations, where literal colours are the point. */
-const ART = new Set(["components/ui/empty-art.tsx", "components/ui/shader.tsx", "components/ui/shader-banner.tsx", "components/ui/glyph-card.tsx", "components/ui/stickers.tsx", "components/marketing/auth-art.tsx", "components/shell/intro.tsx"]);
+const ART = new Set(["components/ui/empty-art.tsx", "components/ui/shader.tsx", "components/ui/shader-banner.tsx", "components/ui/stickers.tsx", "components/marketing/auth-art.tsx", "components/shell/intro.tsx"]);
 const RADII = new Set([
   "rounded-lg", "rounded-8", "rounded-6", "rounded-[6px]", "rounded-4", "rounded-[4px]", "rounded-2", "rounded-sm",
   "rounded-[14px]", "rounded-10", "rounded-12", "rounded-14", "rounded-xl",

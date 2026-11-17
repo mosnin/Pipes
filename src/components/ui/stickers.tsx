@@ -1,25 +1,16 @@
 "use client";
 
 /**
- * Stickers, from stick-it-up (MIT, Samiran De): small hand-made vinyl decals
- * that peel on hover. Podium uses a curated handful (the pixel mascots and a
- * few shapes), never the stickers of real people or other people's
- * characters, and only as rare accents (DESIGN.md): the Home greeting, the
- * sign-in art and the "You're all set" card.
- *
- * Import stickers from here, by name, so the bundle only carries the ones
- * used (the package is large; its <Sticker name> helper pulls in all of them).
+ * Stickers, from stick-it-up (MIT, Samiran De): hand-made vinyl decals that
+ * peel on hover. Pipes uses two shapes only (a sparkle trio and a star burst),
+ * no characters, and only as rare accents (docs/DESIGN.md): the greeting band,
+ * the sign-in art and the celebration card.
  */
-import { KuroHeadphonesSticker, MochiHeadphonesSticker, MochiLaptopSticker, NoriCoffeeSticker, PipRocketSticker, SparkleTrioSticker, StarBurstSticker } from "stick-it-up";
+import { SparkleTrioSticker, StarBurstSticker } from "stick-it-up";
 import type { CSSProperties } from "react";
 import { cn as cx } from "@/lib/utils";
 
 const ALL = {
-  "nori-coffee": NoriCoffeeSticker,
-  "mochi-laptop": MochiLaptopSticker,
-  "kuro-headphones": KuroHeadphonesSticker,
-  "pip-rocket": PipRocketSticker,
-  "mochi-headphones": MochiHeadphonesSticker,
   "sparkle-trio": SparkleTrioSticker,
   "star-burst": StarBurstSticker,
 } as const;
@@ -33,12 +24,4 @@ export function Sticker({ kind, size = 88, tilt = -6, peel = true, className, st
       <S size={size} peel={peel} />
     </span>
   );
-}
-
-/** The mascot for the time of day on Home: coffee in the morning, laptop in the afternoon, headphones at night. */
-export function stickerForHour(h = new Date().getHours()): StickerKind {
-  if (h < 5) return "pip-rocket";
-  if (h < 12) return "nori-coffee";
-  if (h < 18) return "mochi-laptop";
-  return "kuro-headphones";
 }
