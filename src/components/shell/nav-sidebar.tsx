@@ -75,8 +75,8 @@ const APPROVALS_POLL_MS = 30_000;
  * rather than flashing to zero.
  */
 function useApprovalsCount(): number {
-  const { data } = useSWR<unknown[]>("/api/runs?status=waiting_approval", { refreshInterval: APPROVALS_POLL_MS });
-  return Array.isArray(data) ? data.length : 0;
+  const { data } = useSWR<{ count: number }>("/api/runs/count?status=waiting_approval", { refreshInterval: APPROVALS_POLL_MS });
+  return typeof data?.count === "number" ? data.count : 0;
 }
 
 function NavRow({ item, pathname, count }: { item: NavItem; pathname: string; count?: number }): ReactNode {
