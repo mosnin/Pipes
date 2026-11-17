@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const { ctx, workflow } = await getWorkflowApp();
     const [switches, settings] = await Promise.all([workflow.runs.switches.list(ctx.workspaceId), workflow.runs.switches.settings(ctx.workspaceId)]);
-    return ok({ switches, settings });
+    return ok({ switches, settings, canChange: ctx.actorType === "user" && (ctx.role === "Owner" || ctx.role === "Admin") });
   } catch (error) {
     return workflowError(error);
   }

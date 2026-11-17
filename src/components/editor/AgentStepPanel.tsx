@@ -7,6 +7,20 @@ import { Input, Textarea, Field } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { CheckRow, Quiet, SectionLabel } from "@/components/editor/editor-ui";
 import type { StepSpec } from "@/domain/runs/types";
+import type { StepRails } from "@/domain/rails/types";
+
+const TIMEOUT_OPTIONS = [
+  { value: "failure_route", label: "Take the failure route" },
+  { value: "fail_run", label: "Fail the run" }
+];
+const INVALID_OPTIONS = [
+  { value: "reject", label: "Refuse it, the agent fixes and resends" },
+  { value: "failure_route", label: "Complete it as a failure" }
+];
+
+const listOf = (text: string) => text.split(",").map((item) => item.trim()).filter(Boolean);
+const minutesOf = (ms?: number) => (ms ? String(Math.round(ms / 60000)) : "");
+const dollarsOf = (micros?: number) => (micros ? String(micros / 1_000_000) : "");
 
 export type WorkspaceConnection = { id: string; name: string; type: string; url: string };
 export type ConnectionsState = { status: "loading" | "ready" | "error"; items: WorkspaceConnection[] };
@@ -49,6 +63,20 @@ export function AgentStepPanel({
   const isLoop = nodeType === "Loop" || hasLoopRoute;
   const isApproval = nodeType === "HumanApproval";
   const selected = spec?.connectionIds ?? [];
+  const rails = spec?.rails ?? {};
+  const [timeoutText, setTimeoutText] = useState(() => minutesOf(rails.timeoutMs));
+  const [outcomesText, setOutcomesText] = useState(() => (rails.allowedOutcomes ?? []).join(", "));
+  const [fieldsText, setFieldsText] = useState(() => (rails.output?.schema.type === "object" ? rails.output.schema.required ?? [] : []).join(", "));
+  const [costText, setCostText] = useState(() => dollarsOf(rails.maxCostMicros));
+  const setRails = (patch: Partial<StepRails>) => {
+    const next: StepRails = { ...rails, ...patch };
+    const empty = Object.values(next).every((v) => v === undefined || (Array.isArray(v) && v.length === 0));
+    onChange({ rails: empty ? undefined : next });
+  };
+  const timeoutValue = Number(timeoutText);
+  const timeoutInvalid = timeoutText.trim() !== "" && (!Number.isFinite(timeoutValue) || timeoutValue <= 0);
+  const costValue = Number(costText);
+  const costInvalid = costText.trim() !== "" && (!Number.isFinite(costValue) || costValue <= 0);
   const maxValue = Number(maxText);
   const maxInvalid = maxText.trim() !== "" && (!Number.isInteger(maxValue) || maxValue < 1 || maxValue > 100);
 
@@ -138,6 +166,89 @@ export function AgentStepPanel({
               value={spec?.exitCondition ?? ""}
               onChange={(e) => onChange({ exitCondition: e.target.value })}
               placeholder="All tests pass"
+            />
+          </Field>
+        </div>
+      ) : null}
+
+      {!isApproval ? (
+        <div className="flex flex-col gap-3 border-t border-hairline pt-3">
+          <SectionLabel>Limits</SectionLabel>
+          <p className="t-caption text-ink-3">Rails Pipes enforces when an agent works this step. All optional.</p>
+          <Field label="Time limit in minutes" htmlFor={`step-timeout-${nodeId}`} error={timeoutInvalid ? "Use a number of minutes above 0." : undefined} hint="Counted from when the run reaches this step.">
+            <Input
+              id={`step-timeout-${nodeId}`}
+              inputMode="decimal"
+              invalid={timeoutInvalid}
+              aria-describedby={`step-timeout-${nodeId}-message`}
+              value={timeoutText}
+              onChange={(e) => {
+                const text = e.target.value;
+                setTimeoutText(text);
+                const value = Number(text);
+                if (text.trim() === "") setRails({ timeoutMs: undefined, onTimeout: undefined });
+                else if (Number.isFinite(value) && value > 0) setRails({ timeoutMs: Math.round(value * 60000), onTimeout: rails.onTimeout ?? "failure_route" });
+              }}
+              placeholder="No limit"
+              className="tabular-nums"
+            />
+          </Field>
+          {rails.timeoutMs ? (
+            <Field label="When time runs out" htmlFor={`step-ontimeout-${nodeId}`}>
+              <Select id={`step-ontimeout-${nodeId}`} size="sm" value={rails.onTimeout ?? "failure_route"} onValueChange={(value) => setRails({ onTimeout: value as StepRails["onTimeout"] })} options={TIMEOUT_OPTIONS} />
+            </Field>
+          ) : null}
+          <Field label="Allowed outcomes" htmlFor={`step-outcomes-${nodeId}`} hint="Comma separated. Pipes refuses any other outcome. Leave empty to allow any.">
+            <Input
+              id={`step-outcomes-${nodeId}`}
+              value={outcomesText}
+              onChange={(e) => {
+                setOutcomesText(e.target.value);
+                const list = listOf(e.target.value);
+                setRails({ allowedOutcomes: list.length ? list : undefined });
+              }}
+              placeholder="approve, deny"
+            />
+          </Field>
+          <Field label="Required output fields" htmlFor={`step-fields-${nodeId}`} hint="Comma separated. The step's output must include each one.">
+            <Input
+              id={`step-fields-${nodeId}`}
+              value={fieldsText}
+              onChange={(e) => {
+                setFieldsText(e.target.value);
+                const list = listOf(e.target.value);
+                setRails({ output: list.length ? { schema: { type: "object", required: list }, onInvalid: rails.output?.onInvalid ?? "reject" } : undefined });
+              }}
+              placeholder="amount, reason"
+            />
+          </Field>
+          {rails.output ? (
+            <Field label="When a field is missing" htmlFor={`step-invalid-${nodeId}`}>
+              <Select
+                id={`step-invalid-${nodeId}`}
+                size="sm"
+                value={rails.output.onInvalid}
+                onValueChange={(value) => setRails({ output: { ...rails.output!, onInvalid: value as "reject" | "failure_route" } })}
+                options={INVALID_OPTIONS}
+              />
+            </Field>
+          ) : null}
+          <Field label="Cost limit per completion, in dollars" htmlFor={`step-cost-${nodeId}`} error={costInvalid ? "Use an amount above 0." : undefined} hint="Agents report what a step cost. Pipes refuses a report over this.">
+            <Input
+              id={`step-cost-${nodeId}`}
+              inputMode="decimal"
+              invalid={costInvalid}
+              aria-describedby={`step-cost-${nodeId}-message`}
+              value={costText}
+              onChange={(e) => {
+                const text = e.target.value;
+                setCostText(text);
+                const value = Number(text);
+                if (text.trim() === "") setRails({ maxCostMicros: undefined });
+                else if (Number.isFinite(value) && value > 0) setRails({ maxCostMicros: Math.round(value * 1_000_000) });
+              }}
+              placeholder="No limit"
+              className="tabular-nums"
             />
           </Field>
         </div>

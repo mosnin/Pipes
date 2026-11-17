@@ -39,6 +39,7 @@ import {
 import { HoldConfirm } from "@/components/micro/hold-confirm";
 import { MorphArrow } from "@/components/micro/morph-arrow";
 import { Avatar } from "@/components/ledger/author-stamp";
+import { RunJournal } from "@/components/runs/run-journal";
 
 type Current = CurrentStep & { connections: ConnectionView[] };
 type Detail = { run: WorkflowRun; current: Current };
@@ -149,6 +150,7 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
               <ApprovalPanel key={stepKey} run={run} current={current} record={record} busy={busy} onDecide={(body) => act("decide", body)} />
             ) : null}
             <Timeline run={run} />
+            <RunJournal runId={run.id} rev={run.rev} />
           </div>
         }
         rail={<RunFacts run={run} />}
@@ -227,6 +229,8 @@ function RunFacts({ run }: { run: WorkflowRun }): ReactNode {
               { label: "Started", value: <span className="tabular">{formatStamp(run.startedAt)}</span> },
               { label: "Ended", value: run.endedAt ? <span className="tabular">{formatStamp(run.endedAt)}</span> : <span className="text-ink-3">Still open</span> },
               { label: "Steps done", value: <span className="tabular">{done}</span> },
+              ...(run.costMicros ? [{ label: "Reported spend", value: <span className="tabular">{`$${(run.costMicros / 1_000_000).toFixed(4)}`}</span> }] : []),
+              ...(run.deadlineAt && !run.endedAt ? [{ label: "Deadline", value: <span className="tabular">{formatStamp(run.deadlineAt)}</span> }] : []),
               { label: "Started by", value: run.startedBy.type === "user" ? actorName(run.startedBy) : `${actorName(run.startedBy)} (${actorKind(run.startedBy).toLowerCase()})` },
               {
                 label: "Workflow",
