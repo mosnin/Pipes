@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "node:crypto";
 
 const KEY_LENGTH = 64;

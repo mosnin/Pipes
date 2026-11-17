@@ -1,6 +1,40 @@
 import { store } from "@/lib/convex/store";
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
-import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import { AUDIT_PAGE_SIZE, type AppContext, type AuditFilter, type AuditRecord, type RepositorySet, type SystemBundle } from "@/lib/repositories/contracts";
+
+/** A workspace's audit events that match the filter, newest first. */
+function matchingAudits(workspaceId: string, filter?: AuditFilter): AuditRecord[] {
+  return store.readDb().audits
+    .filter((audit) => audit.workspaceId === workspaceId)
+    .filter((audit) => !filter?.actorType || audit.actorType === filter.actorType)
+    .filter((audit) => !filter?.actorId || audit.actorId === filter.actorId)
+    .filter((audit) => !filter?.actionPrefix || audit.action.startsWith(filter.actionPrefix))
+    .filter((audit) => !filter?.systemId || audit.systemId === filter.systemId)
+    .filter((audit) => !filter?.outcome || audit.outcome === filter.outcome)
+    .filter((audit) => !filter?.since || new Date(audit.createdAt).getTime() >= new Date(filter.since).getTime())
+    .filter((audit) => !filter?.until || new Date(audit.createdAt).getTime() <= new Date(filter.until).getTime())
+    .filter((audit) => {
+      if (!filter?.transport) return true;
+      try {
+        return JSON.parse(audit.metadata ?? "{}").transport === filter.transport;
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .map((audit) => ({
+      id: audit.id,
+      actorType: audit.actorType,
+      actorId: audit.actorId,
+      action: audit.action,
+      targetType: audit.targetType,
+      targetId: audit.targetId,
+      outcome: audit.outcome,
+      createdAt: audit.createdAt,
+      systemId: audit.systemId,
+      metadata: audit.metadata
+    }));
+}
 
 const now = () => new Date().toISOString();
 
@@ -435,38 +469,13 @@ export function createMockRepositories(): RepositorySet {
         store.writeDb(db);
       },
       async list(workspaceId, filter) {
-        const rows = store.readDb().audits
-          .filter((audit) => audit.workspaceId === workspaceId)
-          .filter((audit) => !filter?.actorType || audit.actorType === filter.actorType)
-          .filter((audit) => !filter?.actorId || audit.actorId === filter.actorId)
-          .filter((audit) => !filter?.actionPrefix || audit.action.startsWith(filter.actionPrefix))
-          .filter((audit) => !filter?.systemId || audit.systemId === filter.systemId)
-          .filter((audit) => !filter?.outcome || audit.outcome === filter.outcome)
-          .filter((audit) => !filter?.since || new Date(audit.createdAt).getTime() >= new Date(filter.since).getTime())
-          .filter((audit) => !filter?.until || new Date(audit.createdAt).getTime() <= new Date(filter.until).getTime())
-          .filter((audit) => {
-            if (!filter?.transport) return true;
-            try {
-              return JSON.parse(audit.metadata ?? "{}").transport === filter.transport;
-            } catch {
-              return false;
-            }
-          })
-          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-          .slice(0, filter?.limit ?? 500)
-          .map((audit) => ({
-            id: audit.id,
-            actorType: audit.actorType,
-            actorId: audit.actorId,
-            action: audit.action,
-            targetType: audit.targetType,
-            targetId: audit.targetId,
-            outcome: audit.outcome,
-            createdAt: audit.createdAt,
-            systemId: audit.systemId,
-            metadata: audit.metadata
-          }));
-        return rows;
+        return matchingAudits(workspaceId, filter).slice(0, filter?.limit ?? 500);
+      },
+      async page(workspaceId, filter) {
+        const rows = matchingAudits(workspaceId, filter);
+        const start = Math.max(0, Number.parseInt(filter?.cursor ?? "0", 10) || 0);
+        const end = start + Math.min(Math.max(filter?.limit ?? AUDIT_PAGE_SIZE, 1), 500);
+        return { items: rows.slice(start, end), nextCursor: end < rows.length ? String(end) : null };
       }
     },
     idempotency: {

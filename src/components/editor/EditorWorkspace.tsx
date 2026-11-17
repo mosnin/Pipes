@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,18 @@ import { type InsertContext, groupByCategory, nodeLibraryCatalog, rankLibraryEnt
 import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContract, type ContractType, type FieldContract, type NodeDefinition, validateNodeDefinition } from "@/components/editor/node_definition";
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
-import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
-import { AgentStepPanel, type ConnectionsState } from "@/components/editor/AgentStepPanel";
+import type { ConnectionsState } from "@/components/editor/AgentStepPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemDesign } from "@/components/editor/design_sync";
 import { useIntro } from "@/lib/onboarding";
+
+// The agent panels are only needed in agent mode or on the agent tab, so they
+// load after the canvas instead of with it.
+const AgentChatPanel = dynamic(() => import("@/components/editor/AgentChatPanel").then((m) => m.AgentChatPanel), { ssr: false });
+const AgentStepPanel = dynamic(() => import("@/components/editor/AgentStepPanel").then((m) => m.AgentStepPanel), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[160px] w-full rounded-12" />
+});
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
@@ -1247,12 +1256,18 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
   const [data, setData] = useState<SystemPayload | null>(null);
   const [missing, setMissing] = useState(false);
   const loadedRef = useRef(false);
+  // The last payload as text: an idle poll returns the same workflow, and
+  // keeping the old object spares the whole editor a re-render every 1.5s.
+  const lastBodyRef = useRef<string | null>(null);
   const load = useCallback(async () => {
     try {
       const systemRes = await fetch(`/api/systems/${systemId}`, { cache: "no-store" });
       const systemData = await systemRes.json().catch(() => ({ ok: false }));
       if (systemRes.ok && systemData.ok) {
         loadedRef.current = true;
+        const body = JSON.stringify(systemData.data);
+        if (body === lastBodyRef.current) return;
+        lastBodyRef.current = body;
         setData(systemData.data);
         return;
       }
@@ -1266,7 +1281,10 @@ function MockEditorWorkspace({ systemId }: { systemId: string }) {
   useEffect(() => {
     if (missing) return;
     void load();
-    const interval = setInterval(load, 1500);
+    // A hidden tab skips its polls; the next visible tick catches up.
+    const interval = setInterval(() => {
+      if (document.visibilityState !== "hidden") void load();
+    }, 1500);
     return () => clearInterval(interval);
   }, [load, missing]);
 

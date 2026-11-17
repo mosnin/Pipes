@@ -175,6 +175,11 @@ export interface DocumentsRepository {
   }): Promise<{ ok: true } | { ok: false; currentRev: number }>;
 }
 
+export type AuditRecord = { id: string; actorType: string; actorId: string; action: string; targetType: string; targetId?: string; outcome: string; createdAt: string; systemId?: string; metadata?: string };
+export type AuditFilter = { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number };
+/** Default page size for `audits.page`. */
+export const AUDIT_PAGE_SIZE = 100;
+
 export type RepositorySet = {
   documents: DocumentsRepository;
   users: UsersRepository;
@@ -197,7 +202,10 @@ export type RepositorySet = {
   };
   audits: {
     add(input: { actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string }): Promise<void>;
-    list(workspaceId: string, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }): Promise<Array<{ id: string; actorType: string; actorId: string; action: string; targetType: string; targetId?: string; outcome: string; createdAt: string; systemId?: string; metadata?: string }>>;
+    /** The newest matching events, up to `limit` (500 when unset). */
+    list(workspaceId: string, filter?: AuditFilter): Promise<AuditRecord[]>;
+    /** One page of matching events, newest first: `limit` defaults to AUDIT_PAGE_SIZE; pass `nextCursor` back for the next page. */
+    page(workspaceId: string, filter?: AuditFilter & { cursor?: string | null }): Promise<{ items: AuditRecord[]; nextCursor: string | null }>;
   };
   idempotency: {
     get(input: { workspaceId: string; actorId: string; route: string; key: string }): Promise<{ requestHash: string; responseJson: string; statusCode: number } | null>;

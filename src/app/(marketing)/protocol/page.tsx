@@ -6,7 +6,7 @@ import { CutButton } from "@/components/marketing/cut-button";
 import { FinalCta } from "@/components/marketing/final-cta";
 import { PageIntro } from "@/components/marketing/page-intro";
 import { Container, Section, SectionHeading, SpecList } from "@/components/marketing/section";
-import { AGENT_CAPABILITIES } from "@/lib/protocol/tokens";
+import { AGENT_CAPABILITIES } from "@/lib/protocol/capabilities";
 
 /* ==========================================================================
    PROTOCOL, /protocol. Public.

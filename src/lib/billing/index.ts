@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "node:crypto";
 import { getEntitlements } from "@/domain/templates/plans";
 import type { Plan } from "@/domain/pipes_schema_v1/schema";

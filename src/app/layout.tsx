@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource-variable/inter/opsz.css";
+import localFont from "next/font/local";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -9,6 +9,15 @@ import { Providers } from "@/components/Providers";
  * interface and Geist Mono for every identifier (node ids, versions, tokens).
  * Both are served from our own origin.
  */
+const inter = localFont({
+  // The latin file carries both the weight and optical-size axes.
+  src: "../../node_modules/@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+  variable: "--font-inter"
+});
+
 export const metadata: Metadata = {
   title: { default: "Pipes", template: "%s · Pipes" },
   description: "Design, store and run the workflows your agents follow."
@@ -25,8 +34,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${GeistMono.variable} font-sans`}>
+    // The font variables sit on <html> so the :root tokens that read them (--font-sans, --font-mono) resolve.
+    <html lang="en" className={`${inter.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <body className="font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -87,6 +87,15 @@ backend on http://127.0.0.1:3210. Set `CONVEX_URL` to the deployment URL.
 
 See `.env.example` for the full list.
 
+### Schedules on Vercel
+
+`vercel.json` registers a Vercel Cron job that calls `/api/cron/schedules`
+every minute. Vercel sends `Authorization: Bearer $CRON_SECRET`, and the route
+refuses any call without it, so set `CRON_SECRET` in the project's environment
+variables. Every-minute crons need a Vercel Pro (or higher) plan; on Hobby,
+change the schedule to one Hobby allows or call the route from another
+scheduler.
+
 ## Testing
 
 ```bash

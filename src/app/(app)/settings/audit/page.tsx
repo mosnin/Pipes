@@ -22,6 +22,8 @@ export default function AuditSettingsPage() {
   const fieldId = useId();
   const [events, setEvents] = useState<any[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [actorType, setActorType] = useState("");
   const [actorId, setActorId] = useState("");
   const [actionPrefix, setActionPrefix] = useState("");
@@ -30,7 +32,7 @@ export default function AuditSettingsPage() {
   const [outcome, setOutcome] = useState("");
   const [since, setSince] = useState("");
 
-  const load = useCallback(() => {
+  const queryFor = useCallback(() => {
     const query = new URLSearchParams();
     if (actorType) query.set("actorType", actorType);
     if (actorId) query.set("actorId", actorId);
@@ -39,8 +41,32 @@ export default function AuditSettingsPage() {
     if (transport) query.set("transport", transport);
     if (outcome) query.set("outcome", outcome);
     if (since) query.set("since", since);
-    fetch(`/api/settings/audit?${query.toString()}`).then((r) => r.json()).then((d) => { setEvents(d.data ?? []); setLoaded(true); });
+    return query;
   }, [actorType, actorId, actionPrefix, outcome, since, systemId, transport]);
+
+  // The first page for the current filters; "Load more" appends the next one.
+  const load = useCallback(() => {
+    fetch(`/api/settings/audit?${queryFor().toString()}`).then((r) => r.json()).then((d) => {
+      setEvents(d.data?.items ?? []);
+      setNextCursor(d.data?.nextCursor ?? null);
+      setLoaded(true);
+    });
+  }, [queryFor]);
+
+  const loadMore = () => {
+    if (!nextCursor) return;
+    const query = queryFor();
+    query.set("cursor", nextCursor);
+    setLoadingMore(true);
+    fetch(`/api/settings/audit?${query.toString()}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setEvents((current) => [...current, ...(d.data?.items ?? [])]);
+        setNextCursor(d.data?.nextCursor ?? null);
+      })
+      .catch(() => undefined)
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -123,6 +149,13 @@ export default function AuditSettingsPage() {
             />
           }
         />
+        {nextCursor ? (
+          <div className="mt-4 flex justify-center">
+            <Button variant="secondary" size="sm" onClick={loadMore} loading={loadingMore} disabled={loadingMore}>
+              Load more
+            </Button>
+          </div>
+        ) : null}
       </SettingsSection>
     </SettingsShell>
   );

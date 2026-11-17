@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import useSWR from "swr";
 import { PageShell, SplitLayout } from "@/components/layouts/archetypes";
 import { RelativeTime } from "@/components/ledger/relative-time";
 import { StatusPill } from "@/components/ledger/status";
@@ -17,6 +18,7 @@ import { FactList } from "@/components/settings/fact-list";
 import type { Actor, CurrentStep, NextOption, StepRecord, WorkflowRun } from "@/domain/runs/types";
 import type { ConnectionView } from "@/domain/connections/service";
 import { useNow } from "@/lib/now";
+import type { ApiError } from "@/lib/swr";
 import { RunStatusPill } from "@/components/runs/run-status-pill";
 import {
   actorKind,
@@ -49,31 +51,13 @@ type Detail = { run: WorkflowRun; current: Current };
 const POLL_MS = 3000;
 
 export function RunDetailClient({ runId }: { runId: string }): ReactNode {
-  const [detail, setDetail] = useState<Detail | null>(null);
-  const [loadError, setLoadError] = useState<{ code?: string; message: string } | null>(null);
+  const { data: detail, error, mutate } = useSWR<Detail, ApiError>(`/api/runs/${runId}`, {
+    // While a run can still move, keep reading it; a finished run stops polling.
+    refreshInterval: (latest) => (latest && isActive(latest.run.status) ? POLL_MS : 0)
+  });
+  const loadError = error ? { code: error.code, message: error.message } : null;
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    const result = await callApi<Detail>(`/api/runs/${runId}`);
-    if (result.ok) {
-      setDetail(result.data);
-      setLoadError(null);
-    } else {
-      setLoadError({ code: result.error, message: result.message });
-    }
-  }, [runId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const live = detail ? isActive(detail.run.status) : false;
-  useEffect(() => {
-    if (!live) return;
-    const timer = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(timer);
-  }, [live, load]);
 
   /** Every action posts, then re-reads the run, so the page always shows what the server decided. */
   const act = async (path: string, body: unknown): Promise<boolean> => {
@@ -81,7 +65,7 @@ export function RunDetailClient({ runId }: { runId: string }): ReactNode {
     setActionError(null);
     const result = await callApi<unknown>(`/api/runs/${runId}/${path}`, { method: "POST", body });
     if (!result.ok) setActionError(result.message);
-    await load();
+    await mutate();
     setBusy(false);
     return result.ok;
   };

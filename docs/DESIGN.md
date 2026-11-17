@@ -86,8 +86,9 @@ Rules:
 ## Type
 
 - **Inter** (variable, optical sizes) for the interface, served from our own
-  origin by `@fontsource-variable/inter`. **Geist Mono** for identifiers: node
-  ids, run ids, versions, tokens, URLs.
+  origin through `next/font/local` (the latin opsz file from
+  `@fontsource-variable/inter`, preloaded with a metric-matched fallback).
+  **Geist Mono** for identifiers: node ids, run ids, versions, tokens, URLs.
 - Base 14px / 1.45. Headings get `-0.012em` tracking and `text-wrap: balance`;
   paragraphs `text-wrap: pretty`.
 - Headings are medium, never bold.

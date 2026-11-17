@@ -418,6 +418,12 @@ export function createRunService(repos: RepositorySet, options: { reporter?: Usa
         .map((d) => summarize(d.data))
         .filter((r) => !filter.status || r.status === filter.status)
         .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    },
+
+    /** How many runs match, without summarizing or sorting them: the nav badge only needs the number. */
+    async countForWorkspace(ctx: Pick<AppContext, "workspaceId">, filter: { status?: WorkflowRun["status"] } = {}): Promise<number> {
+      const docs = await repos.documents.list<WorkflowRun>(RUN_KIND, { workspaceId: ctx.workspaceId });
+      return filter.status ? docs.filter((d) => d.data.status === filter.status).length : docs.length;
     }
   };
 }
