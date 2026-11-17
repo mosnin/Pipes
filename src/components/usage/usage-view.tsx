@@ -24,6 +24,7 @@ type UsageSummary = {
   overage: Record<Metric, number>;
   overageCents: number;
   daily: Array<{ day: string } & Record<Metric, number>>;
+  decisions?: { fast: number; deliberate: number; costMicros: number };
 };
 
 const METRICS: { key: Metric; label: string; noun: string; description: string }[] = [
@@ -152,6 +153,20 @@ export function UsageView(): ReactNode {
             </Link>{" "}
             to keep running past the included amounts and pay only for what you use beyond them.
           </p>
+        </SettingsSection>
+      ) : null}
+
+      {summary?.decisions && summary.decisions.fast + summary.decisions.deliberate > 0 ? (
+        <SettingsSection title="Decisions" description="Questions Pipes asked decision models this month, and what the models charged. See the Decisions page for how often they were right.">
+          <Card>
+            <FactList
+              facts={[
+                { label: "Fast decisions", value: <span className="tabular">{fmt(summary.decisions.fast)}</span> },
+                { label: "Second opinions", value: <span className="tabular">{fmt(summary.decisions.deliberate)}</span> },
+                { label: "Model spend", value: <span className="tabular">{"$" + (summary.decisions.costMicros / 1_000_000).toFixed(4)}</span> }
+              ]}
+            />
+          </Card>
         </SettingsSection>
       ) : null}
 

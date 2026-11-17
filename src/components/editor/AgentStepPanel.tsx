@@ -18,6 +18,13 @@ const INVALID_OPTIONS = [
   { value: "failure_route", label: "Complete it as a failure" }
 ];
 
+const DECISION_TYPES = new Set(["Decision", "Router", "Condition", "Switch", "Branch"]);
+const CONSEQUENCE_OPTIONS = [
+  { value: "low", label: "Low: easy to undo" },
+  { value: "medium", label: "Medium: noticeable, fixable" },
+  { value: "high", label: "High: never let Pipes decide alone" }
+];
+
 const listOf = (text: string) => text.split(",").map((item) => item.trim()).filter(Boolean);
 const minutesOf = (ms?: number) => (ms ? String(Math.round(ms / 60000)) : "");
 const dollarsOf = (micros?: number) => (micros ? String(micros / 1_000_000) : "");
@@ -73,6 +80,12 @@ export function AgentStepPanel({
     const empty = Object.values(next).every((v) => v === undefined || (Array.isArray(v) && v.length === 0));
     onChange({ rails: empty ? undefined : next });
   };
+  const decide = spec?.decide ?? {};
+  const setDecide = (patch: Partial<NonNullable<StepSpec["decide"]>>) => {
+    const next = { ...decide, ...patch };
+    onChange({ decide: next.route || next.verifyDoneWhen ? next : undefined });
+  };
+  const isDecisionStep = DECISION_TYPES.has(nodeType);
   const timeoutValue = Number(timeoutText);
   const timeoutInvalid = timeoutText.trim() !== "" && (!Number.isFinite(timeoutValue) || timeoutValue <= 0);
   const costValue = Number(costText);
@@ -168,6 +181,41 @@ export function AgentStepPanel({
               placeholder="All tests pass"
             />
           </Field>
+        </div>
+      ) : null}
+
+      {!isApproval && (isDecisionStep || spec?.doneWhen) ? (
+        <div className="flex flex-col gap-3 border-t border-hairline pt-3">
+          <SectionLabel>Decisions</SectionLabel>
+          <p className="t-caption text-ink-3">Let Pipes judge this step with a decision model. Every judgment is recorded and you can see how often it is right on the Decisions page.</p>
+          {isDecisionStep ? (
+            <>
+              <CheckRow checked={Boolean(decide.route)} onChange={(e) => setDecide({ route: e.target.checked })}>
+                Let Pipes choose the route. When decisions are live and it is sure, it takes the route itself; otherwise it suggests one to whoever works the step.
+              </CheckRow>
+              {decide.route ? (
+                <>
+                  <Field label="If Pipes picks the wrong route, how bad is it?" htmlFor={`step-consequence-${nodeId}`}>
+                    <Select
+                      id={`step-consequence-${nodeId}`}
+                      size="sm"
+                      value={decide.consequence ?? "medium"}
+                      onValueChange={(value) => setDecide({ consequence: value as "low" | "medium" | "high" })}
+                      options={CONSEQUENCE_OPTIONS}
+                    />
+                  </Field>
+                  <CheckRow checked={Boolean(decide.deliberate)} onChange={(e) => setDecide({ deliberate: e.target.checked })}>
+                    When unsure, ask a stronger model for a second opinion. It can only confirm the first pick, never override it.
+                  </CheckRow>
+                </>
+              ) : null}
+            </>
+          ) : null}
+          {spec?.doneWhen ? (
+            <CheckRow checked={Boolean(decide.verifyDoneWhen)} onChange={(e) => setDecide({ verifyDoneWhen: e.target.checked })}>
+              Check each completion against Done when, and flag it on the run if it does not seem met. It never blocks the step.
+            </CheckRow>
+          ) : null}
         </div>
       ) : null}
 

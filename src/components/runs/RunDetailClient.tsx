@@ -40,6 +40,7 @@ import { HoldConfirm } from "@/components/micro/hold-confirm";
 import { MorphArrow } from "@/components/micro/morph-arrow";
 import { Avatar } from "@/components/ledger/author-stamp";
 import { RunJournal } from "@/components/runs/run-journal";
+import { DecisionNotes, TriageSuggestion } from "@/components/decisions/decision-ui";
 
 type Current = CurrentStep & { connections: ConnectionView[] };
 type Detail = { run: WorkflowRun; current: Current };
@@ -477,6 +478,7 @@ function ApprovalPanel({
       </SectionHeading>
       <Card>
         <CardSection>
+          <TriageSuggestion runId={run.id} rev={run.rev} />
           <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex min-w-0 flex-col gap-1">
               <h2 className="t-title-2 text-ink">{step.title}</h2>
@@ -606,6 +608,8 @@ function TimelineStep({ step, run, titleOf, nameOf }: { step: StepRecord; run: W
           <span className="tabular">{ended ? `${started} to ${sameDay(step.startedAt, step.completedAt) ? formatClock(step.completedAt) : ended}` : `Started ${started}`}</span>
           {took ? <span className="tabular">{` · ${took}`}</span> : null}
         </p>
+
+        <DecisionNotes step={step} />
 
         {approval ? (
           <div className="flex flex-col gap-0.5">
