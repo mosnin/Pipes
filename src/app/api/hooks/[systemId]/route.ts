@@ -36,7 +36,8 @@ export async function POST(request: Request, { params }: Params) {
         input = { body: raw.slice(0, 20000) };
       }
     }
-    const run = await workflow.runs.start(ctx, { systemId, trigger: "webhook", input, actorLabel: "Webhook" });
+    // A sender that retries a delivery with the same Idempotency-Key starts one run, not two.
+    const run = await workflow.runs.start(ctx, { systemId, trigger: "webhook", input, actorLabel: "Webhook", idempotencyKey: request.headers.get("idempotency-key") ? `hook:${systemId}:${request.headers.get("idempotency-key")}` : undefined });
     return NextResponse.json({ ok: true, data: { runId: run.id, status: run.status } }, { status: 201 });
   } catch (error) {
     return workflowError(error);

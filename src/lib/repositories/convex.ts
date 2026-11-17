@@ -32,6 +32,9 @@ export function createConvexRepositories(): RepositorySet {
       },
       async remove(kind, id) {
         await getConvexHttpClient().mutation(api.documents.remove, { kind, id });
+      },
+      async commit(input) {
+        return (await getConvexHttpClient().mutation(api.documents.commit, input as never)) as any;
       }
     },
     users: {

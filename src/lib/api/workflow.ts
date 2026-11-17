@@ -12,7 +12,17 @@ const STATUS_BY_CODE: Record<string, number> = {
   run_finished: 409,
   awaiting_approval: 409,
   stale_step: 409,
-  not_awaiting_approval: 409
+  not_awaiting_approval: 409,
+  // Rails (docs/rails.md)
+  kill_switch: 423,
+  concurrency_limit: 429,
+  budget_steps: 409,
+  budget_cost: 409,
+  deadline_exceeded: 409,
+  step_timeout: 409,
+  invalid_output: 422,
+  outcome_not_allowed: 422,
+  conflict: 409
 };
 
 export function workflowError(error: unknown) {

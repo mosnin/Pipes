@@ -49,3 +49,27 @@ export const remove = mutation({
     if (row) await ctx.db.delete(row._id);
   }
 });
+
+/**
+ * Conditional commit. Convex mutations are serializable transactions, so the
+ * read of the current rev, the compare and every write below happen as one
+ * unit: if another commit moved the rev first, this one writes nothing.
+ */
+const docArg = { kind: v.string(), id: v.string(), workspaceId: v.string(), refId: v.optional(v.string()), data: v.any() };
+export const commit = mutation({
+  args: { put: v.object({ ...docArg, expectedRev: v.number() }), inserts: v.optional(v.array(v.object(docArg))) },
+  handler: async (ctx, args) => {
+    const find = (kind, id) => ctx.db.query("documents").withIndex("by_kind_doc", (q) => q.eq("kind", kind).eq("docId", id)).first();
+    const existing = await find(args.put.kind, args.put.id);
+    const currentRev = existing ? Number(existing.data?.rev ?? 0) : -1;
+    if (currentRev !== args.put.expectedRev) return { ok: false, currentRev };
+    const ts = now();
+    const { expectedRev, ...put } = args.put;
+    for (const doc of [put, ...(args.inserts ?? [])]) {
+      const found = doc === put ? existing : await find(doc.kind, doc.id);
+      if (found) await ctx.db.patch(found._id, { workspaceId: doc.workspaceId, refId: doc.refId, data: doc.data, updatedAt: ts });
+      else await ctx.db.insert("documents", { kind: doc.kind, docId: doc.id, workspaceId: doc.workspaceId, refId: doc.refId, data: doc.data, createdAt: ts, updatedAt: ts });
+    }
+    return { ok: true };
+  }
+});

@@ -21,7 +21,9 @@ async function handle(request: Request) {
   for (const item of due) {
     try {
       const ctx = await triggerContext(repositories, item.workspaceId, `schedule:${item.schedule.id}`);
-      const run = await workflow.runs.start(ctx, { systemId: item.systemId, trigger: "schedule", input: item.schedule.input, actorLabel: item.schedule.label ?? "Schedule" });
+      // One run per schedule per minute, even if two cron calls overlap.
+      const minute = new Date().toISOString().slice(0, 16);
+      const run = await workflow.runs.start(ctx, { systemId: item.systemId, trigger: "schedule", input: item.schedule.input, actorLabel: item.schedule.label ?? "Schedule", idempotencyKey: `sched:${item.schedule.id}:${minute}` });
       results.push({ systemId: item.systemId, scheduleId: item.schedule.id, runId: run.id });
     } catch (error) {
       results.push({ systemId: item.systemId, scheduleId: item.schedule.id, error: (error as Error).message });

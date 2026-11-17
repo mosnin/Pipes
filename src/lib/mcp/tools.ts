@@ -75,10 +75,17 @@ export const MCP_TOOLS: McpTool[] = [
     description:
       "Start running a workflow. Returns the first step to do. Then loop: do the step, call complete_step, and follow the next step it returns until the run is completed.",
     capability: "runs:write",
-    inputSchema: obj({ systemId: str("The workflow id."), input: { description: "Optional input for the run, for example the ticket or task being handled." } }, ["systemId"]),
+    inputSchema: obj(
+      {
+        systemId: str("The workflow id."),
+        input: { description: "Optional input for the run, for example the ticket or task being handled." },
+        idempotencyKey: str("Optional. Any unique string for this start. If you retry with the same key, you get the same run back instead of a second one.")
+      },
+      ["systemId"]
+    ),
     handler: async (args, tc) => {
       const systemId = await ownedSystem(tc, args.systemId);
-      const run = await tc.workflow.runs.start(tc.ctx, { systemId, trigger: "mcp", input: args.input });
+      const run = await tc.workflow.runs.start(tc.ctx, { systemId, trigger: "mcp", input: args.input, idempotencyKey: args.idempotencyKey ? `mcp:${tc.ctx.actorId}:${args.idempotencyKey}` : undefined });
       return tc.workflow.currentStepWithConnections(tc.ctx, run.id, { withSecrets: hasCapability(tc.ctx.capabilities, "connections:secrets") });
     }
   },
@@ -107,13 +114,15 @@ export const MCP_TOOLS: McpTool[] = [
         outcome: str('success, failure, retry, or a route label. Defaults to success.'),
         output: { description: "What the step produced. Later steps receive it." },
         notes: str("Anything a person reviewing the run should know."),
-        next: str("A pipe id (or target step id) to take when there are several routes.")
+        next: str("A pipe id (or target step id) to take when there are several routes."),
+        idempotencyKey: str("Optional. A unique string for this completion. A retry with the same key is recognised and never completes a second step."),
+        costMicros: { type: "integer", minimum: 0, description: "Optional. What this step cost you, in micro-dollars (1,000,000 = $1). Counts toward the run's cost limit." }
       },
       ["runId"]
     ),
     handler: async (args, tc) => {
       const run = await ownedRun(tc, args.runId);
-      await tc.workflow.runs.complete(tc.ctx, run.id, { nodeId: args.nodeId, outcome: args.outcome, output: args.output, notes: args.notes, next: args.next });
+      await tc.workflow.runs.complete(tc.ctx, run.id, { nodeId: args.nodeId, outcome: args.outcome, output: args.output, notes: args.notes, next: args.next, idempotencyKey: args.idempotencyKey, costMicros: typeof args.costMicros === "number" ? args.costMicros : undefined });
       return tc.workflow.currentStepWithConnections(tc.ctx, run.id, { withSecrets: hasCapability(tc.ctx.capabilities, "connections:secrets") });
     }
   },
@@ -128,6 +137,19 @@ export const MCP_TOOLS: McpTool[] = [
       const run = await ownedRun(tc, args.runId);
       const { snapshot: _snapshot, ...rest } = run;
       return rest;
+    }
+  },
+  {
+    name: "get_run_events",
+    title: "Get a run's journal",
+    description: "Get a run's journal: every change to the run in order, with who made it and when. Use afterSeq to read only what happened since you last looked, for example after reconnecting.",
+    capability: "runs:read",
+    inputSchema: obj({ runId: str("The run id."), afterSeq: { type: "integer", minimum: 0, description: "Only events after this sequence number." } }, ["runId"]),
+    annotations: { readOnlyHint: true },
+    handler: async (args, tc) => {
+      const run = await ownedRun(tc, args.runId);
+      const events = await tc.workflow.runs.events(tc.ctx, run.id, Number(args.afterSeq ?? 0));
+      return { runId: run.id, rev: run.rev ?? 0, events: events.slice(0, 200) };
     }
   },
   {

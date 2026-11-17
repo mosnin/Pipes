@@ -6,6 +6,8 @@
  * decides where the run goes next. The agent does the work.
  */
 
+import type { Micros, StepRails, WorkflowRails } from "@/domain/rails/types";
+
 export type RouteKind = "default" | "success" | "failure" | "conditional" | "loop";
 
 /** What an agent needs to carry out one step. Stored per node in the system design. */
@@ -24,6 +26,8 @@ export type StepSpec = {
   exitCondition?: string;
   /** Human approval steps: who may approve. */
   approverRole?: "Owner" | "Admin" | "Editor";
+  /** Limits on this step: timeout, allowed outcomes, output contract, cost. See docs/rails.md. */
+  rails?: StepRails;
 };
 
 export type RouteSpec = { routeKind: RouteKind; label?: string; conditionLabel?: string; notes?: string };
@@ -37,6 +41,8 @@ export type WorkflowSnapshot = {
   pipes: SnapshotPipe[];
   steps: Record<string, StepSpec>;
   routes: Record<string, RouteSpec>;
+  /** Workflow-level rails, frozen with the run. */
+  rails?: WorkflowRails;
 };
 
 export type RunStatus = "running" | "waiting_approval" | "completed" | "failed" | "canceled";
@@ -57,6 +63,12 @@ export type StepRecord = {
   /** The route taken out of this step. */
   pipeId?: string;
   approval?: { decision: "approved" | "rejected" | "sent_back"; by: Actor; comment?: string; sentBackTo?: string };
+  /** What the performer reported spending on this step. */
+  costMicros?: Micros;
+  /** The key the completion was sent with, so a retry is recognised. */
+  idempotencyKey?: string;
+  /** Why the step ended, when it was not a normal completion. */
+  endReason?: "timeout" | "deadline" | "canceled";
 };
 
 export type WorkflowRun = {
@@ -76,7 +88,15 @@ export type WorkflowRun = {
   startedAt: string;
   endedAt?: string;
   error?: string;
+  /** A machine-readable code beside `error`, for example "deadline_exceeded". */
+  errorCode?: string;
   snapshot: WorkflowSnapshot;
+  /** Increments on every saved change. A save only lands if the rev has not moved (compare and set). */
+  rev?: number;
+  /** startedAt plus the workflow's maxDurationMs, when it has one. */
+  deadlineAt?: string;
+  /** Sum of reported step costs. */
+  costMicros?: Micros;
 };
 
 export type NextOption = { pipeId: string; toNodeId: string; toNodeTitle: string; routeKind: RouteKind; label?: string };
@@ -98,6 +118,15 @@ export type CurrentStep = {
     iteration: number;
     maxIterations?: number;
   } | null;
+  /** The limits this step and run are under, so the performer can see them. */
+  rails?: {
+    deadlineAt?: string;
+    stepTimesOutAt?: string;
+    allowedOutcomes?: string[];
+    outputSchema?: unknown;
+    stepsRemaining?: number;
+    costRemainingMicros?: Micros;
+  };
   /** Outputs of earlier steps, newest last, so the performer has context. */
   previousOutputs: Array<{ nodeId: string; title: string; outcome?: string; output?: unknown }>;
   input?: unknown;

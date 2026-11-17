@@ -6,6 +6,10 @@ import { MCP_TOOLS, toolDescriptors } from "@/lib/mcp/tools";
 import { getProtocolContext } from "@/lib/protocol/auth";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hasCapability } from "@/lib/protocol/tokens";
+import { createSwitchService } from "@/domain/rails/switches";
+
+/** Tools that change runs, metered against the token's write limit. */
+const WRITE_TOOLS = new Set(["start_run", "complete_step", "cancel_run", "add_comment", "create_workflow_from_template"]);
 
 /**
  * The Pipes MCP server (Streamable HTTP, JSON responses).
@@ -15,7 +19,7 @@ import { hasCapability } from "@/lib/protocol/tokens";
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER_INFO = { name: "pipes", title: "Pipes", version: "1.0.0" };
 const INSTRUCTIONS =
-  "Pipes holds the workflows your team wants agents to follow. To run one: list_workflows, start_run, then repeat (do the step you are given, call complete_step) until the run is completed. Follow each step's instructions and doneWhen. If a step is waiting for approval, a person decides it in Pipes; check back with get_current_step.";
+  "Pipes holds the workflows your team wants agents to follow. To run one: list_workflows, start_run, then repeat (do the step you are given, call complete_step) until the run is completed. Follow each step's instructions and doneWhen. If a step is waiting for approval, a person decides it in Pipes; check back with get_current_step. Some steps carry rails (a deadline, allowed outcomes, an output contract, a cost limit): they are listed under rails in the step you get, and Pipes refuses a completion that breaks them with the reason. Send an idempotencyKey with start_run and complete_step so a retry never acts twice.";
 
 type JsonRpcRequest = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: any };
 
@@ -57,6 +61,17 @@ async function handleOne(message: JsonRpcRequest, request: Request, auth: Awaite
         if (auth.ctx.actorType === "agent" && !hasCapability(auth.ctx.capabilities, tool.capability)) {
           throw new ProtocolError("PERMISSION_DENIED", `This token is missing the ${tool.capability} capability.`, 403);
         }
+        // Per-token rails (docs/rails.md): writes and starts have their own limits on top of the call limit.
+        if (auth.ctx.actorType === "agent" && WRITE_TOOLS.has(tool.name)) {
+          const limits = (await createSwitchService(auth.repositories).settings(auth.ctx.workspaceId)).tokenLimits;
+          const now = new Date().toISOString();
+          const writes = await auth.repositories.rateLimits.consume({ bucket: `mcp:w:${auth.ctx.actorId}`, windowSeconds: 60, limit: limits.writesPerMinute, now });
+          if (!writes.allowed) throw new ProtocolError("RATE_LIMITED", `This token reached its limit of ${limits.writesPerMinute} run changes a minute. Try again in ${writes.retryAfterSeconds}s.`, 429);
+          if (tool.name === "start_run") {
+            const starts = await auth.repositories.rateLimits.consume({ bucket: `mcp:s:${auth.ctx.actorId}`, windowSeconds: 3600, limit: limits.startsPerHour, now });
+            if (!starts.allowed) throw new ProtocolError("RATE_LIMITED", `This token reached its limit of ${limits.startsPerHour} runs an hour.`, 429);
+          }
+        }
         // Only calls that are allowed to run count as usage.
         await workflow.usage.record(auth.ctx.workspaceId, "mcp_call", { actorType: auth.ctx.actorType });
         const value = await tool.handler(params?.arguments ?? {}, { ctx: auth.ctx, services: auth.services, workflow, repositories: auth.repositories });
@@ -83,7 +98,8 @@ export async function POST(request: Request) {
   } catch (error) {
     return unauthorized(request, error instanceof Error ? error.message : "Invalid token.");
   }
-  const limited = await auth.repositories.rateLimits.consume({ bucket: `mcp:${auth.ctx.actorId}`, windowSeconds: 60, limit: 240, now: new Date().toISOString() });
+  const perMinute = auth.ctx.actorType === "agent" ? (await createSwitchService(auth.repositories).settings(auth.ctx.workspaceId)).tokenLimits.perMinute : 240;
+  const limited = await auth.repositories.rateLimits.consume({ bucket: `mcp:${auth.ctx.actorId}`, windowSeconds: 60, limit: perMinute, now: new Date().toISOString() });
   if (!limited.allowed) return NextResponse.json(rpcError(null, -32000, "Rate limit reached. Slow down."), { status: 429 });
 
   let body: JsonRpcRequest | JsonRpcRequest[];

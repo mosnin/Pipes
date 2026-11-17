@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: Params) {
     ensureCanEdit(ctx);
     await ensureSystemInWorkspace(repositories, ctx, systemId);
     const body = await request.json().catch(() => ({}));
-    const run = await workflow.runs.start(ctx, { systemId, trigger: "manual", input: body.input, startNodeId: body.startNodeId, actorLabel: identity.name });
+    const run = await workflow.runs.start(ctx, { systemId, trigger: "manual", input: body.input, startNodeId: body.startNodeId, actorLabel: identity.name, idempotencyKey: request.headers.get("idempotency-key") ?? body.idempotencyKey });
     return ok({ runId: run.id, status: run.status }, 201);
   } catch (error) {
     return workflowError(error);

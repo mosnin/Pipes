@@ -21,7 +21,7 @@ export async function PUT(request: Request, { params }: Params) {
     ensureCanEdit(ctx);
     await ensureSystemInWorkspace(repositories, ctx, systemId);
     const body = await request.json();
-    return ok(await workflow.design.update(ctx.workspaceId, systemId, { steps: body.steps, routes: body.routes, nodeDefinitions: body.nodeDefinitions, subsystems: body.subsystems }));
+    return ok(await workflow.design.update(ctx.workspaceId, systemId, { steps: body.steps, routes: body.routes, nodeDefinitions: body.nodeDefinitions, subsystems: body.subsystems, ...("rails" in body ? { rails: body.rails } : {}) }));
   } catch (error) {
     return workflowError(error);
   }

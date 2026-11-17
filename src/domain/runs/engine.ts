@@ -74,6 +74,8 @@ function enterNode(run: WorkflowRun, nodeId: string, at: string): WorkflowRun {
 }
 
 export function startRun(input: {
+  /** The clock, passed in so a journal can replay the run exactly. Defaults to now. */
+  at?: string;
   id: string;
   systemId: string;
   workspaceId: string;
@@ -86,8 +88,9 @@ export function startRun(input: {
   versionName?: string;
   startNodeId?: string;
 }): WorkflowRun {
-  const at = nowIso();
+  const at = input.at ?? nowIso();
   const startNodeId = findStartNode(input.snapshot, input.startNodeId);
+  const maxDurationMs = input.snapshot.rails?.budgets?.maxDurationMs;
   const base: WorkflowRun = {
     id: input.id,
     systemId: input.systemId,
@@ -102,7 +105,9 @@ export function startRun(input: {
     startedBy: input.startedBy,
     trigger: input.trigger,
     startedAt: at,
-    snapshot: input.snapshot
+    snapshot: input.snapshot,
+    rev: 0,
+    deadlineAt: maxDurationMs ? new Date(new Date(at).getTime() + maxDurationMs).toISOString() : undefined
   };
   return enterNode(base, startNodeId, at);
 }
@@ -113,7 +118,7 @@ function currentRecord(run: WorkflowRun): StepRecord {
   return record;
 }
 
-function isTerminal(run: WorkflowRun) {
+export function isTerminal(run: WorkflowRun) {
   return run.status === "completed" || run.status === "failed" || run.status === "canceled";
 }
 
@@ -176,13 +181,37 @@ export function chooseRoute(run: WorkflowRun, nodeId: string, outcome: string, n
   );
 }
 
-function finish(run: WorkflowRun, status: "completed" | "failed", at: string, error?: string): WorkflowRun {
-  return { ...run, status, currentNodeId: undefined, endedAt: at, error };
+function finish(run: WorkflowRun, status: "completed" | "failed", at: string, error?: string, errorCode?: string): WorkflowRun {
+  return { ...run, status, currentNodeId: undefined, endedAt: at, error, errorCode };
+}
+
+/** End a run as failed because a rail stopped it (deadline, budget). The open step is closed with the reason. */
+export function failRun(run: WorkflowRun, input: { code: string; message: string; at?: string; endReason?: StepRecord["endReason"] }): WorkflowRun {
+  if (isTerminal(run)) return run;
+  const at = input.at ?? nowIso();
+  const last = run.steps[run.steps.length - 1];
+  const steps = last && !last.completedAt ? [...run.steps.slice(0, -1), { ...last, completedAt: at, outcome: "failure", endReason: input.endReason, notes: input.message }] : run.steps;
+  return finish({ ...run, steps }, "failed", at, input.message, input.code);
+}
+
+/**
+ * The current step ran out of time. It takes its failure route when it has
+ * one (unless the step says to fail the run); otherwise the run fails.
+ */
+export function timeoutStep(run: WorkflowRun, input: { at?: string; failRunInstead?: boolean }): WorkflowRun {
+  if (isTerminal(run) || run.status === "waiting_approval") return run;
+  const at = input.at ?? nowIso();
+  const record = currentRecord(run);
+  const message = `${record.nodeTitle} ran out of time.`;
+  const failure = input.failRunInstead ? undefined : outgoingOptions(run.snapshot, record.nodeId).find((o) => o.routeKind === "failure");
+  if (!failure) return failRun(run, { code: "step_timeout", message, at, endReason: "timeout" });
+  const closed: StepRecord = { ...record, completedAt: at, outcome: "failure", endReason: "timeout", notes: message, pipeId: failure.pipeId };
+  return enterNode({ ...run, steps: [...run.steps.slice(0, -1), closed] }, failure.toNodeId, at);
 }
 
 export function completeStep(
   run: WorkflowRun,
-  input: { nodeId?: string; outcome?: string; output?: unknown; notes?: string; next?: string; performedBy: Actor }
+  input: { nodeId?: string; outcome?: string; output?: unknown; notes?: string; next?: string; performedBy: Actor; at?: string; costMicros?: number; idempotencyKey?: string }
 ): WorkflowRun {
   if (isTerminal(run)) throw new RunError("run_finished", `This run is already ${run.status}.`);
   if (run.status === "waiting_approval") throw new RunError("awaiting_approval", "This step is waiting for a person to approve it.");
@@ -190,11 +219,22 @@ export function completeStep(
   if (input.nodeId && input.nodeId !== record.nodeId) {
     throw new RunError("stale_step", `The current step is ${record.nodeId} (${record.nodeTitle}), not ${input.nodeId}.`);
   }
-  const at = nowIso();
+  const at = input.at ?? nowIso();
   const outcome = input.outcome?.trim() || "success";
   const route = chooseRoute(run, record.nodeId, outcome, input.next);
-  const completed: StepRecord = { ...record, completedAt: at, outcome, output: input.output, notes: input.notes, performedBy: input.performedBy, pipeId: route?.pipeId };
-  const withRecord: WorkflowRun = { ...run, steps: [...run.steps.slice(0, -1), completed] };
+  const cost = input.costMicros && input.costMicros > 0 ? Math.round(input.costMicros) : undefined;
+  const completed: StepRecord = {
+    ...record,
+    completedAt: at,
+    outcome,
+    output: input.output,
+    notes: input.notes,
+    performedBy: input.performedBy,
+    pipeId: route?.pipeId,
+    costMicros: cost,
+    idempotencyKey: input.idempotencyKey
+  };
+  const withRecord: WorkflowRun = { ...run, steps: [...run.steps.slice(0, -1), completed], costMicros: cost ? (run.costMicros ?? 0) + cost : run.costMicros };
 
   if (!route) {
     const failed = ["failure", "failed", "error"].includes(normalize(outcome));
@@ -205,11 +245,11 @@ export function completeStep(
 
 export function decideApproval(
   run: WorkflowRun,
-  input: { decision: "approved" | "rejected" | "sent_back"; by: Actor; comment?: string; sendBackTo?: string }
+  input: { decision: "approved" | "rejected" | "sent_back"; by: Actor; comment?: string; sendBackTo?: string; at?: string }
 ): WorkflowRun {
   if (run.status !== "waiting_approval") throw new RunError("not_awaiting_approval", "This run is not waiting for an approval.");
   const record = currentRecord(run);
-  const at = nowIso();
+  const at = input.at ?? nowIso();
   const approval = { decision: input.decision, by: input.by, comment: input.comment, sentBackTo: input.sendBackTo };
 
   if (input.decision === "sent_back") {
@@ -229,9 +269,9 @@ export function decideApproval(
   return enterNode(withRecord, route.toNodeId, at);
 }
 
-export function cancelRun(run: WorkflowRun, reason?: string): WorkflowRun {
+export function cancelRun(run: WorkflowRun, reason?: string, at?: string): WorkflowRun {
   if (isTerminal(run)) throw new RunError("run_finished", `This run is already ${run.status}.`);
-  return { ...run, status: "canceled", currentNodeId: undefined, endedAt: nowIso(), error: reason };
+  return { ...run, status: "canceled", currentNodeId: undefined, endedAt: at ?? nowIso(), error: reason };
 }
 
 export function describeCurrentStep(run: WorkflowRun): CurrentStep {
@@ -275,6 +315,24 @@ export function describeCurrentStep(run: WorkflowRun): CurrentStep {
     previousOutputs,
     input: run.input,
     options,
-    hint
+    hint,
+    rails: railsFor(run, spec, current.id)
   };
+}
+
+/** The limits the current step and run are under, for the performer. Undefined when there are none. */
+function railsFor(run: WorkflowRun, spec: WorkflowRun["snapshot"]["steps"][string], nodeId: string): CurrentStep["rails"] {
+  const stepRails = spec.rails;
+  const budgets = run.snapshot.rails?.budgets;
+  const record = run.steps[run.steps.length - 1];
+  const done = run.steps.filter((s) => s.completedAt).length;
+  const info: NonNullable<CurrentStep["rails"]> = {
+    deadlineAt: run.deadlineAt,
+    stepTimesOutAt: stepRails?.timeoutMs && record?.nodeId === nodeId ? new Date(new Date(record.startedAt).getTime() + stepRails.timeoutMs).toISOString() : undefined,
+    allowedOutcomes: stepRails?.allowedOutcomes,
+    outputSchema: stepRails?.output?.schema,
+    stepsRemaining: budgets?.maxSteps !== undefined ? Math.max(0, budgets.maxSteps - done) : undefined,
+    costRemainingMicros: budgets?.maxCostMicros !== undefined ? Math.max(0, budgets.maxCostMicros - (run.costMicros ?? 0)) : undefined
+  };
+  return Object.values(info).some((v) => v !== undefined) ? info : undefined;
 }

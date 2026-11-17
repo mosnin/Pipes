@@ -49,10 +49,17 @@ export interface UsageReporter {
 
 export function createUsageService(repos: RepositorySet, reporter?: UsageReporter) {
   return {
-    async record(workspaceId: string, metric: UsageMetric, extra: { quantity?: number; systemId?: string; runId?: string; actorType?: string } = {}) {
+    /**
+     * Record one usage event. Pass `id` when the event belongs to something
+     * that can be retried (a run start, a step completion): the same id is
+     * written once, so a retried request is never billed twice.
+     */
+    async record(workspaceId: string, metric: UsageMetric, extra: { quantity?: number; systemId?: string; runId?: string; actorType?: string; id?: string } = {}) {
       const at = new Date().toISOString();
       const event: UsageEvent = { metric, quantity: extra.quantity ?? 1, at, month: monthKey(), systemId: extra.systemId, runId: extra.runId, actorType: extra.actorType };
-      await repos.documents.put<UsageEvent>({ kind: USAGE_KIND, id: `use_${crypto.randomUUID()}`, workspaceId, refId: `${workspaceId}:${event.month}`, data: event });
+      const id = extra.id ? `use_${extra.id}` : `use_${crypto.randomUUID()}`;
+      if (extra.id && (await repos.documents.get(USAGE_KIND, id))) return;
+      await repos.documents.put<UsageEvent>({ kind: USAGE_KIND, id, workspaceId, refId: `${workspaceId}:${event.month}`, data: event });
       if (reporter) await reporter.report({ workspaceId, metric, quantity: event.quantity, at }).catch(() => undefined);
     },
 

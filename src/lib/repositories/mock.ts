@@ -70,6 +70,22 @@ export function createMockRepositories(): RepositorySet {
         const db = store.readDb();
         db.documents = db.documents.filter((d) => !(d.kind === kind && d.id === id));
         store.writeDb(db);
+      },
+      async commit(input) {
+        // Read, compare and write in one synchronous step: nothing can interleave.
+        const db = store.readDb();
+        const ts = now();
+        const existing = db.documents.find((d) => d.kind === input.put.kind && d.id === input.put.id);
+        const currentRev = existing ? Number((existing.data as { rev?: number } | undefined)?.rev ?? 0) : -1;
+        if (currentRev !== input.put.expectedRev) return { ok: false as const, currentRev };
+        const { expectedRev: _expectedRev, ...put } = input.put;
+        for (const doc of [put, ...(input.inserts ?? [])]) {
+          const found = db.documents.find((d) => d.kind === doc.kind && d.id === doc.id);
+          if (found) Object.assign(found, { workspaceId: doc.workspaceId, refId: doc.refId, data: doc.data, updatedAt: ts });
+          else db.documents.push({ ...doc, createdAt: ts, updatedAt: ts } as never);
+        }
+        store.writeDb(db);
+        return { ok: true as const };
       }
     },
     users: {

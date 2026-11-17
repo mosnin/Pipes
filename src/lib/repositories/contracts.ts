@@ -163,6 +163,16 @@ export interface DocumentsRepository {
   put<T>(input: { kind: string; id: string; workspaceId: string; refId?: string; data: T }): Promise<StoredDocument<T>>;
   list<T>(kind: string, filter: { workspaceId?: string; refId?: string }): Promise<StoredDocument<T>[]>;
   remove(kind: string, id: string): Promise<void>;
+  /**
+   * Conditional write, all or nothing: `put` lands only if the stored
+   * document's `data.rev` still equals `expectedRev` (-1 means "must not
+   * exist yet"); `inserts` are written in the same transaction. A run commit
+   * uses it so two agents completing the same step can never both win.
+   */
+  commit<T>(input: {
+    put: { kind: string; id: string; workspaceId: string; refId?: string; data: T; expectedRev: number };
+    inserts?: Array<{ kind: string; id: string; workspaceId: string; refId?: string; data: unknown }>;
+  }): Promise<{ ok: true } | { ok: false; currentRev: number }>;
 }
 
 export type RepositorySet = {

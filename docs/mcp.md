@@ -57,6 +57,23 @@ procedure and the state; the agent does the work.
 When the run reaches a human approval step its status is `waiting_approval`.
 A person decides it in Pipes (Approvals); poll `get_current_step` meanwhile.
 
+## Rails, retries and the journal
+
+- Send `idempotencyKey` with `start_run` and `complete_step`. A retry with the
+  same key returns the same run, or recognises the completion, instead of
+  acting twice.
+- `complete_step` takes `costMicros` (integer micro-dollars) for steps that
+  spend money.
+- `get_current_step` lists the limits that apply under `rails`: deadline, step
+  timeout, allowed outcomes, output schema, steps and cost remaining. Pipes
+  refuses a completion that breaks them, with the reason.
+- `get_run_events { runId, afterSeq? }` returns the run's journal, for an agent
+  resuming after a disconnect.
+- Each token has per-minute call and write limits and an hourly start limit,
+  set by the workspace (`RATE_LIMITED` when exceeded).
+
+See [rails.md](rails.md) and [agent_contract.md](agent_contract.md).
+
 ## Raw JSON-RPC
 
 ```bash

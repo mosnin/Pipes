@@ -1,3 +1,5 @@
+import type { WorkflowRails } from "@/domain/rails/types";
+import { sanitizeStepRails, sanitizeWorkflowRails } from "@/domain/rails/validate";
 import type { RouteSpec, StepSpec } from "@/domain/runs/types";
 import type { RepositorySet } from "@/lib/repositories/contracts";
 
@@ -14,6 +16,8 @@ export type SystemDesign = {
   routes: Record<string, RouteSpec>;
   nodeDefinitions: Record<string, unknown>;
   subsystems: unknown[];
+  /** Workflow-level execution rails (budgets, concurrency). See docs/rails.md. */
+  rails?: WorkflowRails;
 };
 
 export const EMPTY_DESIGN: SystemDesign = { steps: {}, routes: {}, nodeDefinitions: {}, subsystems: [] };
@@ -40,7 +44,8 @@ export function sanitizeStepSpec(input: any): StepSpec {
     connectionIds: cleanList(input?.connectionIds),
     maxIterations: Number.isFinite(max) && max >= 1 ? Math.min(Math.floor(max), 100) : undefined,
     exitCondition: cleanText(input?.exitCondition, 1000),
-    approverRole: role === "Owner" || role === "Admin" || role === "Editor" ? role : undefined
+    approverRole: role === "Owner" || role === "Admin" || role === "Editor" ? role : undefined,
+    rails: sanitizeStepRails(input?.rails)
   };
 }
 
@@ -68,7 +73,8 @@ export function createDesignService(repos: RepositorySet) {
         steps: patch.steps ? Object.fromEntries(Object.entries(patch.steps).map(([id, spec]) => [id, sanitizeStepSpec(spec)])) : current.steps,
         routes: patch.routes ? Object.fromEntries(Object.entries(patch.routes).map(([id, spec]) => [id, sanitizeRouteSpec(spec)])) : current.routes,
         nodeDefinitions: patch.nodeDefinitions ?? current.nodeDefinitions,
-        subsystems: patch.subsystems ?? current.subsystems
+        subsystems: patch.subsystems ?? current.subsystems,
+        rails: "rails" in patch ? sanitizeWorkflowRails(patch.rails) : current.rails
       };
       await repos.documents.put<SystemDesign>({ kind: DESIGN_KIND, id: systemId, workspaceId, refId: systemId, data: next });
       return next;
