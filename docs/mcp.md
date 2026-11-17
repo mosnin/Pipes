@@ -30,7 +30,7 @@ claude mcp add --transport http pipes https://<your-pipes-host>/api/mcp
 
 | Capability | Tools |
 | --- | --- |
-| `systems:read` | `list_workflows`, `get_workflow` |
+| `systems:read` | `list_workflows`, `get_workflow`, `list_skills`, `get_skill` (and MCP prompts) |
 | `runs:read` | `get_current_step`, `get_run`, `list_runs` |
 | `runs:write` | `start_run`, `complete_step`, `cancel_run` |
 | `connections:secrets` | step payloads include connection headers (never implied by `systems:write`) |
@@ -86,6 +86,12 @@ See [rails.md](rails.md) and [agent_contract.md](agent_contract.md).
 - `search_memory`, `remember` and `forget_memory` work outside a step.
 
 See [memory.md](memory.md).
+
+## Skills
+
+`list_skills` and `get_skill` return procedures for agents working in Pipes,
+also offered as MCP prompts. A step that names one returns it under `guides`.
+See [skills.md](skills.md).
 
 ## Raw JSON-RPC
 

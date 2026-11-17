@@ -18,7 +18,7 @@ const LOOP: { title: string; mono: boolean; body: string }[] = [
   { title: "Repeat", mono: false, body: "Keep doing and completing steps until the run is completed. get_current_step picks a run back up after a break." }
 ];
 
-export function ConnectAgentView(): ReactNode {
+export function ConnectAgentView({ skills = [] }: { skills?: Array<{ name: string; description: string }> }): ReactNode {
   useIntro("agents");
   const origin = useOrigin();
   const mcpUrl = `${origin || "https://your-pipes-host"}/api/mcp`;
@@ -97,6 +97,14 @@ export function ConnectAgentView(): ReactNode {
           </ol>
         </Card>
       </SettingsSection>
+
+      {skills.length ? (
+        <SettingsSection title="Skills" description="Procedures Pipes ships for agents working inside it. An agent lists them with list_skills and loads one with get_skill; clients with a prompt picker show them as prompts. A step that names a skill points its performer to it.">
+          <Card>
+            <FactList facts={skills.map((s) => ({ label: <span className="t-mono-hash text-ink">{s.name}</span>, value: <span className="text-ink-2">{s.description}</span> }))} />
+          </Card>
+        </SettingsSection>
+      ) : null}
     </SettingsShell>
   );
 }

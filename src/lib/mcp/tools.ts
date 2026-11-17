@@ -1,4 +1,5 @@
 import { publicFact } from "@/domain/memory/service";
+import { getSkill, listSkills, renderSkill } from "@/lib/skills/catalog";
 import { RunError } from "@/domain/runs/engine";
 import type { createBoundedServices } from "@/domain/services/bounded";
 import type { WorkflowServices } from "@/domain/workflow";
@@ -212,6 +213,28 @@ export const MCP_TOOLS: McpTool[] = [
     inputSchema: obj({ systemId: str("The workflow id.") }, ["systemId"]),
     annotations: { readOnlyHint: true },
     handler: async (args, tc) => tc.services.schema.export(tc.ctx, await ownedSystem(tc, args.systemId))
+  },
+  {
+    name: "list_skills",
+    title: "List skills",
+    description: "List the procedures Pipes ships for agents working inside it: walking a run, reporting a step, choosing a route, recovering from a refusal, remembering facts, reviewing and designing workflows. Load one with get_skill before a task it covers.",
+    capability: "systems:read",
+    inputSchema: obj({}),
+    annotations: { readOnlyHint: true },
+    handler: async () => ({ skills: listSkills().map((s) => ({ name: s.name, description: s.description, triggers: s.triggers, tools: s.tools })) })
+  },
+  {
+    name: "get_skill",
+    title: "Get a skill",
+    description: "Read one skill's full procedure: when to use it, the steps, the rules and how to tell it is done.",
+    capability: "systems:read",
+    inputSchema: obj({ name: str("The skill name from list_skills, such as walk-a-run.") }, ["name"]),
+    annotations: { readOnlyHint: true },
+    handler: async (args) => {
+      const skill = getSkill(String(args.name ?? ""));
+      if (!skill) throw new RunError("bad_request", `No skill named "${args.name}". Call list_skills for the names.`);
+      return { name: skill.name, version: skill.version, description: skill.description, tools: skill.tools, capabilities: skill.capabilities, instructions: renderSkill(skill) };
+    }
   },
   {
     name: "search_memory",

@@ -7,6 +7,7 @@ import { getProtocolContext } from "@/lib/protocol/auth";
 import { ProtocolError } from "@/lib/protocol/errors";
 import { hasCapability } from "@/lib/protocol/tokens";
 import { createSwitchService } from "@/domain/rails/switches";
+import { getSkill, listSkills, renderSkill } from "@/lib/skills/catalog";
 
 /** Tools that change runs, metered against the token's write limit. */
 const WRITE_TOOLS = new Set(["start_run", "complete_step", "cancel_run", "add_comment", "create_workflow_from_template", "remember", "forget_memory"]);
@@ -19,7 +20,7 @@ const WRITE_TOOLS = new Set(["start_run", "complete_step", "cancel_run", "add_co
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER_INFO = { name: "pipes", title: "Pipes", version: "1.0.0" };
 const INSTRUCTIONS =
-  "Pipes holds the workflows your team wants agents to follow. To run one: list_workflows, start_run, then repeat (do the step you are given, call complete_step) until the run is completed. Follow each step's instructions and doneWhen. If a step is waiting for approval, a person decides it in Pipes; check back with get_current_step. Some steps carry rails (a deadline, allowed outcomes, an output contract, a cost limit): they are listed under rails in the step you get, and Pipes refuses a completion that breaks them with the reason. Send an idempotencyKey with start_run and complete_step so a retry never acts twice.";
+  "Pipes holds the workflows your team wants agents to follow. To run one: list_workflows, start_run, then repeat (do the step you are given, call complete_step) until the run is completed. Follow each step's instructions and doneWhen. If a step is waiting for approval, a person decides it in Pipes; check back with get_current_step. Some steps carry rails (a deadline, allowed outcomes, an output contract, a cost limit): they are listed under rails in the step you get, and Pipes refuses a completion that breaks them with the reason. Send an idempotencyKey with start_run and complete_step so a retry never acts twice. Each step lists what the workflow remembers under memory; pass remember on complete_step for facts later runs should know. For a procedure on any of this, list_skills and get_skill (walk-a-run first).";
 
 type JsonRpcRequest = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: any };
 
@@ -44,13 +45,21 @@ async function handleOne(message: JsonRpcRequest, request: Request, auth: Awaite
       const requested = params?.protocolVersion;
       return result(id, {
         protocolVersion: PROTOCOL_VERSIONS.includes(requested) ? requested : PROTOCOL_VERSIONS[0],
-        capabilities: { tools: { listChanged: false } },
+        capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions: INSTRUCTIONS
       });
     }
     case "ping":
       return result(id, {});
+    // Skills (docs/skills.md) are offered as prompts too, so clients with a prompt picker show them.
+    case "prompts/list":
+      return result(id, { prompts: listSkills().map((s) => ({ name: s.name, title: s.name.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()), description: s.description, arguments: [] })) });
+    case "prompts/get": {
+      const skill = getSkill(String(params?.name ?? ""));
+      if (!skill) return rpcError(id, -32602, `Unknown prompt: ${params?.name}`);
+      return result(id, { description: skill.description, messages: [{ role: "user", content: { type: "text", text: renderSkill(skill) } }] });
+    }
     case "tools/list":
       return result(id, { tools: toolDescriptors().filter((t) => hasCapability(auth.ctx.capabilities, MCP_TOOLS.find((m) => m.name === t.name)!.capability) || auth.ctx.actorType === "user") });
     case "tools/call": {

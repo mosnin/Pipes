@@ -2,6 +2,7 @@ import { createConnectionService } from "@/domain/connections/service";
 import { createDecisionService } from "@/domain/decisions/service";
 import { createDesignService } from "@/domain/design/service";
 import { createMemoryService, publicFact } from "@/domain/memory/service";
+import { getSkill } from "@/lib/skills/catalog";
 import { createRunService } from "@/domain/runs/service";
 import type { CurrentStep } from "@/domain/runs/types";
 import { createTriggerService } from "@/domain/triggers/service";
@@ -54,12 +55,14 @@ export function createWorkflowServices(repos: RepositorySet) {
     },
 
     /** The current step with its connections resolved, ready to hand to a performer. */
-    async currentStepWithConnections(ctx: AppContext, runId: string, options: { withSecrets: boolean }): Promise<CurrentStep & { connections: Awaited<ReturnType<typeof connections.resolve>>; memory: ReturnType<typeof publicFact>[] }> {
+    async currentStepWithConnections(ctx: AppContext, runId: string, options: { withSecrets: boolean }): Promise<CurrentStep & { connections: Awaited<ReturnType<typeof connections.resolve>>; memory: ReturnType<typeof publicFact>[]; guides?: Array<{ name: string; description: string; load: string }> }> {
       const current = await runs.current(ctx, runId);
       const resolved = current.step ? await connections.resolve(ctx.workspaceId, current.step.connectionIds, options.withSecrets) : [];
       const run = current.step ? await runs.get(ctx, runId) : null;
       const facts = run && current.step ? await memory.forStep(ctx, run.systemId, current.step).catch(() => []) : [];
-      return { ...current, connections: resolved, memory: facts.map(publicFact) };
+      // A step that names a catalog skill points its performer to the procedure (docs/skills.md).
+      const guides = (current.step?.skills ?? []).map((name) => getSkill(name)).filter((s) => s !== null).map((s) => ({ name: s.name, description: s.description, load: `get_skill { "name": "${s.name}" }` }));
+      return { ...current, connections: resolved, memory: facts.map(publicFact), ...(guides.length ? { guides } : {}) };
     }
   };
 }

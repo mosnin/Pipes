@@ -26,3 +26,9 @@ copied from the Podium app by the same owner.
   @fontsource-variable/inter. Geist Mono, SIL Open Font License 1.1, via the
   geist package.
 - Icons are lucide (https://lucide.dev), ISC.
+- src/skills/ follows the skill layout of gstack (https://github.com/garrytan/gstack),
+  Copyright (c) 2026 Garry Tan, MIT: one folder per skill with a SKILL.md of
+  frontmatter and procedure. The skills themselves are written for Pipes.
+- Workflow memory (src/domain/memory) takes its model of facts with validity
+  times and provenance from Graphiti (https://github.com/getzep/graphiti,
+  Apache-2.0) and gbrain; no code is copied.
