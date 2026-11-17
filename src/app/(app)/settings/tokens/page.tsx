@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { AGENT_CAPABILITIES } from "@/lib/protocol/tokens";
+import { AGENT_CAPABILITIES } from "@/lib/protocol/capabilities";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
