@@ -2,6 +2,7 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,18 @@ import { type InsertContext, groupByCategory, nodeLibraryCatalog, rankLibraryEnt
 import { computeCompatibilityHint, createDefaultNodeDefinition, summarizeContract, type ContractType, type FieldContract, type NodeDefinition, validateNodeDefinition } from "@/components/editor/node_definition";
 import { autoArrange, collapseAwareGraph, computeSubsystemBoundary, createSubsystemFromSelection, type LayoutPreset, type Subsystem } from "@/components/editor/structure_model";
 import { presentPipes, summarizeTrace, traceEdgesFromSteps, type PipeRouteKind, type PipeSemantics } from "@/components/editor/pipe_semantics";
-import { AgentChatPanel } from "@/components/editor/AgentChatPanel";
-import { AgentStepPanel, type ConnectionsState } from "@/components/editor/AgentStepPanel";
+import type { ConnectionsState } from "@/components/editor/AgentStepPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSystemDesign } from "@/components/editor/design_sync";
 import { useIntro } from "@/lib/onboarding";
+
+// The agent panels are only needed in agent mode or on the agent tab, so they
+// load after the canvas instead of with it.
+const AgentChatPanel = dynamic(() => import("@/components/editor/AgentChatPanel").then((m) => m.AgentChatPanel), { ssr: false });
+const AgentStepPanel = dynamic(() => import("@/components/editor/AgentStepPanel").then((m) => m.AgentStepPanel), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[160px] w-full rounded-12" />
+});
 
 type SystemPayload = {
   system: { id: string; name: string; description: string };
