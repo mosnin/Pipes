@@ -1,6 +1,7 @@
 import { createConnectionService } from "@/domain/connections/service";
 import { createDecisionService } from "@/domain/decisions/service";
 import { createDesignService } from "@/domain/design/service";
+import { createMemoryService, publicFact } from "@/domain/memory/service";
 import { createRunService } from "@/domain/runs/service";
 import type { CurrentStep } from "@/domain/runs/types";
 import { createTriggerService } from "@/domain/triggers/service";
@@ -16,6 +17,7 @@ export function createWorkflowServices(repos: RepositorySet) {
   const decisions = createDecisionService(repos);
   const runs = createRunService(repos, { onEvent: ({ type, run }) => triggers.deliver(type, run), decisions });
   const connections = createConnectionService(repos);
+  const memory = createMemoryService(repos);
 
   return {
     design: createDesignService(repos),
@@ -24,12 +26,40 @@ export function createWorkflowServices(repos: RepositorySet) {
     runs,
     decisions,
     connections,
+    memory,
+
+    /**
+     * Complete the current step, then store any facts the performer asked
+     * Pipes to remember. A fact that cannot be stored never undoes the
+     * completion; it comes back in `remembered` with the reason.
+     */
+    async completeStep(ctx: AppContext, runId: string, input: Parameters<typeof runs.complete>[2] & { remember?: unknown }) {
+      const before = await runs.get(ctx, runId);
+      const run = await runs.complete(ctx, runId, input);
+      const items = Array.isArray(input.remember) ? input.remember.slice(0, 10) : [];
+      const step = before.steps[before.steps.length - 1];
+      const remembered: Array<{ text: string; ok: boolean; id?: string; error?: string }> = [];
+      for (const item of items) {
+        const text = typeof item === "string" ? item : item && typeof item === "object" ? (item as { text?: unknown }).text : undefined;
+        const key = item && typeof item === "object" ? (item as { key?: unknown }).key : undefined;
+        const scope = item && typeof item === "object" && (item as { scope?: unknown }).scope === "workspace" ? undefined : run.systemId;
+        try {
+          const { fact } = await memory.remember(ctx, { systemId: scope, text, key, source: { type: "run", actorId: ctx.actorId, label: input.actorLabel ?? (ctx.actorType === "agent" ? "An agent" : "A person"), runId, nodeId: step?.nodeId, stepTitle: step?.nodeTitle } });
+          remembered.push({ text: fact.text, ok: true, id: fact.id });
+        } catch (error) {
+          remembered.push({ text: String(text ?? ""), ok: false, error: (error as Error).message });
+        }
+      }
+      return { run, remembered };
+    },
 
     /** The current step with its connections resolved, ready to hand to a performer. */
-    async currentStepWithConnections(ctx: AppContext, runId: string, options: { withSecrets: boolean }): Promise<CurrentStep & { connections: Awaited<ReturnType<typeof connections.resolve>> }> {
+    async currentStepWithConnections(ctx: AppContext, runId: string, options: { withSecrets: boolean }): Promise<CurrentStep & { connections: Awaited<ReturnType<typeof connections.resolve>>; memory: ReturnType<typeof publicFact>[] }> {
       const current = await runs.current(ctx, runId);
       const resolved = current.step ? await connections.resolve(ctx.workspaceId, current.step.connectionIds, options.withSecrets) : [];
-      return { ...current, connections: resolved };
+      const run = current.step ? await runs.get(ctx, runId) : null;
+      const facts = run && current.step ? await memory.forStep(ctx, run.systemId, current.step).catch(() => []) : [];
+      return { ...current, connections: resolved, memory: facts.map(publicFact) };
     }
   };
 }

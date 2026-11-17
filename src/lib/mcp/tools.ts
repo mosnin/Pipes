@@ -1,3 +1,4 @@
+import { publicFact } from "@/domain/memory/service";
 import { RunError } from "@/domain/runs/engine";
 import type { createBoundedServices } from "@/domain/services/bounded";
 import type { WorkflowServices } from "@/domain/workflow";
@@ -116,14 +117,23 @@ export const MCP_TOOLS: McpTool[] = [
         notes: str("Anything a person reviewing the run should know."),
         next: str("A pipe id (or target step id) to take when there are several routes."),
         idempotencyKey: str("Optional. A unique string for this completion. A retry with the same key is recognised and never completes a second step."),
-        costMicros: { type: "integer", minimum: 0, description: "Optional. What this step cost you, in micro-dollars (1,000,000 = $1). Counts toward the run's cost limit." }
+        costMicros: { type: "integer", minimum: 0, description: "Optional. What this step cost you, in micro-dollars (1,000,000 = $1). Counts toward the run's cost limit." },
+        remember: {
+          type: "array",
+          maxItems: 10,
+          description: "Optional. Facts worth knowing on later runs of this workflow, one per item: a string, or { text, key?, scope? }. A fact with the key of an existing one replaces it. Needs memory:write; never put secrets here.",
+          items: { anyOf: [{ type: "string" }, { type: "object", properties: { text: { type: "string" }, key: { type: "string" }, scope: { type: "string", enum: ["workflow", "workspace"] } }, required: ["text"] }] }
+        }
       },
       ["runId"]
     ),
     handler: async (args, tc) => {
       const run = await ownedRun(tc, args.runId);
-      await tc.workflow.runs.complete(tc.ctx, run.id, { nodeId: args.nodeId, outcome: args.outcome, output: args.output, notes: args.notes, next: args.next, idempotencyKey: args.idempotencyKey, costMicros: typeof args.costMicros === "number" ? args.costMicros : undefined });
-      return tc.workflow.currentStepWithConnections(tc.ctx, run.id, { withSecrets: hasCapability(tc.ctx.capabilities, "connections:secrets") });
+      const remember = Array.isArray(args.remember) && args.remember.length ? args.remember : undefined;
+      if (remember && tc.ctx.actorType === "agent" && !hasCapability(tc.ctx.capabilities, "memory:write")) throw new ProtocolError("PERMISSION_DENIED", "This token is missing the memory:write capability, so it cannot pass remember. Complete the step without it.", 403);
+      const { remembered } = await tc.workflow.completeStep(tc.ctx, run.id, { remember, nodeId: args.nodeId, outcome: args.outcome, output: args.output, notes: args.notes, next: args.next, idempotencyKey: args.idempotencyKey, costMicros: typeof args.costMicros === "number" ? args.costMicros : undefined });
+      const next = await tc.workflow.currentStepWithConnections(tc.ctx, run.id, { withSecrets: hasCapability(tc.ctx.capabilities, "connections:secrets") });
+      return remembered.length ? { ...next, remembered } : next;
     }
   },
   {
@@ -202,6 +212,46 @@ export const MCP_TOOLS: McpTool[] = [
     inputSchema: obj({ systemId: str("The workflow id.") }, ["systemId"]),
     annotations: { readOnlyHint: true },
     handler: async (args, tc) => tc.services.schema.export(tc.ctx, await ownedSystem(tc, args.systemId))
+  },
+  {
+    name: "search_memory",
+    title: "Search workflow memory",
+    description: "Find facts this workflow (and the workspace) has learned on earlier runs: customer preferences, quirks of a tool, decisions already made. get_current_step already includes the facts that match the step; search when you need something else. Facts that were replaced or forgotten are not returned.",
+    capability: "memory:read",
+    inputSchema: obj({ systemId: str("The workflow id. Omit for workspace-wide facts only."), query: str("What you want to know, in a few words. Omit for the newest facts."), limit: { type: "integer", minimum: 1, maximum: 50, description: "Default 10." } }),
+    annotations: { readOnlyHint: true },
+    handler: async (args, tc) => {
+      const systemId = args.systemId ? await ownedSystem(tc, args.systemId) : tc.ctx.systemScope ?? undefined;
+      const facts = await tc.workflow.memory.search(tc.ctx, { systemId, query: typeof args.query === "string" ? args.query : undefined, limit: typeof args.limit === "number" ? args.limit : undefined });
+      return { facts: facts.map(publicFact) };
+    }
+  },
+  {
+    name: "remember",
+    title: "Remember a fact",
+    description: "Store one fact for later runs of a workflow, outside of completing a step. One sentence, one thing, true beyond this run (\"Acme wants invoices in EUR\", not \"I am on step 3\"). Give related facts the same key so a newer one replaces the older one. Never store secrets; connections hold those.",
+    capability: "memory:write",
+    inputSchema: obj({ systemId: str("The workflow the fact belongs to. Omit for a workspace-wide fact."), text: str("The fact, one sentence."), key: str("Optional. A short name for what the fact is about, such as acme-invoice-currency."), runId: str("Optional. The run that taught you this, for provenance.") }, ["text"]),
+    handler: async (args, tc) => {
+      const systemId = args.systemId ? await ownedSystem(tc, args.systemId) : undefined;
+      const run = args.runId ? await ownedRun(tc, args.runId) : undefined;
+      const result = await tc.workflow.memory.remember(tc.ctx, { systemId, text: args.text, key: args.key, source: { type: tc.ctx.actorType === "agent" ? "agent" : "person", actorId: tc.ctx.actorId, runId: run?.id } });
+      return { fact: publicFact(result.fact), duplicate: result.duplicate, replaced: result.replaced ? publicFact(result.replaced) : undefined };
+    }
+  },
+  {
+    name: "forget_memory",
+    title: "Forget a fact",
+    description: "Mark a fact as no longer true, with a reason. It stops appearing in steps and searches but stays in the workflow's memory history. To correct a fact, remember the new one with the same key instead.",
+    capability: "memory:write",
+    inputSchema: obj({ factId: str("The fact id, from search_memory or get_current_step."), reason: str("Why it no longer holds.") }, ["factId"]),
+    annotations: { destructiveHint: true, idempotentHint: true },
+    handler: async (args, tc) => {
+      const fact = await tc.workflow.memory.get(tc.ctx, String(args.factId ?? ""));
+      if (!fact) throw new RunError("bad_request", "No fact with that id.");
+      if (fact.systemId) scope(tc, fact.systemId);
+      return { fact: publicFact(await tc.workflow.memory.forget(tc.ctx, fact.id, args.reason)) };
+    }
   },
   {
     name: "add_comment",

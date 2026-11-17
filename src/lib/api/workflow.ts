@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { MemoryError } from "@/domain/memory/service";
 import { RunError } from "@/domain/runs/engine";
 import { createWorkflowServices } from "@/domain/workflow";
 import { getServerApp } from "@/lib/composition/server";
@@ -22,11 +23,15 @@ const STATUS_BY_CODE: Record<string, number> = {
   step_timeout: 409,
   invalid_output: 422,
   outcome_not_allowed: 422,
-  conflict: 409
+  conflict: 409,
+  // Memory (docs/memory.md)
+  not_found: 404,
+  memory_full: 409,
+  looks_secret: 422
 };
 
 export function workflowError(error: unknown) {
-  if (error instanceof RunError) {
+  if (error instanceof RunError || error instanceof MemoryError) {
     return NextResponse.json({ ok: false, error: error.code, message: error.message }, { status: STATUS_BY_CODE[error.code] ?? 400 });
   }
   const message = error instanceof Error ? error.message : "Something went wrong.";

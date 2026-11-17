@@ -24,6 +24,9 @@ holds for MCP (`/api/mcp`) and REST alike.
 - Report `costMicros` (integer micro-dollars) on `complete_step` when the step
   spent money, so cost limits work.
 - After reconnecting, read `get_run_events` with the last `seq` you saw.
+- Read the step's `memory` before starting, and pass `remember` on
+  `complete_step` for anything a later run should know. One fact per item,
+  true beyond this run, never a secret. See [memory.md](memory.md).
 
 ## Can expect
 
@@ -41,4 +44,4 @@ holds for MCP (`/api/mcp`) and REST alike.
 `kill_switch`, `concurrency_limit`, `budget_steps`, `budget_cost`,
 `deadline_exceeded`, `step_timeout`, `invalid_output`, `outcome_not_allowed`,
 `conflict`. Over MCP, a token over its limits gets `RATE_LIMITED` with the time
-to wait.
+to wait. Memory tools add `not_found`, `memory_full` and `looks_secret`.

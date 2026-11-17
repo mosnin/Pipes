@@ -652,6 +652,7 @@ function EditorWorkspaceView({ systemId, data, reload }: { systemId: string; dat
           <nav aria-label="Workflow" className="flex items-center gap-1">
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/runs`}>Runs</Link></Button>
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/triggers`}>Triggers</Link></Button>
+            <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/memory`}>Memory</Link></Button>
             <Button asChild size="sm" variant="ghost"><Link href={`/systems/${systemId}/rails`}>Rails</Link></Button>
             <Button size="sm" variant="primary" loading={starting} onClick={startRun}>Run</Button>
           </nav>

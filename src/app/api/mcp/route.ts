@@ -9,7 +9,7 @@ import { hasCapability } from "@/lib/protocol/tokens";
 import { createSwitchService } from "@/domain/rails/switches";
 
 /** Tools that change runs, metered against the token's write limit. */
-const WRITE_TOOLS = new Set(["start_run", "complete_step", "cancel_run", "add_comment", "create_workflow_from_template"]);
+const WRITE_TOOLS = new Set(["start_run", "complete_step", "cancel_run", "add_comment", "create_workflow_from_template", "remember", "forget_memory"]);
 
 /**
  * The Pipes MCP server (Streamable HTTP, JSON responses).

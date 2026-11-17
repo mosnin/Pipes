@@ -70,6 +70,8 @@ export function ConnectAgentView(): ReactNode {
                 { label: <span className="t-mono-hash text-ink">systems:read</span>, value: <span className="text-ink-2">Find workflows and read their steps</span> },
                 { label: <span className="t-mono-hash text-ink">runs:read</span>, value: <span className="text-ink-2">Read runs and the current step</span> },
                 { label: <span className="t-mono-hash text-ink">runs:write</span>, value: <span className="text-ink-2">Start runs and complete steps</span> },
+                { label: <span className="t-mono-hash text-ink">memory:read</span>, value: <span className="text-ink-2">Search what the workflow learned on earlier runs</span> },
+                { label: <span className="t-mono-hash text-ink">memory:write</span>, value: <span className="text-ink-2">Optional. Remember facts for later runs, and forget them</span> },
                 {
                   label: <span className="t-mono-hash text-ink">connections:secrets</span>,
                   value: <span className="text-ink-2">Optional. Receive connection credentials with each step</span>

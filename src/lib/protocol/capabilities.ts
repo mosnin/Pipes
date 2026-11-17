@@ -18,6 +18,8 @@ export const AGENT_CAPABILITIES = [
   "validation:read",
   "runs:read",
   "runs:write",
+  "memory:read",
+  "memory:write",
   "connections:secrets"
 ] as const;
 

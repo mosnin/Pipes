@@ -44,7 +44,7 @@ import { Avatar } from "@/components/ledger/author-stamp";
 import { RunJournal } from "@/components/runs/run-journal";
 import { DecisionNotes, RouteSuggestion, TriageSuggestion } from "@/components/decisions/decision-ui";
 
-type Current = CurrentStep & { connections: ConnectionView[] };
+type Current = CurrentStep & { connections: ConnectionView[]; memory?: Array<{ id: string; text: string; from: string; scope: "workflow" | "workspace" }> };
 type Detail = { run: WorkflowRun; current: Current };
 
 /** While a run can still move, re-read it this often so an agent's progress shows without a reload. */
@@ -259,7 +259,7 @@ function Block({ label, children }: { label: string; children: ReactNode }): Rea
 function StepBrief({ current }: { current: Current }): ReactNode {
   const step = current.step;
   if (!step) return null;
-  const hasBrief = Boolean(step.description || step.instructions || step.doneWhen || step.exitCondition || step.skills.length || current.connections.length);
+  const hasBrief = Boolean(step.description || step.instructions || step.doneWhen || step.exitCondition || step.skills.length || current.connections.length || current.memory?.length);
   if (!hasBrief) {
     return <p className="t-body text-ink-3">This step has no instructions yet. Add them in the workflow editor so the next person or agent knows what to do.</p>;
   }
@@ -287,6 +287,18 @@ function StepBrief({ current }: { current: Current }): ReactNode {
             {step.skills.map((skill) => (
               <li key={skill} className="t-mono-micro inline-flex h-[20px] max-w-full items-center truncate rounded-6 bg-inset px-1.5 text-ink-2">
                 {skill}
+              </li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+      {current.memory?.length ? (
+        <Block label="What this workflow remembers">
+          <ul className="flex flex-col gap-1.5">
+            {current.memory.map((m) => (
+              <li key={m.id} className="flex flex-col">
+                <span className="t-body text-ink">{m.text}</span>
+                <span className="t-caption text-ink-3">{m.from}</span>
               </li>
             ))}
           </ul>

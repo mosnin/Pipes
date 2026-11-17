@@ -15,7 +15,7 @@ interface Crumb {
 }
 
 /** Sub-pages of a workflow that get a named crumb rather than a deslugified segment. */
-const SYSTEM_SECTIONS: Record<string, string> = { runs: "Runs", triggers: "Triggers", rails: "Rails", handoff: "Handoff" };
+const SYSTEM_SECTIONS: Record<string, string> = { runs: "Runs", triggers: "Triggers", rails: "Rails", memory: "Memory", handoff: "Handoff" };
 
 function deslugify(slug: string): string {
   const words = slug.replace(/[-_]/g, " ").trim();

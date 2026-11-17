@@ -11,7 +11,7 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 export const OAUTH_SCOPES: Record<string, { label: string; capabilities: AgentCapability[] }> = {
   pipes: {
     label: "Read your workflows and run them step by step",
-    capabilities: ["systems:read", "schema:read", "templates:read", "templates:instantiate", "runs:read", "runs:write", "comments:write", "validation:read", "versions:read"]
+    capabilities: ["systems:read", "schema:read", "templates:read", "templates:instantiate", "runs:read", "runs:write", "memory:read", "memory:write", "comments:write", "validation:read", "versions:read"]
   },
   "pipes:write": { label: "Edit your workflows", capabilities: ["graph:write", "versions:write", "import:write"] }
 };

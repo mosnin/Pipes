@@ -37,6 +37,8 @@ claude mcp add --transport http pipes https://<your-pipes-host>/api/mcp
 | `templates:read`, `templates:instantiate` | `list_templates`, `create_workflow_from_template` |
 | `schema:read` | `export_workflow` |
 | `comments:write` | `add_comment` |
+| `memory:read` | `search_memory` |
+| `memory:write` | `remember`, `forget_memory`, and `remember` on `complete_step` |
 
 A token scoped to one workflow only sees that workflow.
 
@@ -73,6 +75,17 @@ A person decides it in Pipes (Approvals); poll `get_current_step` meanwhile.
   set by the workspace (`RATE_LIMITED` when exceeded).
 
 See [rails.md](rails.md) and [agent_contract.md](agent_contract.md).
+
+## Memory
+
+- `get_current_step` returns `memory`: up to five facts the workflow learned
+  on earlier runs that match the step.
+- `complete_step` takes `remember`, a list of facts for later runs (strings,
+  or `{ text, key?, scope? }`). The result lists each one under `remembered`;
+  a fact that is refused never undoes the completion.
+- `search_memory`, `remember` and `forget_memory` work outside a step.
+
+See [memory.md](memory.md).
 
 ## Raw JSON-RPC
 
