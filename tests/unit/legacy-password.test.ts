@@ -14,3 +14,14 @@ describe("password hashing", () => {
     expect(hashPassword("same password here")).not.toBe(hashPassword("same password here"));
   });
 });
+
+describe("Convex errors", () => {
+  it("never pass call arguments, keys or tokens through to callers", async () => {
+    const { cleanConvexError } = await import("@/lib/convex/httpClient");
+    const leak = new Error('[Request ID: abc] Server Error\nArgumentValidationError: Object contains extra field `mfa` that is not in the validator.\n\nObject: {serverKey: "k-123-secret", sessionToken: "tok"}');
+    expect(cleanConvexError(leak, "k-123-secret").message).toBe("Something went wrong on the server. Try again.");
+    const own = new Error("[Request ID: abc] Server Error\nUncaught Error: The Owner cannot be removed.\n    at handler (../convex/app.ts:12:3)");
+    expect(cleanConvexError(own).message).toBe("The Owner cannot be removed.");
+    expect(cleanConvexError(new Error("plain k-123-secret"), "k-123-secret").message).toBe("plain [redacted]");
+  });
+});

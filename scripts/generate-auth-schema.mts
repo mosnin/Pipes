@@ -28,5 +28,21 @@ function dropDanglingIndexes(source: string): string {
   });
 }
 
-writeFileSync(file, dropDanglingIndexes(code).replace(/npx auth generate --output \S+/, "npx tsx scripts/generate-auth-schema.mts"));
+/**
+ * Indexes Better Auth 1.7's queries need that createSchema does not add:
+ * clearing stale two-step challenges filters on identifier and createdAt.
+ */
+const EXTRA_INDEXES: Record<string, string[][]> = { verification: [["identifier", "createdAt"]] };
+
+function addIndexes(source: string): string {
+  let out = source;
+  for (const [table, indexes] of Object.entries(EXTRA_INDEXES)) {
+    out = out.replace(new RegExp(`(${table}: defineTable\\(\\{[\\s\\S]*?\\}\\)(?:\\s*\\.index\\([^)]*\\))*)`), (block) =>
+      indexes.reduce((acc, fields) => (acc.includes(`"${fields.join("_")}"`) ? acc : `${acc}\n    .index("${fields.join("_")}", [${fields.map((f) => `"${f}"`).join(",")}])`), block)
+    );
+  }
+  return out;
+}
+
+writeFileSync(file, addIndexes(dropDanglingIndexes(code)).replace(/npx auth generate --output \S+/, "npx tsx scripts/generate-auth-schema.mts"));
 console.log(`Wrote ${path.relative(process.cwd(), file)}`);

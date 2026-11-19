@@ -66,7 +66,8 @@ export const tables = {
     updatedAt: v.number(),
   })
     .index("expiresAt", ["expiresAt"])
-    .index("identifier", ["identifier"]),
+    .index("identifier", ["identifier"])
+    .index("identifier_createdAt", ["identifier","createdAt"]),
   twoFactor: defineTable({
     secret: v.string(),
     backupCodes: v.string(),

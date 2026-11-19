@@ -28,7 +28,8 @@ export async function getServerApp(options: { skipPolicy?: boolean } = {}) {
   if (!identity) throw new HttpError(401, "unauthenticated", "Sign in to continue. Your session has ended or was signed out.");
   const repositories = getRepositories();
 
-  const ctx = await repositories.users.provision(identity);
+  // Only the identity fields: session details are not the user record (and Convex rejects unknown fields).
+  const ctx = await repositories.users.provision({ externalId: identity.externalId, email: identity.email, name: identity.name });
   const mode = resolveAuthMode();
   const security = createSecurityService(repositories);
   const policy = mode === "mock" ? DEFAULT_POLICY : await security.policy(ctx.workspaceId);
