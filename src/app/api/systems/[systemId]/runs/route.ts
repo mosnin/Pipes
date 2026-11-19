@@ -1,4 +1,4 @@
-import { ensureCanEdit, ensureSystemInWorkspace, getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
+import { ensureCan, ensureSystemInWorkspace, getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
 
 type Params = { params: Promise<{ systemId: string }> };
 
@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const { systemId } = await params;
     const { ctx, identity, repositories, workflow } = await getWorkflowApp();
-    ensureCanEdit(ctx);
+    ensureCan(ctx, "runs.operate");
     await ensureSystemInWorkspace(repositories, ctx, systemId);
     const body = await request.json().catch(() => ({}));
     const run = await workflow.runs.start(ctx, { systemId, trigger: "manual", input: body.input, startNodeId: body.startNodeId, actorLabel: identity.name, idempotencyKey: request.headers.get("idempotency-key") ?? body.idempotencyKey });

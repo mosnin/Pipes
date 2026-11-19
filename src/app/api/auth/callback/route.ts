@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { consumeOAuthState, resolveAuthMode, setSessionCookie } from "@/lib/auth";
+import { consumeOAuthState, currentRequestMeta, resolveAuthMode, startSession } from "@/lib/auth";
+import { createSecurityService } from "@/domain/auth/security";
+import { getRepositories } from "@/lib/composition/repositories";
 import { safeReturnTo } from "@/lib/auth/session";
 
 function loginError(request: Request, error: string) {
@@ -37,11 +39,10 @@ export async function GET(request: Request) {
   const profile = (await profileRes.json()) as { sub?: string; email?: string; name?: string; nickname?: string };
   if (!profile.sub || !profile.email) return loginError(request, "profile_incomplete");
 
-  await setSessionCookie({
-    externalId: profile.sub,
-    email: profile.email,
-    name: profile.name ?? profile.nickname ?? profile.email
-  });
+  const identity = { externalId: profile.sub, email: profile.email, name: profile.name ?? profile.nickname ?? profile.email };
+  // Two-step sign-in for these accounts is the identity provider's to enforce (docs/security.md).
+  await createSecurityService(getRepositories()).record({ type: "login.succeeded", externalId: identity.externalId, email: identity.email, ...(await currentRequestMeta()), detail: { provider: "auth0" } });
+  await startSession(identity, { mfa: false });
 
   return NextResponse.redirect(new URL(safeReturnTo(verified.returnTo), request.url));
 }

@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
 import { FactList } from "@/components/settings/fact-list";
 import { apiErrorMessage } from "@/components/shell/api-error";
+import { AccountSecuritySections } from "@/components/security/account-security";
 
 type Account = { name: string; email: string; role: string; plan: string; authMode: string; hasPassword: boolean };
 
@@ -37,7 +38,7 @@ export function AccountView(): ReactNode {
   }, []);
 
   return (
-    <SettingsShell title="Account" measure="prose" description="Your name, the email you sign in with, and your password.">
+    <SettingsShell title="Account" measure="prose" description="Your name, how you sign in, and where you are signed in.">
       {loadError ? (
         <Banner role="critical" title="Your account could not be loaded">
           {loadError}
@@ -54,16 +55,7 @@ export function AccountView(): ReactNode {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection title="Session">
-        <Card>
-          <CardFooter className="border-t-0">
-            <span className="t-body text-ink-2">Sign out of Pipes on this device.</span>
-            <Button asChild variant="secondary" size="sm">
-              <a href="/api/auth/logout">Sign out</a>
-            </Button>
-          </CardFooter>
-        </Card>
-      </SettingsSection>
+      <AccountSecuritySections />
     </SettingsShell>
   );
 }
@@ -165,7 +157,7 @@ function PasswordCard(): ReactNode {
           <Field label="Current password" htmlFor={`${id}-current`}>
             <Input id={`${id}-current`} type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
           </Field>
-          <Field label="New password" htmlFor={`${id}-next`} hint="At least 10 characters.">
+          <Field label="New password" htmlFor={`${id}-next`} hint="At least 10 characters, and not one that has appeared in a leak.">
             <Input id={`${id}-next`} type="password" autoComplete="new-password" required minLength={10} value={next} onChange={(e) => setNext(e.target.value)} />
           </Field>
         </div>

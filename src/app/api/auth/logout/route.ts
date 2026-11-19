@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, getAuthService } from "@/lib/auth";
+import { endSession, getAuthService } from "@/lib/auth";
+
+/** Sign out. The session is revoked on the server, so a copied cookie stops working too. */
+export async function POST(request: Request) {
+  await endSession();
+  return NextResponse.json({ ok: true, redirectTo: new URL(getAuthService().getLogoutUrl(), request.url).toString() });
+}
 
 export async function GET(request: Request) {
-  await clearSessionCookie();
+  await endSession();
   return NextResponse.redirect(new URL(getAuthService().getLogoutUrl(), request.url));
 }

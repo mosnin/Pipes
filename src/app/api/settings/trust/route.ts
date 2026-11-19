@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
+import { apiError } from "@/lib/api/errors";
 
 export async function GET() {
   try {
     const { ctx, services } = await getServerApp();
     return NextResponse.json(success(await services.governance.getTrustSettings(ctx)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }
 
@@ -19,7 +20,7 @@ export async function PUT(request: Request) {
     if (body.section === "retention") return NextResponse.json(success(await services.governance.updateRetentionPolicy(ctx, body.payload)));
     return NextResponse.json(failure("Unsupported section"), { status: 400 });
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }
 
@@ -31,6 +32,6 @@ export async function POST(request: Request) {
     if (body.action === "reactivate") return NextResponse.json(success(await services.governance.reactivateWorkspace(ctx)));
     return NextResponse.json(failure("Unsupported action"), { status: 400 });
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveAuthMode, setSessionCookie } from "@/lib/auth";
+import { currentRequestMeta, resolveAuthMode, startSession } from "@/lib/auth";
 import { safeReturnTo } from "@/lib/auth/session";
 import { createAccountService } from "@/domain/services/accounts";
 import { getRepositories } from "@/lib/composition/server";
@@ -14,8 +14,8 @@ export async function POST(request: Request) {
     name: String(body.name ?? ""),
     email: String(body.email ?? ""),
     password: String(body.password ?? "")
-  });
+  }, await currentRequestMeta());
   if (!result.ok) return NextResponse.json(result, { status: result.error === "rate_limited" ? 429 : result.error === "email_taken" ? 409 : 400 });
-  await setSessionCookie(result.identity);
+  await startSession(result.identity, { mfa: false });
   return NextResponse.json({ ok: true, redirectTo: safeReturnTo(body.returnTo, "/onboarding") });
 }

@@ -410,7 +410,8 @@ function ConfirmBody({
         // Deliberately not a `Field`: its label role is `label-caps`, and
         // upper-casing the phrase would misstate the string the user has to
         // reproduce character for character.
-        <div className="flex flex-col gap-1.5">
+        // Same side gutter as the header and body, so the field lines up with the text above it.
+        <div className="flex flex-col gap-1.5 px-[var(--dialog-gutter,0px)] pb-2">
           <label htmlFor={phraseId} className="t-caption text-ink-2">
             Type{" "}
             {/* 12px mono inside 13px sans is the 0.92em x-height match of §3.2. */}

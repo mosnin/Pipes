@@ -1,4 +1,5 @@
 import { MemoryError } from "@/domain/memory/service";
+import { can } from "@/domain/permissions";
 import { ensureCanEdit, ensureSystemInWorkspace, getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
 
 type Params = { params: Promise<{ systemId: string }> };
@@ -20,7 +21,7 @@ export async function GET(request: Request, { params }: Params) {
       workflow.memory.history(ctx, systemId),
       workflow.memory.history(ctx)
     ]);
-    return ok({ facts, history: [...history, ...workspace].filter((f) => f.invalidAt).sort((a, b) => (b.invalidAt ?? "").localeCompare(a.invalidAt ?? "")).slice(0, 100), canEdit: ctx.actorType !== "user" || ["Owner", "Admin", "Editor"].includes(ctx.role) });
+    return ok({ facts, history: [...history, ...workspace].filter((f) => f.invalidAt).sort((a, b) => (b.invalidAt ?? "").localeCompare(a.invalidAt ?? "")).slice(0, 100), canEdit: can(ctx.role, "workflows.edit") });
   } catch (error) {
     return workflowError(error);
   }

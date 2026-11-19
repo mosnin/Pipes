@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -30,9 +31,6 @@ function Loading() {
 export default function TrustSettingsPage() {
   const fieldId = useId();
   const [data, setData] = useState<any | null>(null);
-  const [allowedDomains, setAllowedDomains] = useState("");
-  const [auth0Connection, setAuth0Connection] = useState("");
-  const [mode, setMode] = useState("shared");
   const [deactivateReason, setDeactivateReason] = useState("Security review pending");
   const [policy, setPolicy] = useState<any | null>(null);
   const toast = useToast();
@@ -42,9 +40,6 @@ export default function TrustSettingsPage() {
     const body = await res.json();
     if (!body.ok) return;
     setData(body.data);
-    setAllowedDomains((body.data.auth.allowedDomains ?? []).join(","));
-    setAuth0Connection(body.data.auth.auth0Connection ?? "");
-    setMode(body.data.auth.mode ?? "shared");
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -55,12 +50,6 @@ export default function TrustSettingsPage() {
       if (body.ok) setPolicy(body.data);
     })();
   }, []);
-
-  const saveAuth = async () => {
-    const failed = await mutate("/api/settings/trust", "PUT", { section: "auth", payload: { mode, allowedDomains: allowedDomains.split(",").map((d) => d.trim()).filter(Boolean), auth0Connection: auth0Connection || undefined, enforceDomainMatch: mode === "sso_ready" } }, "Sign-in settings did not save.");
-    toast(failed ?? "Sign-in settings saved");
-    load();
-  };
 
   const cycleRisk = async () => {
     const next = policy?.risk?.posture === "conservative" ? "balanced" : policy?.risk?.posture === "balanced" ? "aggressive" : "conservative";
@@ -86,40 +75,14 @@ export default function TrustSettingsPage() {
       description="Sign-in policy, retention, agent limits, exports and the workspace lifecycle."
       meta={<StatusPill role={workspaceState === "active" ? "positive" : "caution"}>{workspaceState === "active" ? "Workspace active" : `Workspace ${workspaceState}`}</StatusPill>}
     >
-      <SettingsSection
-        title="Sign-in"
-        description="SSO ready records your domains and Auth0 connection. Turning on SSO itself is done in the Auth0 tenant."
-      >
+      <SettingsSection title="Sign-in" description="Two-step sign-in, session length and allowed email domains are set on the Security page, where they apply to every request.">
         <Card>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void saveAuth();
-            }}
-          >
-            <div className="grid grid-cols-1 gap-5 p-4 sm:grid-cols-2">
-              <Field label="Mode" htmlFor={`${fieldId}-mode`} hint={data?.auth?.mode ? `Saved as ${data.auth.mode === "sso_ready" ? "SSO ready" : "shared"}.` : undefined}>
-                <Select
-                  id={`${fieldId}-mode`}
-                  size="sm"
-                  value={mode}
-                  onValueChange={setMode}
-                  options={[{ value: "shared", label: "Shared" }, { value: "sso_ready", label: "SSO ready" }]}
-                />
-              </Field>
-              <Field label="Auth0 connection" htmlFor={`${fieldId}-connection`} hint="Required for SSO ready.">
-                <Input id={`${fieldId}-connection`} value={auth0Connection} onChange={(e) => setAuth0Connection(e.target.value)} placeholder="acme-saml" />
-              </Field>
-              <Field label="Allowed domains" htmlFor={`${fieldId}-domains`} hint="Separate domains with commas." className="sm:col-span-2">
-                <Input id={`${fieldId}-domains`} value={allowedDomains} onChange={(e) => setAllowedDomains(e.target.value)} placeholder="acme.com, acme.co.uk" />
-              </Field>
-            </div>
-            <CardFooter inset className="justify-end">
-              <Button type="submit" variant="primary" size="sm">
-                Save sign-in settings
-              </Button>
-            </CardFooter>
-          </form>
+          <CardFooter className="border-t-0">
+            <span className="t-body text-ink-2">Sign-in policy and roles</span>
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/settings/security">Open Security</Link>
+            </Button>
+          </CardFooter>
         </Card>
       </SettingsSection>
 

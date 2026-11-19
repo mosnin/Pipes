@@ -178,7 +178,12 @@ export const addCollaborator = mutation({
 export const listWorkspaceMembers = query({
   args: { workspaceId: v.id("workspaces") },
   handler: async (ctx, args) => {
-    return ctx.db.query("workspace_members").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
+    const rows = await ctx.db.query("workspace_members").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
+    // With each member's name and email, so the Members page never shows ids.
+    return Promise.all(rows.map(async (row) => {
+      const user = await ctx.db.get(row.userId);
+      return { ...row, name: user?.name, email: user?.email };
+    }));
   }
 });
 
@@ -229,6 +234,29 @@ export const updateMemberRole = mutation({
     const row = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)).first();
     if (!row) throw new Error("Membership not found.");
     await ctx.db.patch(row._id, { role: args.role as never, updatedAt: now() });
+  }
+});
+
+export const removeMember = mutation({
+  args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)).first();
+    if (!row) throw new Error("Membership not found.");
+    if (row.role === "Owner") throw new Error("The Owner cannot be removed.");
+    await ctx.db.delete(row._id);
+  }
+});
+
+/** One transaction: the new Owner, the old Owner as Admin, and the workspace's owner field. */
+export const transferOwnership = mutation({
+  args: { workspaceId: v.id("workspaces"), fromUserId: v.id("users"), toUserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const member = (userId: typeof args.fromUserId) => ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", userId)).first();
+    const [from, to] = await Promise.all([member(args.fromUserId), member(args.toUserId)]);
+    if (!from || !to || from.role !== "Owner") throw new Error("Ownership can only move from the Owner to another member.");
+    await ctx.db.patch(from._id, { role: "Admin" as never, updatedAt: now() });
+    await ctx.db.patch(to._id, { role: "Owner" as never, updatedAt: now() });
+    await ctx.db.patch(args.workspaceId, { ownerId: args.toUserId });
   }
 });
 

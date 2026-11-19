@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
 import type { FeedbackCategory, FeedbackStatus } from "@/lib/repositories/contracts";
+import { apiError } from "@/lib/api/errors";
 
 export async function GET(request: Request) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
     const data = await services.triage.list(ctx, { category, status, limit: 120 });
     return NextResponse.json(success(data));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 403 });
+    return apiError(error, 403);
   }
 }
 
@@ -25,6 +26,6 @@ export async function PATCH(request: Request) {
     await services.feedback.updateStatus(ctx, { id: String(body.id ?? ""), status: String(body.status ?? "") as FeedbackStatus });
     return NextResponse.json(success({ ok: true }));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

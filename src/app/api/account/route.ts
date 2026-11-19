@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAccountService } from "@/domain/services/accounts";
 import { resolveAuthMode, setSessionCookie } from "@/lib/auth";
 import { getServerApp } from "@/lib/composition/server";
+import { apiError } from "@/lib/api/errors";
 
 /** The signed-in person: name, email, role, and whether they have a Pipes password. */
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
     const hasPassword = await createAccountService(repositories).hasPassword(identity.email);
     return NextResponse.json({ ok: true, data: { name: identity.name, email: identity.email, role: ctx.role, plan: ctx.plan, authMode: resolveAuthMode(), hasPassword } });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+    return apiError(error);
   }
 }
 
@@ -24,6 +25,6 @@ export async function PUT(request: Request) {
     if (resolveAuthMode() !== "mock") await setSessionCookie({ ...identity, name: result.name });
     return NextResponse.json({ ok: true, data: { name: result.name } });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: (error as Error).message }, { status: 400 });
+    return apiError(error);
   }
 }

@@ -1,4 +1,4 @@
-import { ensureCanEdit, getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
+import { ensureCan, getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { ctx, workflow } = await getWorkflowApp();
-    ensureCanEdit(ctx);
+    ensureCan(ctx, "connections.manage");
     const body = await request.json();
     return ok(await workflow.connections.create(ctx.workspaceId, ctx.userId, { name: String(body.name ?? ""), type: body.type, url: String(body.url ?? ""), description: body.description, headerName: body.headerName, secret: body.secret }), 201);
   } catch (error) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { ctx, workflow } = await getWorkflowApp();
-    ensureCanEdit(ctx);
+    ensureCan(ctx, "connections.manage");
     const id = new URL(request.url).searchParams.get("id") ?? "";
     await workflow.connections.remove(ctx.workspaceId, id);
     return ok({ removed: id });

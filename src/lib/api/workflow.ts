@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { MemoryError } from "@/domain/memory/service";
+import { AccessDenied, assertCan, type Permission } from "@/domain/permissions";
+import { HttpError } from "@/lib/api/errors";
 import { RunError } from "@/domain/runs/engine";
 import { createWorkflowServices } from "@/domain/workflow";
 import { getServerApp } from "@/lib/composition/server";
@@ -31,6 +33,8 @@ const STATUS_BY_CODE: Record<string, number> = {
 };
 
 export function workflowError(error: unknown) {
+  if (error instanceof HttpError) return NextResponse.json({ ok: false, error: error.code, message: error.message, ...error.extra }, { status: error.status });
+  if (error instanceof AccessDenied) return NextResponse.json({ ok: false, error: error.code, message: error.message, permission: error.permission }, { status: 403 });
   if (error instanceof RunError || error instanceof MemoryError) {
     return NextResponse.json({ ok: false, error: error.code, message: error.message }, { status: STATUS_BY_CODE[error.code] ?? 400 });
   }
@@ -54,9 +58,14 @@ export async function getWorkflowApp() {
   return { ...app, workflow: createWorkflowServices(app.repositories) };
 }
 
-const EDITOR_ROLES = new Set(["Owner", "Admin", "Editor"]);
+/** Editing a workflow or its triggers, connections and memory. */
 export function ensureCanEdit(ctx: AppContext) {
-  if (ctx.actorType === "user" && !EDITOR_ROLES.has(ctx.role)) throw new RunError("not_allowed", "You need the Editor role or higher to change this.");
+  assertCan(ctx, "workflows.edit");
+}
+
+/** Any row of the permission table (src/domain/permissions, docs/rbac.md). */
+export function ensureCan(ctx: AppContext, permission: Permission) {
+  assertCan(ctx, permission);
 }
 
 export const ok = (data: unknown, status = 200) => NextResponse.json({ ok: true, data }, { status });

@@ -88,7 +88,7 @@ export function PasswordSignupForm({ source }: { source: string }): ReactNode {
       <Field label="Work email" htmlFor="signup-email">
         <Input id="signup-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
       </Field>
-      <Field label="Password" htmlFor="signup-password" hint="At least 10 characters.">
+      <Field label="Password" htmlFor="signup-password" hint="At least 10 characters, and not one that has appeared in a leak.">
         <Input id="signup-password" type="password" autoComplete="new-password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
@@ -148,11 +148,51 @@ export function ResetPasswordForm({ token }: { token: string }): ReactNode {
           </Banner>
         </div>
       ) : null}
-      <Field label="New password" htmlFor="reset-password" hint="At least 10 characters.">
+      <Field label="New password" htmlFor="reset-password" hint="At least 10 characters, and not one that has appeared in a leak.">
         <Input id="reset-password" type="password" autoComplete="new-password" required minLength={10} autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
         {busy ? "Saving" : "Set password and log in"}
+      </Button>
+    </form>
+  );
+}
+
+/** The second step of sign-in: a six-digit code from the app, or a recovery code. */
+export function TwoStepForm({ returnTo }: { returnTo: string }): ReactNode {
+  const [code, setCode] = useState("");
+  const [recovery, setRecovery] = useState(false);
+  const { busy, error, onSubmit } = useForm("/api/auth/mfa", returnTo);
+  return (
+    <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { code, returnTo })}>
+      {error ? (
+        <div role="alert">
+          <Banner role="critical" title="That code didn't work">
+            {error}
+          </Banner>
+        </div>
+      ) : null}
+      {recovery ? (
+        <Field label="Recovery code" htmlFor="two-step-code" hint="One of the codes you saved when you set up two-step sign-in. Each works once.">
+          <Input id="two-step-code" autoComplete="off" required autoFocus value={code} onChange={(e) => setCode(e.target.value)} className="t-mono-hash" />
+        </Field>
+      ) : (
+        <Field label="Code from your authenticator app" htmlFor="two-step-code">
+          <Input id="two-step-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" maxLength={7} required autoFocus value={code} onChange={(e) => setCode(e.target.value)} className="t-mono-hash tabular-nums" />
+        </Field>
+      )}
+      <button
+        type="button"
+        className="t-link t-caption focus-ring-canvas -mt-1 self-start rounded-2 focus-visible:outline-none"
+        onClick={() => {
+          setRecovery(!recovery);
+          setCode("");
+        }}
+      >
+        {recovery ? "Use a code from the app instead" : "Lost your phone? Use a recovery code"}
+      </button>
+      <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
+        {busy ? "Checking" : "Continue"}
       </Button>
     </form>
   );

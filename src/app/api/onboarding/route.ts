@@ -3,6 +3,7 @@ import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
 import { getWorkflowApp } from "@/lib/api/workflow";
 import { getRepositories } from "@/lib/composition/server";
+import { apiError } from "@/lib/api/errors";
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     if (body.action === "complete") return NextResponse.json(success(await services.onboarding.complete(ctx, { role: body.role, useCase: body.useCase, chosenPath: body.chosenPath })));
     return NextResponse.json(failure("Unsupported onboarding action"), { status: 400 });
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }
 
@@ -42,6 +43,6 @@ export async function GET() {
       })
     );
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

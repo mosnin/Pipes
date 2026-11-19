@@ -152,13 +152,31 @@ export function createMockRepositories(): RepositorySet {
         }
       },
       async list(workspaceId) {
-        return store.readDb().memberships.filter((m) => m.workspaceId === workspaceId).map((m) => ({ userId: m.userId, role: m.role }));
+        const db = store.readDb();
+        const users = new Map(db.users.map((u) => [u.id, u]));
+        return db.memberships.filter((m) => m.workspaceId === workspaceId).map((m) => ({ userId: m.userId, role: m.role, name: users.get(m.userId)?.name, email: users.get(m.userId)?.email }));
       },
       async updateRole(workspaceId, userId, role) {
         const db = store.readDb();
         const row = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === userId);
         if (!row) throw new Error("Membership not found.");
         row.role = role;
+        store.writeDb(db);
+      },
+      async remove(workspaceId, userId) {
+        const db = store.readDb();
+        db.memberships = db.memberships.filter((m) => !(m.workspaceId === workspaceId && m.userId === userId));
+        store.writeDb(db);
+      },
+      async transferOwnership(workspaceId, fromUserId, toUserId) {
+        const db = store.readDb();
+        const from = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === fromUserId);
+        const to = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === toUserId);
+        const workspace = db.workspaces.find((w) => w.id === workspaceId);
+        if (!from || !to || !workspace || from.role !== "Owner") throw new Error("Ownership can only move from the Owner to another member.");
+        from.role = "Admin";
+        to.role = "Owner";
+        workspace.ownerId = toUserId;
         store.writeDb(db);
       }
     },

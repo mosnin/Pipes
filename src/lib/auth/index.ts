@@ -1,6 +1,8 @@
 import "server-only";
 import crypto from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { createSecurityService, requestMeta, type RequestMeta } from "@/domain/auth/security";
+import { getRepositories } from "@/lib/composition/repositories";
 import { redirect } from "next/navigation";
 import { env, runtimeFlags } from "@/lib/env";
 import { decodeSignedSession, encodeSignedSession, SESSION_TTL_SECONDS, type SessionUser } from "@/lib/auth/session";
@@ -13,8 +15,11 @@ export interface AuthService {
   getLogoutUrl(): string;
 }
 
-const COOKIE_NAME = "pipes_session";
-const STATE_COOKIE_NAME = "pipes_oauth_state";
+// In production the cookies carry the __Host- prefix: Secure, path /, no Domain, so no subdomain can set or read them.
+const COOKIE_NAME = env.NODE_ENV === "production" ? "__Host-pipes_session" : "pipes_session";
+const STATE_COOKIE_NAME = env.NODE_ENV === "production" ? "__Host-pipes_oauth_state" : "pipes_oauth_state";
+const MFA_COOKIE_NAME = env.NODE_ENV === "production" ? "__Host-pipes_mfa" : "pipes_mfa";
+const MFA_CHALLENGE_SECONDS = 5 * 60;
 const DEV_SESSION_SECRET = "pipes-dev-only-session-secret-do-not-use-in-production";
 const isProduction = env.NODE_ENV === "production";
 
@@ -52,16 +57,64 @@ export function resolveAuthMode(): AuthMode {
 
 const cookieOptions = { httpOnly: true, secure: isProduction, sameSite: "lax" as const, path: "/" };
 
-export async function setSessionCookie(user: AppUser) {
+function requireSecret(): string {
   const secret = sessionSecret();
   if (!secret) throw new Error("PIPES_SESSION_SECRET (32+ characters) is required to create sessions in production.");
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, encodeSignedSession(user, secret), { ...cookieOptions, maxAge: SESSION_TTL_SECONDS });
+  return secret;
 }
 
-export async function clearSessionCookie() {
+/** The caller's IP and user agent, for the auth journal and per-IP limits. */
+export async function currentRequestMeta(): Promise<RequestMeta> {
+  return requestMeta(await headers());
+}
+
+/**
+ * Sign someone in: a new server-side session (with the idle timeout their
+ * workspace sets) and a cookie that names it. `mfa` records whether a second
+ * factor was checked.
+ */
+export async function startSession(user: AppUser, options: { mfa: boolean }): Promise<void> {
+  const secret = requireSecret();
+  const repos = getRepositories();
+  const security = createSecurityService(repos);
+  const ctx = await repos.users.provision(user);
+  const policy = await security.policy(ctx.workspaceId);
+  const session = await security.startSession(user, await currentRequestMeta(), { mfa: options.mfa, idleMs: policy.idleTimeoutMinutes * 60_000 });
   const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, encodeSignedSession({ ...user, sid: session.id }, secret), { ...cookieOptions, maxAge: SESSION_TTL_SECONDS });
+  cookieStore.delete(MFA_COOKIE_NAME);
+}
+
+/** Re-sign the cookie for the same session, after a change to the person's name. */
+export async function setSessionCookie(user: AppUser) {
+  if (!user.sid) throw new Error("No session to update.");
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_NAME, encodeSignedSession(user, requireSecret()), { ...cookieOptions, maxAge: SESSION_TTL_SECONDS });
+}
+
+/** Sign out: the session is revoked on the server, not just forgotten by this browser. */
+export async function endSession(reason = "logout") {
+  const cookieStore = await cookies();
+  const secret = sessionSecret();
+  const user = secret ? decodeSignedSession(cookieStore.get(COOKIE_NAME)?.value, secret) : null;
+  if (user?.sid) await createSecurityService(getRepositories()).revoke(user.externalId, user.sid, reason, await currentRequestMeta()).catch(() => undefined);
   cookieStore.delete(COOKIE_NAME);
+}
+
+/** @deprecated Use endSession, which also revokes the session on the server. */
+export const clearSessionCookie = endSession;
+
+/** After a correct password on an account with two-step sign-in: remember who is mid-sign-in, for five minutes. */
+export async function setMfaChallenge(user: AppUser) {
+  const cookieStore = await cookies();
+  cookieStore.set(MFA_COOKIE_NAME, encodeSignedSession({ externalId: user.externalId, email: user.email, name: user.name }, `${requireSecret()}:mfa`, Date.now() - (SESSION_TTL_SECONDS - MFA_CHALLENGE_SECONDS) * 1000), { ...cookieOptions, maxAge: MFA_CHALLENGE_SECONDS });
+}
+
+export async function readMfaChallenge(): Promise<AppUser | null> {
+  const secret = sessionSecret();
+  if (!secret) return null;
+  const cookieStore = await cookies();
+  return decodeSignedSession(cookieStore.get(MFA_COOKIE_NAME)?.value, `${secret}:mfa`);
 }
 
 /** Start an OAuth login: remember a random state (and where to return) in a short-lived cookie. */
@@ -116,11 +169,15 @@ class MockAuthService implements AuthService {
 class SessionAuthService implements AuthService {
   constructor(private readonly provider: "password" | "auth0") {}
 
+  /** The cookie must be signed by us and name a session the server still holds as live. */
   async getCurrentUser() {
     const secret = sessionSecret();
     if (!secret) return null;
     const cookieStore = await cookies();
-    return decodeSignedSession(cookieStore.get(COOKIE_NAME)?.value, secret);
+    const user = decodeSignedSession(cookieStore.get(COOKIE_NAME)?.value, secret);
+    if (!user?.sid) return null;
+    const session = await createSecurityService(getRepositories()).validate(user.sid, user.externalId);
+    return session ? { ...user, mfa: session.mfa } : null;
   }
 
   async requireUser() {

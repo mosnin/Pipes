@@ -123,11 +123,19 @@ export function createConvexRepositories(): RepositorySet {
       async list(workspaceId) {
         const client = getConvexHttpClient();
         const rows = await client.query(api.app.listWorkspaceMembers, { workspaceId: workspaceId as never });
-        return rows.map((r: any) => ({ userId: String(r.userId), role: r.role }));
+        return rows.map((r: any) => ({ userId: String(r.userId), role: r.role, name: r.name ?? undefined, email: r.email ?? undefined }));
       },
       async updateRole(workspaceId, userId, role) {
         const client = getConvexHttpClient();
         await client.mutation(api.app.updateMemberRole, { workspaceId: workspaceId as never, userId: userId as never, role });
+      },
+      async remove(workspaceId, userId) {
+        const client = getConvexHttpClient();
+        await client.mutation(api.app.removeMember, { workspaceId: workspaceId as never, userId: userId as never });
+      },
+      async transferOwnership(workspaceId, fromUserId, toUserId) {
+        const client = getConvexHttpClient();
+        await client.mutation(api.app.transferOwnership, { workspaceId: workspaceId as never, fromUserId: fromUserId as never, toUserId: toUserId as never });
       }
     },
     systems: {

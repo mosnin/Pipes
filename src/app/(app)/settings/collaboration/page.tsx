@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Members" };
 
 export default async function CollaborationSettingsPage() {
   const { identity, ctx } = await getServerApp();
-  return <MembersView me={{ userId: ctx.userId, name: identity.name, email: identity.email }} />;
+  return <MembersView me={{ userId: ctx.userId, name: identity.name, email: identity.email, role: ctx.role }} />;
 }

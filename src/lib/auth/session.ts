@@ -5,6 +5,10 @@ export type SessionUser = {
   externalId: string;
   email: string;
   name: string;
+  /** The server-side session this cookie names (docs/security.md). Absent only in demo mode. */
+  sid?: string;
+  /** Whether this session passed a second factor. Filled from the session, never trusted from the cookie. */
+  mfa?: boolean;
 };
 
 type SessionPayload = SessionUser & { exp: number };
@@ -17,7 +21,7 @@ function sign(body: string, secret: string) {
 
 /** Serialize a user into a tamper-evident `body.signature` cookie value. */
 export function encodeSignedSession(user: SessionUser, secret: string, now = Date.now()): string {
-  const payload: SessionPayload = { ...user, exp: Math.floor(now / 1000) + SESSION_TTL_SECONDS };
+  const payload: SessionPayload = { externalId: user.externalId, email: user.email, name: user.name, sid: user.sid, exp: Math.floor(now / 1000) + SESSION_TTL_SECONDS };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${body}.${sign(body, secret)}`;
 }
@@ -35,7 +39,7 @@ export function decodeSignedSession(value: string | undefined, secret: string, n
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Partial<SessionPayload>;
     if (typeof payload.exp !== "number" || payload.exp * 1000 <= now) return null;
     if (typeof payload.externalId !== "string" || typeof payload.email !== "string") return null;
-    return { externalId: payload.externalId, email: payload.email, name: typeof payload.name === "string" ? payload.name : payload.email };
+    return { externalId: payload.externalId, email: payload.email, name: typeof payload.name === "string" ? payload.name : payload.email, sid: typeof payload.sid === "string" ? payload.sid : undefined };
   } catch {
     return null;
   }

@@ -60,8 +60,13 @@ export interface WorkspacesRepository {
 
 export interface MembershipsRepository {
   add(workspaceId: string, userId: string, role: Role): Promise<void>;
-  list(workspaceId: string): Promise<Array<{ userId: string; role: Role }>>;
+  /** Members with their name and email, so people are never shown as ids. */
+  list(workspaceId: string): Promise<Array<{ userId: string; role: Role; name?: string; email?: string }>>;
   updateRole(workspaceId: string, userId: string, role: Role): Promise<void>;
+  /** Removes a member. The caller enforces who may be removed (src/domain/permissions). */
+  remove(workspaceId: string, userId: string): Promise<void>;
+  /** All at once: `toUserId` becomes Owner and the workspace's owner, `fromUserId` becomes Admin. */
+  transferOwnership(workspaceId: string, fromUserId: string, toUserId: string): Promise<void>;
 }
 
 export interface SystemsRepository {

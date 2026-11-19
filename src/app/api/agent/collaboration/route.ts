@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { AgentCollaborationService } from "@/domain/services/agent_collaboration";
 import { failure, success } from "@/lib/api/response";
+import { apiError } from "@/lib/api/errors";
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const { ctx, repositories } = await getServerApp();
     const service = new AgentCollaborationService(repositories);
     return NextResponse.json(success(await service.getRunCollaboration(ctx, { runId })));
-  } catch (error) { return NextResponse.json(failure((error as Error).message), { status: 400 }); }
+  } catch (error) { return apiError(error); }
 }
 
 export async function POST(request: Request) {
@@ -20,5 +21,5 @@ export async function POST(request: Request) {
     const { ctx, repositories } = await getServerApp();
     const service = new AgentCollaborationService(repositories);
     return NextResponse.json(success(await service.upsertPresence(ctx, body)));
-  } catch (error) { return NextResponse.json(failure((error as Error).message), { status: 400 }); }
+  } catch (error) { return apiError(error); }
 }

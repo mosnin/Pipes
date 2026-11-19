@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
 import { AUDIT_PAGE_SIZE } from "@/lib/repositories/contracts";
+import { apiError } from "@/lib/api/errors";
 
 /**
  * GET /api/settings/audit. JSON answers one page, `{ items, nextCursor }`,
@@ -33,6 +34,6 @@ export async function GET(request: Request) {
     const cursor = url.searchParams.get("cursor") || null;
     return NextResponse.json(success(await services.protocol.listAuditsPage(ctx, { ...filter, limit, cursor })));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }
