@@ -29,11 +29,16 @@ export type MemorySource = {
   stepTitle?: string;
 };
 
+/** private: one person's own; team: everyone in the workspace; workflow: one workflow's performers. */
+export type MemoryScope = "private" | "team" | "workflow";
+
 export type MemoryFact = {
   id: string;
   workspaceId: string;
-  /** The workflow this fact belongs to; absent for a workspace-wide fact. */
+  /** The workflow this fact belongs to; absent for team and private facts. */
   systemId?: string;
+  /** The only person who can see this fact. Present means private. */
+  ownerId?: string;
   text: string;
   /** Facts with the same key in the same scope replace each other. */
   key?: string;
@@ -47,7 +52,7 @@ export type MemoryFact = {
 
 export class MemoryError extends Error {
   constructor(
-    public code: "bad_request" | "not_found" | "memory_full" | "looks_secret",
+    public code: "bad_request" | "not_found" | "memory_full" | "looks_secret" | "not_allowed",
     message: string
   ) {
     super(message);
@@ -106,43 +111,90 @@ function cleanKey(value: unknown): string | undefined {
   return key || undefined;
 }
 
-export function createMemoryService(repos: RepositorySet, clock: () => Date = () => new Date()) {
-  const scopeOf = (systemId?: string) => systemId ?? WORKSPACE_SCOPE;
+/**
+ * Who is asking. Private memories belong to `userId` in `workspaceId` and
+ * nobody else: no role, not even the Owner, can read another member's. An
+ * agent token acts for the person who made it, and reaches that person's
+ * private memories only when granted `memory:private`.
+ */
+export type MemoryActor = Pick<AppContext, "workspaceId" | "userId" | "actorType" | "capabilities">;
 
-  async function inScope(workspaceId: string, systemId?: string): Promise<MemoryFact[]> {
-    const docs = await repos.documents.list<MemoryFact>(MEMORY_KIND, { refId: scopeOf(systemId) });
+export function canUsePrivate(actor: MemoryActor): boolean {
+  return actor.actorType === "user" || Boolean(actor.capabilities?.includes("memory:private"));
+}
+
+export function scopeOfFact(f: Pick<MemoryFact, "ownerId" | "systemId">): MemoryScope {
+  return f.ownerId ? "private" : f.systemId ? "workflow" : "team";
+}
+
+/** Whether the actor may see this fact at all. Anything else answers "not found", so ids reveal nothing. */
+export function visibleTo(actor: MemoryActor, f: MemoryFact): boolean {
+  if (f.workspaceId !== actor.workspaceId) return false;
+  if (f.ownerId) return f.ownerId === actor.userId && canUsePrivate(actor);
+  return true;
+}
+
+export function createMemoryService(repos: RepositorySet, clock: () => Date = () => new Date()) {
+  /** Where a scope's facts are filed. Private facts are filed under their owner, so listing one person's never touches another's. */
+  const refFor = (where: { ownerId?: string; systemId?: string }) => (where.ownerId ? `private:${where.ownerId}` : where.systemId ?? WORKSPACE_SCOPE);
+
+  async function inRef(workspaceId: string, where: { ownerId?: string; systemId?: string }): Promise<MemoryFact[]> {
+    const docs = await repos.documents.list<MemoryFact>(MEMORY_KIND, { refId: refFor(where) });
     return docs.filter((d) => d.workspaceId === workspaceId).map((d) => d.data);
   }
 
   async function write(fact: MemoryFact) {
-    await repos.documents.put<MemoryFact>({ kind: MEMORY_KIND, id: fact.id, workspaceId: fact.workspaceId, refId: scopeOf(fact.systemId), data: fact });
+    await repos.documents.put<MemoryFact>({ kind: MEMORY_KIND, id: fact.id, workspaceId: fact.workspaceId, refId: refFor(fact), data: fact });
   }
 
-  /** Facts that hold now, for a workflow plus the workspace-wide ones. */
-  async function current(workspaceId: string, systemId?: string): Promise<MemoryFact[]> {
-    const lists = await Promise.all([systemId ? inScope(workspaceId, systemId) : Promise.resolve([]), inScope(workspaceId)]);
-    return lists.flat().filter((f) => !f.invalidAt);
+  /** Resolve a requested scope into where it is filed, from the actor's identity only. */
+  function placeFor(actor: MemoryActor, scope: MemoryScope, systemId?: string): { ownerId?: string; systemId?: string } {
+    if (scope === "private") {
+      if (!canUsePrivate(actor)) throw new MemoryError("not_allowed", "This token cannot use private memory. Grant it memory:private, which lets it read and write only its creator's own private memories.");
+      return { ownerId: actor.userId };
+    }
+    if (scope === "workflow") {
+      if (!systemId) throw new MemoryError("bad_request", "A workflow memory needs the workflow.");
+      return { systemId };
+    }
+    return {};
   }
+
+  /** Current facts across the scopes this actor can see: their own private ones, the team's, and the workflow's. */
+  async function current(actor: MemoryActor, systemId: string | undefined, scopes: MemoryScope[]): Promise<MemoryFact[]> {
+    const wanted = new Set(scopes);
+    const lists = await Promise.all([
+      wanted.has("private") && canUsePrivate(actor) ? inRef(actor.workspaceId, { ownerId: actor.userId }) : Promise.resolve([]),
+      wanted.has("team") ? inRef(actor.workspaceId, {}) : Promise.resolve([]),
+      wanted.has("workflow") && systemId ? inRef(actor.workspaceId, { systemId }) : Promise.resolve([])
+    ]);
+    return lists.flat().filter((f) => !f.invalidAt && visibleTo(actor, f));
+  }
+
+  const ALL: MemoryScope[] = ["private", "team", "workflow"];
 
   return {
     /**
-     * Store a fact. The same sentence twice returns the existing fact; a fact
-     * with the key of a current one replaces it (the old one stays in history).
+     * Store a fact in a scope. The same sentence twice returns the existing
+     * fact; a fact with the key of a current one replaces it (the old one
+     * stays in history). Without a scope: the workflow's when one is given,
+     * otherwise the team's.
      */
-    async remember(ctx: Pick<AppContext, "workspaceId">, input: { systemId?: string; text: unknown; key?: unknown; source: MemorySource }): Promise<{ fact: MemoryFact; replaced?: MemoryFact; duplicate: boolean }> {
+    async remember(actor: MemoryActor, input: { scope?: MemoryScope; systemId?: string; text: unknown; key?: unknown; source: MemorySource }): Promise<{ fact: MemoryFact; replaced?: MemoryFact; duplicate: boolean }> {
       const text = typeof input.text === "string" ? input.text.replace(/\s+/g, " ").trim() : "";
       if (!text) throw new MemoryError("bad_request", "A fact needs text.");
       if (text.length > MAX_FACT_LENGTH) throw new MemoryError("bad_request", `Keep a fact under ${MAX_FACT_LENGTH} characters. Store one thing per fact.`);
-      if (looksSecret(text)) throw new MemoryError("looks_secret", "That looks like a credential. Memory is shown to every performer, so keep secrets in a connection instead.");
+      if (looksSecret(text)) throw new MemoryError("looks_secret", "That looks like a credential. Keep secrets in a connection instead, where they are encrypted and never shown.");
+      const scope = input.scope ?? (input.systemId ? "workflow" : "team");
+      const place = placeFor(actor, scope, input.systemId);
       const key = cleanKey(input.key);
-      const facts = await inScope(ctx.workspaceId, input.systemId);
-      const live = facts.filter((f) => !f.invalidAt);
+      const live = (await inRef(actor.workspaceId, place)).filter((f) => !f.invalidAt);
       const same = live.find((f) => normalize(f.text) === normalize(text));
       if (same) return { fact: same, duplicate: true };
       const previous = key ? live.find((f) => f.key === key) : undefined;
       if (!previous && live.length >= MAX_FACTS_PER_SCOPE) throw new MemoryError("memory_full", `This memory holds ${MAX_FACTS_PER_SCOPE} facts. Forget some, or give related facts a key so newer ones replace older ones.`);
       const now = clock().toISOString();
-      const fact: MemoryFact = { id: `mem_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`, workspaceId: ctx.workspaceId, systemId: input.systemId, text, key, source: input.source, validAt: now, supersedes: previous?.id };
+      const fact: MemoryFact = { id: `mem_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`, workspaceId: actor.workspaceId, ...place, text, key, source: input.source, validAt: now, supersedes: previous?.id };
       await write(fact);
       let replaced: MemoryFact | undefined;
       if (previous) {
@@ -153,37 +205,52 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
     },
 
     /** Mark a fact as no longer true. It stays in the history. */
-    async forget(ctx: Pick<AppContext, "workspaceId">, id: string, reason?: string): Promise<MemoryFact> {
+    async forget(actor: MemoryActor, id: string, reason?: string): Promise<MemoryFact> {
       const doc = await repos.documents.get<MemoryFact>(MEMORY_KIND, id);
-      if (!doc || doc.workspaceId !== ctx.workspaceId) throw new MemoryError("not_found", "No fact with that id.");
+      if (!doc || !visibleTo(actor, doc.data)) throw new MemoryError("not_found", "No fact with that id.");
       if (doc.data.invalidAt) return doc.data;
       const fact = { ...doc.data, invalidAt: clock().toISOString(), invalidReason: (typeof reason === "string" && reason.trim().slice(0, 200)) || "Forgotten." };
       await write(fact);
       return fact;
     },
 
-    async get(ctx: Pick<AppContext, "workspaceId">, id: string): Promise<MemoryFact | null> {
+    async get(actor: MemoryActor, id: string): Promise<MemoryFact | null> {
       const doc = await repos.documents.get<MemoryFact>(MEMORY_KIND, id);
-      return doc && doc.workspaceId === ctx.workspaceId ? doc.data : null;
+      return doc && visibleTo(actor, doc.data) ? doc.data : null;
     },
 
-    /** Facts that hold now, best match first. */
-    async search(ctx: Pick<AppContext, "workspaceId">, input: { systemId?: string; query?: string; limit?: number }) {
+    /** Facts that hold now, best match first, across the requested scopes the actor can see. */
+    async search(actor: MemoryActor, input: { systemId?: string; query?: string; limit?: number; scopes?: MemoryScope[] }) {
       const limit = Math.min(Math.max(1, Math.floor(input.limit ?? 10)), 50);
-      return rank(await current(ctx.workspaceId, input.systemId), input.query, limit);
+      return rank(await current(actor, input.systemId, input.scopes ?? ALL), input.query, limit);
     },
 
-    /** Everything for one scope, history included, newest first. For the memory page. */
-    async history(ctx: Pick<AppContext, "workspaceId">, systemId?: string): Promise<MemoryFact[]> {
-      return (await inScope(ctx.workspaceId, systemId)).sort((a, b) => b.validAt.localeCompare(a.validAt));
+    /** Everything in one scope, history included, newest first. For the memory page. */
+    async history(actor: MemoryActor, scope: MemoryScope, systemId?: string): Promise<MemoryFact[]> {
+      if (scope === "private" && !canUsePrivate(actor)) return [];
+      const place = scope === "private" ? { ownerId: actor.userId } : scope === "workflow" ? { systemId } : {};
+      if (scope === "workflow" && !systemId) return [];
+      return (await inRef(actor.workspaceId, place)).filter((f) => visibleTo(actor, f)).sort((a, b) => b.validAt.localeCompare(a.validAt));
+    },
+
+    /**
+     * Erase every private memory this person has in this workspace, history
+     * included. Their data, their call: this is a real delete, not a forget.
+     */
+    async purgePrivate(actor: MemoryActor): Promise<number> {
+      if (actor.actorType !== "user") throw new MemoryError("not_allowed", "Only the person themselves can erase their private memories.");
+      const mine = await inRef(actor.workspaceId, { ownerId: actor.userId });
+      for (const f of mine) await repos.documents.remove(MEMORY_KIND, f.id);
+      return mine.length;
     },
 
     /**
      * What a performer should know for this step: facts matching the step's
-     * title and instructions. When nothing matches, the newest workflow facts.
+     * title and instructions, from the performer's own private memory, the
+     * team's and the workflow's. When nothing matches, the newest workflow facts.
      */
-    async forStep(ctx: Pick<AppContext, "workspaceId">, systemId: string, step: { title: string; instructions?: string; doneWhen?: string }) {
-      const facts = await current(ctx.workspaceId, systemId);
+    async forStep(actor: MemoryActor, systemId: string, step: { title: string; instructions?: string; doneWhen?: string }) {
+      const facts = await current(actor, systemId, ALL);
       if (facts.length === 0) return [];
       const matched = rank(facts, [step.title, step.instructions, step.doneWhen].filter(Boolean).join(" "), STEP_MEMORY_LIMIT);
       return matched.length ? matched : rank(facts.filter((f) => f.systemId === systemId), undefined, STEP_MEMORY_LIMIT);
@@ -195,5 +262,5 @@ export type MemoryService = ReturnType<typeof createMemoryService>;
 
 /** The shape a performer sees: enough to use and cite a fact, nothing internal. */
 export function publicFact(f: MemoryFact) {
-  return { id: f.id, text: f.text, key: f.key, scope: f.systemId ? "workflow" : "workspace", learnedAt: f.validAt, from: f.source.stepTitle ? `${f.source.label ?? f.source.type}, ${f.source.stepTitle}` : f.source.label ?? f.source.type, runId: f.source.runId };
+  return { id: f.id, text: f.text, key: f.key, scope: scopeOfFact(f), learnedAt: f.validAt, from: f.source.stepTitle ? `${f.source.label ?? f.source.type}, ${f.source.stepTitle}` : f.source.label ?? f.source.type, runId: f.source.runId };
 }

@@ -1,4 +1,4 @@
-import { publicFact } from "@/domain/memory/service";
+import { publicFact, type MemoryScope } from "@/domain/memory/service";
 import { getSkill, listSkills, renderSkill } from "@/lib/skills/catalog";
 import { RunError } from "@/domain/runs/engine";
 import type { createBoundedServices } from "@/domain/services/bounded";
@@ -43,6 +43,10 @@ async function ownedRun(tc: ToolContext, runId: unknown) {
   scope(tc, run.systemId);
   return run;
 }
+
+const SCOPE_HELP = 'private: only the person this token acts for (needs memory:private); team: everyone in the workspace; workflow: performers of one workflow.';
+const scopeArg = (description: string) => ({ type: "string", enum: ["private", "team", "workflow"], description });
+const scopeList = (value: unknown): MemoryScope[] | undefined => (Array.isArray(value) ? value.filter((v): v is MemoryScope => v === "private" || v === "team" || v === "workflow") : undefined);
 
 /** Everything an agent can do in Pipes over MCP. The run tools are the core loop. */
 export const MCP_TOOLS: McpTool[] = [
@@ -123,7 +127,7 @@ export const MCP_TOOLS: McpTool[] = [
           type: "array",
           maxItems: 10,
           description: "Optional. Facts worth knowing on later runs of this workflow, one per item: a string, or { text, key?, scope? }. A fact with the key of an existing one replaces it. Needs memory:write; never put secrets here.",
-          items: { anyOf: [{ type: "string" }, { type: "object", properties: { text: { type: "string" }, key: { type: "string" }, scope: { type: "string", enum: ["workflow", "workspace"] } }, required: ["text"] }] }
+          items: { anyOf: [{ type: "string" }, { type: "object", properties: { text: { type: "string" }, key: { type: "string" }, scope: { type: "string", enum: ["workflow", "team", "private"] } }, required: ["text"] }] }
         }
       },
       ["runId"]
@@ -239,33 +243,34 @@ export const MCP_TOOLS: McpTool[] = [
   {
     name: "search_memory",
     title: "Search workflow memory",
-    description: "Find facts this workflow (and the workspace) has learned on earlier runs: customer preferences, quirks of a tool, decisions already made. get_current_step already includes the facts that match the step; search when you need something else. Facts that were replaced or forgotten are not returned.",
+    description: `Find facts learned on earlier runs: customer preferences, quirks of a tool, decisions already made. get_current_step already includes the facts that match the step; search when you need something else. Searches every scope you can see unless you name some. ${SCOPE_HELP} Facts that were replaced or forgotten are not returned.`,
     capability: "memory:read",
-    inputSchema: obj({ systemId: str("The workflow id. Omit for workspace-wide facts only."), query: str("What you want to know, in a few words. Omit for the newest facts."), limit: { type: "integer", minimum: 1, maximum: 50, description: "Default 10." } }),
+    inputSchema: obj({ systemId: str("The workflow id, to include its workflow memory."), query: str("What you want to know, in a few words. Omit for the newest facts."), scopes: { type: "array", items: { type: "string", enum: ["private", "team", "workflow"] }, description: "Which scopes to search. Default: all you can see." }, limit: { type: "integer", minimum: 1, maximum: 50, description: "Default 10." } }),
     annotations: { readOnlyHint: true },
     handler: async (args, tc) => {
       const systemId = args.systemId ? await ownedSystem(tc, args.systemId) : tc.ctx.systemScope ?? undefined;
-      const facts = await tc.workflow.memory.search(tc.ctx, { systemId, query: typeof args.query === "string" ? args.query : undefined, limit: typeof args.limit === "number" ? args.limit : undefined });
+      const facts = await tc.workflow.memory.search(tc.ctx, { systemId, scopes: scopeList(args.scopes), query: typeof args.query === "string" ? args.query : undefined, limit: typeof args.limit === "number" ? args.limit : undefined });
       return { facts: facts.map(publicFact) };
     }
   },
   {
     name: "remember",
     title: "Remember a fact",
-    description: "Store one fact for later runs of a workflow, outside of completing a step. One sentence, one thing, true beyond this run (\"Acme wants invoices in EUR\", not \"I am on step 3\"). Give related facts the same key so a newer one replaces the older one. Never store secrets; connections hold those.",
+    description: `Store one fact for later, outside of completing a step. One sentence, one thing, true beyond this run ("Acme wants invoices in EUR", not "I am on step 3"). Give related facts the same key so a newer one replaces the older one. Never store secrets; connections hold those. ${SCOPE_HELP}`,
     capability: "memory:write",
-    inputSchema: obj({ systemId: str("The workflow the fact belongs to. Omit for a workspace-wide fact."), text: str("The fact, one sentence."), key: str("Optional. A short name for what the fact is about, such as acme-invoice-currency."), runId: str("Optional. The run that taught you this, for provenance.") }, ["text"]),
+    inputSchema: obj({ scope: scopeArg("Where the fact goes. Default: workflow when systemId is given, otherwise team."), systemId: str("The workflow the fact belongs to, for workflow scope."), text: str("The fact, one sentence."), key: str("Optional. A short name for what the fact is about, such as acme-invoice-currency."), runId: str("Optional. The run that taught you this, for provenance.") }, ["text"]),
     handler: async (args, tc) => {
       const systemId = args.systemId ? await ownedSystem(tc, args.systemId) : undefined;
       const run = args.runId ? await ownedRun(tc, args.runId) : undefined;
-      const result = await tc.workflow.memory.remember(tc.ctx, { systemId, text: args.text, key: args.key, source: { type: tc.ctx.actorType === "agent" ? "agent" : "person", actorId: tc.ctx.actorId, runId: run?.id } });
+      const scope = args.scope === "private" || args.scope === "team" || args.scope === "workflow" ? (args.scope as MemoryScope) : undefined;
+      const result = await tc.workflow.memory.remember(tc.ctx, { scope, systemId, text: args.text, key: args.key, source: { type: tc.ctx.actorType === "agent" ? "agent" : "person", actorId: tc.ctx.actorId, runId: run?.id } });
       return { fact: publicFact(result.fact), duplicate: result.duplicate, replaced: result.replaced ? publicFact(result.replaced) : undefined };
     }
   },
   {
     name: "forget_memory",
     title: "Forget a fact",
-    description: "Mark a fact as no longer true, with a reason. It stops appearing in steps and searches but stays in the workflow's memory history. To correct a fact, remember the new one with the same key instead.",
+    description: "Mark a fact as no longer true, with a reason. It stops appearing in steps and searches but stays in the memory history. To correct a fact, remember the new one with the same key instead. You can only forget facts you can see.",
     capability: "memory:write",
     inputSchema: obj({ factId: str("The fact id, from search_memory or get_current_step."), reason: str("Why it no longer holds.") }, ["factId"]),
     annotations: { destructiveHint: true, idempotentHint: true },

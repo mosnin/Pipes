@@ -17,7 +17,9 @@ function repos(): RepositorySet {
       async list(kind: string, f: { workspaceId?: string; refId?: string }) {
         return [...docs.values()].filter((d) => d.kind === kind && (!f.workspaceId || d.workspaceId === f.workspaceId) && (!f.refId || d.refId === f.refId));
       },
-      async remove() {},
+      async remove(kind: string, id: string) {
+        docs.delete(k(kind, id));
+      },
       async commit() {
         return { ok: true };
       }
@@ -25,7 +27,8 @@ function repos(): RepositorySet {
   } as unknown as RepositorySet;
 }
 
-const ctx = { workspaceId: "wks" };
+const ctx = { workspaceId: "wks", userId: "u_bea", actorType: "user" as const };
+const cal = { workspaceId: "wks", userId: "u_cal", actorType: "user" as const };
 const source = { type: "agent" as const, actorId: "agent_1" };
 
 function service() {
@@ -40,7 +43,7 @@ describe("workflow memory", () => {
     const b = await m.remember(ctx, { systemId: "sys", text: "  acme wants invoices   in euros. ", source });
     expect(b.duplicate).toBe(true);
     expect(b.fact.id).toBe(a.fact.id);
-    expect(await m.history(ctx, "sys")).toHaveLength(1);
+    expect(await m.history(ctx, "workflow", "sys")).toHaveLength(1);
   });
 
   it("replaces a fact with the same key and keeps the old one in history", async () => {
@@ -51,7 +54,7 @@ describe("workflow memory", () => {
     expect(next.fact.supersedes).toBe(old.fact.id);
     const now = await m.search(ctx, { systemId: "sys", query: "invoice currency" });
     expect(now.map((f) => f.text)).toEqual(["Acme wants invoices in euros."]);
-    const history = await m.history(ctx, "sys");
+    const history = await m.history(ctx, "workflow", "sys");
     const stale = history.find((f) => f.id === old.fact.id)!;
     expect(stale.invalidAt).toBeTruthy();
     expect(stale.supersededBy).toBe(next.fact.id);
@@ -64,7 +67,7 @@ describe("workflow memory", () => {
     expect(gone.invalidReason).toBe("Fixed in November.");
     expect((await m.forget(ctx, fact.id)).invalidAt).toBe(gone.invalidAt);
     expect(await m.search(ctx, { systemId: "sys" })).toHaveLength(0);
-    expect(await m.history(ctx, "sys")).toHaveLength(1);
+    expect(await m.history(ctx, "workflow", "sys")).toHaveLength(1);
   });
 
   it("refuses credentials, empty and long facts", async () => {
@@ -83,7 +86,7 @@ describe("workflow memory", () => {
     await m.remember(ctx, { text: "Refunds go out on Fridays.", source });
     const forA = (await m.search(ctx, { systemId: "a", query: "refunds" })).map((f) => f.text).sort();
     expect(forA).toEqual(["Refunds go out on Fridays.", "Refunds over $500 need finance."]);
-    expect(await m.search({ workspaceId: "other" }, { systemId: "a", query: "refunds" })).toHaveLength(0);
+    expect(await m.search({ ...ctx, workspaceId: "other" }, { systemId: "a", query: "refunds" })).toHaveLength(0);
   });
 
   it("gives a step the facts that match it, else the newest workflow facts", async () => {
@@ -108,5 +111,52 @@ describe("workflow memory", () => {
     for (let i = 0; i < MAX_FACTS_PER_SCOPE; i++) await m.remember(ctx, { systemId: "sys", text: `Fact number ${i}`, key: i === 0 ? "first" : undefined, source });
     await expect(m.remember(ctx, { systemId: "sys", text: "One too many", source })).rejects.toMatchObject({ code: "memory_full" });
     await expect(m.remember(ctx, { systemId: "sys", text: "A newer first fact", key: "first", source })).resolves.toMatchObject({ duplicate: false });
+  });
+
+  it("keeps private memories to their owner, whatever the other person's role", async () => {
+    const m = service();
+    const mine = await m.remember(ctx, { scope: "private", systemId: "sys", text: "I prefer refunds handled before noon.", key: "my-refund-time", source });
+    expect(mine.fact.ownerId).toBe("u_bea");
+    expect(mine.fact.systemId).toBeUndefined();
+    await m.remember(ctx, { scope: "team", text: "Refunds over $500 need finance.", source });
+
+    // The owner sees it alongside team facts.
+    expect((await m.search(ctx, { systemId: "sys", query: "refunds" })).map((f) => f.text).sort()).toEqual(["I prefer refunds handled before noon.", "Refunds over $500 need finance."]);
+    // Someone else in the same workspace, even the Owner, does not, by search, by id, or by step.
+    const owner = { ...cal, role: "Owner" };
+    expect((await m.search(owner, { systemId: "sys", query: "refunds" })).map((f) => f.text)).toEqual(["Refunds over $500 need finance."]);
+    expect(await m.get(owner, mine.fact.id)).toBeNull();
+    await expect(m.forget(owner, mine.fact.id)).rejects.toMatchObject({ code: "not_found" });
+    expect(await m.history(owner, "private")).toEqual([]);
+    expect((await m.forStep(owner, "sys", { title: "Handle refunds" })).map((f) => f.text)).not.toContain("I prefer refunds handled before noon.");
+    // Writing "private" as someone else only ever writes to their own.
+    const theirs = await m.remember(cal, { scope: "private", text: "Cal's own note about refunds.", source });
+    expect(theirs.fact.ownerId).toBe("u_cal");
+    expect((await m.history(ctx, "private")).map((f) => f.text)).toEqual(["I prefer refunds handled before noon."]);
+  });
+
+  it("needs memory:private for an agent token to reach its creator's private memories", async () => {
+    const m = service();
+    await m.remember(ctx, { scope: "private", text: "Bea's private preference about invoices.", source });
+    const agent = { workspaceId: "wks", userId: "u_bea", actorType: "agent" as const, capabilities: ["memory:read", "memory:write"] };
+    expect(await m.search(agent, { query: "invoices" })).toEqual([]);
+    await expect(m.remember(agent, { scope: "private", text: "A new private fact.", source })).rejects.toMatchObject({ code: "not_allowed" });
+    const trusted = { ...agent, capabilities: [...agent.capabilities, "memory:private"] };
+    expect((await m.search(trusted, { query: "invoices" })).map((f) => f.text)).toEqual(["Bea's private preference about invoices."]);
+    // Even with it, an agent made by Cal sees only Cal's.
+    expect(await m.search({ ...trusted, userId: "u_cal" }, { query: "invoices" })).toEqual([]);
+  });
+
+  it("erases a person's private memories on request, and only theirs", async () => {
+    const m = service();
+    await m.remember(ctx, { scope: "private", text: "First private note.", source });
+    await m.remember(ctx, { scope: "private", text: "Second private note.", source });
+    await m.remember(cal, { scope: "private", text: "Cal's note.", source });
+    await m.remember(ctx, { scope: "team", text: "A team note.", source });
+    expect(await m.purgePrivate(ctx)).toBe(2);
+    expect(await m.history(ctx, "private")).toEqual([]);
+    expect((await m.history(cal, "private")).map((f) => f.text)).toEqual(["Cal's note."]);
+    expect((await m.history(ctx, "team")).length).toBe(1);
+    await expect(m.purgePrivate({ ...ctx, actorType: "agent", capabilities: ["memory:private"] })).rejects.toMatchObject({ code: "not_allowed" });
   });
 });

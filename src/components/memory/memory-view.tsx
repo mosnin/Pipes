@@ -13,10 +13,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import type { MemoryFact } from "@/domain/memory/service";
 
-type Data = { facts: MemoryFact[]; history: MemoryFact[]; canEdit: boolean };
-type Scope = "workflow" | "workspace";
+type Data = { facts: Fact[]; history: Fact[]; canEdit: boolean };
+type Scope = "workflow" | "team" | "private";
+type Fact = MemoryFact & { scope?: Scope };
+
+const SCOPE_PILL: Record<Scope, string | null> = { workflow: null, team: "Whole team", private: "Only you" };
 
 const at = (iso?: string) => (iso ? new Date(iso).getTime() : Date.now());
 
@@ -53,6 +57,9 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
   const [text, setText] = useState("");
   const [key, setKey] = useState("");
   const [scope, setScope] = useState<Scope>("workflow");
+  const [eraseOpen, setEraseOpen] = useState(false);
+  // People who cannot edit shared memory can still keep private notes.
+  const chosen: Scope = data && !data.canEdit ? "private" : scope;
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(
@@ -74,7 +81,7 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
     event.preventDefault();
     if (!text.trim()) return;
     setBusy("new");
-    const json = await fetch(`/api/systems/${systemId}/memory`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, key: key || undefined, scope }) })
+    const json = await fetch(`/api/systems/${systemId}/memory`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, key: key || undefined, scope: chosen }) })
       .then((r) => r.json())
       .catch(() => null);
     setBusy(null);
@@ -82,6 +89,15 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
     toast(json.data.duplicate ? "Already remembered." : json.data.replaced ? "Remembered. It replaces the older fact with that key." : "Remembered. Matching steps will see it.");
     setText("");
     setKey("");
+    void load(query);
+  };
+
+  const erase = async () => {
+    const json = await fetch("/api/account/memory", { method: "DELETE" })
+      .then((r) => r.json())
+      .catch(() => null);
+    if (!json?.ok) return toast(apiErrorMessage(json, "Your private memories were not erased."), { tone: "error" });
+    toast(`Erased ${json.data.erased} private ${json.data.erased === 1 ? "memory" : "memories"}.`);
     void load(query);
   };
 
@@ -99,10 +115,10 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
   return (
     <SettingsShell
       title="Memory"
-      description="Facts this workflow learned on earlier runs. Each step is given the facts that match it, so the next agent or person starts with what the last one found out."
+      description="Facts learned on earlier runs: this workflow's, the whole team's, and your own private ones. Each step is given the facts that match it, so the next agent or person starts with what the last one found out."
       measure="prose"
     >
-      {data?.canEdit ? (
+      {data ? (
         <SettingsSection title="Teach it something" description="One fact per entry, true beyond a single run. Give related facts the same key and a newer one replaces the older one.">
           <Card>
             <form onSubmit={remember}>
@@ -117,14 +133,26 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
                   <span className="t-caption-medium text-ink">Applies to</span>
                   <Segmented<Scope>
                     label="Applies to"
-                    value={scope}
+                    value={chosen}
                     onValueChange={setScope}
                     options={[
-                      { value: "workflow", label: "This workflow" },
-                      { value: "workspace", label: "Every workflow" }
+                      ...(data.canEdit
+                        ? [
+                            { value: "workflow" as const, label: "This workflow" },
+                            { value: "team" as const, label: "Whole team" }
+                          ]
+                        : []),
+                      { value: "private" as const, label: "Only me" }
                     ]}
                     className="self-start"
                   />
+                  <span className="t-caption text-ink-3">
+                    {chosen === "private"
+                      ? "Only you, and agents you allow with memory:private, will ever see it. Nobody else in the workspace can, whatever their role."
+                      : chosen === "team"
+                        ? "Everyone in the workspace, and every workflow's performers."
+                        : "Performers of this workflow, at the steps it matches."}
+                  </span>
                 </div>
               </CardContent>
               <CardFooter className="justify-end">
@@ -144,24 +172,24 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
         <RecordTable
           loading={!data}
           noun="fact"
-          columns={[{ label: "Fact" }, { label: "Learned", className: "w-[110px]" }, ...(data?.canEdit ? [{ label: "Actions", hidden: true, className: "w-[90px]" }] : [])]}
+          columns={[{ label: "Fact" }, { label: "Learned", className: "w-[110px]" }, { label: "Actions", hidden: true, className: "w-[90px]" }]}
           rows={(data?.facts ?? []).map((f) => ({
             key: f.id,
             cells: [
               <span key="f" className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-ink">
-                  {f.text} {f.systemId ? null : <StatusPill role="neutral">Every workflow</StatusPill>}
+                  {f.text} {f.scope && SCOPE_PILL[f.scope] ? <StatusPill role={f.scope === "private" ? "info" : "neutral"}>{SCOPE_PILL[f.scope]}</StatusPill> : null}
                 </span>
                 <Source fact={f} />
               </span>,
               <RelativeTime key="t" at={at(f.validAt)} />,
-              ...(data?.canEdit
-                ? [
-                    <Button key="x" variant="ghost" size="sm" disabled={busy === f.id} onClick={() => void forget(f)}>
-                      Forget
-                    </Button>
-                  ]
-                : [])
+              data?.canEdit || f.scope === "private" ? (
+                <Button key="x" variant="ghost" size="sm" disabled={busy === f.id} onClick={() => void forget(f)}>
+                  Forget
+                </Button>
+              ) : (
+                <span key="x" />
+              )
             ]
           }))}
           empty={
@@ -196,6 +224,27 @@ export function WorkflowMemoryView({ systemId }: { systemId: string }): ReactNod
           />
         </SettingsSection>
       ) : null}
+      <SettingsSection title="Your private memory" description="Facts you saved for yourself in this workspace. Nobody else can see them, and erasing them is permanent, history included.">
+        <Card>
+          <CardFooter className="border-t-0">
+            <span className="t-body text-ink-2">Erase every private memory you have in this workspace.</span>
+            <Button variant="destructive" size="sm" onClick={() => setEraseOpen(true)}>
+              Erase
+            </Button>
+          </CardFooter>
+        </Card>
+      </SettingsSection>
+
+      <ConfirmDialog
+        open={eraseOpen}
+        onOpenChange={setEraseOpen}
+        title="Erase your private memories?"
+        description="Every fact you saved for yourself in this workspace is deleted for good, with its history. Team and workflow memories are not touched."
+        confirmLabel="Erase"
+        destructive
+        confirmPhrase="ERASE"
+        onConfirm={erase}
+      />
     </SettingsShell>
   );
 }

@@ -20,11 +20,12 @@ export const AGENT_CAPABILITIES = [
   "runs:write",
   "memory:read",
   "memory:write",
+  "memory:private",
   "connections:secrets"
 ] as const;
 
-/** Capabilities that `systems:write` does not imply: reading stored secrets must be granted explicitly. */
-const EXPLICIT_ONLY = new Set<string>(["connections:secrets"]);
+/** Capabilities that `systems:write` does not imply: reading stored secrets and the creator's private memory must be granted explicitly. */
+const EXPLICIT_ONLY = new Set<string>(["connections:secrets", "memory:private"]);
 
 export type AgentCapability = (typeof AGENT_CAPABILITIES)[number];
 

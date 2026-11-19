@@ -43,9 +43,10 @@ export function createWorkflowServices(repos: RepositorySet) {
       for (const item of items) {
         const text = typeof item === "string" ? item : item && typeof item === "object" ? (item as { text?: unknown }).text : undefined;
         const key = item && typeof item === "object" ? (item as { key?: unknown }).key : undefined;
-        const scope = item && typeof item === "object" && (item as { scope?: unknown }).scope === "workspace" ? undefined : run.systemId;
+        const asked = item && typeof item === "object" ? (item as { scope?: unknown }).scope : undefined;
+        const scope = asked === "private" ? "private" : asked === "team" || asked === "workspace" ? "team" : "workflow";
         try {
-          const { fact } = await memory.remember(ctx, { systemId: scope, text, key, source: { type: "run", actorId: ctx.actorId, label: input.actorLabel ?? (ctx.actorType === "agent" ? "An agent" : "A person"), runId, nodeId: step?.nodeId, stepTitle: step?.nodeTitle } });
+          const { fact } = await memory.remember(ctx, { scope, systemId: run.systemId, text, key, source: { type: "run", actorId: ctx.actorId, label: input.actorLabel ?? (ctx.actorType === "agent" ? "An agent" : "A person"), runId, nodeId: step?.nodeId, stepTitle: step?.nodeTitle } });
           remembered.push({ text: fact.text, ok: true, id: fact.id });
         } catch (error) {
           remembered.push({ text: String(text ?? ""), ok: false, error: (error as Error).message });
