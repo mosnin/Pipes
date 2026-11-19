@@ -1,65 +1,185 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Card, Input, PageHeader } from "@/components/ui";
+import { useEffect, useState, type ReactNode } from "react";
+import { PageShell } from "@/components/layouts/archetypes";
+import { Banner } from "@/components/ui/banner";
+import { Button } from "@/components/ui/button";
+import { apiErrorMessage } from "@/components/shell/api-error";
+import { useBillingStatus } from "@/components/shell/use-billing-status";
+import { Card } from "@/components/ui/card";
+import { GroupedList, GroupedRow } from "@/components/ui/grouped-list";
+import { Field } from "@/components/ui/input";
+import { PageHeader, SectionHeading } from "@/components/ui/page-header";
+import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSweepTo } from "@/lib/sweep";
 
-export function OnboardingClient() {
+type Recommendation = { id: string; title: string; description: string; category: string; useCase: string; complexity: string };
+type Path = "blank" | "template" | "ai" | "import";
+
+const ROLES = [
+  { value: "builder", label: "Building agents" },
+  { value: "engineering", label: "Engineering" },
+  { value: "product", label: "Product" },
+  { value: "ops", label: "Operations" },
+  { value: "support", label: "Support" },
+  { value: "sales", label: "Sales" }
+];
+
+const USE_CASES = [
+  { value: "support", label: "Customer support" },
+  { value: "research", label: "Research" },
+  { value: "automation", label: "Automating a process" },
+  { value: "coding", label: "Coding workflows" },
+  { value: "sales", label: "Sales and outreach" }
+];
+
+async function postJson(url: string, body: unknown) {
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    return await res.json().catch(() => ({ ok: false }));
+  } catch {
+    return { ok: false, message: "Pipes could not be reached. Check your connection and try again." };
+  }
+}
+
+export function OnboardingClient(): ReactNode {
   const router = useRouter();
+  const sweepTo = useSweepTo();
   const [role, setRole] = useState("builder");
   const [useCase, setUseCase] = useState("support");
-  const [recommended, setRecommended] = useState<Array<{ id: string; title: string; description: string; category: string; useCase: string; complexity: string }>>([]);
+  const [recommended, setRecommended] = useState<Recommendation[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const [busy, setBusy] = useState<Path | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const billing = useBillingStatus();
+  const aiAllowed = billing ? billing.entitlements.aiGeneration : true;
+  const fail = (data: unknown, fallback: string) => {
+    setError(apiErrorMessage(data, fallback));
+    setBusy(null);
+  };
 
-  useEffect(() => { void fetch("/api/onboarding", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "start" }) }); }, []);
+  useEffect(() => {
+    void postJson("/api/onboarding", { action: "start" });
+  }, []);
   useEffect(() => {
     setLoadingRecommendations(true);
-    fetch("/api/onboarding", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "recommend", role, useCase }) })
-      .then((r) => r.json())
+    postJson("/api/onboarding", { action: "recommend", role, useCase })
       .then((d) => setRecommended(d.data?.recommendedTemplates ?? []))
       .finally(() => setLoadingRecommendations(false));
   }, [role, useCase]);
 
-  const complete = async (chosenPath: "blank" | "template" | "ai" | "import") => {
-    await fetch("/api/onboarding", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "complete", chosenPath, role, useCase }) });
+  const complete = (chosenPath: Path) => postJson("/api/onboarding", { action: "complete", chosenPath, role, useCase });
+
+  const startBlank = async () => {
+    setBusy("blank");
+    setError(null);
+    await complete("blank");
+    const data = await postJson("/api/systems", { name: "Untitled workflow" });
+    if (data.ok) sweepTo(`/systems/${data.data.systemId}`);
+    else fail(data, "The workflow could not be created.");
+  };
+  const startAi = async () => {
+    setBusy("ai");
+    setError(null);
+    await complete("ai");
+    const roleLabel = ROLES.find((r) => r.value === role)?.label ?? role;
+    const caseLabel = USE_CASES.find((c) => c.value === useCase)?.label ?? useCase;
+    const draft = await postJson("/api/ai/generate-system", { prompt: `Build a ${caseLabel.toLowerCase()} workflow for a team focused on ${roleLabel.toLowerCase()}` });
+    if (!draft.ok) return fail(draft, "The draft could not be generated.");
+    const commit = await postJson("/api/ai/generate-system", { commit: true, draft: draft.data });
+    if (commit.ok) sweepTo(`/systems/${commit.data.systemId}`);
+    else fail(commit, "The draft could not be saved.");
+  };
+  const startImport = async () => {
+    setBusy("import");
+    await complete("import");
+    router.push("/dashboard");
+  };
+  const startTemplate = async (templateId: string) => {
+    setBusy("template");
+    setError(null);
+    await complete("template");
+    const data = await postJson(`/api/templates/${templateId}/instantiate`, {});
+    if (data.ok) sweepTo(`/systems/${data.data.systemId}`);
+    else fail(data, "That template could not be opened.");
   };
 
   return (
-    <div>
-      <PageHeader title="Get to first value" subtitle="Pick a path, start quickly, and iterate in the editor." />
-      <Card>
-        <h3>Context (short)</h3>
-        <div className="nav-inline">
-          <Input aria-label="Your role" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role (e.g. ops, product, engineering)" />
-          <Input aria-label="Primary use case" value={useCase} onChange={(e) => setUseCase(e.target.value)} placeholder="Use case (e.g. support, research, automation)" />
-        </div>
-      </Card>
-      <div className="grid-2">
-        <Card><h3>Blank system</h3><p>Start from first principles.</p><Button onClick={async () => {
-          await complete("blank");
-          const res = await fetch("/api/systems", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Untitled System" }) });
-          const data = await res.json();
-          if (data.ok) router.push(`/systems/${data.data.systemId}`);
-        }}>Start blank</Button></Card>
-        <Card><h3>AI generated</h3><p>Fast first artifact via AI boundary.</p><Button onClick={async () => {
-          await complete("ai");
-          const draftRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ prompt: `Build a ${useCase} ${role} system` }) });
-          const draft = await draftRes.json();
-          if (!draft.ok) return;
-          const commitRes = await fetch("/api/ai/generate-system", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ commit: true, draft: draft.data }) });
-          const commit = await commitRes.json();
-          if (commit.ok) router.push(`/systems/${commit.data.systemId}`);
-        }}>Generate + commit</Button></Card>
-        <Card><h3>Import schema</h3><p>Bring existing design into Pipes.</p><Button onClick={async () => { await complete("import"); router.push("/dashboard"); }}>Go to import on dashboard</Button></Card>
-        <Card><h3>Template</h3><p>Use a proven starting shape.</p>
-          {loadingRecommendations ? <p aria-live="polite">Loading recommendations…</p> : recommended.length === 0 ? <p>Recommendations unavailable. You can still start from blank or AI.</p> : recommended.map((t) => <div key={t.id} className="nav-inline" style={{ justifyContent: "space-between" }}><span>{t.title} · {t.category} · {t.complexity}</span><Button onClick={async () => {
-            await complete("template");
-            const res = await fetch(`/api/templates/${t.id}/instantiate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
-            const data = await res.json();
-            if (data.ok) router.push(`/systems/${data.data.systemId}`);
-          }}>Launch</Button></div>)}
-        </Card>
+    <PageShell measure="page">
+      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
+        <PageHeader title="Get started" description="Tell us what you are building and pick a way in. You can change everything later." />
+
+        <section aria-labelledby="about-heading" className="flex flex-col gap-2">
+          <SectionHeading>
+            <span id="about-heading">About your work</span>
+          </SectionHeading>
+          <Card padded className="grid gap-3 sm:grid-cols-2">
+            <Field label="What do you do?" htmlFor="onboarding-role">
+              <Select id="onboarding-role" value={role} onValueChange={setRole} options={ROLES} />
+            </Field>
+            <Field label="What will your first workflow handle?" htmlFor="onboarding-use-case">
+              <Select id="onboarding-use-case" value={useCase} onValueChange={setUseCase} options={USE_CASES} />
+            </Field>
+          </Card>
+        </section>
+
+        <section aria-labelledby="start-heading" className="flex flex-col gap-2">
+          <SectionHeading>
+            <span id="start-heading">Choose how to start</span>
+          </SectionHeading>
+          {error ? (
+            <div role="alert">
+              <Banner role="critical" title="That didn't start">
+                {error}
+              </Banner>
+            </div>
+          ) : null}
+          <GroupedList>
+            <GroupedRow title="Start blank" subtitle="An empty canvas. Add steps, tools and approvals yourself." trailing={busy === "blank" ? <span className="t-caption text-ink-3">Opening</span> : undefined} onClick={busy ? undefined : startBlank} />
+            {aiAllowed ? (
+              <GroupedRow title="Draft with AI" subtitle="Pipes drafts a first version from your answers above for you to edit." trailing={busy === "ai" ? <span className="t-caption text-ink-3">Drafting</span> : undefined} onClick={busy ? undefined : startAi} />
+            ) : (
+              <GroupedRow
+                title="Draft with AI"
+                subtitle="On the Builder plan. Pipes drafts a first version from your answers above for you to edit."
+                trailing={
+                  <Button asChild variant="secondary" size="sm">
+                    <Link href="/settings/billing">Upgrade</Link>
+                  </Button>
+                }
+              />
+            )}
+            <GroupedRow title="Import a schema" subtitle="Bring a pipes_schema_v1 document from another workspace or an agent." onClick={busy ? undefined : startImport} />
+          </GroupedList>
+        </section>
+
+        <section aria-labelledby="templates-heading" className="flex flex-col gap-2">
+          <SectionHeading>
+            <span id="templates-heading">Or begin from a template</span>
+          </SectionHeading>
+          {loadingRecommendations ? (
+            <Skeleton className="h-[168px] w-full rounded-12" />
+          ) : (
+            <GroupedList empty="No recommendations for this combination yet. Start blank or draft with AI instead.">
+              {recommended.map((template) => (
+                <GroupedRow
+                  key={template.id}
+                  title={template.title}
+                  subtitle={template.description || `${template.category} · ${template.complexity}`}
+                  trailing={
+                    <Button variant="secondary" size="sm" disabled={busy !== null} onClick={() => startTemplate(template.id)}>
+                      Use template
+                    </Button>
+                  }
+                />
+              ))}
+            </GroupedList>
+          )}
+        </section>
       </div>
-    </div>
+    </PageShell>
   );
 }

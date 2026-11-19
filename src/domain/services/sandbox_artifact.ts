@@ -63,7 +63,9 @@ export class SandboxArtifactService {
 
   private async getArtifact(ctx: AppContext, artifactId: string): Promise<SandboxArtifact> {
     const rows = await this.repos.agentMemory.listMemoryEntries({ workspaceId: ctx.workspaceId, type: "validation_lesson" });
-    const row = rows.filter((entry) => entry.tags.includes("sandbox_artifact") && entry.title === `artifact:${artifactId}`).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    // Each change appends a version. Newest wins; two versions written in the same millisecond tie on time, so the later write wins.
+    const versions = rows.filter((entry) => entry.tags.includes("sandbox_artifact") && entry.title === `artifact:${artifactId}`);
+    const row = versions.map((entry, index) => ({ entry, index })).sort((a, b) => b.entry.updatedAt.localeCompare(a.entry.updatedAt) || b.index - a.index)[0]?.entry;
     if (!row) throw new Error("sandbox_artifact_not_found");
     return JSON.parse(row.detail ?? "{}") as SandboxArtifact;
   }

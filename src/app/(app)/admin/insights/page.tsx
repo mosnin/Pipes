@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, EmptyState, Input, PageHeader, Table } from "@/components/ui";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Toolbar } from "@/components/ui/page-header";
+import { StatCell, StatStrip } from "@/components/data/stat-strip";
+import { SettingsSection, SettingsShell } from "@/components/settings/SettingsShell";
+import { FactList } from "@/components/settings/fact-list";
+import { RecordTable } from "@/components/settings/record-table";
+import { OperatorGate } from "@/components/admin/operator-gate";
+import { apiErrorMessage } from "@/components/shell/api-error";
 
 export default function AdminInsightsPage() {
   const [since, setSince] = useState("");
@@ -14,7 +24,7 @@ export default function AdminInsightsPage() {
     const res = await fetch(`/api/admin/insights?${q.toString()}`);
     const body = await res.json();
     if (!body.ok) {
-      setError(body.error ?? "Failed to load insights");
+      setError(apiErrorMessage(body, "Insights could not be loaded."));
       return;
     }
     setError("");
@@ -24,28 +34,62 @@ export default function AdminInsightsPage() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <div>
-      <PageHeader title="Admin Insights" subtitle="Post-launch activation, retention, and failure diagnostics." />
-      <Card>
-        <div className="nav-inline">
-          <Input value={since} onChange={(e) => setSince(e.target.value)} placeholder="Since ISO timestamp (optional)" />
-          <button className="btn" onClick={() => void load()}>Refresh</button>
+    <SettingsShell title="Insights" description="Activation, usage and failure counts since launch, or since the time you set.">
+      <Toolbar>
+        <div className="min-w-[200px] flex-1 sm:max-w-[320px]">
+          <Input aria-label="Since" value={since} onChange={(e) => setSince(e.target.value)} placeholder="Since, ISO timestamp" />
         </div>
-      </Card>
-      {error ? <EmptyState title="Operator access required" description={error} /> : null}
+        <Button variant="secondary" size="sm" onClick={() => void load()}>
+          Refresh
+        </Button>
+      </Toolbar>
+
+      {error ? <OperatorGate error={error} /> : null}
+
       {!data ? null : (
         <>
-          <div className="grid-2">
-            <Card><h3>Activation Funnel</h3><p>Started: {data.activation.onboardingStarted}</p><p>Completed: {data.activation.onboardingCompleted}</p><p>First System: {data.activation.firstSystemCreated}</p><p>Activated: {data.activation.activationAchieved}</p></Card>
-            <Card><h3>Failure Signals</h3><p>Autosave failures: {data.failures.autosaveFailure}</p><p>Editor crash boundaries: {data.failures.editorCrashBoundary}</p><p>Import attempts: {data.failures.importMergeAttempted}</p><p>Import conflicts: {data.failures.importMergeConflicts}</p></Card>
-          </div>
-          <Card><h3>Usage Summaries</h3><p>Template usage: {data.product.templateCommitted}</p><p>AI commits: {data.product.aiDraftCommitted}</p><p>Search no result rate: {(Number(data.rates.searchNoResultRate) * 100).toFixed(1)}%</p><p>Token-created signals: {data.protocol.tokenCreated}</p><p>Agent protocol writes: {data.protocol.writesByAgent}</p></Card>
-          <Card>
-            <h3>Recent Signal Counts</h3>
-            {data.recentSignalCounts.length === 0 ? <EmptyState title="No recent signals" description="Signal counts will populate with product usage." /> : <Table headers={["Signal", "Count"]} rows={data.recentSignalCounts.map((r: any) => [r.event, String(r.count)])} />}
-          </Card>
+          <SettingsSection title="Activation">
+            <StatStrip>
+              <StatCell label="Onboarding started" value={data.activation.onboardingStarted} />
+              <StatCell label="Onboarding completed" value={data.activation.onboardingCompleted} />
+              <StatCell label="First workflow created" value={data.activation.firstSystemCreated} />
+              <StatCell label="Activated" value={data.activation.activationAchieved} />
+            </StatStrip>
+          </SettingsSection>
+
+          <SettingsSection title="Failures">
+            <StatStrip>
+              <StatCell label="Autosave failures" value={data.failures.autosaveFailure} />
+              <StatCell label="Editor crash boundaries" value={data.failures.editorCrashBoundary} />
+              <StatCell label="Import attempts" value={data.failures.importMergeAttempted} />
+              <StatCell label="Import conflicts" value={data.failures.importMergeConflicts} />
+            </StatStrip>
+          </SettingsSection>
+
+          <SettingsSection title="Usage">
+            <Card>
+              <FactList
+                facts={[
+                  { label: "Templates used", value: <span className="tabular">{data.product.templateCommitted}</span> },
+                  { label: "AI drafts committed", value: <span className="tabular">{data.product.aiDraftCommitted}</span> },
+                  { label: "Searches with no result", value: <span className="tabular">{(Number(data.rates.searchNoResultRate) * 100).toFixed(1)}%</span> },
+                  { label: "Tokens created", value: <span className="tabular">{data.protocol.tokenCreated}</span> },
+                  { label: "Agent protocol writes", value: <span className="tabular">{data.protocol.writesByAgent}</span> }
+                ]}
+              />
+            </Card>
+          </SettingsSection>
+
+          <SettingsSection title="Recent signal counts">
+            <RecordTable
+              noun="signal"
+              columns={[{ label: "Signal" }, { label: "Count", numeric: true, className: "w-[120px]" }]}
+              rows={data.recentSignalCounts.map((r: any) => ({ key: r.event, cells: [<span key="e" className="t-mono-hash">{r.event}</span>, String(r.count)] }))}
+              empty={<EmptyState title="No recent signals" body="Signal counts fill in as people use the product." className="py-8" />}
+            />
+          </SettingsSection>
         </>
       )}
-    </div>
+    </SettingsShell>
   );
 }

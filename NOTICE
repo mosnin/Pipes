@@ -1,0 +1,34 @@
+Pipes
+Copyright 2026 the Pipes authors.
+
+Pipes uses the Podium design system (tokens, primitives, shell and motion),
+copied from the Podium app by the same owner.
+
+- src/components/rare/hook-sidebar.tsx is adapted from Rare UI
+  (https://rareui.com), Copyright (c) 2026 Swami Malode, used under the
+  MIT + Commons Clause + Attribution license. The copyright notice stays in
+  the file. The component may not be sold or redistributed on its own.
+- src/components/rare/gooey-nav.tsx is adapted from Rare UI under the same
+  license and terms as the hook sidebar.
+- src/components/arc/ is the Arc Avatar (https://uiarc.dev), Copyright (c)
+  2026 Elia Kuratli, MIT, vendored through Podium with its CSS variables mapped
+  onto the tokens.
+- src/components/micro/ adapts microinteractions from microinteractions.dev
+  (https://github.com/juandinella/microinteractions.dev), Copyright (c) 2026
+  Juan Di Nella, MIT: hold to confirm, text swap and the chevron morph.
+- src/components/ui/empty-art.tsx and the onboarding cards are adapted from
+  Podium. src/components/ui/shader.tsx is Pipes' own.
+- Stickers come from stick-it-up (https://stickitupx.com), Copyright (c) 2026
+  Samiran De, MIT, used as an npm dependency.
+- Ding (https://ding.yusufcengiz.dev), MIT, is used as an npm dependency for
+  toasts. glimm (https://glimm.dev) is used as an npm dependency for sweeps.
+- Inter (https://rsms.me/inter), SIL Open Font License 1.1, via
+  @fontsource-variable/inter. Geist Mono, SIL Open Font License 1.1, via the
+  geist package.
+- Icons are lucide (https://lucide.dev), ISC.
+- src/skills/ follows the skill layout of gstack (https://github.com/garrytan/gstack),
+  Copyright (c) 2026 Garry Tan, MIT: one folder per skill with a SKILL.md of
+  frontmatter and procedure. The skills themselves are written for Pipes.
+- Workflow memory (src/domain/memory) takes its model of facts with validity
+  times and provenance from Graphiti (https://github.com/getzep/graphiti,
+  Apache-2.0) and gbrain; no code is copied.

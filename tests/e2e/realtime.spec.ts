@@ -9,15 +9,19 @@ test("two sessions observe shared state", async ({ browser }) => {
   await pageA.goto("/api/auth/login?returnTo=/dashboard");
   await pageB.goto("/api/auth/login?returnTo=/dashboard");
 
-  await pageA.getByPlaceholder("System name").fill("Realtime System");
-  await pageA.getByRole("button", { name: "Create system" }).click();
-  await expect(pageA).toHaveURL(/\/systems\//);
+  await pageA.getByRole("button", { name: "New workflow" }).first().click();
+  await pageA.getByLabel("Name").fill("Realtime System");
+  await pageA.getByRole("button", { name: "Create workflow" }).click();
+  // A cold dev server compiles the editor on first visit.
+  await expect(pageA).toHaveURL(/\/systems\//, { timeout: 30000 });
 
   const url = pageA.url();
   await pageB.goto(url);
-  await pageA.getByRole("button", { name: "Agent" }).first().click();
+  await pageA.getByRole("button", { name: "Add Agent" }).first().click();
 
-  await expect(pageB.getByText("Agent Node is not connected.")).toBeVisible({ timeout: 10000 });
+  await expect(pageB.getByText(/^1 nodes/)).toBeVisible({ timeout: 30000 });
+  await pageB.getByRole("tab", { name: /Validation/ }).click();
+  await expect(pageB.getByText(/is not connected\./).first()).toBeVisible({ timeout: 30000 });
 
   await contextA.close();
   await contextB.close();

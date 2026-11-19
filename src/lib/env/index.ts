@@ -26,7 +26,28 @@ const envSchema = z.object({
   OPENAI_MODEL: optionalString,
   MODAL_EXECUTOR_URL: optionalUrl,
   MODAL_EXECUTOR_TOKEN: optionalString,
-  PIPES_ADMIN_ALLOWLIST: optionalString
+  PIPES_ADMIN_ALLOWLIST: optionalString,
+  PIPES_SESSION_SECRET: optionalString,
+  // Better Auth (docs/security.md). Falls back to PIPES_SESSION_SECRET so existing deployments keep a secret.
+  BETTER_AUTH_SECRET: optionalString,
+  /** SQLite file for accounts when running real sign-in without Convex. */
+  PIPES_AUTH_DB_FILE: optionalString,
+  // Decision models through OpenRouter (docs/decisions.md).
+  OPENROUTER_API_KEY: optionalString,
+  OPENROUTER_BASE_URL: optionalUrl,
+  PIPES_DECISIONS: z.preprocess(emptyToUndefined, z.enum(["off", "shadow", "live"]).default("shadow")),
+  PIPES_DECIDER_FAST_MODELS: optionalString,
+  PIPES_DECIDER_DELIBERATE_MODELS: optionalString,
+  PIPES_DECIDER_FAST_TIMEOUT_MS: optionalString,
+  PIPES_DECIDER_DELIBERATE_TIMEOUT_MS: optionalString,
+  PIPES_DECIDER_MAX_COST_MICROS: optionalString,
+  // Agent memory recall through Supermemory (docs/memory.md). Pipes' own records stay the source of truth.
+  PIPES_MEMORY_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["local", "supermemory"]).default("local")),
+  SUPERMEMORY_API_KEY: optionalString,
+  /** Point at the Cloudflare memory gateway (cloudflare/memory-gateway) instead of Supermemory directly. */
+  SUPERMEMORY_BASE_URL: optionalUrl,
+  /** Shared secret for signing requests to the Cloudflare memory gateway. */
+  PIPES_MEMORY_GATEWAY_SECRET: optionalString
 });
 
 export function buildEnv(source: NodeJS.ProcessEnv) {
@@ -42,6 +63,8 @@ export const runtimeFlags = {
   hasCreem: Boolean(env.CREEM_API_KEY),
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
+  hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
+  hasSupermemory: env.PIPES_MEMORY_PROVIDER === "supermemory" && Boolean(env.SUPERMEMORY_API_KEY || (env.SUPERMEMORY_BASE_URL && env.PIPES_MEMORY_GATEWAY_SECRET)),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL)
 };
 
@@ -49,11 +72,8 @@ export type EffectiveRuntimeMode = "mock" | "provider" | "fallback_mock";
 
 export function resolveRuntimeMode(): { mode: EffectiveRuntimeMode; warning?: string } {
   if (env.PIPES_USE_MOCKS) return { mode: "mock" };
-  const missing: string[] = [];
-  if (!env.CONVEX_URL) missing.push("CONVEX_URL");
-  if (!(env.AUTH0_DOMAIN && env.AUTH0_CLIENT_ID && env.AUTH0_CLIENT_SECRET)) missing.push("AUTH0_DOMAIN/AUTH0_CLIENT_ID/AUTH0_CLIENT_SECRET");
-  if (missing.length > 0) {
-    return { mode: "fallback_mock", warning: `Provider mode requested but incomplete configuration detected: ${missing.join(", ")}. Using mock runtime path.` };
+  if (!env.CONVEX_URL) {
+    return { mode: "fallback_mock", warning: "Provider mode requested but CONVEX_URL is not set. Using the local file-backed store." };
   }
   return { mode: "provider" };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { nodeTypeValues } from "@/domain/pipes_schema_v1/schema";
 import { compatibilityScore, groupByCategory, nodeLibraryCatalog, rankLibraryEntries } from "@/domain/templates/node_library";
 
 describe("node library model", () => {
@@ -29,5 +30,17 @@ describe("node library model", () => {
     const grouped = groupByCategory(rankLibraryEntries({ query: "", favorites: [], recents: [] }));
     expect(grouped.length).toBeGreaterThan(1);
     expect(grouped[0].entries.length).toBeGreaterThan(0);
+  });
+});
+
+describe("node library coverage", () => {
+  it("offers every step type a user can add (Subsystem comes from grouping)", () => {
+    const offered = new Set(nodeLibraryCatalog.map((entry) => entry.nodeType));
+    const missing = nodeTypeValues.filter((type) => type !== "Subsystem" && !offered.has(type));
+    expect(missing).toEqual([]);
+  });
+
+  it("includes human approval, which runs and the approvals inbox depend on", () => {
+    expect(nodeLibraryCatalog.some((entry) => entry.nodeType === "HumanApproval")).toBe(true);
   });
 });

@@ -1,7 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Panel } from "@/components/ui";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Banner } from "@/components/ui/banner";
+import { Kbd } from "@/components/ui/kbd";
+import { ChevronDown, Send } from "@/components/ui/icon";
+import { CheckRow, ObjectRow, Quiet, SectionLabel, StatusPill, statusTone } from "@/components/editor/editor-ui";
 
 type Session = { id: string; title: string };
 type Run = { id: string; status: string };
@@ -13,7 +20,17 @@ type Approval = { id: string; reason: string; status: string };
 type StageRecord = { id: string; stage: string; status: string; summary?: string; at: string };
 type RoleActivity = { id: string; role: string; stage: string; summary: string };
 type PlanRevision = { id: string; version: number; summary: string; critique?: string; openQuestions: string[]; unresolvedRisks: string[] };
-type ProposalBatch = { id: string; stage: string; summary: string; status: string; proposalIds: string[] };
+type ProposalBatch = { id: string; stage: string; summary: string; rationale?: string; status: string; proposalIds: string[] };
+
+/** Batch states in plain words. */
+const BATCH_STATUS: Record<string, string> = {
+  created: "Ready to review",
+  review_required: "Needs approval",
+  approved: "Approved",
+  partially_approved: "Partly applied",
+  applied: "Applied",
+  rejected: "Discarded"
+};
 type SubTask = { id: string; title: string; role: string; skillId: string; status: string; stage: string; contextPack: { subsystemId: string; subsystemSummary: string } };
 type SkillInvocation = { id: string; taskId: string; skillId: string; status: string; inputSummary: string; outputSummary?: string };
 type Reconciliation = { id: string; decision: string; summary: string; inputTaskIds: string[] };
@@ -30,15 +47,8 @@ type StrategyPerformance = { id: string; strategyName: string; overallScore: num
 type SkillPerformance = { id: string; skillId: string; role: string; overallScore: number; successRate: number; acceptedBatchRate: number; notes: string };
 type LearningArtifact = { id: string; type: string; title: string; summary: string; confidence: string };
 type RunPolicySnapshot = { id: string; risk: { posture: string; safeAutoApplyEnabled: boolean }; approval: { strictness: string }; runtime: { maxRunDurationMs: number; maxProviderCallsPerRun: number }; cost: { maxRunCostUsd: number } };
-type CollaborationState = {
-  reviewers: Array<{ id: string; userId: string; role: string; status: string }>;
-  visibility: Array<{ id: string; userId: string; mode: string; currentStage?: string }>;
-  threads: Array<{ id: string; targetType: string; targetId: string; status: string }>;
-  comments: Array<{ id: string; threadId: string; targetType: string; targetId: string; authorId: string; body: string; createdAt: string }>;
-  handoffs: Array<{ id: string; fromUserId: string; toUserId: string; status: string; note: string; stage: string }>;
-  revisions: Array<{ id: string; targetType: string; targetId: string; rationale: string; status: string }>;
-  approvalParticipants: Array<{ id: string; approvalRequestId: string; actorId: string; recommendation: string; note?: string }>;
-};
+/** What the workspace's plan allows. AI features need the Builder plan. */
+type PlanAccess = { status: "loading" } | { status: "ready"; plan: string; aiGeneration: boolean } | { status: "unknown" };
 
 export function AgentChatPanel({
   systemId,
@@ -82,15 +92,27 @@ export function AgentChatPanel({
   const [skillPerformance, setSkillPerformance] = useState<SkillPerformance[]>([]);
   const [patternLifecycle, setPatternLifecycle] = useState<{ promoted: Array<{ id: string; patternArtifactId: string; reason: string; evidenceScore: number }>; demoted: Array<{ id: string; patternArtifactId: string; reason: string; evidenceScore: number }> }>({ promoted: [], demoted: [] });
   const [learningArtifacts, setLearningArtifacts] = useState<LearningArtifact[]>([]);
-  const [collaboration, setCollaboration] = useState<CollaborationState>({ reviewers: [], visibility: [], threads: [], comments: [], handoffs: [], revisions: [], approvalParticipants: [] });
   const [policySnapshot, setPolicySnapshot] = useState<RunPolicySnapshot | null>(null);
   const [policyEvents, setPolicyEvents] = useState<{ escalations: Array<{ id: string; reason: string; severity: string }>; usage?: { providerCalls: number; estimatedCostUsd: number; elapsedMs: number } }>({ escalations: [] });
-  const [commentBody, setCommentBody] = useState("Looks good, but please verify edge-case behavior.");
-  const [handoffTo, setHandoffTo] = useState("usr_1");
-  const [strategyChoice, setStrategyChoice] = useState("subsystem_first");
-  const [prompt, setPrompt] = useState("Plan and apply a safe reliability improvement, request approval for risky edits.");
+  const [prompt, setPrompt] = useState("");
   const [runStatus, setRunStatus] = useState("idle");
+  const [runError, setRunError] = useState<string | null>(null);
   const [activeRunId, setActiveRunId] = useState<string | undefined>();
+  const [access, setAccess] = useState<PlanAccess>({ status: "loading" });
+
+  // Check the plan before offering the assistant, so a request never fails on it.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/billing/status", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((body) => {
+        if (cancelled) return;
+        if (body?.ok && body.data) setAccess({ status: "ready", plan: String(body.data.plan ?? ""), aiGeneration: Boolean(body.data.entitlements?.aiGeneration) });
+        else setAccess({ status: "unknown" });
+      })
+      .catch(() => { if (!cancelled) setAccess({ status: "unknown" }); });
+    return () => { cancelled = true; };
+  }, []);
 
   const assistantText = useMemo(() => events.filter((event) => event.type === "assistant_text_delta" || event.type === "assistant_text_completed").map((event) => event.text ?? "").join(""), [events]);
 
@@ -131,7 +153,7 @@ export function AgentChatPanel({
     if (skillBody.ok) setSkillInvocations(skillBody.data);
     if (reconcileBody.ok) setReconciliations(reconcileBody.data);
     if (orchestrationBody.ok) setOrchestrationSteps(orchestrationBody.data);
-    const [memoryRes, strategyRes, patternRes, decisionRes, evalRes, strategyPerfRes, skillPerfRes, patternLifecycleRes, learningRes, collaborationRes, policyRes, policyEventsRes] = await Promise.all([
+    const [memoryRes, strategyRes, patternRes, decisionRes, evalRes, strategyPerfRes, skillPerfRes, patternLifecycleRes, learningRes, policyRes, policyEventsRes] = await Promise.all([
       fetch(`/api/agent/memory?systemId=${systemId}`, { cache: "no-store" }),
       fetch(`/api/agent/strategies?systemId=${systemId}`, { cache: "no-store" }),
       fetch(`/api/agent/patterns?systemId=${systemId}`, { cache: "no-store" }),
@@ -141,11 +163,10 @@ export function AgentChatPanel({
       fetch(`/api/agent/skill-performance?runId=${runId}&systemId=${systemId}`, { cache: "no-store" }),
       fetch(`/api/agent/pattern-lifecycle?systemId=${systemId}`, { cache: "no-store" }),
       fetch(`/api/agent/learning-artifacts?runId=${runId}&systemId=${systemId}`, { cache: "no-store" }),
-      fetch(`/api/agent/collaboration?runId=${runId}`, { cache: "no-store" }),
       fetch(`/api/agent/runs/${runId}/policy`, { cache: "no-store" }),
       fetch(`/api/agent/runs/${runId}/policy-events`, { cache: "no-store" })
     ]);
-    const [memoryBody, strategyBody, patternBody, decisionBody, evalBody, strategyPerfBody, skillPerfBody, patternLifecycleBody, learningBody, collaborationBody, policyBody, policyEventsBody] = await Promise.all([memoryRes.json(), strategyRes.json(), patternRes.json(), decisionRes.json(), evalRes.json(), strategyPerfRes.json(), skillPerfRes.json(), patternLifecycleRes.json(), learningRes.json(), collaborationRes.json(), policyRes.json(), policyEventsRes.json()]);
+    const [memoryBody, strategyBody, patternBody, decisionBody, evalBody, strategyPerfBody, skillPerfBody, patternLifecycleBody, learningBody, policyBody, policyEventsBody] = await Promise.all([memoryRes.json(), strategyRes.json(), patternRes.json(), decisionRes.json(), evalRes.json(), strategyPerfRes.json(), skillPerfRes.json(), patternLifecycleRes.json(), learningRes.json(), policyRes.json(), policyEventsRes.json()]);
     if (memoryBody.ok) setMemoryEntries(memoryBody.data);
     if (strategyBody.ok) setStrategies(strategyBody.data);
     if (patternBody.ok) setPatterns(patternBody.data);
@@ -155,7 +176,6 @@ export function AgentChatPanel({
     if (skillPerfBody.ok) setSkillPerformance(skillPerfBody.data);
     if (patternLifecycleBody.ok) setPatternLifecycle(patternLifecycleBody.data);
     if (learningBody.ok) setLearningArtifacts(learningBody.data);
-    if (collaborationBody.ok) setCollaboration(collaborationBody.data);
     if (policyBody.ok) setPolicySnapshot(policyBody.data);
     if (policyEventsBody.ok) setPolicyEvents(policyEventsBody.data);
   };
@@ -164,7 +184,7 @@ export function AgentChatPanel({
 
   const ensureSession = async () => {
     if (sessionId) return sessionId;
-    const create = await fetch("/api/agent/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, title: `${systemName} Builder Session` }) });
+    const create = await fetch("/api/agent/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, title: `Conversation about ${systemName}` }) });
     const body = await create.json();
     if (!body.ok) throw new Error(body.error ?? "session_create_failed");
     setSessionId(body.data.id);
@@ -229,19 +249,30 @@ export function AgentChatPanel({
   };
 
   const runPrompt = async () => {
+    if (!prompt.trim()) return;
+    setRunError(null);
+    try {
+      await askAssistant();
+    } catch (error) {
+      setRunStatus("failed");
+      setRunError(error instanceof Error && error.message && !/_/.test(error.message) ? error.message : "The assistant could not answer. Try again in a moment.");
+    }
+  };
+
+  const askAssistant = async () => {
     const sid = await ensureSession();
     setRunStatus("planning");
     setEvents([]); setApprovals([]); setTools([]); setPlan(null); setProposals([]); setStages([]); setRoles([]); setRevisions([]); setBatches([]); setSubTasks([]); setSkillInvocations([]); setReconciliations([]); setOrchestrationSteps([]);
     setBatchDiffs({}); setSelectedDiffByBatch({}); setPreviewByBatch({}); setPreviewEnabledByBatch({}); setSelectionValidation({});
     const createRun = await fetch("/api/agent/runs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sessionId: sid, systemId, message: prompt }) });
     const runBody = await createRun.json();
-    if (!runBody.ok) return setRunStatus("failed");
+    if (!runBody.ok) throw new Error(typeof runBody.error === "string" ? runBody.error : "");
     const run = runBody.data as { run: Run };
     setActiveRunId(run.run.id);
     await fetch("/api/agent/collaboration", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: run.run.id, systemId, mode: "reviewing", currentStage: "planning" }) });
 
     const streamRes = await fetch(`/api/agent/runs/${run.run.id}/stream`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: prompt, systemName, systemDescription }) });
-    if (!streamRes.body) return setRunStatus("failed");
+    if (!streamRes.body) throw new Error("");
 
     const reader = streamRes.body.getReader();
     const decoder = new TextDecoder();
@@ -276,158 +307,223 @@ export function AgentChatPanel({
     await refreshRunArtifacts(activeRunId);
   };
 
-  return (
-    <Panel title="Builder Agent">
-      <p className="badge">System attached: {systemName}</p>
-      <p className="badge">Run status: {runStatus}</p>
-      <p className="badge">Current stage: {stages.at(-1)?.stage ?? "n/a"}</p>
-      <div className="nav-inline" style={{ flexWrap: "wrap" }}>{sessions.map((s) => <Button key={s.id} onClick={() => setSessionId(s.id)}>{s.id === sessionId ? `• ${s.title}` : s.title}</Button>)}</div>
-      <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask the builder agent" />
-      <Button onClick={runPrompt} disabled={runStatus === "tooling" || runStatus === "planning" || runStatus === "applying"}>Run</Button>
+  const busy = runStatus === "tooling" || runStatus === "planning" || runStatus === "applying";
+  const pendingApprovals = approvals.filter((a) => a.status === "pending");
+  // A batch with no edits in it (a bookkeeping record) has nothing to review.
+  const reviewableBatches = batches.filter((batch) => batch.proposalIds.length > 0);
+  // Some rationales are internal bookkeeping (snake_case ids); only plain sentences are shown.
+  const plainText = (text?: string) => (text && !/\b[a-z0-9]+_[a-z0-9_]+\b/i.test(text) ? text : undefined);
 
-      <Card><h4>Current plan</h4>{plan ? <><p>{plan.summary} ({Math.round(plan.confidence * 100)}% confidence)</p><ul>{plan.steps.map((step) => <li key={step.id}>{step.title} · tools: {step.toolNames.join(", ")}</li>)}</ul></> : <p>No plan yet.</p>}</Card>
-      <Card><h4>Plan revisions</h4>{revisions.length ? revisions.map((rev) => <p key={rev.id}>v{rev.version}: {rev.summary}{rev.critique ? ` · critique: ${rev.critique}` : ""}</p>) : <p>No revisions yet.</p>}</Card>
-      <Card><h4>Specialist roles</h4>{roles.length ? roles.map((role) => <p key={role.id}>{role.role} @ {role.stage} · {role.summary}</p>) : <p>No role activity yet.</p>}</Card>
-      <Card><h4>Subsystem sub-tasks</h4>{subTasks.length ? subTasks.map((task) => <p key={task.id}>{task.contextPack.subsystemId} · {task.title} · {task.role} · {task.status}</p>) : <p>No delegated sub-tasks yet.</p>}</Card>
-      <Card><h4>Active skills</h4>{skillInvocations.length ? skillInvocations.map((skill) => <p key={skill.id}>{skill.skillId} · {skill.status} · {skill.inputSummary}</p>) : <p>No skill invocations yet.</p>}</Card>
-      <Card><h4>Orchestration</h4>{orchestrationSteps.length ? orchestrationSteps.map((step) => <p key={step.id}>{step.stage} · {step.decision} · {step.summary}</p>) : <p>No orchestration steps yet.</p>}</Card>
-      <Card><h4>Reconciliation</h4>{reconciliations.length ? reconciliations.map((r) => <p key={r.id}>{r.decision} · {r.summary} ({r.inputTaskIds.length} tasks)</p>) : <p>No reconciliation records yet.</p>}</Card>
-      <Card>
-        <h4>Memory continuity</h4>
-        <p>Loaded memories: {memoryEntries.length}</p>
-        {memoryEntries.slice(0, 6).map((entry) => <p key={entry.id}>{entry.type} · {entry.title} · {entry.confidence}</p>)}
-        <div className="nav-inline">
-          <Input value={strategyChoice} onChange={(e) => setStrategyChoice(e.target.value)} placeholder="strategy" />
-          <Button onClick={async () => {
-            await fetch("/api/agent/strategies", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemId, name: strategyChoice }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Save strategy</Button>
-        </div>
-        {strategies.slice(0, 4).map((strategy) => <p key={strategy.id}>{strategy.name} · {strategy.status}</p>)}
-      </Card>
-      <Card><h4>Pattern reuse</h4>{patterns.length ? patterns.slice(0, 5).map((pattern) => <p key={pattern.id}>{pattern.title} · {pattern.intendedUse}</p>) : <p>No saved patterns.</p>}</Card>
-      <Card><h4>Decision memory</h4>{decisions.length ? decisions.slice(0, 5).map((decision) => <p key={decision.id}>{decision.state} · {decision.title}</p>) : <p>No decisions recorded.</p>}</Card>
-      <Card><h4>Run evaluation</h4>{evaluations.length ? evaluations.slice(0, 6).map((row) => <p key={row.id}>{row.scope}:{row.type} · {Math.round(row.score.value * 100)}% · {row.outcome}</p>) : <p>No evaluation artifacts yet.</p>}</Card>
-      <Card><h4>Strategy effectiveness</h4>{strategyPerformance.length ? strategyPerformance.map((row) => <p key={row.id}>{row.strategyName} · score {Math.round(row.overallScore * 100)} · accept {Math.round(row.acceptanceRate * 100)}% · friction {Math.round(row.reviewFriction * 100)}%</p>) : <p>No strategy performance yet.</p>}</Card>
-      <Card><h4>Skill effectiveness</h4>{skillPerformance.length ? skillPerformance.map((row) => <p key={row.id}>{row.skillId} ({row.role}) · score {Math.round(row.overallScore * 100)} · success {Math.round(row.successRate * 100)}%</p>) : <p>No skill performance yet.</p>}</Card>
-      <Card><h4>Pattern lifecycle</h4><p>Promoted: {patternLifecycle.promoted.length} · Demoted: {patternLifecycle.demoted.length}</p>{patternLifecycle.promoted.slice(0, 4).map((row) => <p key={row.id}>↑ {row.patternArtifactId} · {row.reason}</p>)}{patternLifecycle.demoted.slice(0, 4).map((row) => <p key={row.id}>↓ {row.patternArtifactId} · {row.reason}</p>)}</Card>
-      <Card><h4>Learning artifacts</h4>{learningArtifacts.length ? learningArtifacts.slice(0, 6).map((row) => <p key={row.id}>{row.type} · {row.title} · {row.confidence}</p>) : <p>No learning artifacts yet.</p>}</Card>
-      <Card><h4>Run policy</h4>{policySnapshot ? <><p>Risk: {policySnapshot.risk.posture} · auto-apply: {String(policySnapshot.risk.safeAutoApplyEnabled)}</p><p>Approval: {policySnapshot.approval.strictness} · max duration: {Math.round(policySnapshot.runtime.maxRunDurationMs / 1000)}s</p><p>Escalations: {policyEvents.escalations.length} · provider calls: {policyEvents.usage?.providerCalls ?? 0}</p></> : <p>No policy snapshot yet.</p>}</Card>
-      <Card>
-        <h4>Collaborative run context</h4>
-        <p>Active reviewers: {collaboration.reviewers.length}</p>
-        {collaboration.reviewers.map((row) => <p key={row.id}>{row.userId} · {row.role} · {row.status}</p>)}
-        <p>Shared viewers: {collaboration.visibility.length}</p>
-      </Card>
-      <Card>
-        <h4>Batch/diff review comments</h4>
-        <div className="nav-inline">
-          <Input value={commentBody} onChange={(e) => setCommentBody(e.target.value)} />
-          <Button onClick={async () => {
-            if (!activeRunId) return;
-            const firstBatch = batches[0];
-            if (!firstBatch) return;
-            await fetch("/api/agent/review-comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: firstBatch.id, body: commentBody }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Comment on batch</Button>
-        </div>
-        {collaboration.comments.slice(0, 8).map((c) => <p key={c.id}>{c.targetType}:{c.targetId} · {c.authorId} · {c.body}</p>)}
-      </Card>
-      <Card>
-        <h4>Approval collaboration</h4>
-        {collaboration.approvalParticipants.slice(0, 8).map((row) => <p key={row.id}>{row.approvalRequestId} · {row.actorId} · {row.recommendation}</p>)}
-        {approvals[0] ? <Button onClick={async () => {
-          if (!activeRunId || !approvals[0]) return;
-          await fetch("/api/agent/approval-feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, approvalRequestId: approvals[0].id, recommendation: "needs_revision", note: "Please split risky batch.", decision: "object" }) });
-          await refreshRunArtifacts(activeRunId);
-        }}>Add objection</Button> : null}
-      </Card>
-      <Card>
-        <h4>Revision requests</h4>
-        {collaboration.revisions.slice(0, 6).map((row) => <p key={row.id}>{row.targetType}:{row.targetId} · {row.status} · {row.rationale}</p>)}
-        {batches[0] ? <Button onClick={async () => {
-          if (!activeRunId || !batches[0]) return;
-          await fetch("/api/agent/revision-requests", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, targetType: "proposal_batch", targetId: batches[0].id, rationale: "Split batch for clearer approval scope.", requestedOutcome: "safe subset first" }) });
-          await refreshRunArtifacts(activeRunId);
-        }}>Request revision</Button> : null}
-      </Card>
-      <Card>
-        <h4>Run handoff</h4>
-        <div className="nav-inline">
-          <Input value={handoffTo} onChange={(e) => setHandoffTo(e.target.value)} placeholder="to user id" />
-          <Button onClick={async () => {
-            if (!activeRunId) return;
-            await fetch("/api/agent/handoffs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: activeRunId, systemId, toUserId: handoffTo, note: "Please finish approval and review open threads." }) });
-            await refreshRunArtifacts(activeRunId);
-          }}>Create handoff</Button>
-        </div>
-        {collaboration.handoffs.slice(0, 6).map((row) => <p key={row.id}>{row.fromUserId} → {row.toUserId} · {row.status} · {row.stage}</p>)}
-      </Card>
-      <Card><h4>Tool activity</h4>{tools.length ? tools.map((tool) => <p key={tool.id}>{tool.toolName} · {tool.status}</p>) : <p>No tool calls yet.</p>}</Card>
-      <Card>
-        <h4>Proposal batches</h4>
-        {batches.length ? batches.map((batch) => {
-          const diffs = batchDiffs[batch.id] ?? [];
-          const selected = selectedDiffByBatch[batch.id] ?? [];
-          const validation = selectionValidation[batch.id];
-          const previewEnabled = previewEnabledByBatch[batch.id] ?? true;
-          return (
-            <div key={batch.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
-              <p>{batch.stage} · {batch.summary} · {batch.status} ({batch.proposalIds.length} proposals)</p>
-              <div className="nav-inline">
-                <Button onClick={() => activeRunId && loadBatchDiffs(activeRunId, batch.id)}>Load diff</Button>
-                <Button onClick={async () => {
-                  const next = !previewEnabled;
-                  setPreviewEnabledByBatch((prev) => ({ ...prev, [batch.id]: next }));
-                  if (activeRunId) await refreshPreview(activeRunId, batch.id, selected, next);
-                }}>{previewEnabled ? "Hide preview" : "Show preview"}</Button>
-                <Button onClick={() => activeRunId && refreshRegion(activeRunId, batch.id, diffs.filter((d) => selected.includes(d.id)).map((d) => d.proposalId))}>Highlight region</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "approve_all")}>Approve all</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "approve_selected")}>Approve selected</Button>
-                <Button onClick={() => applySelectionDecision(batch.id, "reject_all")}>Reject all</Button>
-              </div>
-              {validation && !validation.valid ? <p style={{ color: "#b64848" }}>{validation.blockedReason}</p> : null}
-              {diffs.length > 0 ? (
-                <div className="validation-list">
-                  {diffs.map((diff) => (
-                    <label key={diff.id} style={{ display: "block", marginBottom: 6, opacity: diff.canSelectIndividually ? 1 : 0.78 }}>
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(diff.id)}
-                        onChange={async (event) => {
-                          const next = event.target.checked ? [...selected, diff.id] : selected.filter((id) => id !== diff.id);
-                          setSelectedDiffByBatch((prev) => ({ ...prev, [batch.id]: next }));
-                          if (activeRunId) {
-                            await validateSelection(activeRunId, batch.id, next);
-                            await refreshPreview(activeRunId, batch.id, next, previewEnabledByBatch[batch.id] ?? true);
-                            await refreshRegion(activeRunId, batch.id, diffs.filter((d) => next.includes(d.id)).map((d) => d.proposalId));
-                          }
-                        }}
-                        disabled={!diff.canSelectIndividually && diff.dependencies.length > 0 && !selected.includes(diff.id)}
-                      />{" "}
-                      {diff.summary} · {diff.changeType} · risk {diff.riskLevel} · region {diff.affectedSubsystem}
-                      {diff.dependencies.length ? ` · depends on ${diff.dependencies.join(", ")}` : ""}
-                    </label>
-                  ))}
-                </div>
-              ) : <p>No diff items loaded.</p>}
-            </div>
-          );
-        }) : <p>No batches yet.</p>}
-      </Card>
-      <Card>
-        <h4>Pending approvals</h4>
-        {approvals.filter((a) => a.status === "pending").map((approval) => (
-          <div key={approval.id} style={{ marginBottom: 8 }}>
-            <p>{approval.reason}</p>
-            <div className="nav-inline"><Button onClick={() => decideApproval(approval.id, "approved")}>Approve</Button><Button onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button></div>
+  if (access.status === "loading") {
+    return <div className="px-3 py-3"><Quiet>Checking your plan…</Quiet></div>;
+  }
+
+  if (access.status === "ready" && !access.aiGeneration) {
+    return (
+      <div className="flex flex-col gap-2 px-3 py-3">
+        <Banner
+          title="The assistant is part of the Builder plan"
+          action={<Button asChild size="xs" variant="ghost"><Link href="/settings/billing">See plans</Link></Button>}
+        >
+          It proposes edits to this workflow that you review before they apply. Your workspace is on the {access.plan} plan.
+        </Banner>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 px-3 py-3">
+      <div className="flex flex-col gap-2">
+        {runStatus !== "idle" ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusPill tone={statusTone(runStatus)} className="capitalize">{runStatus}</StatusPill>
           </div>
-        ))}
-        {approvals.filter((a) => a.status === "pending").length === 0 && <p>No pending approvals.</p>}
-      </Card>
-      <Card><h4>Action timeline</h4>{proposals.length ? proposals.map((p) => <p key={p.id}>{p.actionType} · {p.status} · {p.riskClass}</p>) : <p>No actions yet.</p>}</Card>
-      <Card><h4>Assistant stream</h4><p>{assistantText || "No output yet."}</p></Card>
-      <Card><h4>Run events</h4><div className="validation-list">{events.slice(-16).map((e) => <p key={e.id}>{e.sequence}. {e.type}{e.text ? ` · ${e.text.slice(0, 96)}` : ""}</p>)}</div></Card>
-    </Panel>
+        ) : null}
+        {sessions.length > 1 ? (
+          <Select
+            aria-label="Conversation"
+            size="sm"
+            value={sessionId ?? ""}
+            onValueChange={(value) => setSessionId(value)}
+            options={sessions.map((s) => ({ value: s.id, label: s.title }))}
+            placeholder="Choose a conversation"
+          />
+        ) : null}
+        <form
+          className="flex flex-col gap-1.5 rounded-12 border border-border bg-object p-1.5"
+          onSubmit={(event) => { event.preventDefault(); if (!busy) void runPrompt(); }}
+        >
+          <Textarea
+            aria-label="Ask the assistant"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !busy) { event.preventDefault(); void runPrompt(); }
+            }}
+            placeholder="Describe a change, such as: add a human approval before anything is sent"
+            className="min-h-[72px] border-transparent bg-transparent px-1 py-0.5 hover:border-transparent"
+          />
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="hidden items-center gap-1 t-micro text-ink-3 sm:inline-flex"><Kbd>⌘</Kbd><Kbd>↵</Kbd>to ask</span>
+            <Button type="submit" size="sm" variant="secondary" disabled={busy || !prompt.trim()} loading={busy} className="ml-auto">
+              <Send aria-hidden="true" />
+              Ask
+            </Button>
+          </div>
+        </form>
+        {runError ? <Banner role="critical" title="No answer this time" action={<Button size="xs" variant="ghost" onClick={() => setRunError(null)}>Dismiss</Button>}>{runError}</Banner> : null}
+      </div>
+
+      {pendingApprovals.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{pendingApprovals.length}</span>}>Waiting for your approval</SectionLabel>
+          {pendingApprovals.map((approval) => (
+            <ObjectRow key={approval.id} className="gap-1.5">
+              <p className="t-caption text-ink">{approval.reason}</p>
+              <div className="flex gap-1">
+                <Button size="xs" variant="primary" onClick={() => decideApproval(approval.id, "approved")}>Approve</Button>
+                <Button size="xs" variant="ghost" onClick={() => decideApproval(approval.id, "rejected")}>Reject</Button>
+              </div>
+            </ObjectRow>
+          ))}
+        </div>
+      ) : null}
+
+      {assistantText ? (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel>Answer</SectionLabel>
+          <p className="whitespace-pre-wrap t-body-read text-ink">{assistantText}</p>
+        </div>
+      ) : runStatus === "idle" ? (
+        <div className="flex flex-col gap-1">
+          <p className="t-body-medium text-ink">Ask for a change to this workflow</p>
+          <p className="t-caption text-ink-3">The assistant reads the workflow and proposes edits, such as new steps, routes or approvals. Nothing changes until you review the edits and apply them.</p>
+        </div>
+      ) : null}
+
+      {reviewableBatches.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <SectionLabel action={<span className="t-micro tabular-nums text-ink-3">{reviewableBatches.length}</span>}>Proposed edits</SectionLabel>
+          {reviewableBatches.map((batch) => {
+            const loaded = batchDiffs[batch.id];
+            const diffs = loaded ?? [];
+            const selected = selectedDiffByBatch[batch.id] ?? [];
+            const validation = selectionValidation[batch.id];
+            const previewEnabled = previewEnabledByBatch[batch.id] ?? true;
+            return (
+              <ObjectRow key={batch.id} className="gap-2">
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="t-body-medium text-ink">{batch.summary}</span>
+                    {plainText(batch.rationale) ? <span className="t-caption text-ink-3">{plainText(batch.rationale)}</span> : null}
+                  </div>
+                  <StatusPill tone={statusTone(batch.status)}>{BATCH_STATUS[batch.status] ?? batch.status.replace(/_/g, " ")}</StatusPill>
+                </div>
+                {validation && !validation.valid ? <p className="t-caption text-critical-text">{validation.blockedReason}</p> : null}
+                {diffs.length > 0 ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {diffs.map((diff) => (
+                      <li key={diff.id}>
+                        <CheckRow
+                          checked={selected.includes(diff.id)}
+                          onChange={async (event) => {
+                            const next = event.target.checked ? [...selected, diff.id] : selected.filter((id) => id !== diff.id);
+                            setSelectedDiffByBatch((prev) => ({ ...prev, [batch.id]: next }));
+                            if (activeRunId) {
+                              await validateSelection(activeRunId, batch.id, next);
+                              await refreshPreview(activeRunId, batch.id, next, previewEnabledByBatch[batch.id] ?? true);
+                              await refreshRegion(activeRunId, batch.id, diffs.filter((d) => next.includes(d.id)).map((d) => d.proposalId));
+                            }
+                          }}
+                          disabled={!diff.canSelectIndividually && diff.dependencies.length > 0 && !selected.includes(diff.id)}
+                        >
+                          <span className="block text-ink">{diff.summary}</span>
+                          {plainText(diff.rationale) && diff.rationale !== batch.rationale ? <span className="block text-ink-3">{diff.rationale}</span> : null}
+                          {diff.dependencies.length ? <span className="block text-ink-3">Needs another edit in this batch to apply first.</span> : null}
+                        </CheckRow>
+                      </li>
+                    ))}
+                  </ul>
+                ) : loaded ? null : <Quiet>Loading the edits…</Quiet>}
+                <div className="flex flex-wrap gap-1">
+                  <Button size="xs" variant="primary" onClick={() => applySelectionDecision(batch.id, "approve_selected")}>Apply selected</Button>
+                  <Button size="xs" variant="secondary" onClick={() => applySelectionDecision(batch.id, "approve_all")}>Apply all</Button>
+                  <Button size="xs" variant="destructive" onClick={() => applySelectionDecision(batch.id, "reject_all")}>Discard all</Button>
+                </div>
+                <div className="flex flex-wrap gap-1 border-t border-hairline pt-1.5">
+                  <Button size="xs" variant="ghost" aria-pressed={previewEnabled} onClick={async () => {
+                    const next = !previewEnabled;
+                    setPreviewEnabledByBatch((prev) => ({ ...prev, [batch.id]: next }));
+                    if (activeRunId) await refreshPreview(activeRunId, batch.id, selected, next);
+                  }}>{previewEnabled ? "Hide preview" : "Show preview"}</Button>
+                  <Button size="xs" variant="ghost" onClick={() => activeRunId && refreshRegion(activeRunId, batch.id, diffs.filter((d) => selected.includes(d.id)).map((d) => d.proposalId))}>Show on canvas</Button>
+                </div>
+              </ObjectRow>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {activeRunId ? (
+        <div className="flex flex-col">
+          {/* How the assistant got there. Closed by default: it is for debugging the assistant, not for reviewing edits. */}
+          <Disclosure title="Details">
+            <Lines title="Plan" empty="No plan yet." rows={(plan?.steps ?? []).map((step, index) => ({ id: step.id, text: <><span className="tabular-nums text-ink-4">{index + 1}</span> <span className="text-ink">{step.title}</span></> }))} />
+            {plan ? <p className="t-caption text-ink-3">{plan.summary} <span className="tabular-nums">Confidence {Math.round(plan.confidence * 100)}%.</span></p> : null}
+            <Lines title="Stages" empty="No stages yet." rows={stages.map((stage) => ({ id: stage.id, text: <><span className="t-mono-micro text-ink">{stage.stage}</span> · {stage.status}{stage.summary ? ` · ${stage.summary}` : ""}</> }))} />
+            <Lines title="Tools" empty="No tool calls yet." rows={tools.map((tool) => ({ id: tool.id, text: <><span className="t-mono-micro text-ink">{tool.toolName}</span> · {tool.status}</> }))} />
+            <Lines title="Actions" empty="No actions yet." rows={proposals.map((p) => ({ id: p.id, text: <><span className="t-mono-micro text-ink">{p.actionType}</span> · {p.status} · {p.riskClass}</> }))} />
+            <Lines title="Plan revisions" empty="No revisions yet." rows={revisions.map((rev) => ({ id: rev.id, text: <><span className="tabular-nums text-ink">v{rev.version}</span> {rev.summary}{rev.critique ? `. Critique: ${rev.critique}` : ""}</> }))} />
+            <Lines title="Specialist roles" empty="No role activity yet." rows={roles.map((role) => ({ id: role.id, text: <><span className="text-ink">{role.role}</span> at <span className="t-mono-micro">{role.stage}</span> · {role.summary}</> }))} />
+            <Lines title="Sub-tasks" empty="No delegated sub-tasks yet." rows={subTasks.map((task) => ({ id: task.id, text: <><span className="text-ink">{task.title}</span> · {task.role} · {task.status}</> }))} />
+            <Lines title="Skills" empty="No skill invocations yet." rows={skillInvocations.map((skill) => ({ id: skill.id, text: <><span className="t-mono-micro text-ink">{skill.skillId}</span> · {skill.status} · {skill.inputSummary}</> }))} />
+            <Lines title="Orchestration" empty="No orchestration steps yet." rows={orchestrationSteps.map((step) => ({ id: step.id, text: <><span className="t-mono-micro">{step.stage}</span> · {step.decision} · {step.summary}</> }))} />
+            <Lines title="Reconciliation" empty="No reconciliation records yet." rows={reconciliations.map((r) => ({ id: r.id, text: <>{r.decision} · {r.summary} <span className="tabular-nums">({r.inputTaskIds.length} tasks)</span></> }))} />
+            <Lines title="Memory" empty="Nothing remembered yet." rows={memoryEntries.slice(0, 6).map((entry) => ({ id: entry.id, text: <><span className="text-ink">{entry.title}</span> · {entry.confidence}</> }))} />
+            <Lines title="Strategies" empty="No strategies yet." rows={strategies.slice(0, 4).map((strategy) => ({ id: strategy.id, text: <><span className="text-ink">{strategy.name}</span> · {strategy.status}</> }))} />
+            <Lines title="Patterns" empty="No saved patterns." rows={patterns.slice(0, 5).map((pattern) => ({ id: pattern.id, text: <><span className="text-ink">{pattern.title}</span> · {pattern.intendedUse}</> }))} />
+            <Lines title="Decisions" empty="No decisions recorded." rows={decisions.slice(0, 5).map((decision) => ({ id: decision.id, text: <>{decision.state} · <span className="text-ink">{decision.title}</span></> }))} />
+            <Lines title="Evaluation" empty="No evaluations yet." rows={evaluations.slice(0, 6).map((row) => ({ id: row.id, text: <><span className="t-mono-micro">{row.scope}:{row.type}</span> · <span className="tabular-nums text-ink">{Math.round(row.score.value * 100)}%</span> · {row.outcome}</> }))} />
+            <Lines title="Strategy results" empty="No strategy results yet." rows={strategyPerformance.map((row) => ({ id: row.id, text: <><span className="text-ink">{row.strategyName}</span> · <span className="tabular-nums">score {Math.round(row.overallScore * 100)} · accepted {Math.round(row.acceptanceRate * 100)}%</span></> }))} />
+            <Lines title="Skill results" empty="No skill results yet." rows={skillPerformance.map((row) => ({ id: row.id, text: <><span className="t-mono-micro text-ink">{row.skillId}</span> · <span className="tabular-nums">score {Math.round(row.overallScore * 100)} · success {Math.round(row.successRate * 100)}%</span></> }))} />
+            <Lines title="Patterns promoted or retired" empty="None." rows={[
+              ...patternLifecycle.promoted.slice(0, 4).map((row) => ({ id: row.id, text: <><span className="text-ink">Promoted</span> · {row.reason}</> })),
+              ...patternLifecycle.demoted.slice(0, 4).map((row) => ({ id: row.id, text: <><span className="text-ink">Retired</span> · {row.reason}</> }))
+            ]} />
+            <Lines title="Learning" empty="No learning yet." rows={learningArtifacts.slice(0, 6).map((row) => ({ id: row.id, text: <><span className="text-ink">{row.title}</span> · {row.confidence}</> }))} />
+            {policySnapshot ? (
+              <Lines title="Limits" empty="" rows={[
+                { id: "risk", text: <>Risk posture {policySnapshot.risk.posture} · approval {policySnapshot.approval.strictness} · auto-apply {policySnapshot.risk.safeAutoApplyEnabled ? "on" : "off"}</> },
+                { id: "usage", text: <span className="tabular-nums">Up to {Math.round(policySnapshot.runtime.maxRunDurationMs / 1000)}s · {policyEvents.usage?.providerCalls ?? 0} model calls · {policyEvents.escalations.length} escalations</span> }
+              ]} />
+            ) : null}
+            <Lines title="Events" empty="No events yet." rows={events.slice(-16).map((e) => ({ id: e.id, text: <><span className="tabular-nums text-ink-4">{e.sequence}</span> <span className="t-mono-micro text-ink">{e.type}</span>{e.text ? ` · ${e.text.slice(0, 96)}` : ""}</> }))} />
+          </Disclosure>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A disclosure group: secondary run detail stays one click away, in place. */
+function Disclosure({ title, count, children }: { title: string; count?: number; children: ReactNode }): ReactNode {
+  return (
+    <details className="group border-t border-hairline">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-6 py-2 outline-none focus-ring [&::-webkit-details-marker]:hidden">
+        <span className="t-label-caps text-ink">{title}</span>
+        {count !== undefined ? <span className="t-micro tabular-nums text-ink-3">{count}</span> : null}
+        <ChevronDown aria-hidden="true" size={14} className="ml-auto text-ink-3 transition-transform duration-[var(--dur-2)] group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-4 pb-4">{children}</div>
+    </details>
+  );
+}
+
+function Lines({ title, empty, rows }: { title: string; empty: string; rows: Array<{ id: string; text: ReactNode }> }): ReactNode {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="t-caption-medium text-ink">{title}</span>
+      {rows.length === 0 ? <Quiet>{empty}</Quiet> : rows.map((row) => <p key={row.id} className="t-caption text-ink-3">{row.text}</p>)}
+    </div>
   );
 }

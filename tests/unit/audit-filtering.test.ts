@@ -24,4 +24,23 @@ describe("audit filtering", () => {
     expect(filtered).toHaveLength(1);
     expect(filtered[0].action).toBe("protocol.graph.addNode");
   });
+
+  it("pages through events newest first with a cursor", async () => {
+    const repos = createMockRepositories();
+    const services = createBoundedServices(repos);
+    const ctx = await repos.users.provision({ externalId: "mock|audit-page", email: "page@pipes.local", name: "Page" });
+    for (let i = 0; i < 5; i++) {
+      await services.protocol.writeAudit(ctx, { action: `protocol.page.${i}`, targetType: "system", outcome: "success" });
+    }
+
+    const all = await services.protocol.listAudits(ctx, { actionPrefix: "protocol.page." });
+    const first = await services.protocol.listAuditsPage(ctx, { actionPrefix: "protocol.page.", limit: 2 });
+    expect(first.items.map((a) => a.id)).toEqual(all.slice(0, 2).map((a) => a.id));
+    expect(first.nextCursor).not.toBeNull();
+
+    const second = await services.protocol.listAuditsPage(ctx, { actionPrefix: "protocol.page.", limit: 2, cursor: first.nextCursor });
+    const third = await services.protocol.listAuditsPage(ctx, { actionPrefix: "protocol.page.", limit: 2, cursor: second.nextCursor });
+    expect([...first.items, ...second.items, ...third.items].map((a) => a.id)).toEqual(all.map((a) => a.id));
+    expect(third.nextCursor).toBeNull();
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   addEdge,
   Background,
@@ -20,22 +20,69 @@ import {
   useReactFlow
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { NodeTypeBadge } from "@/components/ui";
+import { cn } from "@/lib/utils";
 
 type EditorNodeData = { title: string; type: string; subtitle?: string; compact?: boolean };
 
 const ALIGN_THRESHOLD = 8;
+const EMPTY_IDS: string[] = [];
 
-const PipesNode = memo(function PipesNode({ data }: { data: EditorNodeData }) {
+// React Flow draws in SVG and inline styles, so every colour here is a token
+// reference rather than a literal: both themes resolve through globals.css.
+const HANDLE_STYLE = { width: 10, height: 10, background: "var(--surface-raised)", border: "1.5px solid var(--line-strong)" } as const;
+const FLOW_THEME = {
+  "--xy-background-color": "var(--surface-inset)",
+  "--xy-edge-stroke": "var(--line-strong)",
+  "--xy-edge-stroke-selected": "var(--text-primary)",
+  "--xy-edge-label-background-color": "var(--surface-raised)",
+  "--xy-edge-label-color": "var(--text-secondary)",
+  "--xy-connectionline-stroke": "var(--text-secondary)",
+  "--xy-handle-background-color": "var(--surface-raised)",
+  "--xy-handle-border-color": "var(--line-strong)",
+  "--xy-selection-background-color": "var(--state-selected)",
+  "--xy-selection-border": "1px dashed var(--line-strong)",
+  "--xy-node-boxshadow-selected": "none",
+  "--xy-controls-button-background-color": "var(--surface-raised)",
+  "--xy-controls-button-background-color-hover": "var(--surface-selected)",
+  "--xy-controls-button-color": "var(--text-secondary)",
+  "--xy-controls-button-color-hover": "var(--text-primary)",
+  "--xy-controls-button-border-color": "var(--line-hairline)",
+  "--xy-controls-box-shadow": "0 0 0 1px var(--line-border)",
+  "--xy-minimap-background-color": "var(--surface-raised)",
+  "--xy-minimap-mask-background-color": "var(--state-active)",
+  "--xy-minimap-mask-stroke-color": "var(--line-strong)",
+  "--xy-attribution-background-color": "transparent"
+} as CSSProperties;
+
+type EdgeTone = "critical" | "positive" | "traced" | "default";
+
+function edgeStroke(tone: EdgeTone | undefined): { stroke: string; strokeWidth: number } {
+  if (tone === "critical") return { stroke: "var(--critical-mark)", strokeWidth: 2 };
+  if (tone === "positive") return { stroke: "var(--positive-mark)", strokeWidth: 2 };
+  if (tone === "traced") return { stroke: "var(--text-secondary)", strokeWidth: 2 };
+  return { stroke: "var(--line-strong)", strokeWidth: 1.5 };
+}
+
+function sameIds(a: string[], b: string[]) {
+  return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+const PipesNode = memo(function PipesNode({ data, selected }: { data: EditorNodeData; selected?: boolean }) {
+  const subsystem = data.type === "Subsystem";
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, background: "var(--surface-2)", padding: 10, minWidth: 180, boxShadow: "0 2px 10px rgba(12, 18, 28, 0.15)" }}>
-      <Handle type="target" position={Position.Left} style={{ background: "#8aa8ff", width: 10, height: 10, border: "2px solid #f4f7ff" }} />
-      <strong>{data.title}</strong>
-      {!data.compact && data.subtitle ? <div className="badge">{data.subtitle}</div> : null}
-      <div style={{ marginTop: 6 }}>
-        <NodeTypeBadge type={data.type} />
-      </div>
-      <Handle type="source" position={Position.Right} style={{ background: "#4a85ff", width: 10, height: 10, border: "2px solid #f4f7ff" }} />
+    <div
+      className={cn(
+        "flex min-w-[184px] max-w-[248px] flex-col gap-0.5 rounded-10 border bg-raised px-3 py-2 text-left",
+        "transition-[border-color,box-shadow] duration-[var(--dur-1)] ease-[var(--ease-out)]",
+        subsystem && "border-dashed",
+        selected ? "border-ink shadow-[0_0_0_1px_var(--text-primary)]" : "border-border hover:border-strong"
+      )}
+    >
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <span className="truncate t-body-medium text-ink">{data.title}</span>
+      {!data.compact && data.subtitle ? <span className="line-clamp-2 t-caption text-ink-3">{data.subtitle}</span> : null}
+      <span className="truncate t-mono-micro text-ink-3">{data.type}</span>
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 });
@@ -114,8 +161,16 @@ export function EditorCanvas({
   const [guide, setGuide] = useState<{ x?: number; y?: number }>({});
   const [connectingValid, setConnectingValid] = useState<boolean | null>(null);
 
-  useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
-  useEffect(() => setEdges(initialEdges), [initialEdges, setEdges]);
+  // Incoming graph data replaces React Flow's local state; carry the current selection
+  // across so a background refresh doesn't silently deselect what the user clicked.
+  useEffect(() => setNodes((prev) => {
+    const selectedIds = new Set(prev.filter((n) => n.selected).map((n) => n.id));
+    return selectedIds.size === 0 ? initialNodes : initialNodes.map((n) => (selectedIds.has(n.id) ? { ...n, selected: true } : n));
+  }), [initialNodes, setNodes]);
+  useEffect(() => setEdges((prev) => {
+    const selectedIds = new Set(prev.filter((e) => e.selected).map((e) => e.id));
+    return selectedIds.size === 0 ? initialEdges : initialEdges.map((e) => (selectedIds.has(e.id) ? { ...e, selected: true } : e));
+  }), [initialEdges, setEdges]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
     onNodesChangeBase(changes);
@@ -135,69 +190,84 @@ export function EditorCanvas({
     return valid;
   };
 
+  // React Flow re-emits onSelectionChange whenever nodes/edges are replaced. Forwarding
+  // identical selections up to the workspace re-derives the edges we receive, which
+  // re-emits again: an infinite update loop. Only propagate real changes.
+  const lastSelection = useRef<{ nodeIds: string[]; edgeIds: string[] }>({ nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS });
   const handleSelection = (params: OnSelectionChangeParams) => {
     const nodeIds = (params.nodes ?? []).map((n) => n.id);
     const edgeIds = (params.edges ?? []).map((e) => e.id);
+    if (sameIds(nodeIds, lastSelection.current.nodeIds) && sameIds(edgeIds, lastSelection.current.edgeIds)) return;
+    lastSelection.current = { nodeIds, edgeIds };
     setSelection({ nodeIds, edgeIds });
     onSelectionChange(nodeIds, edgeIds);
     onSelectNode(nodeIds[0]);
   };
 
   const previewLookup = useMemo(() => new Map((previewItems ?? []).map((item) => [item.entityId, item])), [previewItems]);
-  const highlightedNodeSet = useMemo(() => new Set(highlightedNodeIds ?? []), [highlightedNodeIds]);
-  const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeIds ?? []), [highlightedEdgeIds]);
+  const highlightedNodeKey = (highlightedNodeIds ?? EMPTY_IDS).join("|");
+  const highlightedNodeSet = useMemo(() => new Set(highlightedNodeKey ? highlightedNodeKey.split("|") : []), [highlightedNodeKey]);
+  const highlightedEdgeKey = (highlightedEdgeIds ?? EMPTY_IDS).join("|");
+  const highlightedEdgeSet = useMemo(() => new Set(highlightedEdgeKey ? highlightedEdgeKey.split("|") : []), [highlightedEdgeKey]);
+
+  const presentedNodes = useMemo(() => nodes.map((node) => {
+    const preview = previewLookup.get(node.id);
+    const highlighted = highlightedNodeSet.has(node.id);
+    // Hue here is diff and review signal only: a proposed deletion is critical,
+    // a move is caution, an agent proposal is agent, an applied region positive.
+    const previewOutline = preview?.previewKind === "deletion" ? "2px dashed var(--critical-mark)" : preview?.previewKind === "movement" ? "2px dashed var(--caution-mark)" : preview?.previewKind === "connection" ? "2px solid var(--agent-mark)" : undefined;
+    const outline = previewOutline ?? (highlighted ? `2px solid ${regionStatus === "applied" ? "var(--positive-mark)" : "var(--agent-mark)"}` : undefined);
+    return {
+      ...node,
+      style: {
+        ...(node.style ?? {}),
+        outline,
+        outlineOffset: outline ? 3 : undefined,
+        borderRadius: 10,
+        opacity: preview?.previewKind === "deletion" ? 0.68 : 1
+      }
+    };
+  }), [nodes, previewLookup, highlightedNodeSet, regionStatus]);
+
+  const presentedEdges = useMemo(() => edges.map((edge) => {
+    const highlighted = highlightedEdgeSet.has(edge.id);
+    const selected = selection.edgeIds.includes(edge.id);
+    const incoming = (edge.style ?? {}) as CSSProperties;
+    const base = edgeStroke((edge.data as { tone?: EdgeTone } | undefined)?.tone);
+    return {
+      ...edge,
+      style: {
+        stroke: highlighted ? (regionStatus === "applied" ? "var(--positive-mark)" : "var(--agent-mark)") : selected ? "var(--text-primary)" : base.stroke,
+        strokeWidth: highlighted ? 3 : selected ? 2.5 : base.strokeWidth,
+        strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : incoming.strokeDasharray,
+        opacity: incoming.opacity
+      },
+      labelStyle: { fill: "var(--text-secondary)", fontSize: 11, fontWeight: 500 },
+      labelBgStyle: { fill: "var(--surface-raised)", stroke: "var(--line-hairline)" },
+      labelBgPadding: [6, 2] as [number, number],
+      labelBgBorderRadius: 4,
+      animated: selected || edge.animated || highlighted
+    };
+  }), [edges, highlightedEdgeSet, selection.edgeIds, regionStatus]);
 
   return (
-    <div className="editor-canvas" style={{ position: "relative" }}>
+    <div className="relative h-full w-full">
       {previewItems?.filter((item) => item.previewKind === "addition" && item.x !== undefined && item.y !== undefined).map((item) => (
         <div
           key={item.diffId}
-          style={{
-            position: "absolute",
-            left: item.x,
-            top: item.y,
-            border: "1px dashed #3c6ce8",
-            color: "#2f67f5",
-            background: "rgba(74,133,255,0.12)",
-            borderRadius: 6,
-            padding: "4px 6px",
-            pointerEvents: "none",
-            zIndex: 6
-          }}
+          className="pointer-events-none absolute z-[6] rounded-6 border border-dashed border-agent-border bg-agent-wash px-1.5 py-0.5 t-micro text-agent-text"
+          style={{ left: item.x, top: item.y }}
         >
-          preview add
+          Proposed node
         </div>
       ))}
-      {guide.x !== undefined ? <div style={{ position: "absolute", top: 0, bottom: 0, left: guide.x, width: 1, background: "rgba(74,133,255,0.45)", pointerEvents: "none", zIndex: 4 }} /> : null}
-      {guide.y !== undefined ? <div style={{ position: "absolute", left: 0, right: 0, top: guide.y, height: 1, background: "rgba(74,133,255,0.45)", pointerEvents: "none", zIndex: 4 }} /> : null}
+      {guide.x !== undefined ? <div className="pointer-events-none absolute inset-y-0 z-[4] w-px bg-strong" style={{ left: guide.x }} /> : null}
+      {guide.y !== undefined ? <div className="pointer-events-none absolute inset-x-0 z-[4] h-px bg-strong" style={{ top: guide.y }} /> : null}
       <ReactFlow
-        nodes={nodes.map((node) => {
-          const preview = previewLookup.get(node.id);
-          const highlighted = highlightedNodeSet.has(node.id);
-          const previewBorder = preview?.previewKind === "deletion" ? "2px dashed #d84e4e" : preview?.previewKind === "movement" ? "2px dashed #e8a83c" : preview?.previewKind === "connection" ? "2px solid #4a85ff" : undefined;
-          return {
-            ...node,
-            style: {
-              ...(node.style ?? {}),
-              border: previewBorder ?? (highlighted ? `2px solid ${regionStatus === "applied" ? "#3c9f54" : "#2f67f5"}` : undefined),
-              boxShadow: highlighted ? "0 0 0 4px rgba(74,133,255,0.15)" : undefined,
-              opacity: preview?.previewKind === "deletion" ? 0.68 : 1
-            }
-          };
-        })}
-        edges={edges.map((edge) => {
-          const highlighted = highlightedEdgeSet.has(edge.id);
-          return {
-            ...edge,
-            style: {
-              stroke: highlighted ? (regionStatus === "applied" ? "#3c9f54" : "#2f67f5") : selection.edgeIds.includes(edge.id) ? "#2f67f5" : "#4a85ff",
-              strokeWidth: highlighted ? 4 : selection.edgeIds.includes(edge.id) ? 3 : 2,
-              strokeDasharray: highlighted && regionStatus !== "applied" ? "6 4" : undefined
-            },
-            animated: selection.edgeIds.includes(edge.id) || edge.animated || highlighted
-          };
-        })}
+        nodes={presentedNodes}
+        edges={presentedEdges}
         nodeTypes={nodeTypes}
+        style={FLOW_THEME}
         fitView
         fitViewOptions={{ padding: 0.2, duration: 300 }}
         minZoom={0.18}
@@ -213,7 +283,7 @@ export function EditorCanvas({
         multiSelectionKeyCode={"Shift"}
         deleteKeyCode={null}
         connectionLineType={ConnectionLineType.SmoothStep}
-        connectionLineStyle={{ stroke: connectingValid === false ? "#db4b4b" : "#4a85ff", strokeWidth: 3 }}
+        connectionLineStyle={{ stroke: connectingValid === false ? "var(--critical-mark)" : "var(--text-secondary)", strokeWidth: 2 }}
         isValidConnection={validConnection}
         onInit={() => onViewportSettled?.(nodes.length, edges.length)}
         onNodeClick={(_, node) => onSelectNode(node.id)}
@@ -224,6 +294,7 @@ export function EditorCanvas({
           }
           onSelectNode(undefined);
           onSelectionChange([], []);
+          lastSelection.current = { nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS };
           setSelection({ nodeIds: [], edgeIds: [] });
         }}
         onSelectionChange={handleSelection}
@@ -235,7 +306,8 @@ export function EditorCanvas({
             onConnect(connection.source, connection.target);
           }
         }}
-        onEdgeClick={(_, edge) => onDeleteEdge(edge.id)}
+        // A click selects the pipe so the inspector can edit its route; Delete or the toolbar removes it.
+        onEdgesDelete={(deleted) => deleted.forEach((edge) => onDeleteEdge(edge.id))}
         onEdgeDoubleClick={(event, edge) => onRequestInsert({ mode: "selectedEdge", edgeId: edge.id, at: { x: event.clientX, y: event.clientY } })}
         onNodeDoubleClick={(event, node) => onRequestInsert({ mode: "selectedNode", nodeId: node.id, at: { x: event.clientX, y: event.clientY } })}
         onNodesDelete={(deleted) => onDeleteNodes(deleted.map((n) => n.id))}
@@ -249,9 +321,9 @@ export function EditorCanvas({
         onEdgesChange={onEdgesChange}
         onMove={(_, viewport) => onZoomChange?.(viewport.zoom)}
       >
-        <CanvasCommands fitRequest={fitRequest} frameRequest={frameRequest} selectedNodeIds={selection.nodeIds} onEscapeClear={() => { setSelection({ nodeIds: [], edgeIds: [] }); onSelectionChange([], []); onSelectNode(undefined); }} />
-        <Background gap={16} size={1} color="rgba(143, 160, 192, 0.28)" />
-        <MiniMap pannable zoomable nodeColor={(node) => node.data?.type === "Subsystem" ? "#2f67f5" : "#8aa8ff"} />
+        <CanvasCommands fitRequest={fitRequest} frameRequest={frameRequest} selectedNodeIds={selection.nodeIds} onEscapeClear={() => { lastSelection.current = { nodeIds: EMPTY_IDS, edgeIds: EMPTY_IDS }; setSelection({ nodeIds: [], edgeIds: [] }); onSelectionChange([], []); onSelectNode(undefined); }} />
+        <Background gap={16} size={1} color="var(--line-strong)" />
+        <MiniMap className="max-md:hidden!" pannable zoomable nodeColor={(node) => node.data?.type === "Subsystem" ? "var(--text-tertiary)" : "var(--line-strong)"} nodeBorderRadius={4} />
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>

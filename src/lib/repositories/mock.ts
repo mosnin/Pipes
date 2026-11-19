@@ -1,6 +1,40 @@
 import { store } from "@/lib/convex/store";
 import type { Plan, Role } from "@/domain/pipes_schema_v1/schema";
-import type { AppContext, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import { AUDIT_PAGE_SIZE, type AppContext, type AuditFilter, type AuditRecord, type RepositorySet, type SystemBundle } from "@/lib/repositories/contracts";
+
+/** A workspace's audit events that match the filter, newest first. */
+function matchingAudits(workspaceId: string, filter?: AuditFilter): AuditRecord[] {
+  return store.readDb().audits
+    .filter((audit) => audit.workspaceId === workspaceId)
+    .filter((audit) => !filter?.actorType || audit.actorType === filter.actorType)
+    .filter((audit) => !filter?.actorId || audit.actorId === filter.actorId)
+    .filter((audit) => !filter?.actionPrefix || audit.action.startsWith(filter.actionPrefix))
+    .filter((audit) => !filter?.systemId || audit.systemId === filter.systemId)
+    .filter((audit) => !filter?.outcome || audit.outcome === filter.outcome)
+    .filter((audit) => !filter?.since || new Date(audit.createdAt).getTime() >= new Date(filter.since).getTime())
+    .filter((audit) => !filter?.until || new Date(audit.createdAt).getTime() <= new Date(filter.until).getTime())
+    .filter((audit) => {
+      if (!filter?.transport) return true;
+      try {
+        return JSON.parse(audit.metadata ?? "{}").transport === filter.transport;
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .map((audit) => ({
+      id: audit.id,
+      actorType: audit.actorType,
+      actorId: audit.actorId,
+      action: audit.action,
+      targetType: audit.targetType,
+      targetId: audit.targetId,
+      outcome: audit.outcome,
+      createdAt: audit.createdAt,
+      systemId: audit.systemId,
+      metadata: audit.metadata
+    }));
+}
 
 const now = () => new Date().toISOString();
 
@@ -42,11 +76,65 @@ function getBundle(systemId: string): SystemBundle {
 
 export function createMockRepositories(): RepositorySet {
   return {
+    documents: {
+      async get(kind, id) {
+        const doc = store.readDb().documents.find((d) => d.kind === kind && d.id === id);
+        return (doc as any) ?? null;
+      },
+      async put(input) {
+        const db = store.readDb();
+        const existing = db.documents.find((d) => d.kind === input.kind && d.id === input.id);
+        const ts = now();
+        if (existing) {
+          Object.assign(existing, { workspaceId: input.workspaceId, refId: input.refId, data: input.data, updatedAt: ts });
+          store.writeDb(db);
+          return existing as any;
+        }
+        const doc = { ...input, createdAt: ts, updatedAt: ts };
+        db.documents.push(doc);
+        store.writeDb(db);
+        return doc as any;
+      },
+      async list(kind, filter) {
+        return store
+          .readDb()
+          .documents.filter((d) => d.kind === kind && (!filter.workspaceId || d.workspaceId === filter.workspaceId) && (!filter.refId || d.refId === filter.refId)) as any;
+      },
+      async remove(kind, id) {
+        const db = store.readDb();
+        db.documents = db.documents.filter((d) => !(d.kind === kind && d.id === id));
+        store.writeDb(db);
+      },
+      async commit(input) {
+        // Read, compare and write in one synchronous step: nothing can interleave.
+        const db = store.readDb();
+        const ts = now();
+        const existing = db.documents.find((d) => d.kind === input.put.kind && d.id === input.put.id);
+        const currentRev = existing ? Number((existing.data as { rev?: number } | undefined)?.rev ?? 0) : -1;
+        if (currentRev !== input.put.expectedRev) return { ok: false as const, currentRev };
+        const { expectedRev: _expectedRev, ...put } = input.put;
+        for (const doc of [put, ...(input.inserts ?? [])]) {
+          const found = db.documents.find((d) => d.kind === doc.kind && d.id === doc.id);
+          if (found) Object.assign(found, { workspaceId: doc.workspaceId, refId: doc.refId, data: doc.data, updatedAt: ts });
+          else db.documents.push({ ...doc, createdAt: ts, updatedAt: ts } as never);
+        }
+        store.writeDb(db);
+        return { ok: true as const };
+      }
+    },
     users: {
       provision,
       async findByEmail(email) {
         const user = store.readDb().users.find((u) => u.email === email);
         return user ? { id: user.id, email: user.email, name: user.name } : null;
+      },
+      async rename(externalId, name) {
+        const db = store.readDb();
+        const user = db.users.find((u) => u.externalId === externalId);
+        if (user) {
+          user.name = name;
+          store.writeDb(db);
+        }
       }
     },
     workspaces: {
@@ -64,13 +152,31 @@ export function createMockRepositories(): RepositorySet {
         }
       },
       async list(workspaceId) {
-        return store.readDb().memberships.filter((m) => m.workspaceId === workspaceId).map((m) => ({ userId: m.userId, role: m.role }));
+        const db = store.readDb();
+        const users = new Map(db.users.map((u) => [u.id, u]));
+        return db.memberships.filter((m) => m.workspaceId === workspaceId).map((m) => ({ userId: m.userId, role: m.role, name: users.get(m.userId)?.name, email: users.get(m.userId)?.email }));
       },
       async updateRole(workspaceId, userId, role) {
         const db = store.readDb();
         const row = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === userId);
         if (!row) throw new Error("Membership not found.");
         row.role = role;
+        store.writeDb(db);
+      },
+      async remove(workspaceId, userId) {
+        const db = store.readDb();
+        db.memberships = db.memberships.filter((m) => !(m.workspaceId === workspaceId && m.userId === userId));
+        store.writeDb(db);
+      },
+      async transferOwnership(workspaceId, fromUserId, toUserId) {
+        const db = store.readDb();
+        const from = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === fromUserId);
+        const to = db.memberships.find((m) => m.workspaceId === workspaceId && m.userId === toUserId);
+        const workspace = db.workspaces.find((w) => w.id === workspaceId);
+        if (!from || !to || !workspace || from.role !== "Owner") throw new Error("Ownership can only move from the Owner to another member.");
+        from.role = "Admin";
+        to.role = "Owner";
+        workspace.ownerId = toUserId;
         store.writeDb(db);
       }
     },
@@ -87,6 +193,21 @@ export function createMockRepositories(): RepositorySet {
       },
       async getBundle(systemId) {
         return getBundle(systemId);
+      },
+      async ownerOf(ref) {
+        const db = store.readDb();
+        const systemId = ref.systemId ?? (ref.nodeId ? db.nodes.find((n) => n.id === ref.nodeId)?.systemId : undefined) ?? (ref.pipeId ? db.pipes.find((p) => p.id === ref.pipeId)?.systemId : undefined);
+        const system = systemId ? db.systems.find((s) => s.id === systemId) : undefined;
+        return system ? { systemId: system.id, workspaceId: system.workspaceId } : null;
+      },
+      async update(systemId, patch) {
+        const db = store.readDb();
+        const system = db.systems.find((s) => s.id === systemId);
+        if (!system) throw new Error("System not found.");
+        if (patch.name !== undefined) system.name = patch.name;
+        if (patch.description !== undefined) system.description = patch.description;
+        system.updatedAt = now();
+        store.writeDb(db);
       },
       async archive(systemId) {
         const db = store.readDb();
@@ -226,7 +347,7 @@ export function createMockRepositories(): RepositorySet {
       },
       async getPlanState(workspaceId) {
         const row = store.readDb().planState.find((p) => p.workspaceId === workspaceId);
-        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing" };
+        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing", externalCustomerId: row?.externalCustomerId };
       },
       async upsertPlanState(input) {
         const db = store.readDb();
@@ -366,38 +487,13 @@ export function createMockRepositories(): RepositorySet {
         store.writeDb(db);
       },
       async list(workspaceId, filter) {
-        const rows = store.readDb().audits
-          .filter((audit) => audit.workspaceId === workspaceId)
-          .filter((audit) => !filter?.actorType || audit.actorType === filter.actorType)
-          .filter((audit) => !filter?.actorId || audit.actorId === filter.actorId)
-          .filter((audit) => !filter?.actionPrefix || audit.action.startsWith(filter.actionPrefix))
-          .filter((audit) => !filter?.systemId || audit.systemId === filter.systemId)
-          .filter((audit) => !filter?.outcome || audit.outcome === filter.outcome)
-          .filter((audit) => !filter?.since || new Date(audit.createdAt).getTime() >= new Date(filter.since).getTime())
-          .filter((audit) => !filter?.until || new Date(audit.createdAt).getTime() <= new Date(filter.until).getTime())
-          .filter((audit) => {
-            if (!filter?.transport) return true;
-            try {
-              return JSON.parse(audit.metadata ?? "{}").transport === filter.transport;
-            } catch {
-              return false;
-            }
-          })
-          .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-          .slice(0, filter?.limit ?? 500)
-          .map((audit) => ({
-            id: audit.id,
-            actorType: audit.actorType,
-            actorId: audit.actorId,
-            action: audit.action,
-            targetType: audit.targetType,
-            targetId: audit.targetId,
-            outcome: audit.outcome,
-            createdAt: audit.createdAt,
-            systemId: audit.systemId,
-            metadata: audit.metadata
-          }));
-        return rows;
+        return matchingAudits(workspaceId, filter).slice(0, filter?.limit ?? 500);
+      },
+      async page(workspaceId, filter) {
+        const rows = matchingAudits(workspaceId, filter);
+        const start = Math.max(0, Number.parseInt(filter?.cursor ?? "0", 10) || 0);
+        const end = start + Math.min(Math.max(filter?.limit ?? AUDIT_PAGE_SIZE, 1), 500);
+        return { items: rows.slice(start, end), nextCursor: end < rows.length ? String(end) : null };
       }
     },
     idempotency: {

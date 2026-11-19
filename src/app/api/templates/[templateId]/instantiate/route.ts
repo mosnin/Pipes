@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { success, failure } from "@/lib/api/response";
+import { apiError } from "@/lib/api/errors";
 
 type Params = { params: Promise<{ templateId: string }> };
 
@@ -11,6 +12,6 @@ export async function POST(request: Request, { params }: Params) {
     const { templateId } = await params;
     return NextResponse.json(success(await services.templates.instantiate(ctx, templateId, body.name)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

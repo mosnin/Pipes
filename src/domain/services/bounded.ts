@@ -1,9 +1,10 @@
 import crypto from "node:crypto";
-import { canComment, canEditSystem, canManageMembers, canViewSystem } from "@/domain/permissions";
+import { createSecurityService, domainAllowed } from "@/domain/auth/security";
+import { AccessDenied, assertCan, assignableRoles, roleChangeProblem, type Permission } from "@/domain/permissions";
 import { PipesSchemaV1, type Role } from "@/domain/pipes_schema_v1/schema";
 import { serializePipesSchema } from "@/domain/pipes_schema_v1/serde";
 import { getEntitlements } from "@/domain/templates/plans";
-import type { AppContext, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
+import type { AppContext, AuditFilter, FeedbackCategory, FeedbackSeverity, FeedbackStatus, RepositorySet, SystemBundle } from "@/lib/repositories/contracts";
 import { getBillingService } from "@/lib/billing";
 import { env, resolveRuntimeMode } from "@/lib/env";
 import { getEmailService } from "@/lib/email";
@@ -15,14 +16,28 @@ import { ProtocolError } from "@/lib/protocol/errors";
 import { canAccessAdmin } from "@/lib/admin/access";
 import { isProductSignalEvent, type ProductSignalEvent } from "@/domain/services/product_signals";
 
-function assertCanView(ctx: AppContext) { if (!canViewSystem(ctx.role)) throw new Error("Insufficient permissions."); }
-function assertCanEdit(ctx: AppContext) { if (!canEditSystem(ctx.role)) throw new Error("Insufficient permissions."); }
+function assertCanView(ctx: AppContext) { assertCan(ctx, "workflows.view"); }
+function assertCanEdit(ctx: AppContext) { assertCan(ctx, "workflows.edit"); }
 
 export class AccessService {
+  constructor(private readonly repos?: RepositorySet) {}
+  /**
+   * The system, node or pipe must belong to the caller's workspace (and to the
+   * token's system scope). Not-found and not-yours look the same on purpose.
+   */
+  async ensureOwns(ctx: AppContext, ref: { systemId?: string; nodeId?: string; pipeId?: string }) {
+    if (!this.repos) return;
+    const owner = await this.repos.systems.ownerOf(ref).catch(() => null);
+    if (!owner || owner.workspaceId !== ctx.workspaceId) throw new Error("System not found.");
+    if (ctx.systemScope && owner.systemId !== ctx.systemScope) throw new Error("This token is scoped to another system.");
+    return owner;
+  }
   ensureCanView = assertCanView;
   ensureCanEdit = assertCanEdit;
-  ensureCanComment(ctx: AppContext) { if (!canComment(ctx.role)) throw new Error("Insufficient permissions."); }
-  ensureCanManageMembers(ctx: AppContext) { if (!canManageMembers(ctx.role)) throw new Error("Insufficient permissions."); }
+  ensureCanComment(ctx: AppContext) { assertCan(ctx, "comments.write"); }
+  ensureCanManageMembers(ctx: AppContext) { assertCan(ctx, "members.manage"); }
+  /** Any row of the permission table (src/domain/permissions). */
+  ensure(ctx: AppContext, permission: Permission) { assertCan(ctx, permission); }
   ensureInternalOperator(email?: string | null) { if (!canAccessAdmin(email)) throw new Error("Internal operator access required."); }
 }
 
@@ -50,15 +65,33 @@ export class SystemService {
     }
     return created;
   }
-  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); return this.repos.systems.getBundle(systemId); }
-  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.archive(systemId); }
-  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); return this.repos.systems.restore(systemId); }
+  async getBundle(ctx: AppContext, systemId: string): Promise<SystemBundle> { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.getBundle(systemId); }
+  async archive(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.archive(systemId); }
+  async restore(ctx: AppContext, systemId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.systems.restore(systemId); }
+  async update(ctx: AppContext, systemId: string, patch: { name?: string; description?: string }) {
+    this.access.ensureCanEdit(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
+    const name = patch.name === undefined ? undefined : patch.name.trim().slice(0, 120);
+    if (name !== undefined && !name) throw new Error("A workflow needs a name.");
+    const description = patch.description === undefined ? undefined : patch.description.trim().slice(0, 2000);
+    await this.repos.systems.update(systemId, { name, description });
+  }
 }
 
 export class GraphService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async mutate(ctx: AppContext, payload: any) {
     this.access.ensureCanEdit(ctx);
+    if (payload.action === "addNode") await this.access.ensureOwns(ctx, { systemId: payload.systemId });
+    if (payload.action === "updateNode" || payload.action === "deleteNode") await this.access.ensureOwns(ctx, { nodeId: payload.nodeId });
+    if (payload.action === "deletePipe") await this.access.ensureOwns(ctx, { pipeId: payload.pipeId });
+    if (payload.action === "addPipe") {
+      const owner = await this.access.ensureOwns(ctx, { systemId: payload.systemId });
+      for (const nodeId of [payload.fromNodeId, payload.toNodeId]) {
+        const nodeOwner = await this.access.ensureOwns(ctx, { nodeId });
+        if (owner && nodeOwner && nodeOwner.systemId !== owner.systemId) throw new Error("Both steps must be in the same system.");
+      }
+    }
     if (payload.action === "addNode") return this.repos.graph.addNode({ systemId: payload.systemId, type: payload.type, title: payload.title, description: payload.description, x: payload.x ?? 200, y: payload.y ?? 200 });
     if (payload.action === "updateNode") return this.repos.graph.updateNode({ nodeId: payload.nodeId, title: payload.title, description: payload.description, position: payload.position });
     if (payload.action === "deleteNode") return this.repos.graph.deleteNode(payload.nodeId);
@@ -67,8 +100,8 @@ export class GraphService {
   }
 }
 
-export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
-export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
+export class CommentService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async add(ctx: AppContext, input: { systemId: string; body: string; nodeId?: string }) { this.access.ensureCanComment(ctx); await this.access.ensureOwns(ctx, { systemId: input.systemId }); await this.repos.comments.add({ ...input, authorId: ctx.userId }); } }
+export class PresenceService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.presence.list(systemId); } async upsert(ctx: AppContext, body: any) { await this.access.ensureOwns(ctx, { systemId: body.systemId }); await this.repos.presence.upsert({ systemId: body.systemId, userId: ctx.userId, sessionId: body.sessionId ?? "session", selectedNodeId: body.selectedNodeId, editingTarget: body.editingTarget, cursor: body.cursor }); } }
 
 export class ProductSignalService {
   constructor(private readonly repos: RepositorySet) {}
@@ -93,6 +126,7 @@ export class SchemaExportService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   async export(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     const bundle = await this.repos.systems.getBundle(systemId);
     const systems = await this.repos.systems.list(ctx.workspaceId);
     const members = await this.repos.memberships.list(ctx.workspaceId);
@@ -112,40 +146,88 @@ export class SchemaExportService {
 
 export class VersionService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly exportService: SchemaExportService, private readonly entitlementService: EntitlementService) {}
-  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); return this.repos.versions.list(systemId); }
-  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
-  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
+  async list(ctx: AppContext, systemId: string) { this.access.ensureCanView(ctx); await this.access.ensureOwns(ctx, { systemId }); return this.repos.versions.list(systemId); }
+  async create(ctx: AppContext, systemId: string, name: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); if (!(await this.entitlementService.getWorkspaceEntitlements(ctx.workspaceId)).versionHistory) throw new Error("Plan does not include version history."); await this.repos.versions.add({ systemId, authorId: ctx.userId, name, snapshot: await this.exportService.export(ctx, systemId) }); }
+  async restore(ctx: AppContext, systemId: string, versionId: string) { this.access.ensureCanEdit(ctx); await this.access.ensureOwns(ctx, { systemId }); const version = await this.repos.versions.get(systemId, versionId); if (!version) throw new Error("Version not found."); await this.create(ctx, systemId, `Pre-restore ${new Date().toISOString()}`); PipesSchemaV1.parse(JSON.parse(version.snapshot)); await this.repos.versions.restoreSnapshot(systemId, version.snapshot); }
 }
 
 export class CollaborationService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService, private readonly entitlements: EntitlementService) {}
   async list(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return { members: await this.repos.memberships.list(ctx.workspaceId), invites: await this.repos.invites.list(ctx.workspaceId) }; }
-  async invite(ctx: AppContext, email: string, role: Role) { this.access.ensureCanManageMembers(ctx); if (!(await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId)).collaboration) throw new Error("Plan does not include collaboration."); const token = crypto.randomBytes(18).toString("hex"); const expiresAt = new Date(Date.now() + 604800000).toISOString(); await this.repos.invites.add({ workspaceId: ctx.workspaceId, email, role, token, invitedBy: ctx.userId, expiresAt }); await getEmailService().sendWorkspaceInvite({ email, workspaceName: "Pipes Workspace", inviterName: "Pipes teammate", acceptUrl: `${env.NEXT_PUBLIC_APP_URL}/invites/${token}`, role }); return { token }; }
-  async acceptInvite(ctx: AppContext, token: string) { const invite = await this.repos.invites.getByToken(token); if (!invite || invite.status !== "pending" || new Date(invite.expiresAt).getTime() < Date.now()) throw new Error("Invite invalid."); await this.repos.memberships.add(invite.workspaceId, ctx.userId, invite.role); await this.repos.invites.accept(token, ctx.userId); await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "signal.invite_accepted", targetType: "invite", targetId: token, outcome: "success" }); }
+  async invite(ctx: AppContext, email: string, role: Role) { this.access.ensureCanManageMembers(ctx); if (!assignableRoles(ctx.role).includes(role)) throw new AccessDenied(role === "Admin" ? "admins.manage" : "members.manage", role === "Owner" ? "Nobody joins as Owner. Invite them, then transfer ownership." : `You cannot invite someone as ${role}.`); const policy = await createSecurityService(this.repos).policy(ctx.workspaceId); if (!domainAllowed(email, policy.allowedDomains)) throw new Error(`This workspace only allows emails at ${policy.allowedDomains.join(", ")}.`); if (!(await this.entitlements.getWorkspaceEntitlements(ctx.workspaceId)).collaboration) throw new Error("Plan does not include collaboration."); const token = crypto.randomBytes(18).toString("hex"); const expiresAt = new Date(Date.now() + 604800000).toISOString(); await this.repos.invites.add({ workspaceId: ctx.workspaceId, email, role, token, invitedBy: ctx.userId, expiresAt }); await getEmailService().sendWorkspaceInvite({ email, workspaceName: "Pipes Workspace", inviterName: "Pipes teammate", acceptUrl: `${env.NEXT_PUBLIC_APP_URL}/invites/${token}`, role }); return { token }; }
+  async acceptInvite(ctx: AppContext, token: string) { const invite = await this.repos.invites.getByToken(token); if (!invite || invite.status !== "pending" || new Date(invite.expiresAt).getTime() < Date.now()) throw new Error("Invite invalid."); const policy = await createSecurityService(this.repos).policy(invite.workspaceId); if (!domainAllowed(invite.email, policy.allowedDomains)) throw new Error(`This workspace only allows emails at ${policy.allowedDomains.join(", ")}. Ask an Admin.`); await this.repos.memberships.add(invite.workspaceId, ctx.userId, invite.role); await this.repos.invites.accept(token, ctx.userId); await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "signal.invite_accepted", targetType: "invite", targetId: token, outcome: "success" }); }
   async cancelInvite(ctx: AppContext, token: string) { this.access.ensureCanManageMembers(ctx); await this.repos.invites.cancel(token); }
   async updateMemberRole(ctx: AppContext, userId: string, role: Role) {
-    this.access.ensureCanManageMembers(ctx);
-    const members = await this.repos.memberships.list(ctx.workspaceId);
-    const target = members.find((member) => member.userId === userId);
-    if (!target) throw new Error("Member not found.");
-    if (target.role === "Owner") throw new Error("Owner role cannot be changed.");
-    if (role === "Owner") throw new Error("Ownership transfer is not supported in this pass.");
-    if (ctx.userId === userId && target.role === "Admin" && role !== "Admin") throw new Error("Cannot self-demote admin in this flow.");
+    const target = await this.member(ctx, userId);
+    const problem = roleChangeProblem({ actor: ctx.role, actorId: ctx.userId, targetId: userId, target: target.role, next: role });
+    if (problem) throw new AccessDenied(target.role === "Admin" || role === "Admin" ? "admins.manage" : "members.manage", problem);
+    if (target.role === role) return;
     await this.repos.memberships.updateRole(ctx.workspaceId, userId, role);
-    await this.repos.audits.add({
-      actorType: ctx.actorType,
-      actorId: ctx.actorId,
-      workspaceId: ctx.workspaceId,
-      action: "governance.member_role_changed",
-      targetType: "membership",
-      targetId: userId,
-      outcome: "success",
-      metadata: JSON.stringify({ fromRole: target.role, toRole: role })
-    });
+    await this.audit(ctx, "governance.member_role_changed", userId, { fromRole: target.role, toRole: role });
+  }
+
+  /** Offboarding: the member loses access at once, and tokens they created stop working. */
+  async removeMember(ctx: AppContext, userId: string) {
+    const target = await this.member(ctx, userId);
+    const problem = roleChangeProblem({ actor: ctx.role, actorId: ctx.userId, targetId: userId, target: target.role });
+    if (problem) throw new AccessDenied(target.role === "Admin" ? "admins.manage" : "members.manage", problem);
+    await this.repos.memberships.remove(ctx.workspaceId, userId);
+    await this.audit(ctx, "governance.member_removed", userId, { role: target.role });
+  }
+
+  /** The Owner hands the workspace to another member and becomes an Admin. */
+  async transferOwnership(ctx: AppContext, userId: string) {
+    this.access.ensure(ctx, "ownership.transfer");
+    if (userId === ctx.userId) throw new Error("You already own this workspace.");
+    await this.member(ctx, userId);
+    await this.repos.memberships.transferOwnership(ctx.workspaceId, ctx.userId, userId);
+    await this.audit(ctx, "governance.ownership_transferred", userId, { from: ctx.userId, to: userId });
+  }
+
+  private async member(ctx: AppContext, userId: string) {
+    this.access.ensureCanManageMembers(ctx);
+    const target = (await this.repos.memberships.list(ctx.workspaceId)).find((m) => m.userId === userId);
+    if (!target) throw new Error("Member not found.");
+    return target;
+  }
+
+  private async audit(ctx: AppContext, action: string, userId: string, metadata: Record<string, unknown>) {
+    await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action, targetType: "membership", targetId: userId, outcome: "success", metadata: JSON.stringify(metadata) });
   }
 }
 
-export class BillingService { constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {} async getSummary(ctx: AppContext) { const state = await this.repos.entitlements.getPlanState(ctx.workspaceId); return { ...state, entitlements: getEntitlements(state.plan) }; } async startCheckout(ctx: AppContext, plan: "Pro" | "Builder") { this.access.ensureCanManageMembers(ctx); return getBillingService().createCheckoutSession({ workspaceId: ctx.workspaceId, plan, successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=success`, cancelUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?status=cancel` }); } async startPortal(ctx: AppContext) { this.access.ensureCanManageMembers(ctx); return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, returnUrl: `${env.NEXT_PUBLIC_APP_URL}/settings/billing` }); } async handleWebhook(request: Request) { const event = await getBillingService().parseWebhook(request); if (!event) return false; await this.repos.entitlements.upsertPlanState(event); return true; } }
+export class BillingService {
+  constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
+  async getSummary(ctx: AppContext) {
+    const state = await this.repos.entitlements.getPlanState(ctx.workspaceId);
+    return { plan: state.plan, status: state.status, entitlements: getEntitlements(state.plan), billingMode: getBillingService().mode, hasBillingCustomer: Boolean(state.externalCustomerId) };
+  }
+  private returnUrl(status?: string) {
+    const url = new URL("/settings/billing", env.NEXT_PUBLIC_APP_URL);
+    if (status) url.searchParams.set("status", status);
+    return url.toString();
+  }
+  async startCheckout(ctx: AppContext, plan: "Pro" | "Builder", email?: string) {
+    this.access.ensure(ctx, "billing.manage");
+    if (plan !== "Pro" && plan !== "Builder") throw new Error("Choose the Pro or Builder plan.");
+    const billing = getBillingService();
+    const session = await billing.createCheckoutSession({ workspaceId: ctx.workspaceId, plan, email, successUrl: this.returnUrl("success"), cancelUrl: this.returnUrl("cancel") });
+    // Demo mode has no payment provider: apply the plan so the flow can be tried end to end.
+    if (billing.mode === "mock") await this.repos.entitlements.upsertPlanState({ workspaceId: ctx.workspaceId, plan, status: "active" });
+    return session;
+  }
+  async startPortal(ctx: AppContext) {
+    this.access.ensure(ctx, "billing.manage");
+    const state = await this.repos.entitlements.getPlanState(ctx.workspaceId);
+    return getBillingService().createPortalSession({ workspaceId: ctx.workspaceId, customerId: state.externalCustomerId, returnUrl: this.returnUrl() });
+  }
+  async handleWebhook(request: Request) {
+    const event = await getBillingService().parseWebhook(request);
+    if (!event) return false;
+    await this.repos.entitlements.upsertPlanState(event);
+    return true;
+  }
+}
 
 export class WorkspaceService { constructor(private readonly repos: RepositorySet) {} async getPlan(workspaceId: string) { return this.repos.workspaces.getPlan(workspaceId); } }
 
@@ -153,10 +235,11 @@ export class ProtocolService {
   constructor(private readonly repos: RepositorySet, private readonly access: AccessService) {}
   private ensureCanManageTokens(ctx: AppContext) {
     if (ctx.actorType === "agent") throw new Error("Agent tokens cannot manage tokens.");
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "tokens.manage");
   }
   async createToken(ctx: AppContext, input: { name: string; capabilities: AgentCapability[]; systemId?: string }) {
     this.ensureCanManageTokens(ctx);
+    if (!getEntitlements(ctx.plan).apiMcpAccess) throw new Error("API and MCP access start on the Pro plan. Upgrade to create tokens.");
     const secret = issueAgentTokenSecret();
     const tokenHash = hashAgentToken(secret);
     const tokenPreview = `${secret.slice(0, 8)}…`;
@@ -204,6 +287,8 @@ export class ProtocolService {
   }
   async revokeToken(ctx: AppContext, tokenId: string) {
     this.ensureCanManageTokens(ctx);
+    const owned = (await this.repos.agentTokens.list(ctx.workspaceId)).some((token) => token.id === tokenId);
+    if (!owned) throw new Error("Token not found.");
     await this.repos.agentTokens.revoke(tokenId);
     await this.repos.audits.add({
       actorType: ctx.actorType,
@@ -216,8 +301,12 @@ export class ProtocolService {
     });
   }
   async listAudits(ctx: AppContext, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "audit.view");
     return this.repos.audits.list(ctx.workspaceId, filter);
+  }
+  async listAuditsPage(ctx: AppContext, filter?: AuditFilter & { cursor?: string | null }) {
+    this.access.ensure(ctx, "audit.view");
+    return this.repos.audits.page(ctx.workspaceId, filter);
   }
   async writeAudit(ctx: AppContext, input: { action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; systemId?: string; metadata?: string }) {
     await this.repos.audits.add({
@@ -457,18 +546,21 @@ export class SystemLibraryService {
   }
   async setFavorite(ctx: AppContext, systemId: string, favorite: boolean) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.favorite_set", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId, favorite }) });
     await this.signals.track(ctx, "favorite_added", { systemId, favorite });
     return { ok: true };
   }
   async setTags(ctx: AppContext, systemId: string, tags: string[]) {
     this.access.ensureCanEdit(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     const normalized = [...new Set(tags.map((t) => t.trim()).filter(Boolean))].slice(0, 8);
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.tags_set", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId, tags: normalized }) });
     return { ok: true, tags: normalized };
   }
   async markOpened(ctx: AppContext, systemId: string) {
     this.access.ensureCanView(ctx);
+    await this.access.ensureOwns(ctx, { systemId });
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "library.system_opened", targetType: "system", targetId: systemId, outcome: "success", systemId, metadata: JSON.stringify({ systemId }) });
     await this.signals.track(ctx, "system_reopened_from_recents", { systemId });
   }
@@ -641,11 +733,11 @@ export class FeedbackService {
     return created;
   }
   async list(ctx: AppContext, filter?: { status?: FeedbackStatus; category?: FeedbackCategory; limit?: number }) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "feedback.manage");
     return this.repos.feedback.list(ctx.workspaceId, filter);
   }
   async updateStatus(ctx: AppContext, input: { id: string; status: FeedbackStatus }) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "feedback.manage");
     if (!FEEDBACK_STATUS.includes(input.status)) throw new Error("Invalid feedback status.");
     await this.repos.feedback.updateStatus({ workspaceId: ctx.workspaceId, id: input.id, status: input.status, updatedBy: ctx.userId });
     await this.repos.audits.add({
@@ -750,7 +842,7 @@ export class WorkspaceGovernanceService {
     }
   }
   async getTrustSettings(ctx: AppContext) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "security.manage");
     const authDefaults: EnterpriseAuthSettings = { mode: "shared", allowedDomains: [], enforceDomainMatch: false };
     const retentionDefaults: RetentionPolicy = { archivedSystemRetentionDays: 365, inviteExpiryDays: 7, staleTokenDays: 90, auditRetentionDays: 365, signalRetentionDays: 365 };
     const [auth, retention, workspaceState] = await Promise.all([
@@ -771,7 +863,7 @@ export class WorkspaceGovernanceService {
     };
   }
   async updateEnterpriseAuth(ctx: AppContext, input: EnterpriseAuthSettings) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "security.manage");
     this.validateDomains(input.allowedDomains ?? []);
     if (input.mode === "sso_ready" && !input.auth0Connection) throw new Error("Auth0 connection is required for sso_ready mode.");
     await this.repos.audits.add({
@@ -787,7 +879,7 @@ export class WorkspaceGovernanceService {
     return this.getTrustSettings(ctx);
   }
   async updateRetentionPolicy(ctx: AppContext, input: RetentionPolicy) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "security.manage");
     if (input.archivedSystemRetentionDays < 30) throw new Error("archivedSystemRetentionDays must be >= 30.");
     if (input.inviteExpiryDays < 1 || input.inviteExpiryDays > 30) throw new Error("inviteExpiryDays must be between 1 and 30.");
     await this.repos.audits.add({
@@ -803,7 +895,7 @@ export class WorkspaceGovernanceService {
     return this.getTrustSettings(ctx);
   }
   async workspaceExportManifest(ctx: AppContext) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "security.manage");
     const systems = await this.systems.listAll(ctx);
     const manifest = {
       exportVersion: "workspace_manifest_v1",
@@ -816,26 +908,24 @@ export class WorkspaceGovernanceService {
     return manifest;
   }
   async deactivateWorkspace(ctx: AppContext, reason: string, confirmation: string) {
-    this.access.ensureCanManageMembers(ctx);
-    if (ctx.role !== "Owner") throw new Error("Only workspace owners can deactivate workspace state.");
+    this.access.ensure(ctx, "workspace.deactivate");
     if (confirmation !== "DEACTIVATE") throw new Error("Confirmation phrase mismatch.");
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "governance.workspace_state.updated", targetType: "workspace", targetId: ctx.workspaceId, outcome: "success", metadata: JSON.stringify({ state: "deactivated", reason }) });
     return this.getTrustSettings(ctx);
   }
   async reactivateWorkspace(ctx: AppContext) {
-    this.access.ensureCanManageMembers(ctx);
-    if (ctx.role !== "Owner") throw new Error("Only workspace owners can reactivate workspace state.");
+    this.access.ensure(ctx, "workspace.deactivate");
     await this.repos.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "governance.workspace_state.updated", targetType: "workspace", targetId: ctx.workspaceId, outcome: "success", metadata: JSON.stringify({ state: "active", reason: null }) });
     return this.getTrustSettings(ctx);
   }
   async memberDirectory(ctx: AppContext, filter?: { q?: string; role?: Role | "all"; includeInvites?: boolean }) {
-    this.access.ensureCanManageMembers(ctx);
+    this.access.ensure(ctx, "members.manage");
     const [members, invites] = await Promise.all([this.repos.memberships.list(ctx.workspaceId), this.repos.invites.list(ctx.workspaceId)]);
     const q = String(filter?.q ?? "").toLowerCase().trim();
     const roleFilter = filter?.role && filter.role !== "all" ? filter.role : undefined;
     let memberRows = members.map((m) => ({ ...m, kind: "member" as const }));
     if (roleFilter) memberRows = memberRows.filter((m) => m.role === roleFilter);
-    if (q) memberRows = memberRows.filter((m) => `${m.userId} ${m.role}`.toLowerCase().includes(q));
+    if (q) memberRows = memberRows.filter((m) => `${m.userId} ${m.name ?? ""} ${m.email ?? ""} ${m.role}`.toLowerCase().includes(q));
     let inviteRows = invites;
     if (roleFilter) inviteRows = inviteRows.filter((i) => i.role === roleFilter);
     if (q) inviteRows = inviteRows.filter((i) => `${i.email} ${i.role} ${i.status}`.toLowerCase().includes(q));
@@ -844,7 +934,7 @@ export class WorkspaceGovernanceService {
 }
 
 export function createBoundedServices(repos: RepositorySet) {
-  const access = new AccessService();
+  const access = new AccessService(repos);
   const entitlements = new EntitlementService(repos);
   const systems = new SystemService(repos, access, entitlements);
   const graph = new GraphService(repos, access);

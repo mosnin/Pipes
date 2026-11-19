@@ -53,9 +53,9 @@ describe("release review service", () => {
 
       (env as any).AUTH0_DOMAIN = undefined;
       (env as any).CONVEX_URL = "https://convex.example";
+      // Convex alone is enough for provider mode: password accounts are built in, Auth0 is optional.
       const providerSummary = await services.release.summary(ctx);
-      expect(providerSummary.environment.runtimeMode).toBe("fallback_mock");
-      expect(providerSummary.environment.providerReadiness.authConfigured).toBe(false);
+      expect(providerSummary.environment.runtimeMode).toBe("provider");
 
       (env as any).AUTH0_DOMAIN = "auth.example.com";
       (env as any).AUTH0_CLIENT_ID = "client";

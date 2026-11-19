@@ -4,7 +4,6 @@ export type Entitlements = {
   maxSystems: number;
   collaboration: boolean;
   versionHistory: boolean;
-  advancedValidation: boolean;
   simulation: boolean;
   apiMcpAccess: boolean;
   aiGeneration: boolean;
@@ -15,7 +14,6 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     maxSystems: 3,
     collaboration: false,
     versionHistory: false,
-    advancedValidation: false,
     simulation: true,
     apiMcpAccess: false,
     aiGeneration: false
@@ -24,7 +22,6 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     maxSystems: 25,
     collaboration: true,
     versionHistory: true,
-    advancedValidation: true,
     simulation: true,
     apiMcpAccess: true,
     aiGeneration: false
@@ -33,7 +30,6 @@ const PLAN_ENTITLEMENTS: Record<Plan, Entitlements> = {
     maxSystems: 250,
     collaboration: true,
     versionHistory: true,
-    advancedValidation: true,
     simulation: true,
     apiMcpAccess: true,
     aiGeneration: true

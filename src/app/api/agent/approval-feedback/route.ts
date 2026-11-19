@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { AgentCollaborationService } from "@/domain/services/agent_collaboration";
 import { failure, success } from "@/lib/api/response";
+import { apiError } from "@/lib/api/errors";
 
 export async function POST(request: Request) {
   try {
@@ -11,5 +12,5 @@ export async function POST(request: Request) {
     const feedback = await service.approvals.addApprovalFeedback(ctx, body);
     const decision = body.decision ? await service.approvals.addDecision(ctx, { ...body, note: body.note ?? "" }) : null;
     return NextResponse.json(success({ feedback, decision }));
-  } catch (error) { return NextResponse.json(failure((error as Error).message), { status: 400 }); }
+  } catch (error) { return apiError(error); }
 }

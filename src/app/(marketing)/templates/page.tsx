@@ -1,32 +1,82 @@
-import { Card, PageHeader, SectionHeader, Input } from "@/components/ui";
-import { publicContentService } from "@/domain/services/public";
+import type { Metadata } from "next";
+import { MarketingShell } from "@/components/MarketingShell";
 import { TrackedLink } from "@/components/marketing/TrackedLink";
+import { CutButton } from "@/components/marketing/cut-button";
+import { FinalCta } from "@/components/marketing/final-cta";
+import { PageIntro } from "@/components/marketing/page-intro";
+import { Container, Section } from "@/components/marketing/section";
+import { TemplateGraph, findStarterTemplate } from "@/components/marketing/template-graph";
+import { publicContentService } from "@/domain/services/public";
 
-export const metadata = {
-  title: "Pipes templates",
-  description: "Discover reusable system templates for multi-agent, automation, support, and architecture workflows."
+export const metadata: Metadata = {
+  title: "Templates",
+  description:
+    "Starter workflows for agent loops, multi-agent research, automation and support triage. Each opens as an editable workflow in your workspace.",
 };
 
 export default function TemplatesPage() {
   const templates = publicContentService.listTemplates();
 
   return (
-    <div>
-      <PageHeader title="Template library" subtitle="Discover structured starting points for reusable system architectures." />
-      <Card><Input placeholder="Use in-app filters after signup for full workspace context." readOnly /></Card>
-      <div className="grid-2" style={{ marginTop: 16 }}>
-        {templates.map((template) => (
-          <Card key={template.id}>
-            <SectionHeader title={template.title} description={`${template.category} · ${template.useCase} · ${template.complexity}`} />
-            <p>{template.description}</p>
-            <p>{template.preview}</p>
-            <div className="nav-inline">
-              <TrackedLink href={`/templates/${template.slug}`} event="template_detail_viewed" metadata={{ source: "templates_index", templateId: template.id }}>View template</TrackedLink>
-              <TrackedLink href={`/signup?source=template_${template.slug}`} event="public_template_instantiate_clicked" metadata={{ source: "templates_index", templateId: template.id }}>Use template</TrackedLink>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
+    <MarketingShell>
+      <PageIntro
+        kicker="Templates"
+        title="Start from a workflow that already works."
+        lead={`${templates.length} starter templates, from a single agent loop to a support flow with a policy check and a human review. Pick one and it opens as an editable workflow in your workspace.`}
+      />
+
+      <Section className="pt-0" labelledBy="page-title">
+        <Container>
+          <ul className="grid gap-4 lg:grid-cols-2">
+            {templates.map((template) => {
+              const graph = findStarterTemplate(template.id);
+              return (
+                <li
+                  key={template.id}
+                  className="flex flex-col overflow-hidden rounded-12 border border-border bg-raised shadow-elev-1"
+                >
+                  {graph ? (
+                    <div className="hidden border-b border-hairline bg-inset px-4 py-6 sm:block">
+                      <TemplateGraph template={graph} listOnMobile={false} />
+                    </div>
+                  ) : null}
+                  <div className="flex flex-1 flex-col gap-2 p-5">
+                    <p className="t-label-caps text-ink-3">
+                      {template.category} · {template.useCase}
+                    </p>
+                    <h2 className="t-mk-h4 text-ink">{template.title}</h2>
+                    <p className="t-body text-ink-2">{template.description}</p>
+                    <p className="t-mono-hash text-ink-3">
+                      {template.preview} · {template.complexity}
+                    </p>
+                    <div className="mt-auto flex flex-wrap items-center gap-4 pt-2">
+                      <CutButton
+                        href={`/signup?source=template_${template.slug}`}
+                        track={{
+                          event: "public_template_instantiate_clicked",
+                          metadata: { source: "templates_index", templateId: template.id },
+                        }}
+                      >
+                        Use template
+                      </CutButton>
+                      <TrackedLink
+                        href={`/templates/${template.slug}`}
+                        event="template_detail_viewed"
+                        metadata={{ source: "templates_index", templateId: template.id }}
+                        className="t-link"
+                      >
+                        View template
+                      </TrackedLink>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Container>
+      </Section>
+
+      <FinalCta source="templates_final" />
+    </MarketingShell>
   );
 }

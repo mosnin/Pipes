@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
 import type { FeedbackCategory, FeedbackSeverity } from "@/lib/repositories/contracts";
+import { apiError } from "@/lib/api/errors";
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +19,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(success(created));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

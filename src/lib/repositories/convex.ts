@@ -15,10 +15,80 @@ import {
   convexUpdateNode,
   convexUpsertPresence
 } from "@/lib/convex/modeApi";
-import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
+import { AUDIT_PAGE_SIZE, type AppContext, type AuditFilter, type AuditRecord, type RepositorySet } from "@/lib/repositories/contracts";
+
+/** An ISO timestamp in the stored format, so Convex can compare `createdAt` as text; undefined when unset, null when unreadable. */
+function isoOrNull(value: string | undefined): string | undefined | null {
+  if (!value) return undefined;
+  const at = new Date(value).getTime();
+  return Number.isFinite(at) ? new Date(at).toISOString() : null;
+}
+
+/**
+ * One page of audit events. Filters run inside the Convex query; transport is
+ * in the metadata JSON, so it is applied here and can leave a page short.
+ */
+async function pageAudits(workspaceId: string, filter?: AuditFilter & { cursor?: string | null }): Promise<{ items: AuditRecord[]; nextCursor: string | null }> {
+  const since = isoOrNull(filter?.since);
+  const until = isoOrNull(filter?.until);
+  if (since === null || until === null) return { items: [], nextCursor: null };
+  const client = getConvexHttpClient();
+  const result = await client.query(api.app.listAuditEvents, {
+    workspaceId: workspaceId as never,
+    actorType: filter?.actorType,
+    actorId: filter?.actorId,
+    actionPrefix: filter?.actionPrefix,
+    systemId: filter?.systemId,
+    outcome: filter?.outcome,
+    since,
+    until,
+    numItems: filter?.limit ?? AUDIT_PAGE_SIZE,
+    cursor: filter?.cursor ?? null
+  });
+  const items = (result.page as any[])
+    .filter((row) => {
+      if (!filter?.transport) return true;
+      try {
+        return JSON.parse(row.metadata ?? "{}").transport === filter.transport;
+      } catch {
+        return false;
+      }
+    })
+    .map((row) => ({
+      id: String(row._id),
+      actorType: row.actorType,
+      actorId: row.actorId,
+      action: row.action,
+      targetType: row.targetType,
+      targetId: row.targetId,
+      outcome: row.outcome,
+      createdAt: row.createdAt,
+      systemId: row.systemId ? String(row.systemId) : undefined,
+      metadata: row.metadata
+    }));
+  return { items, nextCursor: result.continueCursor ?? null };
+}
+import type { Role } from "@/domain/pipes_schema_v1/schema";
 
 export function createConvexRepositories(): RepositorySet {
   return {
+    documents: {
+      async get(kind, id) {
+        return (await getConvexHttpClient().query(api.documents.get, { kind, id })) as any;
+      },
+      async put(input) {
+        return (await getConvexHttpClient().mutation(api.documents.put, input as never)) as any;
+      },
+      async list(kind, filter) {
+        return (await getConvexHttpClient().query(api.documents.list, { kind, ...filter })) as any;
+      },
+      async remove(kind, id) {
+        await getConvexHttpClient().mutation(api.documents.remove, { kind, id });
+      },
+      async commit(input) {
+        return (await getConvexHttpClient().mutation(api.documents.commit, input as never)) as any;
+      }
+    },
     users: {
       async provision(identity): Promise<AppContext> {
         const convex = getConvexHttpClient();
@@ -34,6 +104,9 @@ export function createConvexRepositories(): RepositorySet {
       },
       async findByEmail() {
         return null;
+      },
+      async rename(externalId, name) {
+        await getConvexHttpClient().mutation(api.app.updateUserName, { externalId, name });
       }
     },
     workspaces: {
@@ -50,11 +123,19 @@ export function createConvexRepositories(): RepositorySet {
       async list(workspaceId) {
         const client = getConvexHttpClient();
         const rows = await client.query(api.app.listWorkspaceMembers, { workspaceId: workspaceId as never });
-        return rows.map((r: any) => ({ userId: String(r.userId), role: r.role }));
+        return rows.map((r: any) => ({ userId: String(r.userId), role: r.role, name: r.name ?? undefined, email: r.email ?? undefined }));
       },
       async updateRole(workspaceId, userId, role) {
         const client = getConvexHttpClient();
         await client.mutation(api.app.updateMemberRole, { workspaceId: workspaceId as never, userId: userId as never, role });
+      },
+      async remove(workspaceId, userId) {
+        const client = getConvexHttpClient();
+        await client.mutation(api.app.removeMember, { workspaceId: workspaceId as never, userId: userId as never });
+      },
+      async transferOwnership(workspaceId, fromUserId, toUserId) {
+        const client = getConvexHttpClient();
+        await client.mutation(api.app.transferOwnership, { workspaceId: workspaceId as never, fromUserId: fromUserId as never, toUserId: toUserId as never });
       }
     },
     systems: {
@@ -66,8 +147,12 @@ export function createConvexRepositories(): RepositorySet {
         const id = await convexCreateSystem(input.workspaceId, input.userId, input.name, input.description);
         return String(id);
       },
+      async ownerOf(ref) {
+        return (await getConvexHttpClient().query(api.app.ownerOf, ref)) as { systemId: string; workspaceId: string } | null;
+      },
       async getBundle(systemId) {
         const data = await convexSystemBundle(systemId);
+        if (!data.system) throw new Error(`System not found: ${systemId}`);
         return {
           system: { id: String(data.system._id), workspaceId: String(data.system.workspaceId), name: data.system.name, description: data.system.description, createdBy: String(data.system.createdBy), createdAt: data.system.createdAt, updatedAt: data.system.updatedAt, archivedAt: data.system.archivedAt },
           nodes: data.nodes.map((n: any) => ({ id: String(n._id), systemId: String(n.systemId), type: n.type, title: n.title, description: n.description, position: n.position, portIds: n.portIds ?? [] })),
@@ -79,6 +164,9 @@ export function createConvexRepositories(): RepositorySet {
       },
       async archive(systemId) {
         await convexArchiveSystem(systemId);
+      },
+      async update(systemId, patch) {
+        await getConvexHttpClient().mutation(api.app.updateSystem, { systemId: systemId as never, ...patch });
       },
       async restore(systemId) {
         const client = getConvexHttpClient();
@@ -142,7 +230,7 @@ export function createConvexRepositories(): RepositorySet {
         const client = getConvexHttpClient();
         const row = await client.query(api.app.getInviteByToken, { token });
         if (!row) return null;
-        return { workspaceId: String(row.workspaceId), token: row.token, email: row.email, role: row.role, status: row.status, expiresAt: row.expiresAt };
+        return { workspaceId: String(row.workspaceId), token: row.token, email: row.email, role: row.role as Role, status: row.status, expiresAt: row.expiresAt };
       },
       async accept(token, userId) {
         const client = getConvexHttpClient();
@@ -162,7 +250,7 @@ export function createConvexRepositories(): RepositorySet {
       async getPlanState(workspaceId) {
         const client = getConvexHttpClient();
         const row = await client.query(api.app.getPlanState, { workspaceId: workspaceId as never });
-        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing" };
+        return { plan: row?.plan ?? "Free", status: row?.status ?? "trialing", externalCustomerId: row?.externalCustomerId };
       },
       async upsertPlanState(input) {
         const client = getConvexHttpClient();
@@ -300,38 +388,10 @@ export function createConvexRepositories(): RepositorySet {
         });
       },
       async list(workspaceId, filter) {
-        const client = getConvexHttpClient();
-        const rows = await client.query(api.app.listAuditEvents, { workspaceId: workspaceId as never });
-        return rows
-          .filter((row: any) => !filter?.actorType || row.actorType === filter.actorType)
-          .filter((row: any) => !filter?.actorId || row.actorId === filter.actorId)
-          .filter((row: any) => !filter?.actionPrefix || String(row.action).startsWith(filter.actionPrefix))
-          .filter((row: any) => !filter?.systemId || String(row.systemId ?? "") === filter.systemId)
-          .filter((row: any) => !filter?.outcome || row.outcome === filter.outcome)
-          .filter((row: any) => !filter?.since || new Date(row.createdAt).getTime() >= new Date(filter.since).getTime())
-          .filter((row: any) => !filter?.until || new Date(row.createdAt).getTime() <= new Date(filter.until).getTime())
-          .filter((row: any) => {
-            if (!filter?.transport) return true;
-            try {
-              return JSON.parse(row.metadata ?? "{}").transport === filter.transport;
-            } catch {
-              return false;
-            }
-          })
-          .sort((a: any, b: any) => (a.createdAt < b.createdAt ? 1 : -1))
-          .slice(0, filter?.limit ?? 500)
-          .map((row: any) => ({
-          id: String(row._id),
-          actorType: row.actorType,
-          actorId: row.actorId,
-          action: row.action,
-          targetType: row.targetType,
-          targetId: row.targetId,
-          outcome: row.outcome,
-          createdAt: row.createdAt,
-          systemId: row.systemId ? String(row.systemId) : undefined,
-          metadata: row.metadata
-        }));
+        return (await pageAudits(workspaceId, { ...filter, limit: filter?.limit ?? 500 })).items;
+      },
+      async page(workspaceId, filter) {
+        return pageAudits(workspaceId, filter);
       }
     },
     idempotency: {

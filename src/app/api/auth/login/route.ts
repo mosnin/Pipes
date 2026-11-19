@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { getAuthService, setSessionCookie } from "@/lib/auth";
-import { runtimeFlags } from "@/lib/env";
+import { resolveAuthMode } from "@/lib/auth";
+import { safeReturnTo } from "@/lib/auth/session";
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const returnTo = url.searchParams.get("returnTo") ?? "/dashboard";
-
-  if (runtimeFlags.useMocks || !runtimeFlags.hasAuth0) {
-    await setSessionCookie({ externalId: "mock|usr_1", email: "owner@pipes.local", name: "Alex Rivera" });
-    return NextResponse.redirect(new URL(returnTo, request.url));
-  }
-
-  const auth = getAuthService();
-  return NextResponse.redirect(auth.getLoginUrl(returnTo));
+/**
+ * Old sign-in links keep working. Demo mode goes straight in; real sign-in
+ * goes to the login page, which talks to Better Auth (docs/security.md).
+ */
+export function GET(request: Request) {
+  const returnTo = safeReturnTo(new URL(request.url).searchParams.get("returnTo"));
+  if (resolveAuthMode() === "mock") return NextResponse.redirect(new URL(returnTo, request.url));
+  return NextResponse.redirect(new URL(`/login?returnTo=${encodeURIComponent(returnTo)}`, request.url));
 }

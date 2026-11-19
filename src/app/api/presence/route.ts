@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { success, failure } from "@/lib/api/response";
 import { getServerApp } from "@/lib/composition/server";
+import { apiError } from "@/lib/api/errors";
 
 type PresenceResponse = { ok: boolean; data?: unknown; error?: string };
 
@@ -11,7 +12,7 @@ export async function GET(request: Request): Promise<NextResponse<PresenceRespon
     const { ctx, services } = await getServerApp();
     return NextResponse.json(success(await services.presence.list(ctx, systemId)));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }
 
@@ -22,6 +23,6 @@ export async function POST(request: Request): Promise<NextResponse<PresenceRespo
     await services.presence.upsert(ctx, body);
     return NextResponse.json(success({ ok: true }));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

@@ -13,6 +13,7 @@ Primary logged-out routes:
 - `/compare/[slug]`
 - `/protocol`
 - `/docs`
+- `/about`
 - `/login`
 - `/signup`
 
@@ -20,7 +21,7 @@ Primary logged-out routes:
 
 `src/lib/public/content.ts` is the bounded public content model.
 It defines:
-- homepage section copy
+- the home hero and closing CTA
 - use case cards + workflow breakdown
 - comparison page entries
 - template marketing metadata derived from real template catalog

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerApp } from "@/lib/composition/server";
 import { failure, success } from "@/lib/api/response";
+import { apiError } from "@/lib/api/errors";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ runId: string }> }) {
   try {
@@ -12,5 +13,5 @@ export async function GET(_request: Request, { params }: { params: Promise<{ run
       repositories.agentBuilder.getRuntimeUsageRecord({ runId })
     ]);
     return NextResponse.json(success({ decisions, escalations, usage }));
-  } catch (error) { return NextResponse.json(failure((error as Error).message), { status: 400 }); }
+  } catch (error) { return apiError(error); }
 }

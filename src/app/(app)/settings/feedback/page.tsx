@@ -1,40 +1,102 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Card, EmptyState, Input, PageHeader, Select } from "@/components/ui";
+import { useId, useState } from "react";
+import { Banner } from "@/components/ui/banner";
+import { Button } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
+import { Field, Input, Textarea } from "@/components/ui/input";
+import { Segmented } from "@/components/ui/segmented";
+import { Select } from "@/components/ui/select";
 import { SettingsShell } from "@/components/settings/SettingsShell";
+import { apiErrorMessage } from "@/components/shell/api-error";
+
+const CATEGORIES = [
+  { value: "bug", label: "Bug" },
+  { value: "ux", label: "UX" },
+  { value: "feature_request", label: "Feature request" },
+  { value: "reliability", label: "Reliability" },
+  { value: "billing", label: "Billing" },
+  { value: "other", label: "Other" }
+];
 
 export default function FeedbackSettingsPage() {
+  const fieldId = useId();
   const [category, setCategory] = useState("bug");
-  const [severity, setSeverity] = useState("medium");
+  const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
   const [summary, setSummary] = useState("");
   const [details, setDetails] = useState("");
   const [systemId, setSystemId] = useState("");
   const [status, setStatus] = useState("");
+  const [failed, setFailed] = useState(false);
+
+  const submit = async () => {
+    const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ category, severity, summary, details, systemId: systemId || undefined, page: window.location.pathname }) });
+    const body = await res.json();
+    if (body.ok) {
+      setSummary("");
+      setDetails("");
+      setSystemId("");
+      setFailed(false);
+      setStatus("Your feedback is in the triage queue.");
+    } else {
+      setFailed(true);
+      setStatus(apiErrorMessage(body, "Your feedback did not send. Try again."));
+    }
+  };
 
   return (
-    <SettingsShell title="Feedback" subtitle="Send structured beta feedback directly to operator triage.">
-      <PageHeader title="Beta feedback intake" subtitle="Lightweight feedback loop: category, severity, context, and summary." />
-      <Card>
-        <div style={{ display: "grid", gap: 8 }}>
-          <Select value={category} onChange={(e) => setCategory(e.target.value)}><option value="bug">Bug</option><option value="ux">UX</option><option value="feature_request">Feature request</option><option value="reliability">Reliability</option><option value="billing">Billing</option><option value="other">Other</option></Select>
-          <Select value={severity} onChange={(e) => setSeverity(e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></Select>
-          <Input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Summary (minimum 8 chars)" />
-          <Input value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Details" />
-          <Input value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="Optional system id" />
-          <Button onClick={async () => {
-            const res = await fetch("/api/feedback", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ category, severity, summary, details, systemId: systemId || undefined, page: window.location.pathname }) });
-            const body = await res.json();
-            if (body.ok) {
-              setSummary("");
-              setDetails("");
-              setSystemId("");
-              setStatus("Feedback submitted.");
-            } else setStatus(body.error ?? "Failed to submit feedback.");
-          }}>Submit feedback</Button>
+    <SettingsShell title="Feedback" measure="prose" description="Report a bug or ask for something. It goes straight to the team's triage queue.">
+      {status ? (
+        <div aria-live="polite">
+          <Banner role={failed ? "critical" : "positive"} title={failed ? "Feedback was not sent" : "Thanks"}>
+            {status}
+          </Banner>
         </div>
+      ) : null}
+
+      <Card>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <div className="grid grid-cols-1 gap-5 p-4 sm:grid-cols-2">
+            <Field label="Category" htmlFor={`${fieldId}-category`}>
+              <Select id={`${fieldId}-category`} size="sm" value={category} onValueChange={setCategory} options={CATEGORIES} />
+            </Field>
+            <div className="flex flex-col gap-1.5">
+              <span className="t-caption-medium text-ink">Severity</span>
+              <Segmented
+                label="Severity"
+                size="sm"
+                value={severity}
+                onValueChange={setSeverity}
+                options={[
+                  { value: "low", label: "Low" },
+                  { value: "medium", label: "Medium" },
+                  { value: "high", label: "High" }
+                ]}
+                className="self-start"
+              />
+            </div>
+            <Field label="Summary" htmlFor={`${fieldId}-summary`} hint="At least 8 characters." className="sm:col-span-2">
+              <Input id={`${fieldId}-summary`} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="What happened, in one line" />
+            </Field>
+            <Field label="Details" htmlFor={`${fieldId}-details`} className="sm:col-span-2">
+              <Textarea id={`${fieldId}-details`} value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Steps, what you expected, what you saw" />
+            </Field>
+            <Field label="Workflow id" htmlFor={`${fieldId}-system`} hint="Optional. The workflow this is about." className="sm:col-span-2">
+              <Input id={`${fieldId}-system`} value={systemId} onChange={(e) => setSystemId(e.target.value)} placeholder="sys_..." />
+            </Field>
+          </div>
+          <CardFooter inset className="justify-end">
+            <Button type="submit" variant="primary" size="sm">
+              Send feedback
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
-      {status ? <EmptyState title="Feedback status" description={status} /> : null}
     </SettingsShell>
   );
 }

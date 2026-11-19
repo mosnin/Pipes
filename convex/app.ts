@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { mutation, query } from "./_generated/server";
+import { mutation, query } from "./lib";
 import { v } from "convex/values";
 
 const now = () => new Date().toISOString();
@@ -16,7 +16,10 @@ export const provisionUser = mutation({
       user = await ctx.db.get(userId);
     }
 
-    const membership = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("userId", user!._id).eq("workspaceId", (await ctx.db.query("workspaces").withIndex("by_owner", (qq) => qq.eq("ownerId", user!._id)).first())!._id)).first();
+    const ownedWorkspace = await ctx.db.query("workspaces").withIndex("by_owner", (qq) => qq.eq("ownerId", user!._id)).first();
+    const membership = ownedWorkspace
+      ? await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", ownedWorkspace._id).eq("userId", user!._id)).first()
+      : await ctx.db.query("workspace_members").filter((q) => q.eq(q.field("userId"), user!._id)).first();
     return { user, membership };
   }
 });
@@ -30,7 +33,28 @@ export const listSystems = query({
 
 export const createSystem = mutation({
   args: { workspaceId: v.id("workspaces"), userId: v.id("users"), name: v.string(), description: v.string() },
-  handler: async (ctx, args) => ctx.db.insert("systems", { ...args, createdBy: args.userId, createdAt: now(), updatedAt: now() })
+  handler: async (ctx, args) => {
+    const { userId, ...rest } = args;
+    return ctx.db.insert("systems", { ...rest, createdBy: userId, createdAt: now(), updatedAt: now() });
+  }
+});
+
+export const updateSystem = mutation({
+  args: { systemId: v.id("systems"), name: v.optional(v.string()), description: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const patch: Record<string, string> = { updatedAt: now() };
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.description !== undefined) patch.description = args.description;
+    await ctx.db.patch(args.systemId, patch);
+  }
+});
+
+export const updateUserName = mutation({
+  args: { externalId: v.string(), name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.query("users").withIndex("by_external", (q) => q.eq("externalId", args.externalId)).first();
+    if (user) await ctx.db.patch(user._id, { name: args.name, updatedAt: now() });
+  }
 });
 
 export const archiveSystem = mutation({
@@ -43,6 +67,23 @@ export const restoreSystem = mutation({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => ctx.db.patch(args.systemId, { archivedAt: undefined, updatedAt: now() })
 });
+export const ownerOf = query({
+  args: { systemId: v.optional(v.string()), nodeId: v.optional(v.string()), pipeId: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let systemId = args.systemId ? ctx.db.normalizeId("systems", args.systemId) : null;
+    if (!systemId && args.nodeId) {
+      const nodeId = ctx.db.normalizeId("system_nodes", args.nodeId);
+      systemId = nodeId ? ((await ctx.db.get(nodeId))?.systemId ?? null) : null;
+    }
+    if (!systemId && args.pipeId) {
+      const pipeId = ctx.db.normalizeId("system_pipes", args.pipeId);
+      systemId = pipeId ? ((await ctx.db.get(pipeId))?.systemId ?? null) : null;
+    }
+    const system = systemId ? await ctx.db.get(systemId) : null;
+    return system ? { systemId: String(system._id), workspaceId: String(system.workspaceId) } : null;
+  }
+});
+
 export const getSystemBundle = query({
   args: { systemId: v.id("systems") },
   handler: async (ctx, args) => {
@@ -137,7 +178,12 @@ export const addCollaborator = mutation({
 export const listWorkspaceMembers = query({
   args: { workspaceId: v.id("workspaces") },
   handler: async (ctx, args) => {
-    return ctx.db.query("workspace_members").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
+    const rows = await ctx.db.query("workspace_members").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect();
+    // With each member's name and email, so the Members page never shows ids.
+    return Promise.all(rows.map(async (row) => {
+      const user = await ctx.db.get(row.userId);
+      return { ...row, name: user?.name, email: user?.email };
+    }));
   }
 });
 
@@ -188,6 +234,29 @@ export const updateMemberRole = mutation({
     const row = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)).first();
     if (!row) throw new Error("Membership not found.");
     await ctx.db.patch(row._id, { role: args.role as never, updatedAt: now() });
+  }
+});
+
+export const removeMember = mutation({
+  args: { workspaceId: v.id("workspaces"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", args.userId)).first();
+    if (!row) throw new Error("Membership not found.");
+    if (row.role === "Owner") throw new Error("The Owner cannot be removed.");
+    await ctx.db.delete(row._id);
+  }
+});
+
+/** One transaction: the new Owner, the old Owner as Admin, and the workspace's owner field. */
+export const transferOwnership = mutation({
+  args: { workspaceId: v.id("workspaces"), fromUserId: v.id("users"), toUserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const member = (userId: typeof args.fromUserId) => ctx.db.query("workspace_members").withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", userId)).first();
+    const [from, to] = await Promise.all([member(args.fromUserId), member(args.toUserId)]);
+    if (!from || !to || from.role !== "Owner") throw new Error("Ownership can only move from the Owner to another member.");
+    await ctx.db.patch(from._id, { role: "Admin" as never, updatedAt: now() });
+    await ctx.db.patch(to._id, { role: "Owner" as never, updatedAt: now() });
+    await ctx.db.patch(args.workspaceId, { ownerId: args.toUserId });
   }
 });
 
@@ -266,9 +335,37 @@ export const addAuditEvent = mutation({
   }
 });
 
+/**
+ * One page of a workspace's audit events, newest first. Filters run inside
+ * the query so a page holds matching rows; `continueCursor` is null on the
+ * last page. Transport lives in the metadata JSON and is filtered by the caller.
+ */
 export const listAuditEvents = query({
-  args: { workspaceId: v.id("workspaces") },
-  handler: async (ctx, args) => ctx.db.query("audit_events").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).collect()
+  args: {
+    workspaceId: v.id("workspaces"),
+    actorType: v.optional(v.string()),
+    actorId: v.optional(v.string()),
+    actionPrefix: v.optional(v.string()),
+    systemId: v.optional(v.string()),
+    outcome: v.optional(v.string()),
+    since: v.optional(v.string()),
+    until: v.optional(v.string()),
+    numItems: v.optional(v.number()),
+    cursor: v.optional(v.union(v.string(), v.null()))
+  },
+  handler: async (ctx, args) => {
+    const numItems = Math.min(Math.max(Math.floor(args.numItems ?? 100), 1), 500);
+    let q = ctx.db.query("audit_events").withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId)).order("desc");
+    if (args.actorType) q = q.filter((f) => f.eq(f.field("actorType"), args.actorType));
+    if (args.actorId) q = q.filter((f) => f.eq(f.field("actorId"), args.actorId));
+    if (args.actionPrefix) q = q.filter((f) => f.and(f.gte(f.field("action"), args.actionPrefix), f.lt(f.field("action"), `${args.actionPrefix}￿`)));
+    if (args.systemId) q = q.filter((f) => f.eq(f.field("systemId"), args.systemId));
+    if (args.outcome) q = q.filter((f) => f.eq(f.field("outcome"), args.outcome));
+    if (args.since) q = q.filter((f) => f.gte(f.field("createdAt"), args.since));
+    if (args.until) q = q.filter((f) => f.lte(f.field("createdAt"), args.until));
+    const result = await q.paginate({ numItems, cursor: args.cursor ?? null });
+    return { page: result.page, continueCursor: result.isDone ? null : result.continueCursor };
+  }
 });
 
 export const getIdempotencyKey = query({

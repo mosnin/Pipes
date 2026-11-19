@@ -9,3 +9,8 @@ test-results
 
 .pipes-db.json
 tsconfig.tsbuildinfo
+.claude/worktrees/
+.pipes-growth.json
+
+# Local accounts when running real sign-in without Convex
+.pipes-auth.sqlite*

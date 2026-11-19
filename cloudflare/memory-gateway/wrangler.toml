@@ -1,0 +1,22 @@
+# Pipes memory gateway (docs/memory.md, "Cloudflare").
+# Deploy once per environment, then set on Vercel:
+#   PIPES_MEMORY_PROVIDER=supermemory
+#   SUPERMEMORY_BASE_URL=https://<this worker's URL>
+#   PIPES_MEMORY_GATEWAY_SECRET=<the same secret as below>
+name = "pipes-memory-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+[vars]
+PIPES_ENV = "prod"
+
+# wrangler d1 create pipes-memory-audit, then paste its id here and run:
+#   wrangler d1 execute pipes-memory-audit --remote --file schema.sql
+[[d1_databases]]
+binding = "AUDIT"
+database_name = "pipes-memory-audit"
+database_id = "replace-with-your-d1-id"
+
+# Secrets, never in this file:
+#   wrangler secret put SUPERMEMORY_API_KEY
+#   wrangler secret put PIPES_MEMORY_GATEWAY_SECRET

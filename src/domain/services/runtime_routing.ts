@@ -1,3 +1,4 @@
+import { runtimeFlags } from "@/lib/env";
 import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
 import type { RunPolicySnapshot } from "@/domain/agent_builder/policy";
 import type { RuntimeRoutingDecision, RuntimeExecutionTarget, SandboxRequirement, WorkerCapability } from "@/domain/runtime/model";
@@ -17,8 +18,13 @@ export class RuntimeRoutingService {
     if (input.task.contextPack.relevantValidationIssues.length > 3) caps.push("tool_heavy");
     if (input.task.contextPack.selectedNodeIds.length > 6) caps.push("long_running");
 
-    const allowModal = input.policy.runtime.maxConcurrentSubAgentTasks > 1;
-    const allowSandbox = input.policy.tool.allowedTools.includes("get_validation_report") && !input.policy.tool.forbiddenTools.includes("sandbox_exec");
+    // Modal targets only exist when a Modal executor is configured; otherwise everything runs inline.
+    const modalConfigured = runtimeFlags.hasModal;
+    const allowModal = modalConfigured && input.policy.runtime.maxConcurrentSubAgentTasks > 1;
+    const allowSandbox = modalConfigured && input.policy.tool.allowedTools.includes("get_validation_report") && !input.policy.tool.forbiddenTools.includes("sandbox_exec");
+    if (!modalConfigured) {
+      return { id: id("rrd"), runId: input.task.runId, taskId: input.task.id, workspaceId: ctx.workspaceId, target: "inline_host", reason: "modal_not_configured_inline", sandboxRequirement: sandboxRequirement === "required" ? "preferred" : sandboxRequirement, requiredCapabilities: caps, createdAt: now() };
+    }
 
     let target: RuntimeExecutionTarget = "inline_host";
     let reason = "default_inline";

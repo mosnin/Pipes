@@ -2,8 +2,10 @@ import { test, expect } from "@playwright/test";
 
 test("mock auth onboarding create flow", async ({ page }) => {
   await page.goto("/api/auth/login?returnTo=/dashboard");
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await page.getByPlaceholder("System name").fill("E2E System");
-  await page.getByRole("button", { name: "Create system" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/Good (morning|afternoon|evening)|Working late|Welcome back/);
+  await expect(page.getByRole("heading", { name: "Workflows", level: 2 })).toBeVisible();
+  await page.getByRole("button", { name: "New workflow" }).first().click();
+  await page.getByLabel("Name").fill("E2E System");
+  await page.getByRole("button", { name: "Create workflow" }).click();
   await expect(page).toHaveURL(/\/systems\//);
 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { success, failure } from "@/lib/api/response";
 import { getServerApp } from "@/lib/composition/server";
+import { apiError } from "@/lib/api/errors";
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +10,6 @@ export async function POST(request: Request) {
     await services.comments.add(ctx, { systemId: body.systemId, body: body.body, nodeId: body.nodeId });
     return NextResponse.json(success({ ok: true }));
   } catch (error) {
-    return NextResponse.json(failure((error as Error).message), { status: 400 });
+    return apiError(error);
   }
 }

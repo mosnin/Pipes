@@ -1,17 +1,14 @@
 import { createBoundedServices } from "@/domain/services/bounded";
 import type { AppContext } from "@/lib/repositories/contracts";
-import { runtimeFlags } from "@/lib/env";
-import { createConvexRepositories } from "@/lib/repositories/convex";
-import { createMockRepositories } from "@/lib/repositories/mock";
+import type { RepositorySet } from "@/lib/repositories/contracts";
+import { createUsageService } from "@/domain/usage/service";
+import { getEntitlements } from "@/domain/templates/plans";
 import { hashAgentToken, hasCapability, type AgentCapability } from "@/lib/protocol/tokens";
-import { getServerApp } from "@/lib/composition/server";
+import { getRepositories, getServerApp } from "@/lib/composition/server";
 import { ProtocolError } from "@/lib/protocol/errors";
 
-function createRepositories() {
-  return !runtimeFlags.useMocks && runtimeFlags.hasConvex
-    ? createConvexRepositories()
-    : createMockRepositories();
-}
+const createRepositories = getRepositories;
+const ROLE_RANK: Record<string, number> = { Viewer: 0, Commenter: 1, Editor: 2, Admin: 3, Owner: 4 };
 
 function readBearer(request: Request) {
   const header = request.headers.get("authorization") ?? "";
@@ -19,7 +16,7 @@ function readBearer(request: Request) {
   return header.slice(7).trim();
 }
 
-export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices> }> {
+export async function getProtocolContext(request: Request): Promise<{ ctx: AppContext; services: ReturnType<typeof createBoundedServices>; repositories: RepositorySet }> {
   const bearer = readBearer(request);
   if (!bearer) {
     return getServerApp();
@@ -27,19 +24,29 @@ export async function getProtocolContext(request: Request): Promise<{ ctx: AppCo
   const repositories = createRepositories();
   const token = await repositories.agentTokens.findByHash(hashAgentToken(bearer));
   if (!token || token.revokedAt) throw new ProtocolError("AUTH_INVALID", "Invalid protocol token.", 401);
+  // A token acts for the person who issued it: it stops working when they leave
+  // the workspace, and never acts above their role (capped at Editor).
+  const creator = (await repositories.memberships.list(token.workspaceId)).find((m) => m.userId === token.createdByUserId);
+  if (!creator) throw new ProtocolError("AUTH_INVALID", "This token's creator is no longer in the workspace.", 401);
+  const role = (ROLE_RANK[creator.role] ?? 0) < ROLE_RANK.Editor ? creator.role : "Editor";
   await repositories.agentTokens.touchLastUsed(token.id);
+  // Meter token-authenticated calls (the MCP endpoint meters its own tool calls separately).
+  if (!new URL(request.url).pathname.startsWith("/api/mcp")) {
+    await createUsageService(repositories).record(token.workspaceId, "api_call", { actorType: "agent" }).catch(() => undefined);
+  }
   const plan = await repositories.entitlements.getPlan(token.workspaceId);
+  if (!getEntitlements(plan).apiMcpAccess) throw new ProtocolError("PLAN_REQUIRED", "API and MCP access start on the Pro plan.", 403);
   const ctx: AppContext = {
     userId: token.createdByUserId,
     workspaceId: token.workspaceId,
-    role: "Editor",
+    role,
     plan,
     actorType: "agent",
     actorId: token.id,
     capabilities: token.capabilities,
     systemScope: token.systemId
   };
-  return { ctx, services: createBoundedServices(repositories) };
+  return { ctx, services: createBoundedServices(repositories), repositories };
 }
 
 export function requireCapability(ctx: AppContext, capability: AgentCapability, systemId?: string) {

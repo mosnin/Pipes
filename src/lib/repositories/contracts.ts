@@ -51,6 +51,7 @@ export type SystemBundle = {
 export interface UsersRepository {
   provision(identity: ProvisionIdentity): Promise<AppContext>;
   findByEmail(email: string): Promise<{ id: string; email: string; name: string } | null>;
+  rename(externalId: string, name: string): Promise<void>;
 }
 
 export interface WorkspacesRepository {
@@ -59,16 +60,24 @@ export interface WorkspacesRepository {
 
 export interface MembershipsRepository {
   add(workspaceId: string, userId: string, role: Role): Promise<void>;
-  list(workspaceId: string): Promise<Array<{ userId: string; role: Role }>>;
+  /** Members with their name and email, so people are never shown as ids. */
+  list(workspaceId: string): Promise<Array<{ userId: string; role: Role; name?: string; email?: string }>>;
   updateRole(workspaceId: string, userId: string, role: Role): Promise<void>;
+  /** Removes a member. The caller enforces who may be removed (src/domain/permissions). */
+  remove(workspaceId: string, userId: string): Promise<void>;
+  /** All at once: `toUserId` becomes Owner and the workspace's owner, `fromUserId` becomes Admin. */
+  transferOwnership(workspaceId: string, fromUserId: string, toUserId: string): Promise<void>;
 }
 
 export interface SystemsRepository {
   list(workspaceId: string): Promise<SystemRecord[]>;
   create(input: { workspaceId: string; userId: string; name: string; description: string }): Promise<string>;
   getBundle(systemId: string): Promise<SystemBundle>;
+  /** Which system and workspace a system, node or pipe belongs to; null when it does not exist. */
+  ownerOf(ref: { systemId?: string; nodeId?: string; pipeId?: string }): Promise<{ systemId: string; workspaceId: string } | null>;
   archive(systemId: string): Promise<void>;
   restore(systemId: string): Promise<void>;
+  update(systemId: string, patch: { name?: string; description?: string }): Promise<void>;
 }
 
 export interface GraphRepository {
@@ -105,7 +114,7 @@ export interface PresenceRepository {
 
 export interface EntitlementsRepository {
   getPlan(workspaceId: string): Promise<Plan>;
-  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus }>;
+  getPlanState(workspaceId: string): Promise<{ plan: Plan; status: BillingStatus; externalCustomerId?: string }>;
   upsertPlanState(input: { workspaceId: string; plan: Plan; status: BillingStatus; externalCustomerId?: string; externalSubscriptionId?: string }): Promise<void>;
 }
 
@@ -147,7 +156,37 @@ export interface FeedbackRepository {
   updateStatus(input: { workspaceId: string; id: string; status: FeedbackStatus; updatedBy: string }): Promise<void>;
 }
 
+export type StoredDocument<T = unknown> = { kind: string; id: string; workspaceId: string; refId?: string; data: T; createdAt: string; updatedAt: string };
+
+/**
+ * A small typed document store shared by newer features (credentials, runs,
+ * connections, triggers, usage). One contract, two backends, so a feature is
+ * written once instead of once per backend.
+ */
+export interface DocumentsRepository {
+  get<T>(kind: string, id: string): Promise<StoredDocument<T> | null>;
+  put<T>(input: { kind: string; id: string; workspaceId: string; refId?: string; data: T }): Promise<StoredDocument<T>>;
+  list<T>(kind: string, filter: { workspaceId?: string; refId?: string }): Promise<StoredDocument<T>[]>;
+  remove(kind: string, id: string): Promise<void>;
+  /**
+   * Conditional write, all or nothing: `put` lands only if the stored
+   * document's `data.rev` still equals `expectedRev` (-1 means "must not
+   * exist yet"); `inserts` are written in the same transaction. A run commit
+   * uses it so two agents completing the same step can never both win.
+   */
+  commit<T>(input: {
+    put: { kind: string; id: string; workspaceId: string; refId?: string; data: T; expectedRev: number };
+    inserts?: Array<{ kind: string; id: string; workspaceId: string; refId?: string; data: unknown }>;
+  }): Promise<{ ok: true } | { ok: false; currentRev: number }>;
+}
+
+export type AuditRecord = { id: string; actorType: string; actorId: string; action: string; targetType: string; targetId?: string; outcome: string; createdAt: string; systemId?: string; metadata?: string };
+export type AuditFilter = { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number };
+/** Default page size for `audits.page`. */
+export const AUDIT_PAGE_SIZE = 100;
+
 export type RepositorySet = {
+  documents: DocumentsRepository;
   users: UsersRepository;
   workspaces: WorkspacesRepository;
   memberships: MembershipsRepository;
@@ -168,7 +207,10 @@ export type RepositorySet = {
   };
   audits: {
     add(input: { actorType: "user" | "agent"; actorId: string; workspaceId: string; action: string; targetType: string; targetId?: string; outcome: "success" | "failure"; metadata?: string; systemId?: string }): Promise<void>;
-    list(workspaceId: string, filter?: { actorType?: "user" | "agent"; actorId?: string; actionPrefix?: string; systemId?: string; transport?: string; outcome?: "success" | "failure"; since?: string; until?: string; limit?: number }): Promise<Array<{ id: string; actorType: string; actorId: string; action: string; targetType: string; targetId?: string; outcome: string; createdAt: string; systemId?: string; metadata?: string }>>;
+    /** The newest matching events, up to `limit` (500 when unset). */
+    list(workspaceId: string, filter?: AuditFilter): Promise<AuditRecord[]>;
+    /** One page of matching events, newest first: `limit` defaults to AUDIT_PAGE_SIZE; pass `nextCursor` back for the next page. */
+    page(workspaceId: string, filter?: AuditFilter & { cursor?: string | null }): Promise<{ items: AuditRecord[]; nextCursor: string | null }>;
   };
   idempotency: {
     get(input: { workspaceId: string; actorId: string; route: string; key: string }): Promise<{ requestHash: string; responseJson: string; statusCode: number } | null>;
