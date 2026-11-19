@@ -218,4 +218,29 @@ describe("Better Auth sign-in for Pipes", () => {
     expect((await a.call("/get-session", undefined, "GET")).json?.user.email).toBe(email);
     expect(t.events()).toContain("password.changed");
   });
+
+  it("moves accounts from the earlier sign-in with their password, two-step secret and recovery codes", async () => {
+    const { encryptSecret } = await import("@/domain/connections/service");
+    const { migrateLegacyAccounts } = await import("@/lib/auth/migrate");
+    const { CREDENTIAL_KIND } = await import("@/domain/services/accounts");
+    const { newSecret, hashRecoveryCode, codeAt, stepAt } = await import("@/lib/auth/totp");
+    const secret = newSecret();
+    await t.docs.set(`${CREDENTIAL_KIND}/old@acme.test`, {
+      kind: CREDENTIAL_KIND, id: "old@acme.test", workspaceId: "global", createdAt: "", updatedAt: "",
+      data: { email: "old@acme.test", name: "Old", externalId: "pw|legacy-2", passwordHash: legacyHash("my old long passphrase"), mfa: { secretCiphertext: encryptSecret(secret), enabledAt: "2026-01-01", recoveryHashes: [hashRecoveryCode("abcd-efgh")], lastStep: -1 } }
+    });
+    const reposForMigration = { documents: { list: async (kind: string) => [...t.docs.values()].filter((d) => d.kind === kind) } } as never;
+    expect(await migrateLegacyAccounts(t.auth, reposForMigration)).toEqual({ created: 1, skipped: 0, withTwoStep: 1 });
+    expect(await migrateLegacyAccounts(t.auth, reposForMigration)).toEqual({ created: 0, skipped: 1, withTwoStep: 0 });
+
+    const b = browser(t.auth);
+    const challenged = await b.call("/sign-in/email", { email: "old@acme.test", password: "my old long passphrase" });
+    expect(challenged.json.twoFactorRedirect).toBe(true);
+    const ok = await b.call("/two-factor/verify-totp", { code: codeAt(secret, stepAt(Date.now())) });
+    expect(ok.status).toBe(200);
+    expect(ok.json.user.externalId).toBe("pw|legacy-2");
+    const other = browser(t.auth, "203.0.113.70");
+    await other.call("/sign-in/email", { email: "old@acme.test", password: "my old long passphrase" });
+    expect((await other.call("/two-factor/verify-backup-code", { code: "ABCD-EFGH" })).status).toBe(200);
+  });
 });

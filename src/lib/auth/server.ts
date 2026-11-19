@@ -5,6 +5,7 @@ import { buildAuthOptions } from "@/lib/auth/options";
 import { convexBridgeAdapter } from "@/lib/auth/convex-adapter";
 import { getRepositories } from "@/lib/composition/repositories";
 import { getEmailService } from "@/lib/email";
+import { authSecret } from "@/lib/auth/secret";
 import { env, resolveRuntimeMode, runtimeFlags } from "@/lib/env";
 
 /**
@@ -14,13 +15,7 @@ import { env, resolveRuntimeMode, runtimeFlags } from "@/lib/env";
  * creates one.
  */
 
-const DEV_SECRET = "pipes-dev-only-auth-secret-do-not-use-in-production";
-
-export function authSecret(): string | undefined {
-  const value = env.BETTER_AUTH_SECRET ?? env.PIPES_SESSION_SECRET;
-  if (value && value.length >= 32) return value;
-  return env.NODE_ENV === "production" ? undefined : DEV_SECRET;
-}
+export { authSecret };
 
 async function createAuth() {
   const secret = authSecret();

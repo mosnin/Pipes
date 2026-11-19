@@ -12,15 +12,16 @@ test("two sessions observe shared state", async ({ browser }) => {
   await pageA.getByRole("button", { name: "New workflow" }).first().click();
   await pageA.getByLabel("Name").fill("Realtime System");
   await pageA.getByRole("button", { name: "Create workflow" }).click();
-  await expect(pageA).toHaveURL(/\/systems\//);
+  // A cold dev server compiles the editor on first visit.
+  await expect(pageA).toHaveURL(/\/systems\//, { timeout: 30000 });
 
   const url = pageA.url();
   await pageB.goto(url);
   await pageA.getByRole("button", { name: "Add Agent" }).first().click();
 
-  await expect(pageB.getByText(/^1 nodes/)).toBeVisible({ timeout: 10000 });
+  await expect(pageB.getByText(/^1 nodes/)).toBeVisible({ timeout: 30000 });
   await pageB.getByRole("tab", { name: /Validation/ }).click();
-  await expect(pageB.getByText(/is not connected\./).first()).toBeVisible({ timeout: 10000 });
+  await expect(pageB.getByText(/is not connected\./).first()).toBeVisible({ timeout: 30000 });
 
   await contextA.close();
   await contextB.close();

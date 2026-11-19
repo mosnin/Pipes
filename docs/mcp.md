@@ -39,6 +39,7 @@ claude mcp add --transport http pipes https://<your-pipes-host>/api/mcp
 | `comments:write` | `add_comment` |
 | `memory:read` | `search_memory` |
 | `memory:write` | `remember`, `forget_memory`, and `remember` on `complete_step` |
+| `memory:private` | the token's creator's own private memories, in every memory tool (never implied by another capability) |
 
 A token scoped to one workflow only sees that workflow.
 

@@ -3,7 +3,10 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requestMeta, type RequestMeta } from "@/domain/auth/security";
-import { authSecret, getAuth } from "@/lib/auth/server";
+import { authSecret } from "@/lib/auth/secret";
+
+// Better Auth is loaded only when a real sign-in mode needs it, so demo mode never compiles or runs it.
+const loadAuth = async () => (await import("@/lib/auth/server")).getAuth();
 import { runtimeFlags } from "@/lib/env";
 
 /** Who is signed in, as the rest of Pipes sees them. */
@@ -60,7 +63,7 @@ export async function currentRequestMeta(): Promise<RequestMeta> {
 
 /** One session lookup per request, however many components ask. */
 const currentSession = cache(async (): Promise<AppUser | null> => {
-  const auth = await getAuth();
+  const auth = await loadAuth();
   const found = await auth.api.getSession({ headers: await headers() });
   if (!found) return null;
   const user = found.user as typeof found.user & { externalId?: string | null };
@@ -130,6 +133,6 @@ export function getAuthService(): AuthService {
 
 /** End a session on the server, for workspace rules that sign people out. */
 export async function revokeSessionToken(token: string): Promise<void> {
-  const ctx = await (await getAuth()).$context;
+  const ctx = await (await loadAuth()).$context;
   await ctx.internalAdapter.deleteSession(token);
 }

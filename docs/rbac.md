@@ -36,6 +36,10 @@ this page and that table disagree.
 | `ownership.transfer` | Owner | Hand the workspace to another member |
 | `workspace.deactivate` | Owner | Deactivate or reactivate the workspace |
 
+Private memories are outside the table altogether: only the person who saved
+one can read, find or forget it, whatever anyone's role, the Owner included
+(see [memory.md](memory.md)).
+
 Approval steps add their own rule: each step names the lowest role that may
 decide it (Editor by default), and agents never decide approvals.
 

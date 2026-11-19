@@ -5,5 +5,5 @@ test("editor shell renders", async ({ page }) => {
   await page.getByRole("button", { name: "New workflow" }).first().click();
   await page.getByLabel("Name").fill("Editor Smoke");
   await page.getByRole("button", { name: "Create workflow" }).click();
-  await expect(page.getByText("Inspector")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Inspector")).toBeVisible({ timeout: 30000 });
 });

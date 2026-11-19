@@ -57,7 +57,7 @@ Everything is stored in Convex, with first-party email and password accounts.
 cp .env.example .env.local
 # PIPES_USE_MOCKS=false
 # NEXT_PUBLIC_PIPES_USE_MOCKS=false
-# PIPES_SESSION_SECRET=<32+ random characters>
+# BETTER_AUTH_SECRET=<32+ random characters>
 # PIPES_CONVEX_SERVER_KEY=<32+ random characters>
 npx convex env set PIPES_CONVEX_SERVER_KEY <the same value>
 npm install
@@ -76,7 +76,8 @@ backend on http://127.0.0.1:3210. Set `CONVEX_URL` to the deployment URL.
 | `NEXT_PUBLIC_APP_URL` | Public URL of the app |
 | `CONVEX_URL`, `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT` | Convex deployment |
 | `PIPES_CONVEX_SERVER_KEY` | Shared secret between the server and Convex; set it on both |
-| `PIPES_SESSION_SECRET` | Signs sessions; required for real sign-in in production |
+| `BETTER_AUTH_SECRET` | Better Auth secret (32+ characters); required for real sign-in in production. Falls back to `PIPES_SESSION_SECRET` |
+| `PIPES_SESSION_SECRET` | Older name for the sign-in secret; also seeds the connection-secret key |
 | `PIPES_ENCRYPTION_KEY` | Encrypts connection secrets (falls back to a key derived from `PIPES_SESSION_SECRET`) |
 | `CRON_SECRET` | Bearer secret for `GET /api/cron/schedules`; call it every minute or few |
 | `PIPES_ADMIN_ALLOWLIST` | Emails allowed into the internal `/admin` pages |
