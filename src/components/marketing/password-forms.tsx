@@ -6,13 +6,12 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { authCall, type AuthResult } from "@/lib/auth/client";
 
-async function submit(url: string, body: Record<string, string>) {
-  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  return (await res.json().catch(() => ({ ok: false, message: "Something went wrong. Try again." }))) as { ok: boolean; message?: string; redirectTo?: string };
-}
+type Outcome = { ok: true; redirectTo: string } | { ok: false; message: string };
 
-function useForm(url: string, fallbackRedirect: string) {
+/** Runs one Better Auth call per submit and moves on, or shows the reason it did not work. */
+function useForm(action: (fields: Record<string, string>) => Promise<Outcome>) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,22 +19,63 @@ function useForm(url: string, fallbackRedirect: string) {
     event.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await submit(url, fields);
+    const result = await action(fields);
     if (result.ok) {
-      router.push(result.redirectTo ?? fallbackRedirect);
+      router.push(result.redirectTo);
       router.refresh();
       return;
     }
-    setError(result.message ?? "Something went wrong. Try again.");
+    setError(result.message);
     setBusy(false);
   };
   return { busy, error, onSubmit };
 }
 
+const toOutcome = (r: AuthResult, redirectTo: string): Outcome => (r.ok ? { ok: true, redirectTo } : { ok: false, message: r.message });
+
+/** Sign in through the deployment's identity provider (Auth0), with Better Auth handling state and PKCE. */
+export function ProviderSignInButton({ callbackURL, label = "Continue" }: { callbackURL: string; label?: string }): ReactNode {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col gap-3">
+      {error ? (
+        <div role="alert">
+          <Banner role="critical" title="Sign-in didn't start">
+            {error}
+          </Banner>
+        </div>
+      ) : null}
+      <Button
+        type="button"
+        variant="primary"
+        size="lg"
+        className="w-full"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          const r = await authCall<{ url?: string }>("/sign-in/oauth2", { providerId: "auth0", callbackURL });
+          if (r.ok && r.data.url) window.location.href = r.data.url;
+          else {
+            setError(r.ok ? "The identity provider did not answer. Try again." : r.message);
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "Opening sign-in" : label}
+      </Button>
+    </div>
+  );
+}
+
 export function PasswordLoginForm({ returnTo, initialError }: { returnTo: string; initialError?: string }): ReactNode {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { busy, error, onSubmit } = useForm("/api/auth/login", returnTo);
+  const { busy, error, onSubmit } = useForm(async (f) => {
+    const r = await authCall<{ twoFactorRedirect?: boolean }>("/sign-in/email", { email: f.email, password: f.password, rememberMe: true });
+    if (r.ok && r.data.twoFactorRedirect) return { ok: true, redirectTo: `/login/two-step?returnTo=${encodeURIComponent(returnTo)}` };
+    return toOutcome(r, returnTo);
+  });
   const message = error ?? initialError;
   return (
     <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { email, password, returnTo })}>
@@ -66,7 +106,7 @@ export function PasswordSignupForm({ source }: { source: string }): ReactNode {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { busy, error, onSubmit } = useForm("/api/auth/signup", "/onboarding");
+  const { busy, error, onSubmit } = useForm(async (f) => toOutcome(await authCall("/sign-up/email", { name: f.name, email: f.email, password: f.password }), "/onboarding"));
   return (
     <form
       className="flex flex-col gap-3"
@@ -121,7 +161,7 @@ export function ForgotPasswordForm(): ReactNode {
         event.preventDefault();
         setBusy(true);
         // The answer is the same whatever happens, so a failed request reads the same too.
-        await submit("/api/auth/forgot", { email }).catch(() => undefined);
+        await authCall("/request-password-reset", { email, redirectTo: "/reset-password" });
         setBusy(false);
         setSentTo(email.trim());
       }}
@@ -138,7 +178,8 @@ export function ForgotPasswordForm(): ReactNode {
 
 export function ResetPasswordForm({ token }: { token: string }): ReactNode {
   const [password, setPassword] = useState("");
-  const { busy, error, onSubmit } = useForm("/api/auth/reset", "/dashboard");
+  // A reset signs out every session, so the person signs in again with the new password (and their second step).
+  const { busy, error, onSubmit } = useForm(async (f) => toOutcome(await authCall("/reset-password", { token: f.token, newPassword: f.password }), "/login?reset=done"));
   return (
     <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { token, password })}>
       {error ? (
@@ -152,7 +193,7 @@ export function ResetPasswordForm({ token }: { token: string }): ReactNode {
         <Input id="reset-password" type="password" autoComplete="new-password" required minLength={10} autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
       </Field>
       <Button type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
-        {busy ? "Saving" : "Set password and log in"}
+        {busy ? "Saving" : "Set new password"}
       </Button>
     </form>
   );
@@ -162,9 +203,9 @@ export function ResetPasswordForm({ token }: { token: string }): ReactNode {
 export function TwoStepForm({ returnTo }: { returnTo: string }): ReactNode {
   const [code, setCode] = useState("");
   const [recovery, setRecovery] = useState(false);
-  const { busy, error, onSubmit } = useForm("/api/auth/mfa", returnTo);
+  const { busy, error, onSubmit } = useForm(async (f) => toOutcome(await authCall(recovery ? "/two-factor/verify-backup-code" : "/two-factor/verify-totp", { code: f.code.replace(recovery ? /\s+/g : /\D+/g, "") }), returnTo));
   return (
-    <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { code, returnTo })}>
+    <form className="flex flex-col gap-3" onSubmit={(e) => onSubmit(e, { code })}>
       {error ? (
         <div role="alert">
           <Banner role="critical" title="That code didn't work">

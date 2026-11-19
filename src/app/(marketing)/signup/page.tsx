@@ -5,7 +5,7 @@ import { CutButton } from "@/components/marketing/cut-button";
 import { SignupSourceTracker } from "@/components/marketing/SignupSourceTracker";
 import { Card } from "@/components/ui/card";
 import { getEntitlements } from "@/domain/templates/plans";
-import { PasswordSignupForm } from "@/components/marketing/password-forms";
+import { PasswordSignupForm, ProviderSignInButton } from "@/components/marketing/password-forms";
 import { resolveAuthMode } from "@/lib/auth";
 
 /* ==========================================================================
@@ -77,14 +77,7 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           {passwordMode ? (
             <PasswordSignupForm source={source} />
           ) : (
-            <CutButton
-              href="/api/auth/login?returnTo=/onboarding"
-              size="lg"
-              className="w-full"
-              track={{ event: "signup_started", metadata: { source } }}
-            >
-              Start free workspace
-            </CutButton>
+            <ProviderSignInButton callbackURL="/onboarding" label="Start free workspace" />
           )}
         </Card>
       </div>

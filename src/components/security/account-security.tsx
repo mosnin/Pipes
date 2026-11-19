@@ -12,6 +12,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Field, Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { authCall, secretFromTotpUri, signOutAndLeave } from "@/lib/auth/client";
 
 export type SecurityState = {
   mode: string;
@@ -56,29 +57,33 @@ export function deviceName(ua?: string): string {
  * with a code, then save the recovery codes, which are shown once.
  */
 export function TwoStepSetup({ onDone }: { onDone: () => void }): ReactNode {
-  const [secret, setSecret] = useState<{ secret: string; url: string } | null>(null);
+  const [password, setPassword] = useState("");
+  const [secret, setSecret] = useState<{ secret: string; url: string; recoveryCodes: string[] } | null>(null);
   const [code, setCode] = useState("");
   const [codes, setCodes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const begin = async () => {
+  // Better Auth asks for the password before handing out a new secret.
+  const begin = async (event: FormEvent) => {
+    event.preventDefault();
     setBusy(true);
     setError(null);
-    const json = await post("/api/account/mfa", { action: "begin" });
+    const r = await authCall<{ totpURI: string; backupCodes: string[] }>("/two-factor/enable", { password });
     setBusy(false);
-    if (json?.ok) setSecret(json.data);
-    else setError(apiErrorMessage(json, "Setup did not start. Try again."));
+    if (r.ok) setSecret({ secret: secretFromTotpUri(r.data.totpURI), url: r.data.totpURI, recoveryCodes: r.data.backupCodes });
+    else setError(r.message);
   };
 
+  // Two-step sign-in is on only once a code from the app proves it was added.
   const confirm = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(null);
-    const json = await post("/api/account/mfa", { action: "confirm", code });
+    const r = await authCall("/two-factor/verify-totp", { code: code.replace(/\D+/g, "") });
     setBusy(false);
-    if (json?.ok) setCodes(json.data.recoveryCodes);
-    else setError(apiErrorMessage(json, "That code did not work."));
+    if (r.ok) setCodes(secret?.recoveryCodes ?? []);
+    else setError(r.message);
   };
 
   const download = () => {
@@ -123,15 +128,20 @@ export function TwoStepSetup({ onDone }: { onDone: () => void }): ReactNode {
   if (!secret) {
     return (
       <Card>
-        <CardContent className="flex flex-col gap-3">
-          {error ? <Banner role="critical" title="Setup did not start">{error}</Banner> : null}
-          <p className="t-body text-ink-2">Two-step sign-in asks for a code from an app on your phone after your password, so a stolen password is not enough to get in. Any authenticator app works, such as 1Password, Google Authenticator or Authy.</p>
-        </CardContent>
-        <CardFooter className="justify-end">
-          <Button variant="primary" size="sm" onClick={() => void begin()} loading={busy} disabled={busy}>
-            Set up two-step sign-in
-          </Button>
-        </CardFooter>
+        <form onSubmit={begin}>
+          <CardContent className="flex flex-col gap-3">
+            {error ? <Banner role="critical" title="Setup did not start">{error}</Banner> : null}
+            <p className="t-body text-ink-2">Two-step sign-in asks for a code from an app on your phone after your password, so a stolen password is not enough to get in. Any authenticator app works, such as 1Password, Google Authenticator or Authy.</p>
+            <Field label="Your password" htmlFor="setup-password">
+              <Input id="setup-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </Field>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button type="submit" variant="primary" size="sm" loading={busy} disabled={busy || !password}>
+              Set up two-step sign-in
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
     );
   }
@@ -175,9 +185,9 @@ function TwoStepOff({ onDone }: { onDone: () => void }): ReactNode {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
-    const json = await post("/api/account/mfa", { action: "disable", password, code });
+    const r = await authCall("/two-factor/disable", { password, code: code.trim() });
     setBusy(false);
-    if (!json?.ok) return toast(apiErrorMessage(json, "Two-step sign-in is still on."), { tone: "error" });
+    if (!r.ok) return toast(r.message, { tone: "error" });
     toast("Two-step sign-in is off.");
     onDone();
   };
@@ -313,8 +323,8 @@ export function AccountSecuritySections(): ReactNode {
                 </span>,
                 <RelativeTime key="l" at={new Date(s.lastSeenAt).getTime()} />,
                 s.current ? (
-                  <Button key="x" asChild variant="ghost" size="sm">
-                    <a href="/api/auth/logout">Sign out</a>
+                  <Button key="x" variant="ghost" size="sm" onClick={() => void signOutAndLeave()}>
+                    Sign out
                   </Button>
                 ) : (
                   <Button key="x" variant="ghost" size="sm" onClick={() => void signOut(s.id)}>

@@ -4,8 +4,8 @@ import type { RepositorySet } from "@/lib/repositories/contracts";
 /**
  * Sign-in security, built like the run rails (docs/security.md):
  *
- * - Sessions live on the server. The cookie only names one, so a session can
- *   be revoked, expires when idle, and ends everywhere on a password change.
+ * - Sessions are Better Auth's, stored on the server (src/lib/auth). Pipes adds
+ *   the workspace's idle limit and a 7-day cap per request (getServerApp).
  * - Failed sign-ins lock an account for a while, and each IP address has its
  *   own limit, so guessing passwords is slow from one place or many.
  * - Every security event goes to an append-only journal (`auth_event`), the
@@ -14,37 +14,20 @@ import type { RepositorySet } from "@/lib/repositories/contracts";
  *   allowed email domains.
  */
 
-export const SESSION_KIND = "auth_session";
 export const AUTH_EVENT_KIND = "auth_event";
 export const LOCK_KIND = "auth_lock";
 export const POLICY_KIND = "security_policy";
 const GLOBAL = "global";
 
+/** No session lasts longer than this, however active (enforced per request in getServerApp). */
 export const SESSION_ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000;
 export const DEFAULT_IDLE_MS = 24 * 60 * 60 * 1000;
-/** Last-seen is written at most this often, so reads stay cheap. */
-const TOUCH_EVERY_MS = 5 * 60 * 1000;
 
 export const LOCKOUT = { failures: 5, windowMs: 15 * 60 * 1000, baseLockMs: 15 * 60 * 1000, maxLockMs: 24 * 60 * 60 * 1000 };
 export const IP_LIMIT = { attempts: 30, windowSeconds: 15 * 60 };
 
 export type RequestMeta = { ip?: string; userAgent?: string };
 
-export type AuthSession = {
-  id: string;
-  externalId: string;
-  email: string;
-  createdAt: string;
-  lastSeenAt: string;
-  expiresAt: string;
-  idleMs: number;
-  /** Whether a second factor was checked when this session started. */
-  mfa: boolean;
-  ip?: string;
-  userAgent?: string;
-  revokedAt?: string;
-  revokedReason?: string;
-};
 
 export type AuthEventType =
   | "signup"
@@ -86,7 +69,6 @@ export const IDLE_LIMITS = { min: 15, max: 7 * 24 * 60 };
 type Lock = { email: string; failures: string[]; lockedUntil?: string; locks: number };
 
 const sha = (v: string) => crypto.createHash("sha256").update(v).digest("hex").slice(0, 32);
-const randomId = (prefix: string) => `${prefix}_${crypto.randomBytes(18).toString("base64url")}`;
 
 /** The client IP and user agent, from the proxy headers Vercel sets. */
 export function requestMeta(headers: Headers): RequestMeta {
@@ -102,6 +84,21 @@ export function domainAllowed(email: string, allowed: string[]): boolean {
   if (allowed.length === 0) return true;
   const domain = emailDomain(email);
   return allowed.some((d) => domain === d || domain.endsWith(`.${d}`));
+}
+
+/** Better Auth refreshes a session's last-use time at most this often. */
+export const SESSION_REFRESH_MS = 5 * 60 * 1000;
+
+/**
+ * Whether a session breaks the workspace's rules: older than 7 days however
+ * active, or unused for longer than the workspace's idle limit. Better Auth
+ * slides sessions forward on use; these limits are Pipes'.
+ */
+export function sessionProblem(session: { createdAt?: string; updatedAt?: string }, policy: Pick<SecurityPolicy, "idleTimeoutMinutes">, now = Date.now()): "expired" | "idle" | null {
+  if (!session.createdAt || !session.updatedAt) return null;
+  if (now - Date.parse(session.createdAt) > SESSION_ABSOLUTE_MS) return "expired";
+  if (now - Date.parse(session.updatedAt) > policy.idleTimeoutMinutes * 60_000 + SESSION_REFRESH_MS) return "idle";
+  return null;
 }
 
 export function sanitizePolicy(input: Partial<SecurityPolicy>, current: SecurityPolicy = DEFAULT_POLICY): SecurityPolicy {
@@ -124,82 +121,9 @@ export function createSecurityService(repos: RepositorySet, clock: () => Date = 
     await repos.documents.put<AuthEvent>({ kind: AUTH_EVENT_KIND, id, workspaceId: event.workspaceId ?? GLOBAL, refId, data: { id, at, ...event } }).catch(() => undefined);
   }
 
-  async function putSession(s: AuthSession) {
-    await repos.documents.put<AuthSession>({ kind: SESSION_KIND, id: s.id, workspaceId: GLOBAL, refId: s.externalId, data: s });
-  }
 
   return {
     record,
-
-    // --- sessions ---------------------------------------------------------
-
-    async startSession(identity: { externalId: string; email: string }, meta: RequestMeta, options: { mfa: boolean; idleMs?: number }): Promise<AuthSession> {
-      const t = now();
-      const session: AuthSession = {
-        id: randomId("ses"),
-        externalId: identity.externalId,
-        email: identity.email,
-        createdAt: t.toISOString(),
-        lastSeenAt: t.toISOString(),
-        expiresAt: new Date(t.getTime() + SESSION_ABSOLUTE_MS).toISOString(),
-        idleMs: options.idleMs ?? DEFAULT_IDLE_MS,
-        mfa: options.mfa,
-        ip: meta.ip,
-        userAgent: meta.userAgent
-      };
-      await putSession(session);
-      return session;
-    },
-
-    /** The session if it is live: not revoked, not past its absolute end, not idle too long. Touches last-seen. */
-    async validate(id: string, externalId: string): Promise<AuthSession | null> {
-      const doc = await repos.documents.get<AuthSession>(SESSION_KIND, id);
-      const s = doc?.data;
-      if (!s || s.externalId !== externalId || s.revokedAt) return null;
-      const t = now().getTime();
-      if (Date.parse(s.expiresAt) <= t || Date.parse(s.lastSeenAt) + s.idleMs <= t) {
-        await putSession({ ...s, revokedAt: now().toISOString(), revokedReason: "expired" });
-        await record({ type: "session.expired", externalId: s.externalId, email: s.email, detail: { sessionId: s.id } });
-        return null;
-      }
-      if (t - Date.parse(s.lastSeenAt) > TOUCH_EVERY_MS) {
-        const touched = { ...s, lastSeenAt: now().toISOString() };
-        await putSession(touched);
-        return touched;
-      }
-      return s;
-    },
-
-    async listSessions(externalId: string): Promise<AuthSession[]> {
-      const t = now().getTime();
-      return (await repos.documents.list<AuthSession>(SESSION_KIND, { refId: externalId }))
-        .map((d) => d.data)
-        .filter((s) => !s.revokedAt && Date.parse(s.expiresAt) > t && Date.parse(s.lastSeenAt) + s.idleMs > t)
-        .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
-    },
-
-    async revoke(externalId: string, id: string, reason: string, meta: RequestMeta = {}): Promise<boolean> {
-      const doc = await repos.documents.get<AuthSession>(SESSION_KIND, id);
-      if (!doc || doc.data.externalId !== externalId || doc.data.revokedAt) return false;
-      await putSession({ ...doc.data, revokedAt: now().toISOString(), revokedReason: reason });
-      await record({ type: reason === "logout" ? "logout" : "session.revoked", externalId, email: doc.data.email, ...meta, detail: { sessionId: id, reason } });
-      return true;
-    },
-
-    /** Ends every session for an account, except `keep` when given. Returns how many ended. */
-    async revokeAll(externalId: string, reason: string, keep?: string, meta: RequestMeta = {}): Promise<number> {
-      const live = (await repos.documents.list<AuthSession>(SESSION_KIND, { refId: externalId })).map((d) => d.data).filter((s) => !s.revokedAt && s.id !== keep);
-      const at = now().toISOString();
-      for (const s of live) await putSession({ ...s, revokedAt: at, revokedReason: reason });
-      if (live.length) await record({ type: "session.revoked_all", externalId, ...meta, detail: { reason, count: live.length } });
-      return live.length;
-    },
-
-    /** After setting up two-step sign-in, the session it was set up in counts as checked. */
-    async markMfa(externalId: string, id: string): Promise<void> {
-      const doc = await repos.documents.get<AuthSession>(SESSION_KIND, id);
-      if (doc && doc.data.externalId === externalId && !doc.data.revokedAt) await putSession({ ...doc.data, mfa: true });
-    },
 
     // --- lockout ----------------------------------------------------------
 

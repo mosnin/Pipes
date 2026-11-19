@@ -28,6 +28,10 @@ const envSchema = z.object({
   MODAL_EXECUTOR_TOKEN: optionalString,
   PIPES_ADMIN_ALLOWLIST: optionalString,
   PIPES_SESSION_SECRET: optionalString,
+  // Better Auth (docs/security.md). Falls back to PIPES_SESSION_SECRET so existing deployments keep a secret.
+  BETTER_AUTH_SECRET: optionalString,
+  /** SQLite file for accounts when running real sign-in without Convex. */
+  PIPES_AUTH_DB_FILE: optionalString,
   // Decision models through OpenRouter (docs/decisions.md).
   OPENROUTER_API_KEY: optionalString,
   OPENROUTER_BASE_URL: optionalUrl,

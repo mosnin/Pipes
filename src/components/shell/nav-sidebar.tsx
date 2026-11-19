@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOutAndLeave } from "@/lib/auth/client";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore, type ReactNode } from "react";
@@ -172,11 +173,9 @@ function WorkspaceMenu({ user, workspaceLabel, plan, children }: { user: ShellUs
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <a href="/api/auth/logout">
-            <LogOut />
-            Sign out
-          </a>
+        <DropdownMenuItem onSelect={() => void signOutAndLeave()}>
+          <LogOut />
+          Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AuthFrame } from "@/components/marketing/auth-frame";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
-import { PasswordLoginForm } from "@/components/marketing/password-forms";
+import { PasswordLoginForm, ProviderSignInButton } from "@/components/marketing/password-forms";
 import { resolveAuthMode } from "@/lib/auth";
 import { safeReturnTo } from "@/lib/auth/session";
 
@@ -25,13 +25,15 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_login_state: "That sign-in attempt expired or didn't match. Please try again.",
   token_exchange_failed: "We couldn't complete sign-in with the identity provider. Please try again.",
   profile_fetch_failed: "We couldn't load your profile from the identity provider. Please try again.",
-  profile_incomplete: "Your identity provider didn't share an email address, which Pipes needs to sign you in."
+  profile_incomplete: "Your identity provider didn't share an email address, which Pipes needs to sign you in.",
+  session_idle: "You were signed out after a period without use, as your workspace asks. Sign in again.",
+  session_expired: "Sessions last 7 days at most. Sign in again."
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; returnTo?: string }> }) {
-  const { error, returnTo } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; returnTo?: string; reset?: string }> }) {
+  const { error, returnTo, reset } = await searchParams;
   const passwordMode = resolveAuthMode() === "password";
   const message = error ? ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again." : undefined;
   return (
@@ -47,6 +49,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </>
       }
     >
+      {reset === "done" ? (
+        <div className="mb-4" aria-live="polite">
+          <Banner role="positive" title="Your password is changed">
+            Every session was signed out. Log in with your new password.
+          </Banner>
+        </div>
+      ) : null}
       {passwordMode ? (
         <PasswordLoginForm returnTo={safeReturnTo(returnTo)} initialError={message} />
       ) : (
@@ -58,9 +67,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               </Banner>
             </div>
           ) : null}
-          <Button asChild variant="primary" size="lg" className="w-full">
-            <Link href="/api/auth/login?returnTo=/dashboard">Continue</Link>
-          </Button>
+          <ProviderSignInButton callbackURL={safeReturnTo(returnTo)} />
         </div>
       )}
     </AuthFrame>

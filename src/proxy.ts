@@ -19,7 +19,8 @@ function next(request: NextRequest) {
 
 export function proxy(request: NextRequest) {
   if (SAFE.has(request.method)) return next(request);
-  const hasSession = request.cookies.getAll().some((c) => c.name.endsWith("pipes_session") || c.name.endsWith("pipes_mfa"));
+  // Better Auth's cookies: pipes.session_token and, mid-sign-in, pipes.two_factor (with a __Secure- prefix in production).
+  const hasSession = request.cookies.getAll().some((c) => c.name.endsWith("pipes.session_token") || c.name.endsWith("pipes.two_factor"));
   if (!hasSession || request.headers.get("authorization")) return next(request);
   const origin = request.headers.get("origin");
   if (!origin) return next(request);

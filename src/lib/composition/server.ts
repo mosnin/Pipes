@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { API_SURFACE_HEADER, HttpError } from "@/lib/api/errors";
-import { getAuthService, resolveAuthMode } from "@/lib/auth";
+import { getAuthService, resolveAuthMode, revokeSessionToken } from "@/lib/auth";
 import { resolveRuntimeMode } from "@/lib/env";
 import { getRepositories } from "@/lib/composition/repositories";
 import { createBoundedServices } from "@/domain/services/bounded";
-import { createSecurityService, DEFAULT_POLICY, domainAllowed } from "@/domain/auth/security";
+import { createSecurityService, DEFAULT_POLICY, domainAllowed, sessionProblem } from "@/domain/auth/security";
 
 export { getRepositories };
 
@@ -30,7 +30,17 @@ export async function getServerApp(options: { skipPolicy?: boolean } = {}) {
 
   const ctx = await repositories.users.provision(identity);
   const mode = resolveAuthMode();
-  const policy = mode === "mock" ? DEFAULT_POLICY : await createSecurityService(repositories).policy(ctx.workspaceId);
+  const security = createSecurityService(repositories);
+  const policy = mode === "mock" ? DEFAULT_POLICY : await security.policy(ctx.workspaceId);
+
+  // The workspace's session rules: its idle limit, and 7 days at most however active.
+  const ended = mode === "mock" ? null : sessionProblem({ createdAt: identity.sessionCreatedAt, updatedAt: identity.sessionUpdatedAt }, policy);
+  if (ended) {
+    if (identity.sessionToken) await revokeSessionToken(identity.sessionToken).catch(() => undefined);
+    await security.record({ type: "session.expired", externalId: identity.externalId, email: identity.email, workspaceId: ctx.workspaceId, detail: { reason: ended } });
+    if (api) throw new HttpError(401, "unauthenticated", ended === "idle" ? "Your session ended after a period without use. Sign in again." : "Sessions last 7 days at most. Sign in again.");
+    redirect(`/login?error=session_${ended}`);
+  }
   const blocked: PolicyBlock | null = !domainAllowed(identity.email, policy.allowedDomains) ? "domain" : policy.requireMfa && mode === "password" && !identity.mfa ? "two_step" : null;
   if (blocked && !options.skipPolicy) {
     if (api) throw new HttpError(403, "security_policy", blocked === "two_step" ? "Your workspace requires two-step sign-in. Set it up at /security-check to continue." : `This workspace only allows emails at ${policy.allowedDomains.join(", ")}.`, { reason: blocked });

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { signOutAndLeave } from "@/lib/auth/client";
 import { TwoStepSetup } from "@/components/security/account-security";
 
 /** The action for a blocked sign-in: two-step setup, or a way out for an email the workspace does not allow. */
@@ -21,8 +22,8 @@ export function SecurityCheck({ reason }: { reason: "two_step" | "domain" }): Re
   return (
     <div className="flex flex-col gap-3">
       <p className="t-body text-ink-2">Ask an Admin of the workspace to add your domain, or sign in with your work email.</p>
-      <Button asChild variant="primary" size="lg" className="w-full">
-        <a href="/api/auth/logout">Sign out</a>
+      <Button variant="primary" size="lg" className="w-full" onClick={() => void signOutAndLeave()}>
+        Sign out
       </Button>
     </div>
   );

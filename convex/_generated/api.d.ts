@@ -9,6 +9,7 @@
  */
 
 import type * as app from "../app.js";
+import type * as authBridge from "../authBridge.js";
 import type * as documents from "../documents.js";
 import type * as lib from "../lib.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   app: typeof app;
+  authBridge: typeof authBridge;
   documents: typeof documents;
   lib: typeof lib;
 }>;
@@ -50,4 +52,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  betterAuth: import("../betterAuth/_generated/component.js").ComponentApi<"betterAuth">;
+};

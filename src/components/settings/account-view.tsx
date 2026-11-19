@@ -12,6 +12,7 @@ import { SettingsSection, SettingsShell } from "@/components/settings/SettingsSh
 import { FactList } from "@/components/settings/fact-list";
 import { apiErrorMessage } from "@/components/shell/api-error";
 import { AccountSecuritySections } from "@/components/security/account-security";
+import { authCall } from "@/lib/auth/client";
 
 type Account = { name: string; email: string; role: string; plan: string; authMode: string; hasPassword: boolean };
 
@@ -138,12 +139,13 @@ function PasswordCard(): ReactNode {
           if (!current || !next || busy) return;
           setBusy(true);
           setError(null);
-          const result = await send("/api/account/password", "POST", { currentPassword: current, newPassword: next });
+          // Better Auth; Pipes signs out every other session on a password change.
+          const result = await authCall("/change-password", { currentPassword: current, newPassword: next, revokeOtherSessions: true });
           setBusy(false);
           if (!result.ok) return setError(result.message);
           setCurrent("");
           setNext("");
-          toast("Password changed");
+          toast("Password changed. Your other sessions were signed out.");
         }}
       >
         <div className="flex flex-col gap-4 p-4">

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSecurityService, DEFAULT_IDLE_MS, domainAllowed, LOCKOUT, sanitizePolicy } from "@/domain/auth/security";
-import { createAccountService } from "@/domain/services/accounts";
+import { createSecurityService, domainAllowed, LOCKOUT, sanitizePolicy } from "@/domain/auth/security";
 import { base32Encode, codeAt, stepAt, verifyCode } from "@/lib/auth/totp";
 import { validatePasswordStrength } from "@/lib/auth/password";
 import type { RepositorySet, StoredDocument } from "@/lib/repositories/contracts";
@@ -68,73 +67,21 @@ describe("TOTP", () => {
   });
 });
 
-describe("sessions", () => {
-  it("start, validate, expire when idle, and revoke", async () => {
+describe("account lockout", () => {
+  it("locks after repeated failures, with escalating locks, and clears on success", async () => {
     const c = clock();
     const s = createSecurityService(repos(), c);
-    const session = await s.startSession({ externalId: "u1", email: "a@acme.com" }, meta, { mfa: false, idleMs: 60 * 60 * 1000 });
-    expect(await s.validate(session.id, "u1")).not.toBeNull();
-    expect(await s.validate(session.id, "someone-else")).toBeNull();
-    c.advance(61 * 60 * 1000);
-    expect(await s.validate(session.id, "u1")).toBeNull();
-    expect((await s.eventsFor("u1")).map((e) => e.type)).toContain("session.expired");
-  });
-
-  it("ends every other session on revokeAll, keeping the current one", async () => {
-    const s = createSecurityService(repos(), clock());
-    const a = await s.startSession({ externalId: "u1", email: "a@acme.com" }, meta, { mfa: false });
-    const b = await s.startSession({ externalId: "u1", email: "a@acme.com" }, meta, { mfa: false });
-    const other = await s.startSession({ externalId: "u2", email: "b@acme.com" }, meta, { mfa: false });
-    expect(await s.revokeAll("u1", "password_changed", a.id)).toBe(1);
-    expect(await s.validate(a.id, "u1")).not.toBeNull();
-    expect(await s.validate(b.id, "u1")).toBeNull();
-    expect(await s.validate(other.id, "u2")).not.toBeNull();
-    expect((await s.listSessions("u1")).map((x) => x.id)).toEqual([a.id]);
-  });
-
-  it("uses a day of idle time by default and never outlives seven days", async () => {
-    const c = clock();
-    const s = createSecurityService(repos(), c);
-    const session = await s.startSession({ externalId: "u1", email: "a@acme.com" }, meta, { mfa: false });
-    expect(session.idleMs).toBe(DEFAULT_IDLE_MS);
-    for (let i = 0; i < 9; i++) {
-      c.advance(20 * 60 * 60 * 1000);
-      await s.validate(session.id, "u1");
-    }
-    expect(await s.validate(session.id, "u1")).toBeNull();
-  });
-});
-
-describe("sign-in hardening", () => {
-  it("locks an account after repeated failures, with escalating locks", async () => {
-    const c = clock();
-    const r = repos();
-    const accounts = createAccountService(r, c);
-    await accounts.signup({ name: "Bea", email: "bea@acme.com", password: "a long and unusual passphrase" });
-    for (let i = 0; i < LOCKOUT.failures - 1; i++) expect((await accounts.login({ email: "bea@acme.com", password: "wrong password!" })).ok).toBe(false);
-    const fifth = await accounts.login({ email: "bea@acme.com", password: "wrong password!" });
-    expect(fifth).toMatchObject({ ok: false, error: "locked" });
-    // Even the right password is refused while locked.
-    expect(await accounts.login({ email: "bea@acme.com", password: "a long and unusual passphrase" })).toMatchObject({ ok: false, error: "locked" });
+    for (let i = 0; i < LOCKOUT.failures - 1; i++) expect((await s.recordFailure("bea@acme.com", meta)).lockedUntil).toBeUndefined();
+    const first = await s.recordFailure("bea@acme.com", meta);
+    expect(first.lockedUntil).toBeTruthy();
+    expect((await s.lockState("bea@acme.com")).locked).toBe(true);
     c.advance(LOCKOUT.baseLockMs + 1000);
-    expect(await accounts.login({ email: "bea@acme.com", password: "a long and unusual passphrase" })).toMatchObject({ ok: true });
-    const events = await createSecurityService(r, c).eventsFor((await accounts.login({ email: "bea@acme.com", password: "a long and unusual passphrase" }) as any).identity.externalId);
-    expect(events.map((e) => e.type)).toEqual(expect.arrayContaining(["login.locked", "login.succeeded", "signup"]));
-  });
-
-  it("answers an unknown email exactly like a wrong password", async () => {
-    const accounts = createAccountService(repos(), clock());
-    await accounts.signup({ name: "Bea", email: "bea@acme.com", password: "a long and unusual passphrase" });
-    const unknown = await accounts.login({ email: "nobody@acme.com", password: "whatever it is" });
-    const wrong = await accounts.login({ email: "bea@acme.com", password: "whatever it is" });
-    expect(unknown).toEqual(wrong);
-  });
-
-  it("limits attempts per network across many emails", async () => {
-    const accounts = createAccountService(repos(), clock());
-    let last: any;
-    for (let i = 0; i < 31; i++) last = await accounts.login({ email: `user${i}@acme.com`, password: "nope nope nope" }, meta);
-    expect(last).toMatchObject({ ok: false, error: "rate_limited" });
+    expect((await s.lockState("bea@acme.com")).locked).toBe(false);
+    for (let i = 0; i < LOCKOUT.failures; i++) await s.recordFailure("bea@acme.com", meta);
+    // The second lock lasts twice as long.
+    c.advance(LOCKOUT.baseLockMs + 1000);
+    expect((await s.lockState("bea@acme.com")).locked).toBe(true);
+    expect((await s.eventsFor("anything")).length).toBe(0);
   });
 
   it("refuses leaked and email-based passwords", () => {
@@ -142,51 +89,6 @@ describe("sign-in hardening", () => {
     expect(validatePasswordStrength("aaaaaaaaaaaa")).toMatch(/repeated/);
     expect(validatePasswordStrength("beatrice-2026!", "beatrice@acme.com")).toMatch(/email/);
     expect(validatePasswordStrength("correct horse battery staple", "bea@acme.com")).toBeNull();
-  });
-});
-
-describe("two-step sign-in", () => {
-  it("sets up, requires a code at sign-in, accepts a recovery code once, and turns off with password and code", async () => {
-    const c = clock();
-    const accounts = createAccountService(repos(), c);
-    const email = "bea@acme.com";
-    const password = "a long and unusual passphrase";
-    await accounts.signup({ name: "Bea", email, password });
-    const begun = await accounts.beginMfa(email);
-    if (!begun.ok) throw new Error(begun.message);
-    expect(begun.url).toMatch(/^otpauth:\/\/totp\/Pipes/);
-    expect((await accounts.confirmMfa(email, "000000")).ok).toBe(false);
-    const confirmed = await accounts.confirmMfa(email, codeAt(begun.secret, stepAt(c().getTime())));
-    if (!confirmed.ok) throw new Error(confirmed.message);
-    expect(confirmed.recoveryCodes).toHaveLength(10);
-
-    expect(await accounts.login({ email, password })).toMatchObject({ ok: true, mfaRequired: true });
-    // The code used to confirm cannot be used again.
-    expect((await accounts.verifyMfa(email, codeAt(begun.secret, stepAt(c().getTime())))).ok).toBe(false);
-    c.advance(30_000);
-    expect((await accounts.verifyMfa(email, codeAt(begun.secret, stepAt(c().getTime())))).ok).toBe(true);
-
-    const recovery = confirmed.recoveryCodes[0];
-    expect((await accounts.verifyMfa(email, recovery.toUpperCase())).ok).toBe(true);
-    expect((await accounts.verifyMfa(email, recovery)).ok).toBe(false);
-    expect(await accounts.recoveryCodesLeft(email)).toBe(9);
-
-    c.advance(30_000);
-    expect((await accounts.disableMfa(email, "wrong password!!", codeAt(begun.secret, stepAt(c().getTime())))).ok).toBe(false);
-    expect((await accounts.disableMfa(email, password, codeAt(begun.secret, stepAt(c().getTime())))).ok).toBe(true);
-    expect(await accounts.login({ email, password })).toMatchObject({ ok: true });
-    expect(((await accounts.login({ email, password })) as any).mfaRequired).toBeUndefined();
-  });
-
-  it("asks a reset to go through the second step too", async () => {
-    const c = clock();
-    const accounts = createAccountService(repos(), c);
-    await accounts.signup({ name: "Bea", email: "bea@acme.com", password: "a long and unusual passphrase" });
-    const begun = await accounts.beginMfa("bea@acme.com");
-    if (!begun.ok) throw new Error();
-    await accounts.confirmMfa("bea@acme.com", codeAt(begun.secret, stepAt(c().getTime())));
-    const { token } = await accounts.requestReset("bea@acme.com");
-    expect(await accounts.resetPassword(token!, "another long passphrase")).toMatchObject({ ok: true, mfaRequired: true });
   });
 });
 
@@ -207,5 +109,18 @@ describe("workspace policy", () => {
     expect(saved).toMatchObject({ requireMfa: true, allowedDomains: ["acme.com"] });
     expect((await s.policy("wks")).requireMfa).toBe(true);
     expect((await s.eventsFor("x1")).map((e) => e.type)).toContain("policy.changed");
+  });
+});
+
+describe("workspace session rules", () => {
+  it("ends sessions idle past the workspace limit, and any older than 7 days", async () => {
+    const { sessionProblem } = await import("@/domain/auth/security");
+    const now = Date.parse("2026-11-19T12:00:00Z");
+    const ago = (ms: number) => new Date(now - ms).toISOString();
+    const H = 60 * 60 * 1000;
+    expect(sessionProblem({ createdAt: ago(2 * H), updatedAt: ago(10 * 60 * 1000) }, { idleTimeoutMinutes: 60 }, now)).toBeNull();
+    expect(sessionProblem({ createdAt: ago(3 * H), updatedAt: ago(2 * H) }, { idleTimeoutMinutes: 60 }, now)).toBe("idle");
+    expect(sessionProblem({ createdAt: ago(8 * 24 * H), updatedAt: ago(60 * 1000) }, { idleTimeoutMinutes: 1440 }, now)).toBe("expired");
+    expect(sessionProblem({}, { idleTimeoutMinutes: 15 }, now)).toBeNull();
   });
 });
