@@ -1,3 +1,4 @@
+import { localRecall, type RecallPlace, type RecallProvider } from "@/domain/memory/recall";
 import type { AppContext, RepositorySet } from "@/lib/repositories/contracts";
 
 /**
@@ -134,7 +135,26 @@ export function visibleTo(actor: MemoryActor, f: MemoryFact): boolean {
   return true;
 }
 
-export function createMemoryService(repos: RepositorySet, clock: () => Date = () => new Date()) {
+export const OUTBOX_KIND = "memory_outbox";
+type OutboxItem = { id: string; op: "index" | "unindex" | "purge"; factId?: string; place?: RecallPlace; attempts: number; lastError?: string; at: string };
+/** Facts this new are merged into recall results, since the provider may still be processing them. */
+const FRESH_MS = 60_000;
+
+export function createMemoryService(repos: RepositorySet, clock: () => Date = () => new Date(), recall: RecallProvider = localRecall) {
+  /** Keep the provider in step. A failure never fails the write: it is queued and retried by the rails cron. */
+  async function sync(op: OutboxItem["op"], target: { fact?: MemoryFact; place?: RecallPlace }) {
+    if (recall.name === "local") return;
+    try {
+      if (op === "index") await recall.index(target.fact!);
+      else if (op === "unindex") await recall.unindex(target.fact!);
+      else await recall.purge(target.place!);
+    } catch (error) {
+      const id = `mob_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+      const item: OutboxItem = { id, op, factId: target.fact?.id, place: target.place, attempts: 1, lastError: (error as Error).message.slice(0, 300), at: clock().toISOString() };
+      await repos.documents.put<OutboxItem>({ kind: OUTBOX_KIND, id, workspaceId: target.fact?.workspaceId ?? target.place?.workspaceId ?? "global", refId: "pending", data: item }).catch(() => undefined);
+    }
+  }
+
   /** Where a scope's facts are filed. Private facts are filed under their owner, so listing one person's never touches another's. */
   const refFor = (where: { ownerId?: string; systemId?: string }) => (where.ownerId ? `private:${where.ownerId}` : where.systemId ?? WORKSPACE_SCOPE);
 
@@ -173,6 +193,30 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
 
   const ALL: MemoryScope[] = ["private", "team", "workflow"];
 
+  /**
+   * Search by meaning through the provider, then keep only hits that are in
+   * `allowed`: the facts this actor may see, already loaded from Pipes'
+   * records. Facts too new for the provider are merged in. With no query, no
+   * provider, or a provider failure, rank by shared words instead.
+   */
+  async function recallSearch(actor: MemoryActor, allowed: MemoryFact[], scopes: MemoryScope[], query: string | undefined, limit: number) {
+    if (!query?.trim() || recall.name === "local" || allowed.length === 0) return rank(allowed, query, limit);
+    const places: RecallPlace[] = [];
+    if (scopes.includes("private") && canUsePrivate(actor)) places.push({ workspaceId: actor.workspaceId, ownerId: actor.userId });
+    if (scopes.includes("team") || scopes.includes("workflow")) places.push({ workspaceId: actor.workspaceId });
+    try {
+      const hits = await recall.search(places, query, limit);
+      const byId = new Map(allowed.map((f) => [f.id, f]));
+      const found = hits.filter((h) => byId.has(h.factId)).map((h) => ({ ...byId.get(h.factId)!, score: h.score, inferred: h.inferred }));
+      const seen = new Set(found.map((f) => f.id));
+      const fresh = rank(allowed.filter((f) => !seen.has(f.id) && clock().getTime() - Date.parse(f.validAt) < FRESH_MS), query, limit);
+      const merged = [...found, ...fresh].slice(0, limit);
+      return merged.length ? merged : rank(allowed, query, limit);
+    } catch {
+      return rank(allowed, query, limit);
+    }
+  }
+
   return {
     /**
      * Store a fact in a scope. The same sentence twice returns the existing
@@ -196,10 +240,12 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
       const now = clock().toISOString();
       const fact: MemoryFact = { id: `mem_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`, workspaceId: actor.workspaceId, ...place, text, key, source: input.source, validAt: now, supersedes: previous?.id };
       await write(fact);
+      await sync("index", { fact });
       let replaced: MemoryFact | undefined;
       if (previous) {
         replaced = { ...previous, invalidAt: now, invalidReason: "Replaced by a newer fact.", supersededBy: fact.id };
         await write(replaced);
+        await sync("unindex", { fact: replaced });
       }
       return { fact, replaced, duplicate: false };
     },
@@ -211,6 +257,7 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
       if (doc.data.invalidAt) return doc.data;
       const fact = { ...doc.data, invalidAt: clock().toISOString(), invalidReason: (typeof reason === "string" && reason.trim().slice(0, 200)) || "Forgotten." };
       await write(fact);
+      await sync("unindex", { fact });
       return fact;
     },
 
@@ -222,7 +269,8 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
     /** Facts that hold now, best match first, across the requested scopes the actor can see. */
     async search(actor: MemoryActor, input: { systemId?: string; query?: string; limit?: number; scopes?: MemoryScope[] }) {
       const limit = Math.min(Math.max(1, Math.floor(input.limit ?? 10)), 50);
-      return rank(await current(actor, input.systemId, input.scopes ?? ALL), input.query, limit);
+      const scopes = input.scopes ?? ALL;
+      return recallSearch(actor, await current(actor, input.systemId, scopes), scopes, input.query, limit);
     },
 
     /** Everything in one scope, history included, newest first. For the memory page. */
@@ -241,7 +289,34 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
       if (actor.actorType !== "user") throw new MemoryError("not_allowed", "Only the person themselves can erase their private memories.");
       const mine = await inRef(actor.workspaceId, { ownerId: actor.userId });
       for (const f of mine) await repos.documents.remove(MEMORY_KIND, f.id);
+      await sync("purge", { place: { workspaceId: actor.workspaceId, ownerId: actor.userId } });
       return mine.length;
+    },
+
+    /** Retry provider writes that failed. Run from the rails cron. Gives up on an item after 10 tries. */
+    async flushOutbox(limit = 50): Promise<{ done: number; failed: number }> {
+      if (recall.name === "local") return { done: 0, failed: 0 };
+      const pending = (await repos.documents.list<OutboxItem>(OUTBOX_KIND, { refId: "pending" })).slice(0, limit);
+      let done = 0;
+      let failed = 0;
+      for (const doc of pending) {
+        const item = doc.data;
+        try {
+          if (item.op === "purge") await recall.purge(item.place!);
+          else {
+            const fact = item.factId ? (await repos.documents.get<MemoryFact>(MEMORY_KIND, item.factId))?.data : undefined;
+            // An erased fact needs no index; a fact forgotten since needs unindexing whatever the queued op said.
+            if (fact) await (fact.invalidAt ? recall.unindex(fact) : item.op === "index" ? recall.index(fact) : recall.unindex(fact));
+          }
+          await repos.documents.remove(OUTBOX_KIND, item.id);
+          done++;
+        } catch (error) {
+          failed++;
+          const attempts = item.attempts + 1;
+          await repos.documents.put<OutboxItem>({ kind: OUTBOX_KIND, id: item.id, workspaceId: doc.workspaceId, refId: attempts >= 10 ? "dead" : "pending", data: { ...item, attempts, lastError: (error as Error).message.slice(0, 300) } });
+        }
+      }
+      return { done, failed };
     },
 
     /**
@@ -252,7 +327,7 @@ export function createMemoryService(repos: RepositorySet, clock: () => Date = ()
     async forStep(actor: MemoryActor, systemId: string, step: { title: string; instructions?: string; doneWhen?: string }) {
       const facts = await current(actor, systemId, ALL);
       if (facts.length === 0) return [];
-      const matched = rank(facts, [step.title, step.instructions, step.doneWhen].filter(Boolean).join(" "), STEP_MEMORY_LIMIT);
+      const matched = await recallSearch(actor, facts, ALL, [step.title, step.instructions, step.doneWhen].filter(Boolean).join(" "), STEP_MEMORY_LIMIT);
       return matched.length ? matched : rank(facts.filter((f) => f.systemId === systemId), undefined, STEP_MEMORY_LIMIT);
     }
   };

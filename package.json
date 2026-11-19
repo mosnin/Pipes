@@ -38,6 +38,7 @@
     "react-dom": "19.2.5",
     "server-only": "^0.0.1",
     "stick-it-up": "^0.4.0",
+    "supermemory": "^5.1.2",
     "swr": "^2.5.1",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.5",

@@ -1,7 +1,9 @@
 import { createConnectionService } from "@/domain/connections/service";
 import { createDecisionService } from "@/domain/decisions/service";
 import { createDesignService } from "@/domain/design/service";
+import { recallProvider } from "@/domain/memory/recall";
 import { createMemoryService, publicFact } from "@/domain/memory/service";
+import { env } from "@/lib/env";
 import { getSkill } from "@/lib/skills/catalog";
 import { createRunService } from "@/domain/runs/service";
 import type { CurrentStep } from "@/domain/runs/types";
@@ -18,7 +20,7 @@ export function createWorkflowServices(repos: RepositorySet) {
   const decisions = createDecisionService(repos);
   const runs = createRunService(repos, { onEvent: ({ type, run }) => triggers.deliver(type, run), decisions });
   const connections = createConnectionService(repos);
-  const memory = createMemoryService(repos);
+  const memory = createMemoryService(repos, undefined, recallProvider(env));
 
   return {
     design: createDesignService(repos),

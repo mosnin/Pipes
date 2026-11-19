@@ -36,7 +36,14 @@ const envSchema = z.object({
   PIPES_DECIDER_DELIBERATE_MODELS: optionalString,
   PIPES_DECIDER_FAST_TIMEOUT_MS: optionalString,
   PIPES_DECIDER_DELIBERATE_TIMEOUT_MS: optionalString,
-  PIPES_DECIDER_MAX_COST_MICROS: optionalString
+  PIPES_DECIDER_MAX_COST_MICROS: optionalString,
+  // Agent memory recall through Supermemory (docs/memory.md). Pipes' own records stay the source of truth.
+  PIPES_MEMORY_PROVIDER: z.preprocess(emptyToUndefined, z.enum(["local", "supermemory"]).default("local")),
+  SUPERMEMORY_API_KEY: optionalString,
+  /** Point at the Cloudflare memory gateway (cloudflare/memory-gateway) instead of Supermemory directly. */
+  SUPERMEMORY_BASE_URL: optionalUrl,
+  /** Shared secret for signing requests to the Cloudflare memory gateway. */
+  PIPES_MEMORY_GATEWAY_SECRET: optionalString
 });
 
 export function buildEnv(source: NodeJS.ProcessEnv) {
@@ -53,6 +60,7 @@ export const runtimeFlags = {
   hasResend: Boolean(env.RESEND_API_KEY),
   hasOpenAI: Boolean(env.OPENAI_API_KEY),
   hasOpenRouter: Boolean(env.OPENROUTER_API_KEY),
+  hasSupermemory: env.PIPES_MEMORY_PROVIDER === "supermemory" && Boolean(env.SUPERMEMORY_API_KEY || (env.SUPERMEMORY_BASE_URL && env.PIPES_MEMORY_GATEWAY_SECRET)),
   hasModal: Boolean(env.MODAL_EXECUTOR_URL)
 };
 

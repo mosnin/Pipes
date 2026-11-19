@@ -1,4 +1,3 @@
-import { createMemoryService } from "@/domain/memory/service";
 import { getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
 
 /**
@@ -8,8 +7,8 @@ import { getWorkflowApp, ok, workflowError } from "@/lib/api/workflow";
  */
 export async function DELETE() {
   try {
-    const { ctx, repositories } = await getWorkflowApp();
-    const erased = await createMemoryService(repositories).purgePrivate(ctx);
+    const { ctx, repositories, workflow } = await getWorkflowApp();
+    const erased = await workflow.memory.purgePrivate(ctx);
     await repositories.audits.add({ actorType: ctx.actorType, actorId: ctx.actorId, workspaceId: ctx.workspaceId, action: "memory.private_erased", targetType: "user", targetId: ctx.userId, outcome: "success", metadata: JSON.stringify({ erased }) });
     return ok({ erased });
   } catch (error) {
